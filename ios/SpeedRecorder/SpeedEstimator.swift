@@ -22,7 +22,7 @@ final class SpeedEstimator {
         var nRunPoints: Int
     }
 
-    struct Point {
+    struct Point: Codable {
         var v: Double
         var limp: Double
         var cad: Double
@@ -69,6 +69,7 @@ final class SpeedEstimator {
     private var hist: [(Double, Double)] = []
     private var stage: (kind: String, speed: Double?, t: Double)?
     private(set) var points: [Point] = []
+    private(set) var newPoints = 0          // 이번 기록에서 새로 생긴 보정점 수 (있으면 끝날 때 저장)
     private var full: (a: Double, b: Double)?
     private var phone: (a: Double, b: Double)?
     private var lastUpdate = -1e9
@@ -139,6 +140,17 @@ final class SpeedEstimator {
         let airOK = (af?.cover ?? 0) >= Self.airMinCover
         let running = airOK ? af!.lowgMs >= Self.runLowgMs : pf.cad >= Self.runCad
         points.append(Point(v: v, limp: log(pf.imp), cad: pf.cad, amp: airOK ? af!.amp : nil, running: running))
+        newPoints += 1
+        refit()
+    }
+
+    /// 저장해 둔 보정점으로 시작 (보정 없이 바로 달릴 때)
+    func load(_ saved: [Point]) {
+        points = saved
+        refit()
+    }
+
+    private func refit() {
         let run = points.filter { $0.running }
         phone = Self.fit(run.map { ($0.limp, $0.v) }, bDefault: Self.bPhone)
         full = Self.fit(run.compactMap { p in p.amp.map { (p.limp, p.v - Self.airD * $0) } }, bDefault: Self.bFull)
@@ -277,4 +289,33 @@ private func upperBound(_ a: [Double], _ x: Double) -> Int {
     var lo = 0, hi = a.count
     while lo < hi { let m = (lo + hi) / 2; if a[m] <= x { lo = m + 1 } else { hi = m } }
     return lo
+}
+
+/// 폰에 저장한 마지막 보정 (문서 폴더 calibration.json). 다른 날 보정 없이 달려 볼 때 쓴다 (계획 0010)
+struct SavedCalibration: Codable {
+    var saved: Double            // 저장 시각 (epoch 초)
+    var runId: String            // 보정한 기록
+    var points: [SpeedEstimator.Point]
+
+    static var url: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("calibration.json")
+    }
+
+    static func load() -> SavedCalibration? {
+        guard let d = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(SavedCalibration.self, from: d)
+    }
+
+    /// 문서 폴더에 저장하고, 기록 폴더에도 사본
+    func save(copyTo extra: URL? = nil) {
+        guard let d = try? JSONEncoder().encode(self) else { return }
+        try? d.write(to: SavedCalibration.url)
+        if let extra { try? d.write(to: extra) }
+    }
+
+    var label: String {
+        let f = DateFormatter()
+        f.dateFormat = "M/d HH:mm"
+        return "\(f.string(from: Date(timeIntervalSince1970: saved))) 보정 · 달리기 점 \(points.filter { $0.running }.count)개"
+    }
 }

@@ -11,6 +11,7 @@ struct ContentView: View {
     @StateObject private var runner = TestRunner()
     @State private var check = ""
     @State private var server: ServerClient?
+    @State private var savedCal = SavedCalibration.load()
 
     var body: some View {
         Group {
@@ -34,6 +35,7 @@ struct ContentView: View {
             UIApplication.shared.isIdleTimerDisabled = true
             recorder.startSensors()
         }
+        .onChange(of: runner.finished) { _ in savedCal = SavedCalibration.load() }
     }
 
     private var plan: [Stage] {
@@ -73,6 +75,13 @@ struct ContentView: View {
                 if !runner.status.isEmpty { Text(runner.status).foregroundStyle(.red) }
             } footer: {
                 Text("폰은 러닝머신 거치대에 세우고, 에어팟을 양쪽 다 끼세요. 안내 음성이 에어팟으로 나와요. 기록 중에도 폰에 CSV가 저장돼요.")
+            }
+            Section {
+                Button("저장된 보정으로 바로 자유 달리기") { Task { await start(Stage.freeOnlyPlan(), calibration: savedCal) } }
+                    .disabled(savedCal == nil)
+            } footer: {
+                Text(savedCal.map { "\($0.label). 보정 없이 시작해요 — 다른 날 오차 확인용. 시작하자마자 ±로 실제 속도를 맞춰 주세요." }
+                     ?? "저장된 보정이 없어요. 아래 \"보정 1분 + 자유 달리기\"를 한 번 하면 저장돼요.")
             }
             Section {
                 Button("보정 1분 + 자유 달리기 (폰 안에서 실시간 속도)") { Task { await start(Stage.freePlan()) } }
@@ -181,8 +190,9 @@ struct ContentView: View {
     }
 
     /// 노트북 주소가 맞고 연결되면 노트북에도 보내고, 아니면 폰에만 저장
-    private func start(_ stages: [Stage]? = nil) async {
-        await runner.start(stages: stages ?? plan, heightCm: height, server: makeServer(), recorder: recorder)
+    private func start(_ stages: [Stage]? = nil, calibration: SavedCalibration? = nil) async {
+        await runner.start(stages: stages ?? plan, heightCm: height, server: makeServer(), recorder: recorder,
+                           calibration: calibration)
     }
 }
 

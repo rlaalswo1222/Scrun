@@ -41,6 +41,11 @@ struct Stage: Codable, Identifiable {
          Stage(label: "자유 달리기", speed: nil, set: "free", duration: minutes * 60)]
     }
 
+    /// 저장된 보정으로 보정 없이 바로 자유 달리기 (다른 날 오차 보기)
+    static func freeOnlyPlan(minutes: Double = 20) -> [Stage] {
+        [Stage(label: "자유 달리기", speed: nil, set: "free", duration: minutes * 60)]
+    }
+
     /// 제자리 뛰기로 공중 시간 확인 (계획 0008). 메트로놈으로 걸음 수를 고정하고 뛰는 높이만 바꾼다
     static func hopPlan(seconds: Double = 30) -> [Stage] {
         [Stage(label: "가만히 서기", speed: nil, set: "still", duration: 10),
@@ -85,7 +90,8 @@ final class TestRunner: ObservableObject {
     var next: Stage? { stages.indices.contains(index + 1) ? stages[index + 1] : nil }
 
     /// 노트북에 연결되면 거기에도 기록을 만들고, 안 되면 폰에만 저장한다
-    func start(stages: [Stage], heightCm: Double, server: ServerClient?, recorder: Recorder) async {
+    func start(stages: [Stage], heightCm: Double, server: ServerClient?, recorder: Recorder,
+               calibration: SavedCalibration? = nil) async {
         self.stages = stages
         self.recorder = recorder
         var id: String?
@@ -102,7 +108,7 @@ final class TestRunner: ObservableObject {
         runId = id ?? TestRunner.localId()
         try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.duckOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
-        recorder.begin(runId: runId!, server: self.server)
+        recorder.begin(runId: runId!, server: self.server, calibration: calibration)
         running = true
         finished = false
         marks = 0

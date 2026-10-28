@@ -134,16 +134,23 @@ final class Recorder: NSObject, ObservableObject, CMHeadphoneMotionManagerDelega
     }
 
     // MARK: 기록
-    /// server가 nil이면 폰에만 저장
-    func begin(runId: String, server: ServerClient?) {
+    /// server가 nil이면 폰에만 저장. calibration이 있으면 그 보정으로 시작(보정 구간 없이 달릴 때)
+    func begin(runId: String, server: ServerClient?, calibration: SavedCalibration? = nil) {
         self.server = server
         lock.lock()
         self.runId = runId
         pending = [:]
         unsent = [:]
         lock.unlock()
-        queue.addOperation { [weak self] in self?.estimator = SpeedEstimator() }
+        queue.addOperation { [weak self] in
+            let e = SpeedEstimator()
+            if let calibration { e.load(calibration.points) }
+            self?.estimator = e
+        }
         openFiles(runId)
+        if let calibration, let d = try? JSONEncoder().encode(calibration) {
+            try? d.write(to: runDir(runId).appendingPathComponent("calib_used.json"))
+        }
         sendTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 500_000_000)
@@ -155,6 +162,14 @@ final class Recorder: NSObject, ObservableObject, CMHeadphoneMotionManagerDelega
     func end() async {
         sendTask?.cancel()
         await flush()
+        // 이번 기록에서 보정했으면 다음에 보정 없이 쓰도록 저장 (모션 큐에서 앞 작업이 끝난 뒤 읽음)
+        let (pts, fresh): ([SpeedEstimator.Point], Int) = await withCheckedContinuation { c in
+            queue.addOperation { [weak self] in c.resume(returning: (self?.estimator.points ?? [], self?.estimator.newPoints ?? 0)) }
+        }
+        if fresh > 0, let rid = runId {
+            SavedCalibration(saved: Date().timeIntervalSince1970, runId: rid, points: pts)
+                .save(copyTo: runDir(rid).appendingPathComponent("calibration.json"))
+        }
         lock.lock()
         runId = nil
         lock.unlock()
@@ -204,8 +219,12 @@ final class Recorder: NSObject, ObservableObject, CMHeadphoneMotionManagerDelega
     }
 
     // MARK: 폰에 백업
+    func runDir(_ runId: String) -> URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(runId)
+    }
+
     private func openFiles(_ runId: String) {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(runId)
+        let dir = runDir(runId)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         for (src, cols) in Recorder.columns {
             let url = dir.appendingPathComponent("\(src).csv")

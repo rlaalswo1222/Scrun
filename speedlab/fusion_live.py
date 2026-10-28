@@ -67,6 +67,7 @@ class SpeedEstimator:
         self.hist = deque()
         self.stage = None       # (set, speed, t0)
         self.points = []
+        self.new_points = 0
         self.full = self.phone = None
         self.last_update = -1e9
         self.snap = None
@@ -118,7 +119,16 @@ class SpeedEstimator:
         air_ok = bool(af and af['cover'] >= AIR_MIN_COVER)
         running = af['lowg_ms'] >= RUN_LOWG_MS if air_ok else pf['cad'] >= RUN_CAD
         self.points.append(dict(v=v, limp=float(np.log(pf['imp'])), cad=pf['cad'], amp=af['amp'] if air_ok else None,
-                                lowg_ms=af['lowg_ms'] if air_ok else None, running=bool(running)))
+                                running=bool(running)))
+        self.new_points += 1
+        self.refit()
+
+    def load(self, points):
+        """저장해 둔 보정점으로 시작 (보정 없이 바로 달릴 때, 앱의 SavedCalibration)"""
+        self.points = [dict(p) for p in points]
+        self.refit()
+
+    def refit(self):
         run = [p for p in self.points if p['running']]
         self.phone = self.fit([(p['limp'], p['v']) for p in run], B_PHONE)
         self.full = self.fit([(p['limp'], p['v'] - AIR_D * p['amp']) for p in run if p['amp'] is not None], B_FULL)
