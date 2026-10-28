@@ -98,7 +98,7 @@ def pair(fp, fa, tol=0.1):
 def main():
     rid = sys.argv[1] if len(sys.argv) > 1 else sorted(p.name for p in (ROOT / 'data/runs').iterdir())[-1]
     run = ROOT / 'data/runs' / rid
-    segs = json.load(open(run / 'meta.json'))['segments']
+    segs = json.load(open(run / 'meta.json', encoding='utf-8'))['segments']
     sig = magnitude_g(run)
     ta, ma = sig['airpods']
     fs_a = (len(ta) - 1) / (ta[-1] - ta[0])
