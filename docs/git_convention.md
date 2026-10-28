@@ -1,8 +1,20 @@
-# Git 커밋 메시지 규칙
+# Git 규칙 (브랜치·커밋 메시지)
 
 팀원 모두(그리고 Claude)가 지킨다. 저장소를 처음 받으면 아래 "검사기 켜기"를 한 번 실행해 두면, 규칙에 안 맞는 커밋은 막힌다.
 
-## 모양
+## 브랜치
+| 브랜치 | 역할 |
+|---|---|
+| `main` | 발표·출시한 상태만. 직접 커밋하지 않는다 |
+| `develop` | 개발 중 합쳐지는 곳. 직접 커밋하지 않는다 |
+| `feat/이름` 등 | 작업 하나당 하나. `develop`에서 따서 `develop`으로 PR |
+
+- 작업 시작: `git switch develop` → `git pull` → `git switch -c feat/짧은-이름`
+- 브랜치 이름은 `유형(소문자)/영어-소문자-하이픈`. 예: `feat/google-login`, `fix/speedlab-segment-count`, `docs/wireframe-v1`
+- 끝나면 브랜치를 올리고(`git push -u origin feat/...`) GitHub에서 **`develop`으로** PR. 합친 뒤 브랜치는 지운다
+- 발표·출시 때만 `develop` → `main` PR로 합친다
+
+## 커밋 메시지 모양
 ```
 유형: 제목
 
