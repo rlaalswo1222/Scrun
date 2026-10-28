@@ -17,7 +17,7 @@
 
 ### 2. 파일 바꿔 넣기
 1. 왼쪽 목록에서 자동으로 생긴 `ContentView.swift`, `SpeedRecorderApp.swift` 우클릭 → Delete → **Move to Trash**
-2. 이 폴더 `SpeedRecorder/`의 `.swift` 파일 5개를 왼쪽 목록의 노란 `SpeedRecorder` 폴더로 끌어다 놓기 → **Copy items if needed** 체크 → Finish
+2. 이 폴더 `SpeedRecorder/`의 `.swift` 파일 6개를 왼쪽 목록의 노란 `SpeedRecorder` 폴더로 끌어다 놓기 → **Copy items if needed** 체크 → Finish
 
 ### 3. 설정
 왼쪽 맨 위 파란 **SpeedRecorder** 아이콘 → 가운데 TARGETS의 **SpeedRecorder**
@@ -59,6 +59,16 @@
 갤럭시도 같이 기록하려면 갤럭시 크롬에서 `https://<노트북 IP>:8443/speed-galaxy.html`
 (처음에 '안전하지 않음' 경고 → 고급 → 계속). 아이폰에서 기록을 시작하면 갤럭시가 자동으로 그 기록에 붙는다.
 
+## 보정 1분 + 자유 달리기 (폰 안 실시간 속도, 계획 0010)
+
+노트북 없이 된다(주소가 비었거나 연결이 안 되면 폰에만 저장).
+
+1. 아이폰을 계기판 위에 평평하게, 에어팟 양쪽. 러닝머신 위에 서서 **보정 1분 + 자유 달리기**
+2. 안내대로 7 → 8 → 9 → 10 km/h (첫 구간 25초, 나머지 15초). 7에서 걸어도 됨(걷기로 판단된 구간은 보정에서 빠짐)
+3. "자유 달리기"부터 원하는 속도로. 러닝머신 속도를 바꿀 때마다 화면 **±**로 "실제" 값을 맞춘다
+4. 화면 큰 숫자 = 폰 안 추정(에어팟 포함), 아래 "폰만" = 에어팟 없이. 끝나면 **기록 끝내기**
+5. 기록은 파일 앱 → 나의 iPhone → SpeedRecorder → `<날짜-시각>` 폴더(estimate.csv = 추정, mark.csv = 실제 속도, stage.csv = 구간)
+
 ## 제자리 뛰기 (공중 시간 확인, 계획 0008)
 
 러닝머신 없이 집에서. 노트북 `server.py`와 같은 와이파이, 에어팟 양쪽 착용.
@@ -78,4 +88,5 @@
 | `ContentView.swift` | 준비 화면, 기록 중 화면(진행 + 실시간 분석), 끝난 뒤 분석 화면 |
 | `TestPlan.swift` | 구간 목록, 진행·음성 안내, 구간이 바뀔 때 노트북에 알림 |
 | `Recorder.swift` | 아이폰·에어팟 센서, 0.5초마다 보내기, 폰에 CSV 백업 (파일 앱 → 나의 iPhone → SpeedRecorder) |
+| `SpeedEstimator.swift` | 폰 안 실시간 속도(걷기·달리기 판단, 충격 + 에어팟). `speedlab/fusion_live.py`를 옮긴 것 — 둘 다 같이 고친다 |
 | `ServerClient.swift` | 노트북 시계 맞추기, 보내기 |

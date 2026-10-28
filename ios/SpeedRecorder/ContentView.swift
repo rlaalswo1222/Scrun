@@ -16,7 +16,7 @@ struct ContentView: View {
         Group {
             if runner.running {
                 runningView
-            } else if runner.finished, let id = runner.runId, let server {
+            } else if runner.finished, runner.online, let id = runner.runId, let server {
                 VStack(spacing: 0) {
                     HStack {
                         Text("기록 끝").font(.title2.bold())
@@ -75,6 +75,11 @@ struct ContentView: View {
                 Text("폰은 러닝머신 거치대에 세우고, 에어팟을 양쪽 다 끼세요. 안내 음성이 에어팟으로 나와요. 기록 중에도 폰에 CSV가 저장돼요.")
             }
             Section {
+                Button("보정 1분 + 자유 달리기 (폰 안에서 실시간 속도)") { Task { await start(Stage.freePlan()) } }
+            } footer: {
+                Text("폰은 계기판 위에 평평하게, 에어팟 양쪽. 7·8·9·10 km/h 보정(올라가는 순서, 첫 구간 25초, 나머지 15초) 뒤 원하는 속도로 달려요. 러닝머신을 바꿀 때마다 화면의 ±로 실제 속도를 맞춰 주세요. 노트북이 없어도 돼요(폰에 저장).")
+            }
+            Section {
                 Button("러닝머신 검증 + 에어팟 (14구간, 약 7분)") { Task { await start(Stage.treadmillPlan()) } }
             } footer: {
                 Text("폰은 계기판 위에 평평하게, 에어팟 양쪽. 점프·걷기 없이 7에서 10 km/h를 30초씩 안내해요(속도 맞추는 시간 포함).")
@@ -90,9 +95,10 @@ struct ContentView: View {
     // MARK: 기록 중 화면: 위는 진행 상황, 아래는 노트북 분석 화면(실시간)
     private var runningView: some View {
         VStack(spacing: 8) {
+            estimateView
             if let cur = runner.current {
-                Text(cur.speed.map { "\(fmt($0)) km/h" } ?? cur.label)
-                    .font(.system(size: 54, weight: .heavy, design: .rounded))
+                Text(cur.speed.map { "안내 \(fmt($0)) km/h" } ?? cur.label)
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
                     .minimumScaleFactor(0.5)
                 Text("\(cur.label) · \(Int(runner.remaining.rounded(.up)))초 남음")
                     .font(.title3.monospacedDigit())
@@ -107,13 +113,23 @@ struct ContentView: View {
                 if let e = recorder.sendError { Text(e).foregroundStyle(.orange) }
             }
             .font(.footnote.monospacedDigit())
+            if runner.current?.set == "free" {
+                HStack(spacing: 10) {
+                    Button("−1") { runner.mark(runner.trueKmh - 1) }
+                    Button("−0.5") { runner.mark(runner.trueKmh - 0.5) }
+                    Text("실제 \(fmt(runner.trueKmh))").font(.title2.bold().monospacedDigit()).frame(minWidth: 110)
+                    Button("+0.5") { runner.mark(runner.trueKmh + 0.5) }
+                    Button("+1") { runner.mark(runner.trueKmh + 1) }
+                }
+                .buttonStyle(.borderedProminent)
+            }
             HStack {
                 Button("다음 구간") { runner.skip() }.buttonStyle(.bordered)
                 Spacer()
                 Button("기록 끝내기", role: .destructive) { Task { await runner.finish() } }.buttonStyle(.bordered)
             }
             .padding(.horizontal)
-            if let id = runner.runId, let server {
+            if runner.online, let id = runner.runId, let server {
                 WebView(url: server.baseURL.appendingPathComponent("speed.html")
                     .appending(queryItems: [.init(name: "run", value: id), .init(name: "compact", value: "1")]))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -121,6 +137,23 @@ struct ContentView: View {
             }
         }
         .padding(.top, 10)
+    }
+
+    /// 폰 안에서 계산한 실시간 속도 (SpeedEstimator)
+    private var estimateView: some View {
+        VStack(spacing: 2) {
+            if let e = recorder.estimate {
+                Text(e.kmh.map { String(format: "%.1f", $0) } ?? "--")
+                    .font(.system(size: 80, weight: .heavy, design: .rounded).monospacedDigit())
+                    .foregroundStyle(e.state == 2 ? Color.orange : Color.primary)
+                let state = ["걸음 없음", "걷기", "달리기"][e.state]
+                Text("km/h 추정 · \(state) (\(e.byAirPods ? "에어팟" : "폰") 판단)").font(.headline)
+                Text("폰만 \(e.kmhPhone.map { String(format: "%.1f", $0) } ?? "--") · 에어팟 \(e.airOK ? "사용" : "끊김") · 보정점 \(e.nRunPoints)/\(e.nPoints)")
+                    .font(.footnote.monospacedDigit()).foregroundStyle(.secondary)
+            } else {
+                Text("추정 준비 중").font(.headline).foregroundStyle(.secondary)
+            }
+        }
     }
 
     private func row(_ name: String, _ value: String, ok: Bool) -> some View {
@@ -147,9 +180,9 @@ struct ContentView: View {
         check = await s.syncClock() ? "연결됨 · 왕복 \(s.roundTripMs)ms" : "연결 안 됨 · 노트북 서버와 같은 와이파이(핫스팟)인지 확인"
     }
 
+    /// 노트북 주소가 맞고 연결되면 노트북에도 보내고, 아니면 폰에만 저장
     private func start(_ stages: [Stage]? = nil) async {
-        guard let s = makeServer() else { runner.status = "주소가 이상해요"; return }
-        await runner.start(stages: stages ?? plan, heightCm: height, server: s, recorder: recorder)
+        await runner.start(stages: stages ?? plan, heightCm: height, server: makeServer(), recorder: recorder)
     }
 }
 

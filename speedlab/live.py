@@ -26,7 +26,7 @@ LABELS = {
     "galaxy_acc": "갤럭시 진동", "galaxy_cam": "갤럭시 카메라(머리)",
     "galaxy_phyphox": "갤럭시 phyphox",
 }
-RAW_ONLY = {"airpods_grav"}  # 저장만 하고 걸음 분석은 안 하는 센서 (공중 시간 계산용, 계획 0008)
+RAW_ONLY = {"airpods_grav", "estimate", "stage", "mark"}  # 저장만 하고 걸음 분석은 안 하는 것 (공중 시간용, 폰 안 추정·구간·실제 속도 기록)
 
 
 # 러닝머신 거치대에 세워 두는 폰 진동: 걸음 = 발이 벨트를 치는 충격 (dsp.prepare mode="impact")

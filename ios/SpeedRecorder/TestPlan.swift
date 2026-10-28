@@ -31,6 +31,16 @@ struct Stage: Codable, Identifiable {
         }
     }
 
+    /// 보정 1분 + 자유 달리기 (계획 0010). 올라가는 순서로 보정(내린 직후엔 충격이 20초 넘게 남아서),
+    /// 첫 구간은 러닝머신을 켜고 올라타는 시간까지 25초, 나머지 15초(앞 5초는 추정기가 버림). 자유 달리기 중 실제 속도는 ±버튼
+    static func freePlan(minutes: Double = 20) -> [Stage] {
+        [Stage(label: "보정 7", speed: 7, set: "calib", duration: 25),
+         Stage(label: "보정 8", speed: 8, set: "calib", duration: 15),
+         Stage(label: "보정 9", speed: 9, set: "calib", duration: 15),
+         Stage(label: "보정 10", speed: 10, set: "calib", duration: 15),
+         Stage(label: "자유 달리기", speed: nil, set: "free", duration: minutes * 60)]
+    }
+
     /// 제자리 뛰기로 공중 시간 확인 (계획 0008). 메트로놈으로 걸음 수를 고정하고 뛰는 높이만 바꾼다
     static func hopPlan(seconds: Double = 30) -> [Stage] {
         [Stage(label: "가만히 서기", speed: nil, set: "still", duration: 10),
@@ -60,6 +70,8 @@ final class TestRunner: ObservableObject {
     @Published var finished = false
     @Published var runId: String?
     @Published var status = ""
+    @Published var online = false       // 노트북에도 보내는 중인지 (아니면 폰에만 저장)
+    @Published var trueKmh: Double = 8  // 자유 달리기 중 ±버튼으로 맞추는 실제 속도
 
     private var stageStart = Date()
     private var timer: Timer?
@@ -67,38 +79,44 @@ final class TestRunner: ObservableObject {
     private let speech = AVSpeechSynthesizer()
     private var server: ServerClient?
     private var recorder: Recorder?
+    private var marks = 0
 
     var current: Stage? { stages.indices.contains(index) ? stages[index] : nil }
     var next: Stage? { stages.indices.contains(index + 1) ? stages[index + 1] : nil }
 
-    func start(stages: [Stage], heightCm: Double, server: ServerClient, recorder: Recorder) async {
+    /// 노트북에 연결되면 거기에도 기록을 만들고, 안 되면 폰에만 저장한다
+    func start(stages: [Stage], heightCm: Double, server: ServerClient?, recorder: Recorder) async {
         self.stages = stages
-        self.server = server
         self.recorder = recorder
-        status = "노트북 연결 중…"
-        guard await server.syncClock() else {
-            status = "노트북에 연결하지 못했어요. 주소와 핫스팟을 확인하세요."
-            return
+        var id: String?
+        if let server {
+            status = "노트북 연결 확인 중…"
+            if await server.syncClock(),
+               let res = try? await server.post("api/speed/runs", ["height_cm": heightCm, "stages": stages.map(\.json),
+                                                                  "device": "iPhone + AirPods"]) {
+                id = res["id"] as? String
+            }
         }
-        do {
-            let res = try await server.post("api/speed/runs", ["height_cm": heightCm, "stages": stages.map(\.json),
-                                                             "device": "iPhone + AirPods"])
-            guard let id = res["id"] as? String else { throw URLError(.cannotParseResponse) }
-            runId = id
-        } catch {
-            status = "기록을 만들지 못했어요: \(error.localizedDescription)"
-            return
-        }
+        online = id != nil
+        self.server = online ? server : nil
+        runId = id ?? TestRunner.localId()
         try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.duckOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
-        recorder.begin(runId: runId!, server: server)
+        recorder.begin(runId: runId!, server: self.server)
         running = true
         finished = false
-        status = ""
+        marks = 0
+        status = online ? "" : "노트북 없이 기록 중 (폰에만 저장)"
         go(to: 0)
         timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
+    }
+
+    static func localId() -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyyMMdd-HHmmss"
+        return f.string(from: Date())
     }
 
     private func tick() {
@@ -114,34 +132,53 @@ final class TestRunner: ObservableObject {
     func skip() { go(to: index + 1) }
 
     private func go(to i: Int) {
-        guard let server, let runId else { return }
+        guard let runId else { return }
         if i >= stages.count {
             Task { await finish() }
             return
         }
+        let prevSpeed = current?.speed
         index = i
         stageStart = Date()
         warned = false
         let st = stages[i]
         remaining = st.duration
-        let t = server.serverNow()
-        Task { try? await server.post("api/speed/runs/\(runId)/stage",
-                                      ["index": i, "label": st.label, "speed_kmh": st.speed.map { $0 as Any } ?? NSNull(), "set": st.set, "t": t]) }
+        recorder?.stageChanged(index: i, set: st.set, speed: st.speed)
+        if let server {
+            let t = server.serverNow()
+            Task { try? await server.post("api/speed/runs/\(runId)/stage",
+                                          ["index": i, "label": st.label, "speed_kmh": st.speed.map { $0 as Any } ?? NSNull(), "set": st.set, "t": t]) }
+        }
         if let v = st.speed {
             say(st.set == "warmup" ? "\(fmt(v)) 킬로로 걸으세요" : "지금 \(fmt(v)) 킬로로 바꾸세요")
         } else {
             say(st.label)
         }
+        if st.set == "free" { mark(prevSpeed ?? trueKmh) }
+    }
+
+    /// 자유 달리기: 러닝머신을 바꾼 뒤 실제 속도를 남긴다 (나중에 오차 계산용)
+    func mark(_ kmh: Double) {
+        trueKmh = min(max(kmh, 0), 25)
+        recorder?.markTrue(trueKmh)
+        marks += 1
+        if let server, let runId {
+            let t = server.serverNow(), i = stages.count + marks
+            Task { try? await server.post("api/speed/runs/\(runId)/stage",
+                                          ["index": i, "label": "자유 \(fmt(trueKmh))", "speed_kmh": trueKmh, "set": "free", "t": t]) }
+        }
     }
 
     func finish() async {
-        guard running, let server, let runId else { return }
+        guard running, let runId else { return }
         running = false
         timer?.invalidate()
-        let t = server.serverNow()
+        recorder?.stageChanged(index: -1, set: "end", speed: nil)
+        let t = server?.serverNow() ?? ServerClient.localNow()
         await recorder?.end()
-        try? await server.post("api/speed/runs/\(runId)/finish", ["t": t])
+        if let server { try? await server.post("api/speed/runs/\(runId)/finish", ["t": t]) }
         finished = true
+        if !online { status = "폰에 저장됨: \(runId) (파일 앱 → 나의 iPhone → SpeedRecorder)" }
         say("기록이 끝났어요. 수고했어요")
     }
 
