@@ -74,6 +74,11 @@ struct ContentView: View {
             } footer: {
                 Text("폰은 러닝머신 거치대에 세우고, 에어팟을 양쪽 다 끼세요. 안내 음성이 에어팟으로 나와요. 기록 중에도 폰에 CSV가 저장돼요.")
             }
+            Section {
+                Button("제자리 뛰기 기록 (약 2분)") { Task { await start(Stage.hopPlan()) } }
+            } footer: {
+                Text("공중 시간 확인용. 폰은 두 손으로 가슴에 붙이고 팔은 흔들지 마세요. 다른 기기 메트로놈(170)에 맞춰 낮게·보통·높게 뛰어요.")
+            }
         }
     }
 
@@ -137,9 +142,9 @@ struct ContentView: View {
         check = await s.syncClock() ? "연결됨 · 왕복 \(s.roundTripMs)ms" : "연결 안 됨 · 노트북 서버와 같은 와이파이(핫스팟)인지 확인"
     }
 
-    private func start() async {
+    private func start(_ stages: [Stage]? = nil) async {
         guard let s = makeServer() else { runner.status = "주소가 이상해요"; return }
-        await runner.start(stages: plan, heightCm: height, server: s, recorder: recorder)
+        await runner.start(stages: stages ?? plan, heightCm: height, server: s, recorder: recorder)
     }
 }
 

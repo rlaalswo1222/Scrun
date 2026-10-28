@@ -21,6 +21,16 @@ struct Stage: Codable, Identifiable {
         s.append(Stage(label: "멈추고 점프 3번", speed: nil, set: "sync", duration: 15))
         return s
     }
+
+    /// 제자리 뛰기로 공중 시간 확인 (계획 0008). 메트로놈으로 걸음 수를 고정하고 뛰는 높이만 바꾼다
+    static func hopPlan(seconds: Double = 30) -> [Stage] {
+        [Stage(label: "가만히 서기", speed: nil, set: "still", duration: 10),
+         Stage(label: "제자리 점프 3번", speed: nil, set: "sync", duration: 10),
+         Stage(label: "낮게 뛰기", speed: nil, set: "hop", duration: seconds),
+         Stage(label: "보통으로 뛰기", speed: nil, set: "hop", duration: seconds),
+         Stage(label: "높게 뛰기", speed: nil, set: "hop", duration: seconds),
+         Stage(label: "멈추고 점프 3번", speed: nil, set: "sync", duration: 10)]
+    }
 }
 
 func fmt(_ v: Double) -> String {
