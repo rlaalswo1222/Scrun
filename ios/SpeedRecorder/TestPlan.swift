@@ -22,6 +22,15 @@ struct Stage: Codable, Identifiable {
         return s
     }
 
+    /// 러닝머신 검증 + 에어팟 (계획 0008 러닝머신 단계). 점프·걷기 없이 SpeedLab 검증과 같은 순서.
+    /// 구간 시간에 속도 맞추는 시간이 포함됨 (분석에서 앞부분을 버림). 앞 4개는 노트북 실시간 분석용 보정
+    static func treadmillPlan(seconds: Double = 30) -> [Stage] {
+        let speeds: [Double] = [7, 8, 9, 10, 9, 8, 7, 10, 9, 8, 7, 8, 9, 10]
+        return speeds.enumerated().map { (i, v) in
+            Stage(label: "검증 \(fmt(v))", speed: v, set: i < 4 ? "calib" : "test", duration: seconds)
+        }
+    }
+
     /// 제자리 뛰기로 공중 시간 확인 (계획 0008). 메트로놈으로 걸음 수를 고정하고 뛰는 높이만 바꾼다
     static func hopPlan(seconds: Double = 30) -> [Stage] {
         [Stage(label: "가만히 서기", speed: nil, set: "still", duration: 10),

@@ -75,6 +75,11 @@ struct ContentView: View {
                 Text("폰은 러닝머신 거치대에 세우고, 에어팟을 양쪽 다 끼세요. 안내 음성이 에어팟으로 나와요. 기록 중에도 폰에 CSV가 저장돼요.")
             }
             Section {
+                Button("러닝머신 검증 + 에어팟 (14구간, 약 7분)") { Task { await start(Stage.treadmillPlan()) } }
+            } footer: {
+                Text("폰은 계기판 위에 평평하게, 에어팟 양쪽. 점프·걷기 없이 7에서 10 km/h를 30초씩 안내해요(속도 맞추는 시간 포함).")
+            }
+            Section {
                 Button("제자리 뛰기 기록 (약 2분)") { Task { await start(Stage.hopPlan()) } }
             } footer: {
                 Text("공중 시간 확인용. 폰은 두 손으로 가슴에 붙이고 팔은 흔들지 마세요. 다른 기기 메트로놈(170)에 맞춰 낮게·보통·높게 뛰어요.")
