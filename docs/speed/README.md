@@ -1,6 +1,6 @@
 # 속도 추정 — 현재 결론과 다음 할 일
 
-속도 추정 작업을 시작할 때 이 파일부터 읽는다. 결정 근거는 [ADR-0004](../adr/0004-speed-estimation-running.md), [ADR-0005](../adr/0005-guided-calibration.md).
+속도 추정 작업을 시작할 때 이 파일부터 읽는다. 결정 근거는 [ADR-0004](../adr/0004-speed-estimation-running.md), [ADR-0005](../adr/0005-guided-calibration.md), [ADR-0006](../adr/0006-speed-constraints.md)(폰은 그냥 올려놓기, 입력 없음, 제외한 방법들).
 
 ## 실측 수치 (보고서에 쓸 수 있는 것)
 - 10/12 (갤럭시 거치대 진동, 웹 60Hz, 피험자 1명): 한 구간 빼고 맞히기 평균 오차 3.5% (8, 9, 10, 11, 12 km/h), 다른 날 블라인드 9.5 → 10.0 km/h (+5.3%). 원본 `data/runs/`, 분석 `speedlab/`, `analyze.py`
