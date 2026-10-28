@@ -1,6 +1,6 @@
 # 계획 0008: 에어팟으로 공중 시간을 잴 수 있는지 제자리 뛰기로 확인
 
-- 상태: **구현** (2026-10-29 승인. 10/29 SpeedRecorder 설치·첫 시험 1회(메트로놈 없음), 분석 `speedlab/exp/airpods_flight.py`, 결과 `docs/speed/airpods_flight.md`. 메트로놈 170 재시험 남음)
+- 상태: **구현** (2026-10-29 승인. 10/29 제자리 뛰기 첫 시험(메트로놈 없음) + 러닝머신 14구간 1회(탐색), 분석 `speedlab/exp/airpods_flight.py`·`airpods_treadmill.py`, 결과 `docs/speed/airpods_flight.md`. 제자리 방법은 러닝머신에서 안 통함 → 러닝머신용 지표를 새 기록으로, 메트로놈 170 재시험 남음)
 - 작성: 2026-10-29, 사용자 승인. 브랜치 `feat/airpods-flight`
 - 왜: 걸음 수가 거의 그대로여도 빨라지면 발 닿는 시간이 줄고 공중 시간이 늘어난다(SoundTrackDB 재분석: 1 km/h당 발 닿는 시간 −15 ms, 공중 +12 ms, 정답 발 닿는 시간을 넣으면 오차 0.44 → 0.36, [soundtrackdb.md](../speed/soundtrackdb.md)). 폰은 착지 뒤 울림 때문에 발 떼는 순간을 못 봄 → 몸에 붙은 에어팟이 공중 시간을 잴 수 있는지가 관건. 에어팟 실측은 아직 없음(10/12 `data/runs/20261012-1544*`의 `airpods_acc.csv`는 `"device": "simulator"`). 에어팟은 약 25Hz(40 ms 간격)라 1 km/h에 해당하는 12 ms를 여러 걸음 평균으로 구분하는지 봐야 함
 
