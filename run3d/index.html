@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>같이 달리기</title>
+<link rel="stylesheet" href="style.css">
+<script>
+  // 오류가 나면 화면에 바로 보여 준다 (폰에서는 개발자 도구를 열기 어려우므로)
+  const showError = (msg) => { document.getElementById('error').textContent += msg + '\n'; };
+  window.addEventListener('error', (e) => showError(e.message));
+  window.addEventListener('unhandledrejection', (e) => showError(String(e.reason)));
+</script>
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+      "@dgreenheck/ez-tree": "./vendor/ez-tree.es.js"
+    }
+  }
+</script>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="loading">코스 불러오는 중…</div>
+
+<div id="stats" class="panel">
+  <div id="course-name"></div>
+  <div><span id="pace">--'--"</span><small>/km</small></div>
+  <div class="row"><b id="speed">0.0</b> km/h · <b id="cad">0</b> spm</div>
+  <div class="row"><b id="dist">0.00</b> / <span id="total">5.00</span> km · <b id="time">00:00</b></div>
+  <div class="bar"><div id="progress"></div></div>
+</div>
+<ol id="board" class="panel"></ol>
+<canvas id="minimap" class="panel"></canvas>
+
+<div id="controls">
+  <button id="slower" aria-label="느리게">−</button>
+  <a id="pick" href="make.html">코스</a>
+  <a id="video-mode" class="pick" href="video.html">영상</a>
+  <button id="start">시작</button>
+  <button id="faster" aria-label="빠르게">+</button>
+</div>
+<div id="overlay" hidden></div>
+<div id="credit">지도 © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors</div>
+<div id="error"></div>
+
+<script type="module">
+  import('./src/main.js')
+    .then(() => document.getElementById('loading').remove())
+    .catch((e) => showError(e.stack || e.message));
+</script>
+</body>
+</html>

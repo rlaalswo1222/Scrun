@@ -1,0 +1,9 @@
+var cam = Camera.main;
+int w = 1600, h = 900;
+var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32); rt.antiAliasing = 4;
+var prev = cam.targetTexture; cam.targetTexture = rt; cam.Render(); cam.targetTexture = prev;
+RenderTexture.active = rt; var tex = new Texture2D(w, h, TextureFormat.RGB24, false); tex.ReadPixels(new Rect(0, 0, w, h), 0, 0); tex.Apply(); RenderTexture.active = null;
+System.IO.File.WriteAllBytes("__OUT__", tex.EncodeToPNG());
+rt.Release();
+var runner = GameObject.Find("Runner");
+return "saved " + (runner != null ? runner.transform.position.ToString() : "");

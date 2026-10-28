@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>섬 트랙 맵 테스트</title>
+<style>
+  :root { --panel: rgba(16, 22, 30, .78); --fg: #eef3f8; --muted: #9fb0c0; --accent: #3d8bff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #9cc6e4; color: var(--fg); font: 15px/1.4 system-ui, "Malgun Gothic", sans-serif; }
+  canvas#view { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  .hud { position: fixed; left: 12px; top: 12px; background: var(--panel); border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; min-width: 210px; backdrop-filter: blur(6px); }
+  .big { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .row { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); font-size: 13px; }
+  input[type=range] { width: 100%; }
+  .modes { position: fixed; right: 12px; top: 12px; display: grid; gap: 6px; }
+  .modes button { font: inherit; font-weight: 700; padding: 9px 12px; border-radius: 10px; border: 0; background: var(--panel); color: var(--fg); cursor: pointer; min-width: 92px; }
+  .modes button.on { background: var(--accent); }
+  #mini { position: fixed; right: 12px; bottom: 12px; background: var(--panel); border-radius: 12px; }
+  #toast { position: fixed; left: 50%; top: 14%; transform: translateX(-50%); background: rgba(0,0,0,.6); padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 18px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  #err { position: fixed; left: 12px; bottom: 12px; max-width: 60vw; background: #a12; color: #fff; padding: 8px 10px; border-radius: 8px; font-size: 13px; white-space: pre-wrap; }
+  @media (max-width: 600px) { .hud { min-width: 0; font-size: 13px; } .big { font-size: 20px; } .modes button { min-width: 74px; padding: 7px 9px; } #mini { width: 130px; height: 90px; } }
+</style>
+<script type="importmap">
+  { "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+    "@dgreenheck/ez-tree": "./vendor/ez-tree.es.js"
+  } }
+</script>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div class="hud">
+  <div class="big" id="spd">10.0 km/h</div>
+  <input id="speed" type="range" min="0" max="16" step="0.5" value="10">
+  <div class="row"><span>거리</span><span id="dist">0.00 km</span></div>
+  <div class="row"><span>바퀴</span><span id="lap">0</span></div>
+  <div class="row"><span>페이스</span><span id="pace">–</span></div>
+  <div class="muted" id="lapLen"></div>
+  <div class="muted" id="fps">–</div>
+</div>
+<div class="modes">
+  <button data-mode="fp">1인칭</button>
+  <button data-mode="tp" class="on">3인칭</button>
+  <button data-mode="top">위에서</button>
+  <button id="back">뒤 보기</button>
+</div>
+<canvas id="mini" width="200" height="130"></canvas>
+<div id="toast"></div>
+<div id="err" hidden></div>
+<script>
+  // 오류가 나면 화면에 바로 보이게 (확인용)
+  addEventListener('error', (e) => { const b = document.getElementById('err'); b.hidden = false; b.textContent += `${e.message}\n`; });
+  addEventListener('unhandledrejection', (e) => { const b = document.getElementById('err'); b.hidden = false; b.textContent += `${e.reason}\n`; });
+</script>
+<script type="module" src="main.js"></script>
+</body>
+</html>

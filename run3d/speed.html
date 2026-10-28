@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>속도 테스트</title>
+<style>
+  :root {
+    --bg: #0f1419; --panel: #182029; --panel2: #1f2933; --fg: #e8eef4; --muted: #93a1b0; --line: #2b3742;
+    --accent: #ff7a1a; --ok: #3ddc84; --warn: #ffc542; --bad: #ff5a5a;
+    --s-airpods_acc: #5ab0ff; --s-airpods_gyro: #9ccfff; --s-iphone_acc: #ff7a1a; --s-iphone_gyro: #ffb37a;
+    --s-galaxy_acc: #3ddc84; --s-galaxy_cam: #c48bff; --s-galaxy_phyphox: #7fe0a8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 system-ui, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 12px 14px 40px; display: grid; gap: 12px; }
+  header { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  h1 { font-size: 18px; margin: 0; flex: 1; min-width: 10em; }
+  h2 { font-size: 15px; margin: 0 0 8px; color: var(--muted); font-weight: 600; }
+  select, button { background: var(--panel2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font: inherit; }
+  button { cursor: pointer; }
+  .panel { background: var(--panel); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+  #stage { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: end; }
+  #stage .now { font-size: 30px; font-weight: 800; letter-spacing: -0.01em; }
+  #stage .sub { color: var(--muted); }
+  #stage .clock { font-size: 26px; font-variant-numeric: tabular-nums; font-weight: 700; text-align: right; }
+  #bar { grid-column: 1 / -1; height: 8px; background: var(--panel2); border-radius: 4px; overflow: hidden; display: flex; gap: 2px; }
+  #bar span { height: 100%; background: #3a4754; }
+  #bar span.calib { background: #4b6276; } #bar span.test { background: #6a5a3a; }
+  #bar span.done { filter: brightness(1.6); } #bar span.cur { background: var(--accent); }
+  #cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 10px; }
+  .card { background: var(--panel); border-radius: 12px; padding: 10px 12px; border-top: 4px solid var(--c, var(--line)); display: grid; gap: 2px; min-width: 0; }
+  .card .name { color: var(--muted); font-size: 13px; }
+  .card .cad { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .card .cad small { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .card .row { display: flex; justify-content: space-between; gap: 6px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .card .est { font-size: 18px; font-weight: 700; color: var(--fg); }
+  .q { display: inline-block; padding: 0 6px; border-radius: 9px; font-size: 12px; font-weight: 700; color: #111; }
+  .q.ok { background: var(--ok); } .q.warn { background: var(--warn); } .q.bad { background: var(--bad); }
+  .stale { opacity: .45; }
+  svg { width: 100%; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; } th:first-child, td:first-child { text-align: left; }
+  td.bad { color: var(--bad); font-weight: 700; } td.best { color: var(--ok); font-weight: 700; }
+  #drop { border: 2px dashed var(--line); border-radius: 10px; padding: 14px; text-align: center; color: var(--muted); }
+  #drop.over { border-color: var(--accent); color: var(--fg); }
+  .msg { color: var(--muted); font-size: 13px; }
+  .warnbox { background: #3a2a14; border-left: 4px solid var(--warn); padding: 8px 10px; border-radius: 6px; font-size: 14px; }
+  body.compact header, body.compact #reportSec, body.compact #dropSec { display: none; }
+  body.compact main { padding: 6px 8px 20px; gap: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>러닝머신 속도 테스트</h1>
+    <select id="runSel" aria-label="기록 고르기"></select>
+    <button id="reload">새로고침</button>
+  </header>
+  <section class="panel" id="stage" aria-live="polite">
+    <div><div class="now" id="stNow">기록을 기다리는 중</div><div class="sub" id="stNext"></div></div>
+    <div class="clock" id="stClock">--:--</div>
+    <div id="bar"></div>
+  </section>
+  <div id="warn"></div>
+  <section id="cards"></section>
+  <section class="panel">
+    <h2 id="chartTitle">걸음 수 (분당) · 최근 3분</h2>
+    <svg id="chart" viewBox="0 0 1000 260" preserveAspectRatio="none" role="img" aria-label="센서별 걸음 수 그래프"></svg>
+    <div class="legend" id="legend"></div>
+  </section>
+  <section class="panel" id="reportSec">
+    <h2>전체 분석 <button id="refresh" style="float:right;padding:3px 8px">다시 계산</button></h2>
+    <div id="report" class="msg">기록이 끝나면 여기에 센서별 오차율과 구간 표가 나와요.</div>
+  </section>
+  <section class="panel" id="dropSec">
+    <h2>갤럭시 phyphox 파일 추가</h2>
+    <div id="drop">phyphox에서 내보낸 zip(CSV) 파일을 여기에 끌어다 놓거나 <label style="text-decoration:underline;cursor:pointer">눌러서 고르세요<input id="file" type="file" accept=".zip,.csv" hidden></label>. 시각은 진동 리듬으로 자동으로 맞춰요.</div>
+    <div class="msg" id="dropMsg"></div>
+  </section>
+</main>
+<script type="module" src="src/speed.js?v=6"></script>
+</body>
+</html>

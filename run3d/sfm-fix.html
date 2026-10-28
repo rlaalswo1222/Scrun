@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>길 직접 찍기</title>
+<style>
+  :root { --bg: #11161c; --panel: #19212a; --fg: #e6edf3; --muted: #9aa7b4; --line: #2c3742; --accent: #ff7a1a; --ok: #3ddc84; --sky: #5ab0ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); font: 15px system-ui, "Malgun Gothic", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 14px 16px 40px; display: grid; gap: 12px; }
+  h1 { font-size: 20px; margin: 0; }
+  #help { color: var(--muted); line-height: 1.6; }
+  #help b { color: var(--fg); }
+  #stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; touch-action: none; }
+  #stage img, #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #stage canvas { cursor: crosshair; }
+  #step { font-weight: 700; padding: 8px 12px; border-radius: 6px; background: var(--panel); border-left: 4px solid var(--sky); }
+  #step.path { border-left-color: var(--accent); }
+  #step.done { border-left-color: var(--ok); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button { background: #21262d; color: var(--fg); border: 1px solid #3d4752; border-radius: 6px; padding: 8px 14px; font-size: 15px; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  button:disabled { opacity: .4; cursor: default; }
+  #pos { font-variant-numeric: tabular-nums; color: var(--muted); }
+  #strip { display: flex; gap: 3px; flex-wrap: wrap; }
+  #strip span { width: 14px; height: 14px; border-radius: 3px; background: var(--line); cursor: pointer; }
+  #strip span.done { background: var(--ok); }
+  #strip span.cur { outline: 2px solid var(--fg); }
+  #status { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>길 직접 찍기 · 3D가 틀린 장면</h1>
+  <div id="help">
+    ① <b>수평선</b>(바다와 하늘이 만나는 선)의 왼쪽 한 점, 오른쪽 한 점을 클릭해요.
+    ② 내 발밑 가까운 곳부터 멀리까지, <b>러너가 달릴 길 한가운데</b>를 차례로 4~8번 클릭해요. 길이 휘면 휘는 대로.
+    ③ <b>다음</b>. 잘못 찍었으면 <b>한 점 취소</b>나 <b>다시</b>.
+  </div>
+  <div id="step">불러오는 중…</div>
+  <div id="stage"><img id="img" alt=""><canvas id="cv" width="960" height="540"></canvas></div>
+  <div class="row">
+    <button id="prev">◀ 이전</button>
+    <button id="undo">한 점 취소</button>
+    <button id="reset">다시</button>
+    <button id="copyH" title="수평선을 앞 장면 것으로">수평선 앞 장면과 같게</button>
+    <button id="next" class="primary">다음 ▶</button>
+    <span id="pos"></span>
+  </div>
+  <div id="strip"></div>
+  <div id="status"></div>
+</main>
+<script type="module" src="src/sfm-fix.js"></script>
+</body>
+</html>

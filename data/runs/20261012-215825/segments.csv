@@ -1,0 +1,6 @@
+start_s,end_s,speed_kmh,set
+80,141.0,8,calib
+142,204.0,9,calib
+205,262.0,10,calib
+263,319.0,11,calib
+320,344.3,12,calib

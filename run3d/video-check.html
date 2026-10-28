@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>YouTube 영상 재생 확인</title>
+<style>
+body { margin: 0; background: #101820; color: #eef3f8; font: 16px/1.6 system-ui, sans-serif; }
+main { max-width: 960px; margin: auto; padding: 20px; }
+h1 { font-size: 24px; } p { color: #bac8d6; }
+iframe { display: block; width: 100%; height: max(220px, min(54vw, 540px)); border: 0; background: #000; }
+nav { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+a { color: #fff; background: #263544; padding: 10px 16px; border-radius: 10px; text-decoration: none; }
+</style>
+</head>
+<body><main>
+<h1>YouTube 영상만 재생해 보기</h1>
+<p>영상 가운데의 YouTube 재생 버튼을 눌러 주세요. 이 화면은 러너·자동 재생·배속 제어를 사용하지 않습니다.</p>
+<div id="video"></div>
+<p>여기서 재생되면 실사 모드의 제어 흐름을 확인할 수 있어요. 여기서도 실패하면 YouTube 원본을 열어 비교해 주세요.</p>
+<nav><a id="back" href="video.html">실사 모드로</a><a id="original" target="_blank" rel="noopener noreferrer">YouTube 원본</a></nav>
+<script>
+const candidate = new URLSearchParams(location.search).get('v');
+const id = /^[\w-]{11}$/.test(candidate || '') ? candidate : 'o0EmQXATQQI';
+const frame = document.createElement('iframe');
+frame.title = 'YouTube 영상 재생 확인';
+frame.src = `https://www.youtube.com/embed/${id}?playsinline=1`;
+frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+frame.allowFullscreen = true;
+frame.referrerPolicy = 'strict-origin-when-cross-origin';
+document.getElementById('video').append(frame);
+document.getElementById('original').href = `https://www.youtube.com/watch?v=${id}`;
+document.getElementById('back').href = `video.html?v=${id}`;
+</script>
+</main></body>
+</html>

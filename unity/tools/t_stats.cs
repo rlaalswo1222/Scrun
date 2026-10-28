@@ -1,0 +1,1 @@
+return "tris=" + UnityEditor.UnityStats.triangles + " verts=" + UnityEditor.UnityStats.vertices + " draws=" + UnityEditor.UnityStats.drawCalls + " setpass=" + UnityEditor.UnityStats.setPassCalls + " shadowCasters=" + UnityEditor.UnityStats.shadowCasters + " fps~" + (1f / Mathf.Max(1e-4f, UnityEditor.UnityStats.frameTime));

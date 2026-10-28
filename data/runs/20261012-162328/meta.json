@@ -1,0 +1,20 @@
+{
+ "height_cm": 175,
+ "stages": [],
+ "device": "Galaxy only",
+ "id": "20261012-162328",
+ "t0": 1791789808.1336005,
+ "created": "2026-10-12 16:23:28",
+ "segments": [
+  {
+   "index": 0,
+   "label": "자유 기록",
+   "speed_kmh": null,
+   "set": "warmup",
+   "start_s": 0.046,
+   "end_s": 29.582
+  }
+ ],
+ "finished": "2026-10-12 16:23:57",
+ "end_s": 29.582
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>가림막 찍기</title>
+<style>
+  :root { --bg: #11161c; --panel: #19212a; --fg: #e6edf3; --muted: #9aa7b4; --line: #2c3742; --accent: #ff7a1a; --ok: #3ddc84; --bad: #ff5a5a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); font: 15px system-ui, "Malgun Gothic", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 14px 16px 40px; display: grid; gap: 12px; }
+  h1 { font-size: 20px; margin: 0; }
+  #help { color: var(--muted); line-height: 1.6; }
+  #help b { color: var(--fg); }
+  #stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; }
+  #stage img, #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #stage canvas { cursor: crosshair; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button { background: #21262d; color: var(--fg); border: 1px solid #3d4752; border-radius: 6px; padding: 8px 12px; font-size: 15px; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  button:disabled { opacity: .4; cursor: default; }
+  #slider { flex: 1; min-width: 220px; }
+  #time { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 5em; }
+  #list { display: grid; gap: 6px; }
+  .item { display: flex; gap: 10px; align-items: center; background: var(--panel); border-radius: 6px; padding: 8px 10px; flex-wrap: wrap; }
+  .item .st { font-weight: 700; min-width: 7em; }
+  .item .st.done { color: var(--ok); } .item .st.error, .item .st.empty { color: var(--bad); }
+  .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  #msg { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>가림막 찍기 · 러너를 가려야 하는 물체</h1>
+  <div id="help">
+    ① 시간을 옮겨 <b>장애물(창고·트럭·난간·덤불…)이 잘 보이는 장면</b>을 찾아요.
+    ② 그 물체를 <b>클릭</b>해요 (여러 번 = 물체의 다른 부분도 포함, <b>오른쪽 클릭</b> = 포함하면 안 되는 곳).
+    ③ <b>이 물체 따라가기</b>. 앞뒤 최대 20초를 AI가 따라가며 윤곽을 따요 (물체 하나에 3~5분). 기다리는 동안 다른 물체를 계속 찍어도 돼요.
+  </div>
+  <div class="row">
+    <button id="back1">−1초</button><button id="back">−¼</button>
+    <input id="slider" type="range" min="120" max="1860" step="0.25" value="723">
+    <button id="fwd">+¼</button><button id="fwd1">+1초</button>
+    <span id="time">12:03</span>
+  </div>
+  <div id="stage"><img id="img" alt=""><canvas id="cv" width="960" height="540"></canvas></div>
+  <div class="row">
+    <button id="clear">클릭 지우기</button>
+    <button id="go" class="primary" disabled>이 물체 따라가기</button>
+    <span id="msg"></span>
+  </div>
+  <div id="list"></div>
+</main>
+<script type="module" src="src/sfm-occ.js"></script>
+</body>
+</html>

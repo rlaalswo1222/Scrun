@@ -1,0 +1,1 @@
+{"id": "20261012-162328", "made": "2026-10-12 16:24:16", "height_cm": 175.0, "sources": {"galaxy_acc": {"label": "갤럭시 진동", "fs": 31.6, "error": "AttributeError: 'DataFrame' object has no attribute 'end_s'"}, "galaxy_cam": {"label": "갤럭시 카메라(머리)", "fs": 27.7, "error": "AttributeError: 'DataFrame' object has no attribute 'end_s'"}}}

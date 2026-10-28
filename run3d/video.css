@@ -1,0 +1,56 @@
+.video-mode { background: #101820; color: #fff; }
+#video-wrap { position: fixed; inset: 0; overflow: hidden; background: #101820; }
+#player, #runners, #road-editor { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: max(100vw, 177.7778vh); height: max(100vh, 56.25vw); border: 0; }
+#runners { position: fixed; pointer-events: none; z-index: 1; }
+#player { object-fit: cover; }
+#video-wrap video { pointer-events: none; }
+#road-editor { position: fixed; z-index: 3; touch-action: none; }
+#road-editor[hidden] { display: none; }
+#road-editor polygon { fill: #10b98144; stroke: #34d399; stroke-width: 3; pointer-events: none; }
+#road-editor circle { fill: #fff; stroke: #059669; stroke-width: 4; cursor: grab; }
+.video-mode .panel, .video-mode #controls { z-index: 2; color: var(--ink); }
+.video-mode #overlay { z-index: 3; }
+.video-mode #error { z-index: 5; }
+.video-mode #credit { z-index: 2; max-width: 50vw; }
+#rate { font-size: 12px; color: var(--muted); margin-top: 6px; max-width: 250px; }
+#start:disabled { opacity: .5; }
+#video-recovery { left: 12px; right: 12px; bottom: 92px; z-index: 6; display: flex; gap: 10px; flex-wrap: wrap; }
+#video-recovery[hidden] { display: none; }
+#video-recovery button, #video-recovery a { font: inherit; font-size: 14px; background: #fff; color: var(--ink);
+  padding: 9px 12px; border: 1px solid #cbd3de; border-radius: 8px; text-decoration: none; cursor: pointer; }
+.video-mode #error:not(:empty) { bottom: 160px; }
+#video-tools { right: 12px; top: 190px; display: flex; gap: 8px; flex-wrap: wrap; max-width: 280px; padding: 10px; }
+#video-tools a, #video-tools button, #alignment button { font: inherit; font-size: 13px; font-weight: 650;
+  background: #fff; color: var(--ink); border: 1px solid #d6dce4; border-radius: 8px; padding: 8px 10px; text-decoration: none; cursor: pointer; }
+#video-tools button[aria-pressed="true"] { background: #e8590c; color: #fff; border-color: #e8590c; }
+#alignment { z-index: 4; top: 12px; right: 12px; width: min(310px, calc(100vw - 56px)); max-height: calc(100dvh - 140px); overflow-y: auto; }
+#alignment[hidden], #controls button[hidden] { display: none; }
+.alignment-title { display: flex; align-items: center; justify-content: space-between; }
+#alignment p { color: var(--muted); font-size: 12px; line-height: 1.5; }
+#alignment label { display: block; font-size: 13px; margin: 12px 0; }
+#alignment output { float: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+#alignment input[type="range"] { width: 100%; margin-top: 8px; accent-color: var(--accent); }
+#video-settings { margin-top: 16px; border-top: 1px solid #d6dce4; padding-top: 4px; }
+#video-settings input[type="number"] { box-sizing: border-box; display: block; width: 100%; margin-top: 6px;
+  padding: 8px; border: 1px solid #cbd3de; border-radius: 6px; font: inherit; }
+#controls #pause { font-size: 17px; padding: 0 18px; }
+@media (max-width: 560px) {
+  .video-mode #video-tools { top: 12px; right: 12px; max-width: 98px; gap: 6px; }
+  .video-mode #video-tools a, .video-mode #video-tools button { width: 100%; box-sizing: border-box; text-align: center; font-size: 11px; }
+  .video-mode #stats { max-width: calc(100vw - 174px); padding: 10px 12px; }
+  .video-mode #course-name { max-width: 100%; }
+  .video-mode .row { font-size: 13px; }
+  .video-mode #pace { font-size: 40px; }
+  .video-mode #controls { gap: 8px; bottom: 30px; }
+  .video-mode #controls button { min-width: 50px; height: 54px; }
+  .video-mode #controls #start { padding: 0 22px; }
+  .video-mode #minimap { bottom: 100px; width: 90px; height: 90px; }
+  .video-mode #credit { max-width: calc(100vw - 28px); font-size: 10px; }
+}
+@media (max-height: 500px) and (min-width: 561px) {
+  .video-mode #video-tools { top: auto; bottom: 30px; right: 12px; max-width: 170px; }
+  .video-mode #stats { padding: 8px 12px; }
+  .video-mode #pace { font-size: 38px; }
+  .video-mode #minimap { width: 80px; height: 80px; }
+}

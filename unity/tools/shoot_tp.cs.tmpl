@@ -1,0 +1,14 @@
+var dt = UnityEngine.Object.FindFirstObjectByType<Scrun.DevTravel>();
+var fake = UnityEngine.Object.FindFirstObjectByType<Scrun.FakeSpeedSource>();
+if (fake != null) fake.Stop();
+string mode = "__MODE__"; float arg = __ARG__f; string routeKey = "__ROUTE__"; int preset = __PRESET__;
+var lp = UnityEngine.Object.FindFirstObjectByType<Scrun.LightingPresets>();
+if (lp != null && preset >= 0 && lp.Current != preset) { var mi = typeof(Scrun.LightingPresets).GetMethod("Apply", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public); mi.Invoke(lp, new object[] { preset }); }
+var rt = UnityEngine.Object.FindFirstObjectByType<Scrun.RouteTrack>();
+var net = UnityEngine.Object.FindFirstObjectByType<Scrun.RoadNetwork>();
+if (routeKey.Length > 0 && rt != null) { foreach (var r in net.routes) if (r.name.Contains(routeKey) || r.id == routeKey) { if (rt.RouteId != r.id) rt.SetRoute(r.id); } }
+Scrun.RunnerController me = null;
+foreach (var r in UnityEngine.Object.FindObjectsByType<Scrun.RunnerController>(FindObjectsSortMode.None)) if (r.gameObject.name == "Runner") me = r;
+if (mode == "region") dt.GoToRegion((int)arg);
+else { me.Teleport(arg); Scrun.RunnerTag.GatherBotsAround(arg); UnityEngine.Object.FindFirstObjectByType<Scrun.FollowCamera>().Snap(); }
+return "ok route=" + (rt != null ? rt.RouteName : "") + " preset=" + (lp != null ? lp.CurrentName : "");

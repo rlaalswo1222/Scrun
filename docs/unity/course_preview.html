@@ -1,0 +1,277 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><title>스크런 노을 호수 코스</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 레이아웃: 위에서 아래로 한 장의 코스 브리핑 — 배치도(주인공) → 도로 단면 → 분위기 → 진행 단계 */
+:root {
+  --bg: #f5f2ee;
+  --surface: #ffffff;
+  --fg: #23201d;
+  --muted: #6b645d;
+  --line: #ddd5cc;
+  --road: #3a3633;
+  --glow: #f26b1d;
+  --grass: #7fa05a;
+  --grass-soft: #dfe8cf;
+  --hill: #c9d3b4;
+  --water: #4f8fb0;
+  --water-soft: #cfe2ec;
+  --mountain: #a7a39c;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1b1916; --surface: #24211d; --fg: #eee8e1; --muted: #a59d93; --line: #3a352f;
+  --road: #d8d2ca; --glow: #ff8a3d; --grass: #8fb066; --grass-soft: #2b3324; --hill: #39412e;
+  --water: #6fb0d1; --water-soft: #1f3540; --mountain: #6f6a63; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #1b1916; --surface: #24211d; --fg: #eee8e1; --muted: #a59d93; --line: #3a352f;
+  --road: #d8d2ca; --glow: #ff8a3d; --grass: #8fb066; --grass-soft: #2b3324; --hill: #39412e;
+  --water: #6fb0d1; --water-soft: #1f3540; --mountain: #6f6a63; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 44px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--glow); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(34px, 6vw, 56px); line-height: 1; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 28px; margin: 0; letter-spacing: .02em; }
+p { margin: 0; max-width: 65ch; }
+.lede { color: var(--muted); }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 24px; font-family: var(--mono); font-size: 13px; color: var(--muted); margin-top: 6px; }
+.stats b { color: var(--fg); font-weight: 500; }
+section { display: grid; gap: 14px; }
+.map-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 760px) { .map-grid { grid-template-columns: 1fr; } }
+.map { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+.map svg { width: 100%; height: auto; display: block; }
+.zones { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.zones li { display: grid; grid-template-columns: 74px minmax(0,1fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.zones li:first-child { border-top: 0; padding-top: 0; }
+.km { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.zones strong { display: block; font-weight: 600; }
+.zones span { color: var(--muted); font-size: 14px; }
+.section-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+.section-scroll svg { min-width: 640px; width: 100%; height: auto; display: block; }
+.note { font-size: 13px; color: var(--muted); }
+.mood { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 760px) { .mood { grid-template-columns: 1fr; } }
+.sky { border-radius: 6px; min-height: 210px; position: relative; overflow: hidden;
+  background: linear-gradient(180deg, #45618f 0%, #8b88a8 38%, #e6a27a 66%, #f6c48c 74%, #d9c7b4 76%, #9aa58a 100%); }
+.sky .sun { position: absolute; left: 62%; top: 60%; width: 34px; height: 34px; border-radius: 50%;
+  background: radial-gradient(circle, #fff6df 0 40%, rgba(255,214,150,.6) 60%, rgba(255,214,150,0) 72%); }
+.sky .ridge { position: absolute; inset: auto 0 22% 0; height: 22%; background: #7d7f86; opacity: .45;
+  clip-path: polygon(0 70%, 12% 30%, 24% 55%, 38% 15%, 52% 50%, 66% 25%, 80% 60%, 92% 35%, 100% 55%, 100% 100%, 0 100%); }
+.sky .road { position: absolute; left: 44%; right: 44%; bottom: 0; height: 26%; background: #3a3633;
+  clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%); }
+.sky .road::before, .sky .road::after { content: ""; position: absolute; top: 0; bottom: 0; width: 3px; background: #ff8a3d; box-shadow: 0 0 8px #ff8a3d; }
+.sky .road::before { left: 4%; transform: skewX(-38deg); transform-origin: top; }
+.sky .road::after { right: 4%; transform: skewX(38deg); transform-origin: top; }
+.sky figcaption { position: absolute; left: 12px; bottom: 10px; font-family: var(--mono); font-size: 11px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+figure { margin: 0; }
+.settings { display: grid; gap: 0; margin: 0; }
+.settings div { display: grid; grid-template-columns: 110px minmax(0,1fr); gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.settings div:first-child { border-top: 0; padding-top: 0; }
+.settings dt { font-weight: 600; }
+.settings dd { margin: 0; color: var(--muted); font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.chip i { width: 18px; height: 18px; border-radius: 3px; display: inline-block; border: 1px solid var(--line); }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+@media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
+.step { border-top: 3px solid var(--line); padding-top: 10px; display: grid; gap: 4px; }
+.step.now { border-top-color: var(--glow); }
+.step h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.step .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.step.now .tag { color: var(--glow); }
+.step p { font-size: 14px; color: var(--muted); }
+svg text { font-family: var(--body); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">스크런 · 첫 번째 가상 코스 · 설계 미리보기</div>
+    <h1>노을 호수 코스</h1>
+    <p class="lede">Unity로 만들기 전에 정리한 설계안입니다. 렌더링 화면이 아니라 배치와 방향을 보여 주는 도면입니다. 숫자는 실제 생성 코드에 넣을 값입니다.</p>
+    <div class="stats"><span>한 바퀴 <b>3.00 km</b></span><span>도로 폭 <b>8 m</b></span><span>경사 <b>없음 (평지)</b></span><span>스타일 <b>세미 리얼, 노을</b></span></div>
+  </header>
+
+  <section>
+    <h2>코스 배치도</h2>
+    <div class="map-grid">
+      <div class="map"><svg id="map" viewBox="0 0 100 100" role="img" aria-label="코스 위에서 본 배치도"></svg></div>
+      <ol class="zones" id="zones"></ol>
+    </div>
+    <p class="note">반시계 방향으로 돕니다. 연한 띠는 도로 양옆 30 m 평지 구간(나중에 풀·꽃·덤불을 빽빽하게 심는 곳), 그 밖은 완만한 언덕, 코스 밖 600 m 너머는 배경용 먼 산입니다.</p>
+  </section>
+
+  <section>
+    <h2>도로 단면</h2>
+    <div class="section-scroll"><svg id="xsec" viewBox="0 0 680 190" role="img" aria-label="도로 오른쪽 절반 단면도"></svg></div>
+    <p class="note">오른쪽 절반만 그렸고 왼쪽은 대칭입니다. 가로는 실제 비율, 높이는 잘 보이게 5배 키웠습니다. 주황 발광선은 블룸 효과로 은은하게 빛납니다.</p>
+  </section>
+
+  <section>
+    <h2>분위기</h2>
+    <div class="mood">
+      <figure class="sky" aria-label="노을 분위기 색 견본">
+        <div class="ridge"></div><div class="sun"></div><div class="road"></div>
+        <figcaption>색 견본: 해 고도 18°, 역광 쪽 하늘</figcaption>
+      </figure>
+      <div style="display:grid; gap:14px; min-width:0">
+        <dl class="settings">
+          <div><dt>하늘</dt><dd>절차 생성 노을 하늘, 해가 출발 직선 정면 약간 옆에 보이도록 배치</dd></div>
+          <div><dt>햇빛</dt><dd>고도 18°의 낮고 따뜻한 빛, 그림자가 길게 늘어짐</dd></div>
+          <div><dt>안개</dt><dd>멀어질수록 따뜻한 회색으로 흐려짐. 먼 산이 실루엣처럼 보이게</dd></div>
+          <div><dt>후처리</dt><dd>ACES 톤 매핑, 블룸(발광선·해), 대비와 채도 약간 올림, 약한 비네트</dd></div>
+          <div><dt>물</dt><dd>매끈한 반사 재질로 하늘 색이 비침</dd></div>
+        </dl>
+        <div class="chips">
+          <span class="chip"><i style="background:#3a3633"></i>아스팔트</span>
+          <span class="chip"><i style="background:#ff8a3d"></i>발광선</span>
+          <span class="chip"><i style="background:#7fa05a"></i>잔디</span>
+          <span class="chip"><i style="background:#4f8fb0"></i>호수</span>
+          <span class="chip"><i style="background:#cdbfb0"></i>원경 안개</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>만드는 순서</h2>
+    <div class="steps">
+      <div class="step now"><span class="tag">지금</span><h3>도로 · 지형 · 하늘</h3><p>코스 곡선, 도로 단면 메시, 언덕·호수·먼 산 지형, 노을 하늘·안개·후처리, 출발 아치. 에셋 없이 코드로 생성합니다.</p></div>
+      <div class="step"><span class="tag">다음</span><h3>도로변 식생</h3><p>평지 띠에 풀·꽃·덤불, 숲길 구간에 나무. 품질을 좌우하는 부분이라 무료 에셋 후보를 골라 여쭤볼게요.</p></div>
+      <div class="step"><span class="tag">그다음</span><h3>소품 · 실제 텍스처</h3><p>표지판, 펜스, 벤치, 거리 표시. 아스팔트·잔디는 무료(CC0) 실사 텍스처로 교체합니다.</p></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const COURSE = {"pts": [[0.0, 0.0], [9.8, 0.9], [20.1, 1.4], [30.9, 1.7], [42.1, 1.8], [53.6, 1.7], [65.5, 1.3], [77.6, 0.9], [90.0, 0.4], [102.5, -0.2], [115.2, -0.8], [127.9, -1.4], [140.7, -2.0], [153.5, -2.4], [166.2, -2.7], [178.8, -2.9], [191.3, -2.9], [203.5, -2.6], [215.5, -2.0], [227.2, -1.2], [238.6, 0.0], [248.8, 1.3], [258.9, 2.5], [269.1, 3.8], [279.3, 5.2], [289.4, 6.7], [299.5, 8.2], [309.5, 9.8], [319.4, 11.6], [329.3, 13.4], [339.1, 15.5], [348.8, 17.7], [358.4, 20.1], [367.8, 22.7], [377.2, 25.5], [386.3, 28.5], [395.3, 31.8], [404.2, 35.3], [412.8, 39.2], [421.3, 43.3], [429.5, 47.7], [437.4, 52.3], [445.2, 57.2], [453.0, 62.4], [460.7, 67.8], [468.3, 73.5], [475.8, 79.4], [483.2, 85.5], [490.4, 91.8], [497.5, 98.3], [504.4, 105.0], [511.1, 111.9], [517.7, 118.9], [524.0, 126.0], [530.1, 133.3], [535.9, 140.7], [541.4, 148.2], [546.7, 155.8], [551.7, 163.5], [556.4, 171.2], [560.7, 179.0], [564.8, 186.8], [568.6, 194.9], [572.2, 203.3], [575.6, 211.8], [578.8, 220.5], [581.8, 229.4], [584.5, 238.5], [587.0, 247.6], [589.2, 256.8], [591.2, 266.1], [593.0, 275.5], [594.5, 284.8], [595.7, 294.2], [596.6, 303.5], [597.3, 312.8], [597.7, 322.1], [597.9, 331.2], [597.7, 340.3], [597.3, 349.2], [596.5, 357.9], [595.5, 366.6], [594.1, 375.4], [592.4, 384.3], [590.5, 393.2], [588.2, 402.2], [585.7, 411.2], [582.9, 420.1], [579.9, 429.1], [576.6, 437.9], [573.0, 446.7], [569.2, 455.4], [565.1, 463.9], [560.9, 472.3], [556.4, 480.6], [551.6, 488.6], [546.7, 496.4], [541.5, 504.0], [536.2, 511.2], [530.7, 518.2], [524.9, 524.9], [518.7, 531.5], [512.1, 537.9], [505.2, 544.1], [497.9, 550.1], [490.3, 555.9], [482.4, 561.5], [474.2, 566.9], [465.8, 572.1], [457.2, 577.2], [448.5, 582.0], [439.6, 586.6], [430.6, 591.1], [421.5, 595.4], [412.3, 599.5], [403.1, 603.4], [394.0, 607.1], [384.8, 610.7], [375.8, 614.1], [366.8, 617.3], [357.9, 620.4], [349.3, 623.0], [340.5, 625.2], [331.6, 627.0], [322.6, 628.4], [313.4, 629.5], [304.2, 630.3], [295.0, 631.0], [285.7, 631.5], [276.4, 631.9], [267.0, 632.2], [257.8, 632.6], [248.5, 633.0], [239.4, 633.5], [230.3, 634.2], [221.3, 635.0], [212.5, 636.2], [203.8, 637.6], [195.3, 639.4], [187.0, 641.6], [179.0, 644.2], [171.7, 647.2], [164.6, 650.6], [157.6, 654.5], [150.8, 658.7], [144.2, 663.3], [137.7, 668.0], [131.3, 673.0], [124.9, 678.1], [118.6, 683.2], [112.4, 688.4], [106.1, 693.5], [99.9, 698.5], [93.7, 703.4], [87.4, 708.0], [81.0, 712.4], [74.6, 716.4], [68.1, 720.0], [61.4, 723.1], [54.7, 725.7], [47.7, 727.7], [40.9, 729.3], [33.8, 730.7], [26.5, 731.9], [19.0, 732.9], [11.4, 733.7], [3.8, 734.3], [-4.0, 734.6], [-11.7, 734.8], [-19.5, 734.7], [-27.3, 734.3], [-34.9, 733.7], [-42.5, 732.9], [-49.9, 731.7], [-57.2, 730.3], [-64.3, 728.7], [-71.1, 726.7], [-77.7, 724.4], [-83.9, 721.9], [-89.9, 719.0], [-95.4, 715.8], [-100.5, 712.2], [-105.1, 708.0], [-109.3, 703.2], [-113.2, 698.0], [-116.8, 692.3], [-120.1, 686.3], [-123.2, 679.9], [-126.2, 673.3], [-129.0, 666.6], [-131.8, 659.7], [-134.6, 652.7], [-137.4, 645.7], [-140.3, 638.8], [-143.3, 631.9], [-146.5, 625.3], [-150.0, 618.8], [-153.7, 612.7], [-157.8, 606.9], [-162.2, 601.5], [-167.0, 596.5], [-172.6, 591.7], [-178.6, 587.2], [-184.8, 583.0], [-191.3, 579.1], [-198.1, 575.5], [-205.1, 572.1], [-212.3, 568.8], [-219.6, 565.7], [-227.1, 562.7], [-234.6, 559.7], [-242.3, 556.8], [-250.0, 553.8], [-257.7, 550.8], [-265.5, 547.7], [-273.1, 544.4], [-280.8, 541.0], [-288.3, 537.4], [-295.8, 533.5], [-303.1, 529.4], [-310.2, 524.9], [-318.2, 519.6], [-326.4, 514.2], [-334.8, 508.7], [-343.3, 503.0], [-351.9, 497.2], [-360.6, 491.3], [-369.2, 485.3], [-377.9, 479.1], [-386.4, 472.7], [-394.9, 466.3], [-403.2, 459.7], [-411.3, 452.9], [-419.2, 446.0], [-426.9, 439.0], [-434.2, 431.8], [-441.2, 424.5], [-447.9, 417.0], [-454.2, 409.4], [-460.0, 401.6], [-465.3, 393.7], [-470.0, 385.9], [-474.6, 377.8], [-479.0, 369.5], [-483.3, 360.9], [-487.3, 352.2], [-491.1, 343.2], [-494.6, 334.1], [-497.9, 324.9], [-500.9, 315.6], [-503.7, 306.2], [-506.2, 296.8], [-508.3, 287.4], [-510.2, 278.0], [-511.7, 268.6], [-512.9, 259.3], [-513.7, 250.1], [-514.1, 241.0], [-514.1, 232.1], [-513.8, 223.3], [-513.0, 214.7], [-511.8, 206.5], [-510.2, 198.1], [-508.3, 189.7], [-505.9, 181.3], [-503.2, 172.9], [-500.2, 164.4], [-496.8, 156.1], [-493.1, 147.7], [-489.1, 139.5], [-484.8, 131.3], [-480.2, 123.3], [-475.4, 115.4], [-470.3, 107.6], [-465.1, 100.1], [-459.6, 92.7], [-453.9, 85.6], [-448.0, 78.7], [-442.0, 72.0], [-435.8, 65.7], [-429.5, 59.7], [-422.3, 53.4], [-414.5, 47.3], [-406.2, 41.4], [-397.5, 35.8], [-388.4, 30.4], [-379.0, 25.1], [-369.3, 20.2], [-359.3, 15.4], [-349.1, 10.8], [-338.8, 6.5], [-328.4, 2.4], [-317.9, -1.4], [-307.5, -5.0], [-297.1, -8.4], [-286.8, -11.6], [-276.6, -14.5], [-266.7, -17.2], [-257.0, -19.7], [-247.6, -21.9], [-238.6, -23.9], [-231.6, -25.2], [-224.7, -26.4], [-217.8, -27.3], [-211.0, -28.0], [-204.2, -28.6], [-197.5, -29.0], [-190.8, -29.3], [-184.1, -29.4], [-177.5, -29.4], [-171.0, -29.2], [-164.4, -29.0], [-158.0, -28.6], [-151.5, -28.2], [-145.1, -27.7], [-138.7, -27.1], [-132.4, -26.5], [-126.1, -25.9], [-119.8, -25.2], [-113.6, -24.5], [-107.4, -23.9], [-101.8, -23.2], [-96.3, -22.3], [-91.0, -21.3], [-85.8, -20.2], [-80.7, -19.0], [-75.7, -17.8], [-70.6, -16.4], [-65.7, -15.0], [-60.7, -13.6], [-55.7, -12.1], [-50.6, -10.7], [-45.5, -9.2], [-40.4, -7.8], [-35.1, -6.5], [-29.7, -5.1], [-24.1, -3.9], [-18.4, -2.8], [-12.5, -1.7], [-6.4, -0.8], [0.0, 0.0]], "lake": [429.4889956246924, 357.9074963539103], "lakeR": 131.23274866310044};
+const ZONES = [
+  { from: 0,    to: 437,  name: "출발 광장과 첫 직선", desc: "출발 아치를 지나 해를 정면으로 보며 달리는 직선" },
+  { from: 437,  to: 1188, name: "호숫가", desc: "왼쪽으로 호수가 30여 m 거리에서 따라옴. 물에 노을이 비침" },
+  { from: 1188, to: 1526, name: "초원", desc: "탁 트인 들판, 오른쪽 멀리 산 능선" },
+  { from: 1526, to: 2180, name: "숲길", desc: "S자 굽은 길, 나무 사이로 빛이 들어옴 (식생 단계에서 완성)" },
+  { from: 2180, to: 2758, name: "산 전망 구간", desc: "서쪽 먼 산을 오른쪽에 두고 크게 도는 구간" },
+  { from: 2758, to: 3000, name: "복귀 직선", desc: "출발 광장으로 돌아와 결승" },
+];
+const ZONE_COLORS = ["--glow", "--water", "--grass", "--grass", "--mountain", "--glow"];
+
+(function drawMap() {
+  const svg = document.getElementById("map");
+  const pts = COURSE.pts;
+  const xs = pts.map(p => p[0]), zs = pts.map(p => p[1]);
+  const pad = 70;
+  const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad, minZ = Math.min(...zs) - pad, maxZ = Math.max(...zs) + pad;
+  const W = 1000, H = Math.round(W * (maxZ - minZ) / (maxX - minX));
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const s = W / (maxX - minX);
+  const X = x => (x - minX) * s, Y = z => (maxZ - z) * s;
+  const d = pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ") + " Z";
+  const ns = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent = svg) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+  el("rect", { x: 0, y: 0, width: W, height: H, fill: css("--hill"), opacity: 0.55 });
+  el("path", { d, fill: "none", stroke: css("--grass-soft"), "stroke-width": 60 * s * 2, "stroke-linejoin": "round" });
+  // 호수 (약간 찌그러진 모양)
+  const [lx, lz] = COURSE.lake, lr = COURSE.lakeR;
+  let lake = "";
+  for (let i = 0; i <= 48; i++) {
+    const a = i / 48 * Math.PI * 2;
+    const r = lr * (1 + 0.12 * Math.sin(3 * a + 0.6) + 0.06 * Math.sin(5 * a));
+    lake += (i ? "L" : "M") + X(lx + Math.cos(a) * r * 1.15).toFixed(1) + " " + Y(lz + Math.sin(a) * r * 0.9).toFixed(1);
+  }
+  el("path", { d: lake + "Z", fill: css("--water"), opacity: 0.85 });
+  el("text", { x: X(lx), y: Y(lz) + 5, "text-anchor": "middle", "font-size": 22, fill: "#fff", "font-weight": 600 }).textContent = "호수";
+
+  // 도로
+  el("path", { d, fill: "none", stroke: css("--road"), "stroke-width": 7, "stroke-linejoin": "round" });
+  el("path", { d, fill: "none", stroke: css("--glow"), "stroke-width": 1.6, "stroke-linejoin": "round", opacity: 0.9 });
+
+  // 구간 번호와 500m 눈금: 누적 거리로 점 찾기
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = cum[cum.length - 1];
+  const at = dist => { dist = dist / 3000 * total; let i = cum.findIndex(c => c >= dist); if (i <= 0) i = 1; const f = (dist - cum[i - 1]) / (cum[i] - cum[i - 1] || 1); return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f]; };
+  for (let k = 500; k < 3000; k += 500) {
+    const [x, z] = at(k);
+    el("circle", { cx: X(x), cy: Y(z), r: 5, fill: css("--surface"), stroke: css("--road"), "stroke-width": 2 });
+    el("text", { x: X(x) + 10, y: Y(z) - 8, "font-size": 17, fill: css("--fg"), "font-family": "IBM Plex Mono, monospace" }).textContent = (k / 1000).toFixed(1) + " km";
+  }
+  ZONES.forEach((zn, i) => {
+    const [x, z] = at((zn.from + zn.to) / 2);
+    const g = el("g", {});
+    el("circle", { cx: X(x), cy: Y(z), r: 15, fill: css(ZONE_COLORS[i]), stroke: css("--surface"), "stroke-width": 3 }, g);
+    el("text", { x: X(x), y: Y(z) + 6, "text-anchor": "middle", "font-size": 17, "font-weight": 600, fill: "#fff" }, g).textContent = i + 1;
+  });
+  // 출발 아치 + 진행 방향
+  const [sx, sz] = at(0), [ax, az] = at(60);
+  el("line", { x1: X(sx), y1: Y(sz) - 16, x2: X(sx), y2: Y(sz) + 16, stroke: css("--glow"), "stroke-width": 5 });
+  el("text", { x: X(sx), y: Y(sz) + 40, "text-anchor": "middle", "font-size": 18, "font-weight": 600, fill: css("--fg") }).textContent = "출발 · 결승";
+  const ang = Math.atan2(Y(az) - Y(sz), X(ax) - X(sx));
+  const tip = [X(ax), Y(az)], back = 14;
+  el("path", { d: `M${tip[0]} ${tip[1] - 22} l${-back * Math.cos(ang - 0.5)} ${-back * Math.sin(ang - 0.5)} M${tip[0]} ${tip[1] - 22} l${-back * Math.cos(ang + 0.5)} ${-back * Math.sin(ang + 0.5)}`, stroke: css("--fg"), "stroke-width": 3, fill: "none", "stroke-linecap": "round" });
+  // 축척
+  const bar = 200 * s;
+  el("line", { x1: 24, y1: H - 26, x2: 24 + bar, y2: H - 26, stroke: css("--fg"), "stroke-width": 3 });
+  el("text", { x: 24, y: H - 36, "font-size": 15, fill: css("--fg"), "font-family": "IBM Plex Mono, monospace" }).textContent = "200 m";
+  el("text", { x: W - 20, y: 30, "text-anchor": "end", "font-size": 16, fill: css("--muted") }).textContent = "↑ 북쪽 · 사방 600 m 밖 먼 산";
+})();
+
+(function listZones() {
+  const ol = document.getElementById("zones");
+  ZONES.forEach((z, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<div class="km">${(z.from / 1000).toFixed(2)}–${(z.to / 1000).toFixed(2)}</div><div><strong>${i + 1}. ${z.name}</strong><span>${z.desc}</span></div>`;
+    ol.appendChild(li);
+  });
+})();
+
+(function drawSection() {
+  const svg = document.getElementById("xsec");
+  const ns = "http://www.w3.org/2000/svg";
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const el = (tag, attrs) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); svg.appendChild(e); return e; };
+  const sx = 70, ex = 5, X = m => 30 + m * sx, Yb = 120, Y = h => Yb - h * sx * ex;
+  // 땅
+  el("rect", { x: 0, y: Yb, width: 680, height: 70, fill: css("--grass-soft") });
+  // 아스팔트 0~4m (중앙선부터)
+  el("rect", { x: X(0), y: Y(0.02), width: 4 * sx, height: Yb - Y(0.02), fill: css("--road") });
+  // 중앙 점선
+  el("rect", { x: X(0) - 2, y: Y(0.02) - 2, width: 4, height: 3, fill: "#fff" });
+  // 흰 차선 (가장자리 안쪽)
+  el("rect", { x: X(3.5), y: Y(0.02) - 2, width: 0.12 * sx, height: 3, fill: "#fff" });
+  // 발광선
+  el("rect", { x: X(3.82), y: Y(0.024) - 3, width: 0.12 * sx, height: 4, fill: css("--glow") });
+  // 연석
+  el("path", { d: `M${X(4)} ${Yb} L${X(4)} ${Y(0.14)} L${X(4.3)} ${Y(0.14)} L${X(4.4)} ${Yb} Z`, fill: css("--mountain") });
+  // 자갈 갓길
+  el("rect", { x: X(4.4), y: Y(0.005), width: 1.6 * sx, height: Yb - Y(0.005), fill: "#b3a48d" });
+  // 잔디
+  el("rect", { x: X(6), y: Yb - 2, width: 680 - X(6), height: 2, fill: css("--grass") });
+  // 치수
+  const dim = (a, b, y, label) => {
+    el("line", { x1: X(a), y1: y, x2: X(b), y2: y, stroke: css("--muted"), "stroke-width": 1 });
+    el("line", { x1: X(a), y1: y - 5, x2: X(a), y2: y + 5, stroke: css("--muted") });
+    el("line", { x1: X(b), y1: y - 5, x2: X(b), y2: y + 5, stroke: css("--muted") });
+    el("text", { x: (X(a) + X(b)) / 2, y: y - 7, "text-anchor": "middle", "font-size": 12, fill: css("--fg") }).textContent = label;
+  };
+  dim(0, 4, 30, "아스팔트 4 m (전체 8 m)");
+  dim(4, 4.4, 58, "연석 0.4 m");
+  dim(4.4, 6, 30, "자갈 갓길 1.6 m");
+  dim(6, 8.6, 30, "평지 잔디 → 30 m까지");
+  el("text", { x: X(0), y: 150, "font-size": 12, fill: css("--muted") }).textContent = "도로 중앙";
+  el("text", { x: X(3.82) - 4, y: 150, "font-size": 12, fill: css("--glow") }).textContent = "발광선";
+  el("text", { x: X(3.5) - 26, y: 168, "font-size": 12, fill: css("--muted") }).textContent = "흰 차선";
+  el("text", { x: X(4.0), y: 168, "font-size": 12, fill: css("--muted") }).textContent = "높이 14 cm";
+})();
+</script>
+</body></html>

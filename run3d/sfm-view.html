@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D 복원 뷰어</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0d1117; color: #e6edf3; font: 14px system-ui, "Malgun Gothic", sans-serif; overflow: hidden; }
+  canvas#view { display: block; width: 100%; height: 100%; }
+  #panel { position: fixed; left: 12px; right: 12px; bottom: 12px; background: rgba(13, 17, 23, .86); border: 1px solid #2c3742;
+    border-radius: 10px; padding: 10px 14px; display: grid; gap: 8px; }
+  #row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  #time { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 4.5em; }
+  #slider { flex: 1; min-width: 200px; }
+  #strip { width: 100%; height: 10px; border-radius: 3px; image-rendering: pixelated; }
+  button { background: #21262d; color: #e6edf3; border: 1px solid #3d4752; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  button.on { background: #d9530b; border-color: #d9530b; }
+  #info { color: #9aa7b4; font-size: 13px; }
+  #legend { position: fixed; top: 12px; left: 12px; background: rgba(13, 17, 23, .8); border-radius: 8px; padding: 8px 12px; font-size: 13px; line-height: 1.7; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+</style>
+<script type="importmap">
+  { "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  } }
+</script>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="legend">
+  <div><b>3D 복원 뷰어</b> · 해안길</div>
+  <div><span class="sw" style="background:#ffffff"></span>촬영자가 달린 길 (카메라 경로)</div>
+  <div><span class="sw" style="background:#ff7a1a"></span>지금 카메라</div>
+  <div><span class="sw" style="background:#3ddc84"></span>아바타가 달릴 앞길 (최대 80m)</div>
+  <div>점 색: 낮음 <span class="sw" style="background:#2f5fd0"></span><span class="sw" style="background:#36c26b"></span><span class="sw" style="background:#e8d84a"></span><span class="sw" style="background:#e25b3a"></span> 높음</div>
+  <div style="color:#9aa7b4">마우스: 왼쪽 끌기 회전 · 오른쪽 끌기 이동 · 휠 확대</div>
+</div>
+<div id="panel">
+  <div id="row">
+    <button id="play">재생</button>
+    <span id="time">2:00</span>
+    <input id="slider" type="range" min="0" max="1" step="1" value="0">
+    <button id="follow" class="on">카메라 따라가기</button>
+    <button id="cam">카메라 시점</button>
+  </div>
+  <canvas id="strip" height="1"></canvas>
+  <div id="info">불러오는 중…</div>
+</div>
+<script type="module" src="src/sfm-view.js"></script>
+</body>
+</html>

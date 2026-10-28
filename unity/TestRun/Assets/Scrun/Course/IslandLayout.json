@@ -1,0 +1,52 @@
+{
+  "name": "가칭 스크런 섬",
+  "scale": 1.25,
+  "note": "좌표 m에 scale을 곱해 사용 (x=동쪽, z=북쪽). 노드 [x, z, 높이m], 엣지 elev = 경유점마다 노면 높이(m, 화면 전용 — 속도·러닝머신 경사와 무관). 해안 절벽 아래 바다(-25). 노드 = 교차로/출발점, 엣지 = 도로 구간(경유점은 곡선 제어점).",
+  "regions": [
+    { "id": "harbor",   "name": "등대 항구",   "center": [0, -1350],    "radius": 420, "theme": "남쪽 해안 절벽 위 출발 광장, 등대, 아래로 내려다보이는 작은 항구" },
+    { "id": "lake",     "name": "노을 호수",   "center": [-780, -250],  "radius": 520, "theme": "넓은 호수와 초원, 지금 만든 코스의 호숫가 분위기" },
+    { "id": "forest",   "name": "거목 협곡",   "center": [-520, 1050],  "radius": 520, "theme": "침엽수 숲과 깊은 협곡, 폭포, 협곡을 가로지르는 다리" },
+    { "id": "highland", "name": "풍차 고원",   "center": [650, 950],    "radius": 520, "theme": "탁 트인 풀밭 고원, 풍차 줄, 들꽃 언덕" },
+    { "id": "cliff",    "name": "동쪽 해안 절벽", "center": [1350, 0],  "radius": 480, "theme": "바다를 오른쪽에 두고 달리는 절벽 길, 바위 해안, 아치 바위" }
+  ],
+  "track": { "name": "항구 육상 트랙", "center": [0, -945], "length": 400 },
+  "coast": { "radius": 1360, "roadMargin": 104, "cliffWidth": 32, "seaLevel": -25, "seaFloor": -45 },
+  "canyons": [
+    { "name": "거목 협곡", "width": 56, "depth": 46, "points": [[-260, 820], [-180, 1100], [-80, 1420], [-40, 1750], [-60, 2150], [-80, 2500]] }
+  ],
+  "nodes": {
+    "H":  [0, -1250, 0],
+    "W":  [-560, -760, 6],
+    "E":  [560, -760, 9],
+    "LN": [-980, 380, 5],
+    "C":  [40, 160, 16],
+    "CN": [1220, 620, 36],
+    "HN": [360, 1180, 50],
+    "FN": [-560, 1420, 32]
+  },
+  "edges": [
+    { "id": "harbor_west",   "from": "H",  "to": "W",  "region": "harbor",   "via": [[-260, -1160], [-460, -980]], "elev": [2, 12] },
+    { "id": "harbor_east",   "from": "H",  "to": "E",  "region": "harbor",   "via": [[260, -1160], [470, -980]], "elev": [2, 14] },
+    { "id": "lake_west",     "from": "W",  "to": "LN", "region": "lake",     "via": [[-900, -620], [-1220, -300], [-1240, 120]], "elev": [3, 1.6, 2.4] },
+    { "id": "lake_east",     "from": "W",  "to": "C",  "region": "lake",     "via": [[-420, -420], [-300, -120], [-160, 80]], "elev": [12, 5, 13] },
+    { "id": "meadow",        "from": "LN", "to": "C",  "region": "lake",     "via": [[-700, 380], [-380, 260]], "elev": [11, 22] },
+    { "id": "valley",        "from": "E",  "to": "C",  "region": "highland", "via": [[460, -420], [300, -140]], "elev": [22, 10] },
+    { "id": "cliff_road",    "from": "E",  "to": "CN", "region": "cliff",    "coastMargin": 30, "via": [[980, -700], [1420, -420], [1560, -60], [1480, 340]], "elev": [16, 30, 44, 40] },
+    { "id": "highland_east", "from": "CN", "to": "HN", "region": "highland", "via": [[1000, 900], [700, 1150]], "elev": [44, 56] },
+    { "id": "highland_mid",  "from": "C",  "to": "HN", "region": "highland", "via": [[180, 520], [420, 820]], "elev": [26, 40] },
+    { "id": "forest_south",  "from": "LN", "to": "FN", "region": "forest",   "via": [[-1060, 760], [-900, 1180]], "elev": [13, 25] },
+    { "id": "canyon_bridge", "from": "FN", "to": "HN", "region": "forest",   "via": [[-240, 1480], [80, 1360]], "elev": [38, 44] }
+  ],
+  "features": [
+    { "type": "gorge",     "edge": "forest_south",  "from": 0.28, "to": 0.62, "height": 20, "note": "높은 바위벽 사이로 지나는 협곡 길" },
+    { "type": "tunnel",    "edge": "cliff_road",    "at": [1560, -60], "length": 80, "note": "해안 절벽 곶을 뚫은 바위 터널" },
+    { "type": "boardwalk", "edge": "lake_west",     "from": 0.38, "to": 0.6, "note": "호숫가 나무 데크 길" },
+    { "type": "windmills", "edge": "highland_east", "from": 0.2, "to": 0.85, "count": 4, "note": "능선 위 풍차 줄" }
+  ],
+  "routes": [
+    { "id": "lake_loop",   "name": "노을 호수 한 바퀴", "path": ["harbor_west", "lake_west", "meadow", "-valley", "-harbor_east"] },
+    { "id": "forest_run",  "name": "거목 협곡 순환",   "path": ["harbor_west", "lake_west", "forest_south", "canyon_bridge", "-highland_mid", "-lake_east", "-harbor_west"] },
+    { "id": "coast_run",   "name": "해안 절벽 순환",   "path": ["harbor_east", "cliff_road", "highland_east", "-highland_mid", "-valley", "-harbor_east"] },
+    { "id": "island_tour", "name": "섬 일주",          "path": ["harbor_west", "lake_west", "forest_south", "canyon_bridge", "-highland_east", "-cliff_road", "-harbor_east"] }
+  ]
+}

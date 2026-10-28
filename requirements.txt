@@ -1,0 +1,11 @@
+numpy
+scipy
+pandas
+scikit-learn
+matplotlib
+opencv-python
+mediapipe
+shapely
+fastapi
+python-multipart
+uvicorn[standard]

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>같이 달리기 · 실사 + 러너</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="video.css">
+<script>
+  const showError = (msg) => { document.getElementById('error').textContent += msg + '\n'; };
+  window.addEventListener('error', (e) => showError(e.message));
+  window.addEventListener('unhandledrejection', (e) => showError(String(e.reason)));
+</script>
+<script type="importmap">
+  { "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  } }
+</script>
+</head>
+<body class="video-mode">
+<div id="video-wrap"><div id="player"></div></div>
+<canvas id="runners" aria-label="영상 위 가상 러너"></canvas>
+<svg id="road-editor" viewBox="0 0 1280 720" aria-label="길 경계 편집" hidden></svg>
+<div id="stats" class="panel">
+  <div id="course-name">실사 + 3D 러너</div>
+  <div><span id="pace">--'--"</span><small>/km</small></div>
+  <div class="row"><b id="speed">9.0</b> km/h · <b id="cad">0</b> spm</div>
+  <div class="row"><b id="dist">0.00</b> / <span id="total">5.00</span> km · <b id="time">00:00</b></div>
+  <div class="bar"><div id="progress"></div></div>
+  <div id="rate" role="status">영상 연결 중…</div>
+</div>
+<ol id="board" class="panel"></ol>
+<canvas id="minimap" class="panel"></canvas>
+<div id="video-tools" class="panel">
+  <a href="index.html">원래 3D로</a>
+  <button id="toggle-runners" type="button" aria-pressed="true">러너 켜짐</button>
+  <button id="sound" type="button" aria-pressed="false">소리 꺼짐</button>
+  <button id="tune" type="button" aria-expanded="false" aria-controls="alignment">화면 맞춤</button>
+  <a id="source-switch" href="video.html?source=youtube">YouTube 모드</a>
+</div>
+<section id="alignment" class="panel" hidden aria-label="영상과 러너 위치 맞추기">
+  <div class="alignment-title"><b>영상에 맞춰 조절</b><button id="close-tune" aria-label="닫기">×</button></div>
+  <p id="road-status">영상의 길 위치를 불러오는 중…</p>
+  <button id="edit-road" type="button" aria-pressed="false">현재 장면 길 보정</button>
+  <button id="reset-road" type="button">길 보정 초기화</button>
+  <p>길 보정 중에는 영상이 멈춰요. 원을 길 양쪽 끝으로 옮기고 완료를 누르세요. 보정은 이 브라우저에 저장돼요.</p>
+  <label>지평선 <output id="horizon-value">46%</output><input id="horizon" type="range" min="25" max="65" value="46"></label>
+  <label>카메라 중심 <output id="center-value">50%</output><input id="center" type="range" min="15" max="85" value="50"></label>
+  <label>원근감 <output id="fov-value">65°</output><input id="fov" type="range" min="40" max="95" value="65"></label>
+  <label>러너 크기 <output id="size-value">100%</output><input id="size" type="range" min="65" max="140" value="100"></label>
+  <button id="reset-alignment" type="button">기본 위치로</button>
+  <form id="video-settings" method="get">
+    <input id="video-id" type="hidden" name="v">
+    <input id="video-source" type="hidden" name="source">
+    <label>촬영 속도 가정 (km/h)<input id="filmed" name="filmed" type="number" min="1" max="40" step="0.1" value="10" required></label>
+    <label>영상 시작 위치 (초)<input id="start-time" name="from" type="number" min="0" step="1" value="0" required></label>
+    <label>목표 거리 (km)<input id="target-length" name="km" type="number" min="0.1" max="20" step="0.1" value="5" required></label>
+    <button type="submit">설정 적용 · 다시 시작</button>
+  </form>
+</section>
+<div id="controls">
+  <button id="slower" aria-label="느리게">−</button>
+  <button id="start" disabled>시작</button>
+  <button id="pause" hidden>일시정지</button>
+  <button id="faster" aria-label="빠르게">+</button>
+</div>
+<div id="overlay" hidden></div>
+<div id="credit"></div>
+<div id="error" role="alert"></div>
+<div id="video-recovery" class="panel" hidden>
+  <button id="retry-video" type="button">영상 다시 연결</button>
+  <a id="check-video" href="video-check.html">영상만 확인</a>
+  <a id="open-video" target="_blank" rel="noopener noreferrer">YouTube에서 열기</a>
+</div>
+<script type="module">import('./src/video.js').catch((e) => showError(e.message));</script>
+</body>
+</html>

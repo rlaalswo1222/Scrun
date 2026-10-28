@@ -1,0 +1,31 @@
+#!/bin/sh
+# 커밋 메시지 규칙 검사 (docs/git_convention.md). 켜기: git config core.hooksPath tools/githooks
+msg="$1"
+first=$(sed -n '1p' "$msg" | tr -d '\r')
+second=$(sed -n '2p' "$msg" | tr -d '\r')
+
+# git이 자동으로 만드는 메시지는 통과
+case "$first" in
+  Merge\ *|Revert\ *|fixup!\ *|squash!\ *) exit 0 ;;
+esac
+
+fail() {
+  echo "커밋 메시지 규칙 위반: $1" >&2
+  echo "  첫 줄: $first" >&2
+  echo "  규칙: docs/git_convention.md  (예: Feat: SpeedLab 걷기 모드 추가)" >&2
+  exit 1
+}
+
+types='Feat|Fix|Docs|Style|Refactor|Test|Chore|Design|Comment|Rename|Remove|!BREAKING CHANGE|!HOTFIX'
+echo "$first" | grep -Eq "^($types): [^ ]" || fail "첫 줄은 '유형: 제목' (유형: $types)"
+
+title=${first#*: }
+case "$title" in
+  *.) fail "제목 끝에 마침표(.) 금지" ;;
+esac
+# 글자 수(한글도 1자): UTF-8 이어지는 바이트(0x80에서 0xBF)를 빼고 센다 → 컴퓨터 언어 설정과 무관. 유형은 빼고 제목만
+n=$(printf '%s' "$title" | LC_ALL=C tr -d '\200-\277' | wc -c | tr -d ' ')
+[ "$n" -gt 50 ] && fail "제목은 50자 이내 (지금 ${n}자)"
+
+[ -z "$second" ] || [ "$(sed -n '$=' "$msg")" -eq 1 ] || fail "제목과 본문 사이에 빈 줄 하나"
+exit 0

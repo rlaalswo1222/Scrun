@@ -1,0 +1,48 @@
+# 파이썬
+.venv/
+__pycache__/
+*.pyc
+.tmp/
+.backups/
+
+# 비밀 (HTTPS 실험 서버 인증서·키)
+certs/
+
+# 큰 자료: 다시 받거나 다시 만듦
+# data/external = SoundTrackDB 등 공개 데이터(원래 저장소에서 받기), run3d/assets·data = 옛 프로토타입 영상·3D 자료
+data/external/
+run3d/assets/
+run3d/data/
+
+# Unity 자동 생성·빌드
+unity/TestRun/[Ll]ibrary/
+unity/TestRun/[Tt]emp/
+unity/TestRun/[Ll]ogs/
+unity/TestRun/[Uu]ser[Ss]ettings/
+unity/TestRun/[Oo]bj/
+unity/TestRun/.utmp/
+unity/TestRun/.vs/
+unity/TestRun/*.csproj
+unity/TestRun/*.sln
+unity/TestRun/*.slnx
+unity/TestRun/Builds/
+unity/Builds/
+unity/backup_*/
+*.apk
+*.aab
+
+# 섬 지형·도로·식생 메시: 메뉴 Scrun → Build Island Scene으로 다시 만듦
+unity/TestRun/Assets/Scrun/Course/Generated/
+
+# Mixamo 원본(약관상 원본 파일 재배포 금지로 판단): README "처음 받았을 때"대로 각자 mixamo.com에서 받음
+# .meta는 올림(애니메이터 연결 유지). Alpha_* = Y Bot을 단순화한 메시, 섬 만들기 메뉴가 다시 만듦
+unity/mixamo/
+unity/TestRun/Assets/Scrun/Characters/YBot/*.fbx
+unity/TestRun/Assets/Scrun/Characters/YBot/Alpha_*.asset
+unity/TestRun/Assets/Scrun/Characters/YBot/Alpha_*.asset.meta
+
+# Poly Haven(CC0) 파일: python unity/tools/polyhaven_fetch.py 로 받음 (.meta·README는 올림)
+unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/**
+!unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/**/
+!unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/**/*.meta
+!unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/README.md

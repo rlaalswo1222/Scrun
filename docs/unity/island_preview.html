@@ -1,0 +1,254 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><title>스크런 섬 설계도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 레이아웃: 섬 지도(주인공) + 오른쪽 코스 선택 → 아래 지역 카드 → 비교 원칙 → 만드는 순서 */
+:root {
+  --bg: #eef2f1;
+  --surface: #ffffff;
+  --fg: #1d2423;
+  --muted: #5d6a68;
+  --line: #d3dcda;
+  --sea: #9fc3cf;
+  --sea-deep: #7fa9b8;
+  --land: #e7e4d3;
+  --road: #4b4744;
+  --route: #f26b1d;
+  --harbor: #c9a46b;
+  --lake: #5e9ec0;
+  --forest: #3f7a4a;
+  --highland: #9bb85a;
+  --cliff: #9a8c80;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141a1a; --surface: #1c2423; --fg: #e6eceb; --muted: #9aa8a6; --line: #2f3a39;
+  --sea: #1f3b46; --sea-deep: #18303a; --land: #2e2f28; --road: #d6d0c8; --route: #ff8a3d;
+  --harbor: #b8925c; --lake: #5a9cbf; --forest: #4f9a5c; --highland: #a4c15f; --cliff: #a39488; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #141a1a; --surface: #1c2423; --fg: #e6eceb; --muted: #9aa8a6; --line: #2f3a39;
+  --sea: #1f3b46; --sea-deep: #18303a; --land: #2e2f28; --road: #d6d0c8; --route: #ff8a3d;
+  --harbor: #b8925c; --lake: #5a9cbf; --forest: #4f9a5c; --highland: #a4c15f; --cliff: #a39488; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 40px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--route); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(34px, 6vw, 56px); line-height: 1; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 28px; margin: 0; letter-spacing: .02em; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 24px; font-family: var(--mono); font-size: 13px; color: var(--muted); margin-top: 6px; }
+.stats b { color: var(--fg); font-weight: 500; }
+section { display: grid; gap: 14px; }
+.map-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 800px) { .map-grid { grid-template-columns: 1fr; } }
+.map { background: var(--sea); border-radius: 6px; overflow: hidden; }
+.map svg { width: 100%; height: auto; display: block; }
+.routes { display: grid; gap: 8px; }
+.route-btn { all: unset; cursor: pointer; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 12px; padding: 12px 14px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.route-btn:focus-visible { outline: 2px solid var(--route); outline-offset: 2px; }
+.route-btn[aria-pressed="true"] { border-color: var(--route); box-shadow: inset 3px 0 0 var(--route); }
+.route-btn strong { font-weight: 600; }
+.route-btn .km { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+.route-btn .via { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+.note { font-size: 13px; color: var(--muted); }
+.regions { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 14px; }
+.region { display: grid; gap: 6px; padding-top: 10px; border-top: 4px solid var(--line); }
+.region h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.region p { font-size: 14px; color: var(--muted); }
+.region .len { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+@media (max-width: 700px) { .compare { grid-template-columns: 1fr; } }
+.compare div { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 6px; }
+.compare h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.compare ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; display: grid; gap: 4px; }
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; }
+@media (max-width: 800px) { .steps { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .steps { grid-template-columns: 1fr; } }
+.step { border-top: 3px solid var(--line); padding-top: 10px; display: grid; gap: 4px; }
+.step.now { border-top-color: var(--route); }
+.step .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.step.now .tag { color: var(--route); }
+.step h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.step p { font-size: 14px; color: var(--muted); }
+svg text { font-family: var(--body); }
+@media (prefers-reduced-motion: no-preference) { #routeLayer path { transition: opacity .2s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">스크런 · 가상 섬 월드 · 설계안</div>
+    <h1>스크런 섬 (가칭)</h1>
+    <p class="lede">Zwift의 Watopia처럼 한 섬 안에 지역 여러 개를 두고, 교차로로 이어진 도로망 위에 코스를 여러 개 정의하는 구조입니다. 지도, 지명, 랜드마크는 모두 새로 만듭니다. 길은 모두 평지이고, 경치(언덕·절벽·협곡)는 도로 밖에만 있습니다.</p>
+    <div class="stats"><span>도로망 <b>16.4 km</b></span><span>지역 <b>5개</b></span><span>코스 <b>4개 + 400 m 트랙</b></span><span>섬 크기 <b>약 4.5 × 4.3 km</b></span></div>
+  </header>
+
+  <section>
+    <h2>섬 지도와 코스</h2>
+    <div class="map-grid">
+      <div class="map"><svg id="map" viewBox="0 0 100 100" role="img" aria-label="섬 지도: 지역, 도로망, 선택한 코스"></svg></div>
+      <div class="routes" id="routes"></div>
+    </div>
+    <p class="note">코스를 누르면 지도에 경로가 표시됩니다. 모든 코스는 남쪽 등대 항구 광장에서 출발해 같은 곳으로 돌아옵니다. 도로 위 숫자는 교차로입니다.</p>
+  </section>
+
+  <section>
+    <h2>지역</h2>
+    <div class="regions" id="regions"></div>
+  </section>
+
+  <section>
+    <h2>Watopia와 같은 점, 다른 점</h2>
+    <div class="compare">
+      <div><h3>따라가는 구조</h3><ul>
+        <li>항상 열려 있는 큰 가상 섬 하나</li>
+        <li>지역마다 다른 자연 테마와 간판 장면</li>
+        <li>교차로가 있는 도로망 + 길이가 다른 여러 코스</li>
+        <li>달리기용 육상 트랙</li>
+      </ul></div>
+      <div><h3>일부러 다르게 하는 것</h3><ul>
+        <li>지도 모양, 지명, 랜드마크는 모두 새로 설계</li>
+        <li>Watopia 대표 요소(화산, 사막, 공룡, 알프 뒤즈 재현)는 쓰지 않음</li>
+        <li>오르막 없음: 러닝머신 경사와 안 맞는 혼란을 피하려고 길은 평지</li>
+        <li>해안 절벽 위 섬: 섬 전체가 바다 위 고원이라 어디서든 바다가 보임</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>만드는 순서</h2>
+    <div class="steps">
+      <div class="step now"><span class="tag">1</span><h3>도로망 구조</h3><p>"루프 하나"를 "도로 구간 + 교차로 + 코스 경로"로 바꿈. 러너는 코스 위 거리만 알면 됨.</p></div>
+      <div class="step"><span class="tag">2</span><h3>섬 지형</h3><p>해안선, 절벽, 바다, 호수, 협곡. 넓어진 지형을 구역별로 나눠 필요한 곳만 그림.</p></div>
+      <div class="step"><span class="tag">3</span><h3>지역 꾸미기</h3><p>지역별 식생·소품·간판 장면(등대, 풍차, 다리, 아치 바위). 나무는 유료 팩 이후 완성.</p></div>
+      <div class="step"><span class="tag">4</span><h3>코스 선택 화면</h3><p>앱에서 코스를 고르고 출발. 고스트·봇도 같은 코스 위를 달림.</p></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const D = {"edges": {"harbor_west": {"pts": [[0.0, -1562.5], [-21.8, -1555.2], [-43.9, -1548.4], [-66.2, -1541.9], [-88.6, -1535.5], [-111.0, -1529.3], [-133.5, -1523.1], [-155.9, -1516.7], [-178.2, -1510.2], [-200.2, -1503.3], [-222.0, -1496.1], [-243.5, -1488.3], [-264.6, -1479.9], [-285.3, -1470.8], [-305.4, -1460.9], [-325.0, -1450.0], [-344.0, -1438.4], [-362.8, -1426.2], [-381.5, -1413.3], [-399.9, -1399.9], [-418.1, -1385.9], [-435.9, -1371.4], [-453.4, -1356.4], [-470.5, -1341.0], [-487.1, -1325.2], [-503.3, -1309.1], [-518.9, -1292.7], [-533.9, -1276.1], [-548.3, -1259.2], [-562.0, -1242.2], [-575.0, -1225.0], [-586.5, -1208.4], [-597.1, -1191.3], [-607.0, -1173.8], [-616.1, -1156.0], [-624.7, -1137.8], [-632.8, -1119.3], [-640.6, -1100.7], [-648.0, -1081.8], [-655.2, -1062.9], [-662.4, -1043.9], [-669.5, -1024.9], [-676.7, -1006.0], [-684.2, -987.1], [-691.9, -968.5], [-700.0, -950.0], [-700.0, -950.0]], "len": 986, "region": "harbor"}, "harbor_east": {"pts": [[0.0, -1562.5], [21.8, -1555.2], [43.8, -1548.4], [66.0, -1541.8], [88.3, -1535.4], [110.7, -1529.1], [133.0, -1522.9], [155.3, -1516.5], [177.5, -1509.9], [199.5, -1503.0], [221.3, -1495.8], [242.9, -1488.0], [264.0, -1479.7], [284.8, -1470.6], [305.2, -1460.7], [325.0, -1450.0], [344.6, -1438.4], [364.3, -1426.2], [383.9, -1413.4], [403.4, -1400.0], [422.6, -1386.1], [441.6, -1371.7], [460.2, -1356.8], [478.4, -1341.5], [496.1, -1325.7], [513.2, -1309.7], [529.7, -1293.3], [545.4, -1276.6], [560.3, -1259.6], [574.4, -1242.4], [587.5, -1225.0], [598.7, -1208.5], [608.8, -1191.5], [618.1, -1174.1], [626.5, -1156.2], [634.3, -1138.1], [641.6, -1119.6], [648.4, -1100.9], [654.8, -1082.0], [661.0, -1063.1], [667.2, -1044.0], [673.3, -1025.0], [679.5, -1006.0], [686.0, -987.2], [692.8, -968.5], [700.0, -950.0], [700.0, -950.0]], "len": 991, "region": "harbor"}, "lake_west": {"pts": [[-700.0, -950.0], [-728.5, -938.7], [-757.1, -928.0], [-786.0, -917.8], [-814.9, -907.9], [-843.9, -898.2], [-872.9, -888.4], [-901.9, -878.6], [-930.7, -868.3], [-959.4, -857.7], [-987.9, -846.4], [-1016.0, -834.3], [-1043.9, -821.3], [-1071.4, -807.1], [-1098.4, -791.8], [-1125.0, -775.0], [-1154.6, -754.9], [-1185.0, -733.6], [-1215.9, -711.2], [-1247.0, -687.7], [-1278.0, -663.2], [-1308.7, -637.7], [-1338.8, -611.3], [-1368.0, -584.0], [-1396.0, -556.0], [-1422.7, -527.3], [-1447.6, -497.9], [-1470.6, -467.9], [-1491.3, -437.4], [-1509.6, -406.4], [-1525.0, -375.0], [-1537.7, -343.6], [-1549.0, -310.4], [-1558.8, -275.8], [-1567.1, -240.0], [-1573.8, -203.3], [-1579.0, -166.1], [-1582.5, -128.4], [-1584.4, -90.8], [-1584.7, -53.4], [-1583.3, -16.5], [-1580.2, 19.6], [-1575.3, 54.5], [-1568.7, 88.1], [-1560.2, 120.0], [-1550.0, 150.0], [-1538.1, 176.3], [-1523.5, 201.4], [-1506.5, 225.3], [-1487.5, 248.2], [-1466.6, 270.2], [-1444.2, 291.5], [-1420.7, 312.3], [-1396.2, 332.6], [-1371.2, 352.7], [-1345.8, 372.6], [-1320.4, 392.5], [-1295.4, 412.6], [-1270.9, 432.9], [-1247.4, 453.7], [-1225.0, 475.0], [-1225.0, 475.0]], "len": 2034, "region": "lake"}, "lake_east": {"pts": [[-700.0, -950.0], [-688.3, -921.6], [-676.5, -893.1], [-664.8, -864.6], [-652.9, -836.0], [-641.1, -807.4], [-629.3, -778.8], [-617.4, -750.2], [-605.6, -721.6], [-593.9, -693.1], [-582.2, -664.8], [-570.6, -636.5], [-559.0, -608.4], [-547.6, -580.4], [-536.2, -552.6], [-525.0, -525.0], [-514.7, -499.1], [-504.7, -473.1], [-495.0, -447.1], [-485.5, -420.9], [-476.0, -394.9], [-466.7, -368.9], [-457.3, -343.1], [-447.9, -317.5], [-438.3, -292.2], [-428.6, -267.2], [-418.6, -242.7], [-408.3, -218.7], [-397.6, -195.1], [-386.6, -172.2], [-375.0, -150.0], [-364.7, -131.0], [-354.5, -112.0], [-344.2, -93.1], [-333.8, -74.4], [-323.2, -56.0], [-312.5, -37.8], [-301.5, -20.0], [-290.3, -2.7], [-278.8, 14.0], [-266.8, 30.2], [-254.5, 45.8], [-241.7, 60.6], [-228.4, 74.6], [-214.5, 87.8], [-200.0, 100.0], [-185.7, 110.5], [-170.8, 119.9], [-155.3, 128.4], [-139.3, 136.0], [-122.8, 143.0], [-106.0, 149.4], [-88.8, 155.3], [-71.5, 160.9], [-54.0, 166.3], [-36.4, 171.5], [-18.8, 176.7], [-1.3, 182.1], [16.0, 187.7], [33.2, 193.6], [50.0, 200.0], [50.0, 200.0]], "len": 1442, "region": "lake"}, "meadow": {"pts": [[-1225.0, 475.0], [-1201.7, 475.3], [-1178.4, 476.0], [-1155.2, 477.1], [-1132.0, 478.4], [-1108.8, 479.8], [-1085.5, 481.2], [-1062.3, 482.5], [-1039.1, 483.6], [-1015.8, 484.3], [-992.5, 484.6], [-969.2, 484.3], [-945.7, 483.3], [-922.2, 481.5], [-898.7, 478.7], [-875.0, 475.0], [-848.9, 469.5], [-822.9, 462.6], [-796.9, 454.5], [-771.0, 445.3], [-745.0, 435.3], [-719.0, 424.6], [-692.9, 413.3], [-666.7, 401.7], [-640.2, 389.9], [-613.5, 378.1], [-586.6, 366.5], [-559.3, 355.2], [-531.6, 344.4], [-503.5, 334.3], [-475.0, 325.0], [-442.3, 315.3], [-409.0, 306.0], [-375.1, 297.0], [-340.7, 288.4], [-305.9, 279.9], [-270.7, 271.7], [-235.3, 263.6], [-199.6, 255.7], [-163.8, 247.8], [-128.0, 240.0], [-92.1, 232.1], [-56.3, 224.3], [-20.6, 216.3], [14.8, 208.2], [50.0, 200.0], [50.0, 200.0]], "len": 1319, "region": "lake"}, "valley": {"pts": [[700.0, -950.0], [691.8, -921.5], [684.0, -892.9], [676.4, -864.0], [668.9, -835.1], [661.5, -806.1], [654.2, -777.1], [646.7, -748.2], [639.1, -719.4], [631.2, -690.7], [623.1, -662.3], [614.5, -634.1], [605.5, -606.2], [596.0, -578.7], [585.8, -551.6], [575.0, -525.0], [564.1, -500.1], [553.0, -475.5], [541.5, -451.4], [529.6, -427.5], [517.4, -403.9], [504.9, -380.6], [492.0, -357.4], [478.8, -334.4], [465.1, -311.6], [451.1, -288.8], [436.7, -266.1], [421.9, -243.4], [406.7, -220.7], [391.1, -197.9], [375.0, -175.0], [356.5, -149.6], [337.1, -124.3], [316.9, -99.1], [296.1, -74.0], [274.7, -49.0], [252.8, -24.0], [230.5, 0.9], [208.0, 25.8], [185.2, 50.7], [162.4, 75.5], [139.5, 100.4], [116.7, 125.2], [94.2, 150.1], [71.9, 175.0], [50.0, 200.0], [50.0, 200.0]], "len": 1344, "region": "highland"}, "cliff_road": {"pts": [[700.0, -950.0], [735.1, -945.5], [770.2, -941.8], [805.4, -938.7], [840.7, -936.0], [876.0, -933.5], [911.3, -931.0], [946.6, -928.3], [981.8, -925.2], [1017.0, -921.4], [1052.0, -916.9], [1087.0, -911.4], [1121.8, -904.6], [1156.4, -896.4], [1190.8, -886.6], [1225.0, -875.0], [1263.4, -860.2], [1302.9, -843.8], [1343.1, -825.9], [1383.8, -806.6], [1424.6, -786.0], [1465.3, -764.1], [1505.5, -741.1], [1545.0, -717.0], [1583.4, -691.8], [1620.5, -665.8], [1655.9, -639.0], [1689.4, -611.4], [1720.6, -583.1], [1749.2, -554.3], [1775.0, -525.0], [1795.2, -499.1], [1814.2, -472.2], [1832.0, -444.4], [1848.5, -415.8], [1863.7, -386.5], [1877.8, -356.6], [1890.6, -326.2], [1902.2, -295.4], [1912.6, -264.2], [1921.8, -232.8], [1929.8, -201.2], [1936.6, -169.5], [1942.2, -137.9], [1946.7, -106.3], [1950.0, -75.0], [1952.1, -42.5], [1952.7, -9.2], [1952.0, 24.8], [1949.9, 59.3], [1946.6, 94.1], [1941.9, 129.0], [1936.1, 164.0], [1929.0, 198.8], [1920.9, 233.3], [1911.6, 267.3], [1901.2, 300.8], [1889.9, 333.4], [1877.5, 365.1], [1864.2, 395.7], [1850.0, 425.0], [1834.9, 452.2], [1817.9, 478.3], [1799.4, 503.4], [1779.4, 527.8], [1758.3, 551.4], [1736.2, 574.5], [1713.2, 597.1], [1689.7, 619.3], [1665.8, 641.3], [1641.6, 663.2], [1617.5, 685.1], [1593.6, 707.1], [1570.1, 729.3], [1547.1, 751.9], [1525.0, 775.0], [1525.0, 775.0]], "len": 2676, "region": "cliff"}, "highland_east": {"pts": [[1525.0, 775.0], [1506.8, 798.4], [1489.0, 822.1], [1471.3, 845.8], [1453.8, 869.6], [1436.3, 893.5], [1418.9, 917.4], [1401.4, 941.3], [1383.7, 965.0], [1365.8, 988.6], [1347.7, 1012.1], [1329.2, 1035.3], [1310.2, 1058.2], [1290.7, 1080.9], [1270.7, 1103.1], [1250.0, 1125.0], [1227.8, 1148.0], [1205.1, 1171.6], [1182.0, 1195.5], [1158.5, 1219.6], [1134.6, 1243.7], [1110.4, 1267.5], [1085.7, 1290.9], [1060.6, 1313.6], [1035.2, 1335.4], [1009.4, 1356.2], [983.2, 1375.8], [956.7, 1393.9], [929.8, 1410.4], [902.6, 1425.0], [875.0, 1437.5], [848.8, 1447.1], [821.9, 1454.8], [794.6, 1460.7], [766.8, 1465.1], [738.7, 1468.2], [710.2, 1470.2], [681.4, 1471.3], [652.5, 1471.8], [623.5, 1471.8], [594.3, 1471.6], [565.2, 1471.4], [536.2, 1471.4], [507.2, 1471.9], [478.5, 1473.0], [450.0, 1475.0], [450.0, 1475.0]], "len": 1366, "region": "highland"}, "highland_mid": {"pts": [[50.0, 200.0], [61.4, 230.2], [72.4, 260.6], [83.0, 291.2], [93.4, 321.9], [103.7, 352.7], [114.0, 383.6], [124.4, 414.3], [135.0, 444.9], [145.9, 475.3], [157.3, 505.5], [169.3, 535.3], [181.9, 564.7], [195.4, 593.7], [209.7, 622.2], [225.0, 650.0], [242.2, 677.0], [261.7, 703.0], [283.1, 728.3], [306.0, 753.0], [329.9, 777.2], [354.3, 801.1], [378.9, 824.8], [403.1, 848.5], [426.5, 872.2], [448.6, 896.2], [469.1, 920.6], [487.4, 945.6], [503.2, 971.2], [515.8, 997.6], [525.0, 1025.0], [530.5, 1052.6], [533.2, 1080.8], [533.2, 1109.7], [531.0, 1139.0], [526.9, 1168.8], [521.1, 1199.0], [514.1, 1229.5], [506.1, 1260.2], [497.4, 1291.0], [488.4, 1321.9], [479.5, 1352.8], [470.8, 1383.7], [462.8, 1414.4], [455.8, 1444.8], [450.0, 1475.0], [450.0, 1475.0]], "len": 1429, "region": "highland"}, "forest_south": {"pts": [[-1225.0, 475.0], [-1232.2, 506.6], [-1240.5, 538.2], [-1249.4, 569.8], [-1258.8, 601.3], [-1268.5, 632.9], [-1278.2, 664.4], [-1287.7, 695.9], [-1296.6, 727.5], [-1304.8, 759.1], [-1312.1, 790.7], [-1318.1, 822.4], [-1322.6, 854.2], [-1325.5, 886.0], [-1326.3, 918.0], [-1325.0, 950.0], [-1321.4, 985.0], [-1316.2, 1020.9], [-1309.3, 1057.5], [-1300.9, 1094.6], [-1291.1, 1132.0], [-1279.8, 1169.4], [-1267.1, 1206.7], [-1253.2, 1243.6], [-1238.0, 1280.0], [-1221.7, 1315.6], [-1204.3, 1350.2], [-1185.9, 1383.7], [-1166.5, 1415.8], [-1146.1, 1446.3], [-1125.0, 1475.0], [-1103.3, 1500.8], [-1079.8, 1525.1], [-1054.6, 1547.9], [-1028.0, 1569.4], [-1000.2, 1589.9], [-971.4, 1609.5], [-941.8, 1628.4], [-911.6, 1646.7], [-880.9, 1664.7], [-850.1, 1682.5], [-819.3, 1700.2], [-788.6, 1718.2], [-758.4, 1736.6], [-728.8, 1755.4], [-700.0, 1775.0], [-700.0, 1775.0]], "len": 1580, "region": "forest"}, "canyon_bridge": {"pts": [[-700.0, 1775.0], [-673.3, 1780.5], [-646.6, 1786.7], [-619.8, 1793.5], [-593.1, 1800.7], [-566.3, 1808.1], [-539.5, 1815.5], [-512.8, 1822.7], [-486.0, 1829.5], [-459.3, 1835.7], [-432.6, 1841.2], [-406.0, 1845.7], [-379.4, 1849.0], [-352.9, 1851.0], [-326.4, 1851.4], [-300.0, 1850.0], [-273.0, 1846.8], [-245.8, 1842.1], [-218.6, 1835.9], [-191.4, 1828.5], [-164.2, 1819.9], [-137.1, 1810.3], [-110.0, 1799.8], [-83.1, 1788.5], [-56.2, 1776.7], [-29.6, 1764.3], [-3.1, 1751.6], [23.1, 1738.7], [49.0, 1725.7], [74.7, 1712.8], [100.0, 1700.0], [124.6, 1687.2], [148.9, 1673.8], [172.8, 1659.9], [196.5, 1645.5], [220.0, 1630.7], [243.2, 1615.5], [266.3, 1600.1], [289.2, 1584.4], [312.1, 1568.7], [335.0, 1552.8], [357.8, 1537.0], [380.7, 1521.2], [403.7, 1505.6], [426.8, 1490.2], [450.0, 1475.0], [450.0, 1475.0]], "len": 1255, "region": "forest"}}, "nodes": {"H": [0.0, -1562.5], "W": [-700.0, -950.0], "E": [700.0, -950.0], "LN": [-1225.0, 475.0], "C": [50.0, 200.0], "CN": [1525.0, 775.0], "HN": [450.0, 1475.0], "FN": [-700.0, 1775.0]}, "routes": [{"id": "lake_loop", "name": "노을 호수 한 바퀴", "path": ["harbor_west", "lake_west", "meadow", "-valley", "-harbor_east"], "km": 6.67}, {"id": "forest_run", "name": "거목 협곡 순환", "path": ["harbor_west", "lake_west", "forest_south", "canyon_bridge", "-highland_mid", "-lake_east", "-harbor_west"], "km": 9.71}, {"id": "coast_run", "name": "해안 절벽 순환", "path": ["harbor_east", "cliff_road", "highland_east", "-highland_mid", "-valley", "-harbor_east"], "km": 8.8}, {"id": "island_tour", "name": "섬 일주", "path": ["harbor_west", "lake_west", "forest_south", "canyon_bridge", "-highland_east", "-cliff_road", "-harbor_east"], "km": 10.89}], "regions": [{"id": "harbor", "name": "등대 항구", "center": [0.0, -1687.5], "radius": 525.0, "theme": "남쪽 해안 절벽 위 출발 광장, 등대, 아래로 내려다보이는 작은 항구"}, {"id": "lake", "name": "노을 호수", "center": [-975.0, -312.5], "radius": 650.0, "theme": "넓은 호수와 초원, 지금 만든 코스의 호숫가 분위기"}, {"id": "forest", "name": "거목 협곡", "center": [-650.0, 1312.5], "radius": 650.0, "theme": "침엽수 숲과 깊은 협곡, 폭포, 협곡을 가로지르는 다리"}, {"id": "highland", "name": "풍차 고원", "center": [812.5, 1187.5], "radius": 650.0, "theme": "탁 트인 풀밭 고원, 풍차 줄, 들꽃 언덕"}, {"id": "cliff", "name": "동쪽 해안 절벽", "center": [1687.5, 0.0], "radius": 600.0, "theme": "바다를 오른쪽에 두고 달리는 절벽 길, 바위 해안, 아치 바위"}], "track": {"name": "항구 육상 트랙", "center": [475.0, -1400.0], "length": 400}, "total": 16422};
+const REGION_TOKEN = { harbor: "--harbor", lake: "--lake", forest: "--forest", highland: "--highland", cliff: "--cliff" };
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const ns = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+
+const svg = document.getElementById("map");
+const allPts = Object.values(D.edges).flatMap(e => e.pts);
+const pad = 650;
+const minX = Math.min(...allPts.map(p => p[0])) - pad, maxX = Math.max(...allPts.map(p => p[0])) + pad;
+const minZ = Math.min(...allPts.map(p => p[1])) - pad, maxZ = Math.max(...allPts.map(p => p[1])) + pad;
+const W = 1000, H = Math.round(W * (maxZ - minZ) / (maxX - minX));
+svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+const s = W / (maxX - minX);
+const X = x => (x - minX) * s, Y = z => (maxZ - z) * s;
+const pathOf = pts => pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ");
+
+let layers = {};
+function draw() {
+  svg.innerHTML = "";
+  el("rect", { x: 0, y: 0, width: W, height: H, fill: css("--sea") }, svg);
+  // 해안선: 섬 중심에서 각도별 반지름 + 물결
+  const cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2;
+  let coast = "";
+  for (let i = 0; i <= 120; i++) {
+    const a = i / 120 * Math.PI * 2;
+    const r = 2350 + 160 * Math.sin(3 * a + 0.4) + 90 * Math.sin(7 * a + 1.3) + 50 * Math.sin(13 * a);
+    coast += (i ? "L" : "M") + X(cx + Math.cos(a) * r * 1.02).toFixed(1) + " " + Y(cz + 150 + Math.sin(a) * r * 0.98).toFixed(1);
+  }
+  el("path", { d: coast + "Z", fill: css("--sea-deep"), transform: "translate(0 6)" }, svg);
+  el("path", { d: coast + "Z", fill: css("--land") }, svg);
+  // 지역
+  for (const g of D.regions) {
+    el("circle", { cx: X(g.center[0]), cy: Y(g.center[1]), r: g.radius * s, fill: css(REGION_TOKEN[g.id]), opacity: 0.28 }, svg);
+  }
+  // 호수
+  el("ellipse", { cx: X(-960), cy: Y(-280), rx: 330 * s, ry: 230 * s, fill: css("--lake"), opacity: 0.9 }, svg);
+  // 협곡
+  el("path", { d: `M${X(-450)} ${Y(1250)} Q ${X(-150)} ${Y(1650)} ${X(100)} ${Y(2350)}`, stroke: css("--sea-deep"), "stroke-width": 9, fill: "none", "stroke-linecap": "round", opacity: 0.8 }, svg);
+  // 도로망
+  for (const [id, e] of Object.entries(D.edges)) {
+    el("path", { d: pathOf(e.pts), stroke: css("--road"), "stroke-width": 4, fill: "none", "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+  }
+  layers.route = el("g", { id: "routeLayer" }, svg);
+  // 트랙
+  const t = D.track;
+  el("rect", { x: X(t.center[0]) - 14, y: Y(t.center[1]) - 8, width: 28, height: 16, rx: 8, fill: "none", stroke: css("--route"), "stroke-width": 3 }, svg);
+  // 교차로
+  let n = 1;
+  for (const [id, p] of Object.entries(D.nodes)) {
+    if (id === "H") continue;
+    el("circle", { cx: X(p[0]), cy: Y(p[1]), r: 9, fill: css("--surface"), stroke: css("--road"), "stroke-width": 2 }, svg);
+    el("text", { x: X(p[0]), y: Y(p[1]) + 4, "text-anchor": "middle", "font-size": 11, "font-weight": 600, fill: css("--fg") }, svg).textContent = n++;
+  }
+  const h = D.nodes.H;
+  el("circle", { cx: X(h[0]), cy: Y(h[1]), r: 12, fill: css("--route"), stroke: css("--surface"), "stroke-width": 3 }, svg);
+  el("text", { x: X(h[0]), y: Y(h[1]) + 32, "text-anchor": "middle", "font-size": 15, "font-weight": 600, fill: css("--fg") }, svg).textContent = "출발 · 결승";
+  // 지역 이름
+  for (const g of D.regions) {
+    el("text", { x: X(g.center[0]), y: Y(g.center[1]) - g.radius * s * 0.55, "text-anchor": "middle", "font-size": 17, "font-weight": 600, fill: css("--fg") }, svg).textContent = g.name;
+  }
+  el("text", { x: X(t.center[0]) + 22, y: Y(t.center[1]) + 5, "font-size": 13, fill: css("--fg") }, svg).textContent = "트랙";
+  // 축척
+  const bar = 1000 * s;
+  el("line", { x1: 24, y1: H - 26, x2: 24 + bar, y2: H - 26, stroke: css("--fg"), "stroke-width": 3 }, svg);
+  el("text", { x: 24, y: H - 36, "font-size": 14, fill: css("--fg"), "font-family": "IBM Plex Mono, monospace" }, svg).textContent = "1 km";
+  el("text", { x: W - 20, y: 30, "text-anchor": "end", "font-size": 14, fill: css("--fg") }, svg).textContent = "↑ 북";
+  showRoute(current);
+}
+
+function routePoints(r) {
+  const pts = [];
+  for (const step of r.path) {
+    const rev = step.startsWith("-");
+    const e = D.edges[step.replace("-", "")];
+    const p = rev ? [...e.pts].reverse() : e.pts;
+    pts.push(...p);
+  }
+  return pts;
+}
+let current = D.routes[0].id;
+function showRoute(id) {
+  current = id;
+  const g = layers.route; if (!g) return;
+  g.innerHTML = "";
+  const r = D.routes.find(r => r.id === id);
+  el("path", { d: pathOf(routePoints(r)), stroke: css("--route"), "stroke-width": 7, fill: "none", "stroke-linejoin": "round", "stroke-linecap": "round", opacity: 0.9 }, g);
+  document.querySelectorAll(".route-btn").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === id));
+}
+
+const REGION_NAME = Object.fromEntries(D.regions.map(g => [g.id, g.name]));
+const routesEl = document.getElementById("routes");
+for (const r of D.routes) {
+  const regions = [...new Set(r.path.map(st => D.edges[st.replace("-", "")].region))].map(id => REGION_NAME[id]);
+  const b = document.createElement("button");
+  b.className = "route-btn"; b.type = "button"; b.dataset.id = r.id; b.id = "route-" + r.id;
+  b.innerHTML = `<strong>${r.name}</strong><span class="km">${r.km.toFixed(1)} km</span><span class="via">${regions.join(" → ")}</span>`;
+  b.addEventListener("click", () => showRoute(r.id));
+  routesEl.appendChild(b);
+}
+
+const regionsEl = document.getElementById("regions");
+for (const g of D.regions) {
+  const len = Object.values(D.edges).filter(e => e.region === g.id).reduce((a, e) => a + e.len, 0);
+  const d = document.createElement("div");
+  d.className = "region";
+  d.style.borderTopColor = `var(${REGION_TOKEN[g.id]})`;
+  d.innerHTML = `<h3>${g.name}</h3><p>${g.theme}</p><span class="len">이 지역 도로 ${(len / 1000).toFixed(1)} km</span>`;
+  regionsEl.appendChild(d);
+}
+
+draw();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>
+</body></html>

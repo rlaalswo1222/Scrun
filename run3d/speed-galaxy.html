@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>갤럭시 기록기</title>
+<style>
+  :root { --bg: #0f1419; --panel: #182029; --fg: #e8eef4; --muted: #93a1b0; --line: #2b3742; --accent: #3ddc84; --bad: #ff5a5a; --warn: #ffc542; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 14px 16px 30px; display: grid; gap: 12px; }
+  h1 { font-size: 20px; margin: 0; }
+  .panel { background: var(--panel); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; }
+  label.opt { display: flex; gap: 10px; align-items: center; font-size: 17px; }
+  input[type=checkbox] { width: 22px; height: 22px; }
+  button { font: inherit; font-size: 20px; font-weight: 800; padding: 14px; border-radius: 12px; border: 0; background: var(--accent); color: #062; cursor: pointer; }
+  button.stop { background: var(--bad); color: #fff; }
+  .row { display: flex; justify-content: space-between; gap: 10px; font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .ok { color: var(--accent); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+  #preview { position: relative; width: 100%; aspect-ratio: 3 / 4; max-height: 46vh; background: #000; border-radius: 10px; overflow: hidden; }
+  #preview video, #preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  a { color: #8fc8ff; }
+</style>
+</head>
+<body>
+<main>
+  <h1>갤럭시 기록기</h1>
+  <div class="panel">
+    <label class="opt"><input id="optAcc" type="checkbox" checked> 진동 (폰을 러닝머신 거치대에)</label>
+    <label class="opt"><input id="optCam" type="checkbox" checked> 전면 카메라로 머리 움직임</label>
+    <label class="opt"><input id="optSolo" type="checkbox"> 아이폰 없이 갤럭시만으로 기록 (새 기록을 만들어요)</label>
+    <div class="muted">아이폰 기록 앱에서 기록을 시작하면 자동으로 그 기록에 붙어요. 화면은 켜 둔 채로 두세요.</div>
+  </div>
+  <button id="go">기록 시작</button>
+  <div class="panel">
+    <div class="row"><span>노트북 연결</span><span id="net">확인 중…</span></div>
+    <div class="row"><span>기록</span><span id="run">–</span></div>
+    <div class="row"><span>진동</span><span id="acc">–</span></div>
+    <div class="row"><span>카메라</span><span id="cam">–</span></div>
+    <div class="row"><span>보낸 샘플</span><span id="sent">0</span></div>
+  </div>
+  <div id="preview" hidden><video id="video" playsinline muted></video><canvas id="overlay"></canvas></div>
+  <div class="muted">분석 화면: <a href="speed.html">speed.html</a></div>
+</main>
+<script type="module" src="src/speed-galaxy.js"></script>
+</body>
+</html>

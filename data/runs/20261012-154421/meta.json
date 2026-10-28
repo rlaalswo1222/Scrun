@@ -1,0 +1,125 @@
+{
+ "height_cm": 175,
+ "stages": [
+  {
+   "label": "제자리 점프 3번",
+   "speed_kmh": null,
+   "set": "sync",
+   "duration_s": 5
+  },
+  {
+   "label": "보정 8",
+   "speed_kmh": 8,
+   "set": "calib",
+   "duration_s": 15.0
+  },
+  {
+   "label": "보정 9",
+   "speed_kmh": 9,
+   "set": "calib",
+   "duration_s": 15.0
+  },
+  {
+   "label": "보정 10",
+   "speed_kmh": 10,
+   "set": "calib",
+   "duration_s": 15.0
+  },
+  {
+   "label": "보정 11",
+   "speed_kmh": 11,
+   "set": "calib",
+   "duration_s": 15.0
+  },
+  {
+   "label": "보정 12",
+   "speed_kmh": 12,
+   "set": "calib",
+   "duration_s": 15.0
+  },
+  {
+   "label": "평가 9.5",
+   "speed_kmh": 9.5,
+   "set": "test",
+   "duration_s": 15.0
+  },
+  {
+   "label": "평가 11.5",
+   "speed_kmh": 11.5,
+   "set": "test",
+   "duration_s": 15.0
+  }
+ ],
+ "device": "simulator",
+ "id": "20261012-154421",
+ "t0": 1791787461.5246866,
+ "created": "2026-10-12 15:44:21",
+ "segments": [
+  {
+   "index": 0,
+   "label": "제자리 점프 3번",
+   "speed_kmh": null,
+   "set": "sync",
+   "start_s": 0.081,
+   "end_s": 7.305
+  },
+  {
+   "index": 1,
+   "label": "보정 8",
+   "speed_kmh": 8,
+   "set": "calib",
+   "start_s": 7.305,
+   "end_s": 24.72
+  },
+  {
+   "index": 2,
+   "label": "보정 9",
+   "speed_kmh": 9,
+   "set": "calib",
+   "start_s": 24.72,
+   "end_s": 42.133
+  },
+  {
+   "index": 3,
+   "label": "보정 10",
+   "speed_kmh": 10,
+   "set": "calib",
+   "start_s": 42.133,
+   "end_s": 59.521
+  },
+  {
+   "index": 4,
+   "label": "보정 11",
+   "speed_kmh": 11,
+   "set": "calib",
+   "start_s": 59.521,
+   "end_s": 76.904
+  },
+  {
+   "index": 5,
+   "label": "보정 12",
+   "speed_kmh": 12,
+   "set": "calib",
+   "start_s": 76.904,
+   "end_s": 94.33
+  },
+  {
+   "index": 6,
+   "label": "평가 9.5",
+   "speed_kmh": 9.5,
+   "set": "test",
+   "start_s": 94.33,
+   "end_s": 111.753
+  },
+  {
+   "index": 7,
+   "label": "평가 11.5",
+   "speed_kmh": 11.5,
+   "set": "test",
+   "start_s": 111.753,
+   "end_s": 129.197
+  }
+ ],
+ "finished": "2026-10-12 15:46:32",
+ "end_s": 129.197
+}

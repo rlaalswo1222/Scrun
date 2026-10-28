@@ -1,0 +1,158 @@
+<title>러너 아바타 모델 요청서</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 한 단 문서. 요약 → 화면에서 어떻게 보이나 → 만들 것 → 기술 사양 표 → 작업 순서 → 체크리스트 */
+:root {
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --fg: #17202b;
+  --muted: #5a6776;
+  --line: #d9e0e7;
+  --accent: #d9530b;
+  --accent-soft: #fdebe0;
+  --code-bg: #eef2f6;
+  --font-body: "IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161c; --surface: #19212a; --fg: #e6edf3; --muted: #9aa7b4; --line: #2c3742;
+    --accent: #ff8a4c; --accent-soft: #3a2418; --code-bg: #212b36; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161c; --surface: #19212a; --fg: #e6edf3; --muted: #9aa7b4; --line: #2c3742;
+  --accent: #ff8a4c; --accent-soft: #3a2418; --code-bg: #212b36; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15.5px; line-height: 1.7; padding-inline: 16px; padding-block: 40px 72px; }
+main { max-width: 760px; margin: 0 auto; display: grid; gap: 40px; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.3; margin: 0; }
+h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 20px; font-weight: 700; display: flex; align-items: baseline; gap: 10px; }
+h2 .step { font-family: var(--font-mono); font-size: 13px; color: var(--accent); font-weight: 500; letter-spacing: 0.04em; }
+h3 { font-size: 16px; font-weight: 700; }
+p { margin: 0; }
+section { display: grid; gap: 14px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lead { font-size: 17px; color: var(--fg); }
+.muted { color: var(--muted); }
+header { display: grid; gap: 12px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+.callout { background: var(--accent-soft); border-radius: 10px; padding: 16px 18px; display: grid; gap: 6px; }
+.callout strong { color: var(--accent); }
+ul, ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--code-bg); padding: 1px 6px; border-radius: 4px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 520px; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-size: 13px; color: var(--muted); font-weight: 500; background: var(--code-bg); }
+td:first-child { font-weight: 500; white-space: nowrap; }
+td .why { display: block; color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+.cast { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.person { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 6px; min-width: 0; }
+.person .sw { width: 100%; height: 10px; border-radius: 5px; }
+.person .name { font-weight: 700; }
+.person .meta { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+.views { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.view { border-left: 3px solid var(--line); padding: 2px 0 2px 14px; display: grid; gap: 4px; min-width: 0; }
+.view b { font-family: var(--font-mono); font-weight: 500; font-size: 13px; color: var(--accent); }
+.check li { list-style: none; position: relative; padding-left: 4px; }
+.check { padding-left: 1.4em; }
+.check li::before { content: ""; position: absolute; left: -1.25em; top: 0.45em; width: 12px; height: 12px; border: 1.5px solid var(--muted); border-radius: 3px; }
+.avoid li::marker { color: var(--accent); }
+footer { color: var(--muted); font-size: 13.5px; border-top: 1px solid var(--line); padding-top: 18px; }
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">캡스톤 · 러닝머신 실사 모드</div>
+    <h1>러너 아바타 모델 요청서</h1>
+    <p class="lead">실제 러닝 영상 위에서 함께 달리는 3D 러너를, 지금의 회색 마네킹에서 <strong>러닝복을 입은 사람</strong>으로 바꾸려고 합니다. 이 문서는 모델을 만들 때 필요한 조건을 정리한 것입니다.</p>
+  </header>
+
+  <section>
+    <h2>화면에서 어떻게 보이나</h2>
+    <p>앱은 1인칭이라 화면에 나오는 러너는 대부분 <strong>내 앞에서 등을 보이며 달립니다</strong>. 배경은 맑은 날 해안 산책로 실사 영상이고, 주로 폰 화면으로 봅니다.</p>
+    <div class="views">
+      <div class="view"><b>5~15m 앞</b><span>화면 높이의 1/3 정도. 뒷머리, 셔츠 등판, 반바지, 종아리, 신발 밑창이 잘 보입니다.</span></div>
+      <div class="view"><b>15~50m 앞</b><span>손가락 한 마디 크기. 실루엣과 옷 색만 구분됩니다.</span></div>
+      <div class="view"><b>얼굴</b><span>거의 보이지 않습니다. 얼굴보다 <strong>뒷모습과 옷 질감</strong>에 시간을 써 주세요.</span></div>
+    </div>
+    <div class="callout">
+      <p><strong>가장 중요한 것</strong> 지금 모델이 CG처럼 보이는 가장 큰 이유는 반짝이는 플라스틱 재질과 온몸이 한 가지 색인 점입니다. 천은 무광(거칠게), 피부와 옷은 색이 구분되게 해 주세요.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>만들 것</h2>
+    <p>사람 4명입니다. 각자 한 파일(<code>.glb</code>)에 동작 3개(서 있기, 걷기, 달리기)를 넣어 주세요. 셔츠 색은 앱 순위표의 러너 색과 맞춥니다.</p>
+    <div class="cast">
+      <div class="person"><div class="sw" style="background:#e8590c"></div><span class="name">나</span><span class="meta">#E8590C · runner_me.glb</span><span class="muted">3인칭 화면에서만 보임</span></div>
+      <div class="person"><div class="sw" style="background:#1c7ed6"></div><span class="name">민지</span><span class="meta">#1C7ED6 · runner_minji.glb</span></div>
+      <div class="person"><div class="sw" style="background:#2f9e44"></div><span class="name">준호</span><span class="meta">#2F9E44 · runner_junho.glb</span></div>
+      <div class="person"><div class="sw" style="background:#ae3ec9"></div><span class="name">서연</span><span class="meta">#AE3EC9 · runner_seoyeon.glb</span></div>
+    </div>
+    <p class="muted">셔츠는 따로 재질로 나누고 재질 이름을 <code>TeamColor</code>로 해 주세요. 앱이 이 재질의 색을 러너 색으로 바꿔서, 나중에 러너가 늘어도 같은 모델을 다른 색으로 쓸 수 있습니다. 셔츠 텍스처는 밝은 회색이나 흰색 바탕에 주름과 음영만 넣어 주세요.</p>
+  </section>
+
+  <section>
+    <h2>기술 사양</h2>
+    <p>앱은 웹(three.js)에서 돌아가고 폰에서 4명을 동시에 그립니다. 아래 조건이 맞지 않으면 모델이 안 보이거나, 크기가 틀리거나, 발이 땅에서 미끄러집니다.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>항목</th><th>조건</th></tr></thead>
+        <tbody>
+          <tr><td>파일 형식</td><td>glTF 2.0 Binary <code>.glb</code>, 텍스처를 파일 안에 포함<span class="why">사람 1명 = 파일 1개</span></td></tr>
+          <tr><td>크기와 방향</td><td>1단위 = 1m, 키 1.65~1.80m, 원점은 두 발 사이 바닥, Y축이 위, 정면이 +Z<span class="why">Mixamo에서 받은 그대로 내보내면 맞습니다. cm 단위로 나오면 100배 커집니다</span></td></tr>
+          <tr><td>뼈대</td><td>Mixamo 표준 뼈대, 뼈 이름 그대로 (<code>mixamorig:Hips</code>, <code>mixamorig:LeftFoot</code>, <code>mixamorig:RightFoot</code> …)<span class="why">앱이 발 뼈 이름으로 걸음 속도를 재서 발 미끄러짐을 막습니다</span></td></tr>
+          <tr><td>동작</td><td>이름을 정확히 <code>idle</code>, <code>walk</code>, <code>run</code>으로. 세 동작 모두 <strong>제자리(In Place)</strong>, 끊김 없이 반복<span class="why">앞으로 나아가는 건 앱이 합니다. 동작이 몸을 앞으로 옮기면 러너가 튑니다</span></td></tr>
+          <tr><td>폴리곤</td><td>삼각형 15,000~30,000개<span class="why">지금 모델은 49,000개. 폰에서 4명 + 영상 재생을 버티려면 줄여야 합니다</span></td></tr>
+          <tr><td>재질</td><td>3개 이하 (피부, 옷, <code>TeamColor</code> 셔츠). PBR(metallic-roughness), metallic 0, 천은 roughness 0.7~0.9</td></tr>
+          <tr><td>텍스처</td><td>1024×1024 (최대 2048), Base Color + Normal 필수, ORM은 선택, JPG/PNG</td></tr>
+          <tr><td>머리카락</td><td>메시로 만들거나, 투명을 쓰면 Alpha Mode = <code>MASK</code><span class="why"><code>BLEND</code>는 웹에서 그리는 순서가 꼬여 깜빡입니다</span></td></tr>
+          <tr><td>스키닝</td><td>정점당 뼈 영향 4개 이하, 뼈 70개 이하</td></tr>
+          <tr><td>파일 용량</td><td>1명당 8MB 이하</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>추천 작업 순서</h2>
+    <ol>
+      <li><strong>모델링</strong> Blender로 러닝복 차림의 사람을 만듭니다(반팔 셔츠, 러닝 반바지나 레깅스, 러닝화). 캐릭터 제작 도구나 구매한 에셋으로 시작해도 되지만, 학교 프로젝트와 앱 시연에 써도 되는 라이선스인지 확인해 주세요.</li>
+      <li><strong>뼈대와 동작</strong> <a href="https://www.mixamo.com" target="_blank" rel="noopener">mixamo.com</a>(Adobe 계정으로 무료)에 올려 자동으로 뼈대를 넣습니다. 그다음 Idle, Walking, Running 동작을 <strong>In Place 체크</strong>를 켜고 FBX(With Skin)로 받습니다.</li>
+      <li><strong>합치기</strong> Blender에서 세 동작을 한 모델에 모으고, 동작(Action) 이름을 <code>idle</code> / <code>walk</code> / <code>run</code>으로 바꿉니다.</li>
+      <li><strong>내보내기</strong> File → Export → glTF 2.0, 형식은 glTF Binary, <em>+Y Up</em> 켜기, Animation 포함, 모디파이어 적용.</li>
+      <li><strong>확인</strong> <a href="https://gltf-viewer.donmccurdy.com/" target="_blank" rel="noopener">gltf-viewer.donmccurdy.com</a>에 끌어다 놓고, 동작 3개가 보이는지와 반복할 때 끊기지 않는지 봅니다.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>넘기기 전 체크리스트</h2>
+    <ul class="check">
+      <li>파일 4개: <code>runner_me.glb</code>, <code>runner_minji.glb</code>, <code>runner_junho.glb</code>, <code>runner_seoyeon.glb</code></li>
+      <li>각 파일에 동작 <code>idle</code>, <code>walk</code>, <code>run</code>이 있고 전부 제자리 동작</li>
+      <li>키가 1.65~1.80m (뷰어 격자 기준), 정면이 +Z</li>
+      <li>셔츠 재질 이름이 <code>TeamColor</code></li>
+      <li>삼각형 30,000개 이하, 파일 8MB 이하</li>
+      <li>뒷모습 스크린샷 1장씩 (등판, 뒷머리, 신발 밑창이 보이게)</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>피해 주세요</h2>
+    <ul class="avoid">
+      <li>광택 있는 재질, 온몸이 한 색인 디자인</li>
+      <li>앞으로 이동하는 동작 (In Place 안 켠 Running)</li>
+      <li>cm 단위로 내보내서 100배 커진 모델</li>
+      <li>반투명(<code>BLEND</code>) 머리카락이나 옷</li>
+      <li>브랜드 로고 (실제 브랜드 상표)</li>
+    </ul>
+  </section>
+
+  <footer>
+    참고용으로 지금 쓰는 모델(<code>run3d/assets/Xbot.glb</code>, Mixamo 뼈대 67개, 삼각형 49,112개)을 같이 넘겨드리면 크기, 방향, 동작 이름을 그대로 맞춰 볼 수 있습니다. 파일을 받으면 개발 쪽에서 <code>TeamColor</code> 색 바꾸기와 사람별 모델 연결을 붙입니다.
+  </footer>
+</main>

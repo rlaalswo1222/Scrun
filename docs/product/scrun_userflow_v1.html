@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>스크런 유저플로우 v1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* 레이아웃: 문서형 한 단. 흐름마다 세로 본선(왼쪽) + 결정에서 갈라지는 곁가지(오른쪽), 좁으면 곁가지가 아래로 */
+:root {
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --fg: #1a2230;
+  --muted: #5b6678;
+  --line: #c9d1dd;
+  --screen: #d9530b;
+  --screen-soft: #fdebe0;
+  --decision: #2f62c9;
+  --decision-soft: #e3ebfb;
+  --system: #12806f;
+  --system-soft: #dcf2ee;
+  --error: #c2363a;
+  --error-soft: #fbe4e4;
+  --later: #7a6a9c;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161e; --surface: #1a212c; --fg: #e6ebf2; --muted: #9aa6b8; --line: #344052;
+    --screen: #ff8a4c; --screen-soft: #3a2418; --decision: #7ea6ff; --decision-soft: #1d2a45;
+    --system: #4fd1bb; --system-soft: #143530; --error: #ff7b7f; --error-soft: #3d1c1e; --later: #b9a8e0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161e; --surface: #1a212c; --fg: #e6ebf2; --muted: #9aa6b8; --line: #344052;
+  --screen: #ff8a4c; --screen-soft: #3a2418; --decision: #7ea6ff; --decision-soft: #1d2a45;
+  --system: #4fd1bb; --system-soft: #143530; --error: #ff7b7f; --error-soft: #3d1c1e; --later: #b9a8e0;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 72px;
+}
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 48px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.3; }
+h1 { font-size: 30px; font-weight: 700; }
+h2 { font-size: 22px; font-weight: 700; }
+h3 { font-size: 16px; font-weight: 700; }
+p { margin: 0; }
+ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
+.lead { color: var(--muted); max-width: 65ch; }
+header { display: grid; gap: 10px; }
+section { display: grid; gap: 16px; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
+.toc a { color: var(--decision); text-decoration: none; }
+.toc a:hover, .toc a:focus-visible { text-decoration: underline; }
+a:focus-visible { outline: 2px solid var(--decision); outline-offset: 2px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+.card p, .card li { font-size: 14px; color: var(--muted); }
+.pill { display: inline-block; font-family: var(--font-mono); font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; vertical-align: 2px; margin-left: 4px; }
+.pill.now { color: var(--system); }
+.pill.later { color: var(--later); }
+
+/* 화면 지도 */
+.map { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 14px; }
+.map-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.map-row .lbl { font-family: var(--font-mono); font-size: 12px; color: var(--muted); min-width: 64px; }
+.node { border: 1.5px solid var(--screen); background: var(--screen-soft); border-radius: 6px; padding: 4px 10px; font-size: 14px; }
+.node.hub { border-width: 2.5px; font-weight: 700; }
+.node.tab { border-color: var(--decision); background: var(--decision-soft); }
+.sep { color: var(--muted); font-size: 13px; }
+
+/* 범례 */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13.5px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chip { width: 14px; height: 14px; border-radius: 3px; border: 2px solid; display: inline-block; }
+.chip.screen { border-color: var(--screen); background: var(--screen-soft); }
+.chip.decision { border-color: var(--decision); background: var(--decision-soft); border-radius: 999px; }
+.chip.system { border-color: var(--system); background: var(--system-soft); border-style: dashed; }
+.chip.error { border-color: var(--error); background: var(--error-soft); }
+.chip.end { border-color: var(--fg); background: var(--surface); border-radius: 999px; }
+
+/* 흐름도 */
+.flow-head { display: grid; gap: 4px; }
+.meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 14px; }
+.meta dt { color: var(--muted); }
+.meta dd { margin: 0; }
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 36px; align-items: start; }
+.main, .branch { display: grid; min-width: 0; }
+.branch { position: relative; padding-top: 6px; }
+.branch::before { content: ""; position: absolute; left: -36px; top: 30px; width: 30px; border-top: 2px dashed var(--line); }
+.cond { font-family: var(--font-mono); font-size: 12px; color: var(--decision); margin-bottom: 4px; }
+.back { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.branch .arrow { margin-left: 18px; }
+.step { border-radius: 8px; padding: 10px 12px; border: 2px solid; display: grid; gap: 2px; }
+.step .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; }
+.step b { font-size: 15px; font-weight: 700; }
+.step p { font-size: 13.5px; color: var(--muted); }
+.step.screen { border-color: var(--screen); background: var(--screen-soft); }
+.step.screen .k { color: var(--screen); }
+.step.decision { border-color: var(--decision); background: var(--decision-soft); border-radius: 22px; }
+.step.decision .k { color: var(--decision); }
+.step.system { border-color: var(--system); background: var(--system-soft); border-style: dashed; }
+.step.system .k { color: var(--system); }
+.step.error { border-color: var(--error); background: var(--error-soft); }
+.step.error .k { color: var(--error); }
+.step.end { border-color: var(--fg); background: var(--surface); border-radius: 999px; justify-items: start; padding: 8px 16px; }
+.step.end .k { color: var(--muted); }
+.step.sub { border-color: var(--fg); background: var(--bg); border-style: double; border-width: 4px; }
+.step.sub .k { color: var(--fg); }
+.arrow { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding: 4px 0 4px 18px; border-left: 2px solid var(--line); margin-left: 18px; min-height: 26px; display: flex; align-items: center; }
+.why { font-size: 13px; color: var(--muted); border-left: 3px solid var(--decision); padding: 2px 0 2px 10px; margin: 8px 0; }
+
+/* 표 */
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12.5px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.id { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+td.scope { white-space: nowrap; }
+.note { font-size: 13px; color: var(--muted); }
+
+@media (max-width: 640px) {
+  .row { grid-template-columns: minmax(0, 1fr); }
+  .branch { margin: 4px 0 6px 18px; padding: 8px 0 8px 14px; border-left: 2px dashed var(--line); }
+  .branch::before { display: none; }
+  h1 { font-size: 25px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">초안 v1 · 팀 검토 전 · 2026-10-27</div>
+    <h1>스크런 유저플로우 v1</h1>
+    <p class="lead">폰과 무선 이어폰만으로 러닝머신 속도를 재서 가상 섬 코스를 달리는 앱의 전체 사용 흐름입니다. 흐름 8개, 예외, 화면 목록, 흐름에서 나온 요구사항, 팀이 정할 결정을 담았습니다. 값(보정 단계 수, 일시정지까지 시간 등)은 실험과 사용성 점검으로 정할 예시입니다.</p>
+    <nav class="toc" aria-label="목차">
+      <a href="#context">사용 상황</a><a href="#map">화면 지도</a><a href="#f1">F1 첫 실행</a><a href="#f2">F2 달리기</a><a href="#f3">F3 보정</a><a href="#f4">F4 결과·저장</a><a href="#f5">F5 로그인</a><a href="#f6">F6 기록</a><a href="#f7">F7 친구</a><a href="#f8">F8 설정</a><a href="#ex">예외</a><a href="#screens">화면 목록</a><a href="#req">요구사항</a><a href="#open">정할 것</a>
+    </nav>
+  </header>
+
+  <section id="context">
+    <h2>사용 상황과 설계 원칙</h2>
+    <div class="cards">
+      <div class="card"><h3>어디서 쓰나</h3><p>헬스장·집 러닝머신. 폰은 거치대에 가로로, 팔 길이보다 멀리. 손에 땀, 주변 소음, 헬스장 와이파이는 불안정할 수 있음.</p></div>
+      <div class="card"><h3>기기</h3><p>아이폰: 에어팟 움직임 + 폰 진동. 안드로이드: 폰 진동(갤럭시 버즈는 공식 SDK가 없어 제외). 블루투스 러닝머신(FTMS)은 이후.</p></div>
+      <div class="card"><h3>원칙 1 · 달리는 중엔 손을 안 쓰게</h3><p>걸음으로 자동 시작·자동 일시정지. 달리기 화면 버튼은 크게 2개뿐.</p></div>
+      <div class="card"><h3>원칙 2 · 첫 달리기까지 막지 않기</h3><p>로그인은 나중에. 보정은 권하되 건너뛸 수 있게. 기록은 기기에 먼저 저장.</p></div>
+      <div class="card"><h3>원칙 3 · 쓸수록 정확해지게</h3><p>결과 화면에서 러닝머신에 표시된 거리를 받으면 보폭 보정을 갱신.</p></div>
+    </div>
+    <div class="cards">
+      <div class="card"><h3>이번 4주 범위 <span class="pill now">4주</span></h3><ul><li>첫 실행, 달리기, 보정, 결과·저장</li><li>로그인, 기록, 친구 기록과 달리기, 코스 순위</li><li>설정</li></ul></div>
+      <div class="card"><h3>이후 <span class="pill later">이후</span></h3><ul><li>실시간 함께 달리기(같은 시간 접속자)</li><li>블루투스 러닝머신 속도 직접 받기</li><li>응원 보내기, 단체 달리기 일정</li></ul></div>
+    </div>
+  </section>
+
+  <section id="map">
+    <h2>화면 지도</h2>
+    <p class="lead">첫 실행을 마치면 홈이 중심입니다. 아래 탭 4개로 나머지 영역에 갑니다.</p>
+    <div class="map">
+      <div class="map-row"><span class="lbl">첫 실행</span><span class="node">환영</span><span class="sep">→</span><span class="node">권한</span><span class="sep">→</span><span class="node">프로필</span><span class="sep">→</span><span class="node">기기 연결</span><span class="sep">→</span><span class="node">거치 안내</span><span class="sep">→</span><span class="node">보정(선택)</span><span class="sep">→</span><span class="node hub">홈</span></div>
+      <div class="map-row"><span class="lbl">아래 탭</span><span class="node tab">홈</span><span class="node tab">기록</span><span class="node tab">친구</span><span class="node tab">설정</span></div>
+      <div class="map-row"><span class="lbl">홈</span><span class="node">코스 선택</span><span class="sep">→</span><span class="node">달리기 준비</span><span class="sep">→</span><span class="node">달리기</span><span class="sep">⟲</span><span class="node">자동 일시정지</span><span class="sep">→</span><span class="node">결과</span></div>
+      <div class="map-row"><span class="lbl">기록</span><span class="node">기록 목록</span><span class="sep">→</span><span class="node">기록 상세</span></div>
+      <div class="map-row"><span class="lbl">친구</span><span class="node">친구 목록</span><span class="sep">·</span><span class="node">닉네임 검색</span><span class="sep">·</span><span class="node">친구 프로필</span><span class="sep">·</span><span class="node">코스 순위</span></div>
+      <div class="map-row"><span class="lbl">설정</span><span class="node">센서</span><span class="sep">·</span><span class="node">다시 보정</span><span class="sep">·</span><span class="node">프로필·단위</span><span class="sep">·</span><span class="node">그래픽 품질</span><span class="sep">·</span><span class="node">기록 공개 범위</span><span class="sep">·</span><span class="node">계정</span></div>
+    </div>
+    <div class="legend" aria-label="흐름도 범례">
+      <span><i class="chip screen"></i>화면</span>
+      <span><i class="chip decision"></i>결정·조건</span>
+      <span><i class="chip system"></i>앱이 알아서 하는 처리</span>
+      <span><i class="chip error"></i>예외</span>
+      <span><i class="chip end"></i>시작·끝</span>
+    </div>
+  </section>
+
+  <!-- F1 -->
+  <section id="f1">
+    <div class="flow-head">
+      <div class="eyebrow">F1 · 4주</div>
+      <h2>첫 실행</h2>
+      <dl class="meta"><dt>목표</dt><dd>처음 연 사람이 권한·키·센서·거치를 마치고 홈에 도착한다.</dd><dt>끝</dt><dd>홈(보정을 건너뛰었으면 “보정하기” 표시)</dd></dl>
+    </div>
+    <div class="diagram">
+      <div class="row"><div class="main">
+        <div class="step end"><span class="k">시작</span><b>앱을 처음 실행</b></div>
+        <div class="arrow"></div>
+        <div class="step screen"><span class="k">화면</span><b>환영</b><p>“폰과 이어폰만으로 러닝머신을 가상 코스로” + [시작하기]</p></div>
+        <div class="arrow"></div>
+        <div class="step screen"><span class="k">화면</span><b>권한 안내</b><p>동작 센서(걸음 측정)·블루투스(이어폰)를 왜 쓰는지 먼저 보여 주고 시스템 권한 창을 띄움</p></div>
+        <div class="arrow"></div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">결정</span><b>동작 센서 권한을 허용했나?</b></div><div class="arrow">예</div></div>
+        <div class="branch"><div class="cond">아니오</div><div class="step error"><span class="k">예외 화면</span><b>권한이 없으면 걸음을 셀 수 없음</b><p>[설정 열기] [다시 보기]</p></div><div class="back">↩ 권한 안내</div></div>
+      </div>
+      <div class="row"><div class="main">
+        <div class="step screen"><span class="k">화면</span><b>프로필</b><p>키(필수), 몸무게(선택), 단위 km·mi</p></div>
+        <div class="arrow"></div>
+        <div class="step system"><span class="k">처리</span><b>키로 처음 보폭 추정</b><p>보정 전까지 쓰는 기본값</p></div>
+        <div class="arrow"></div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">조건</span><b>아이폰인가?</b></div><div class="arrow">예</div></div>
+        <div class="branch"><div class="cond">안드로이드</div><div class="step system"><span class="k">처리</span><b>폰 진동만으로 측정</b><p>안내 한 줄만 보여 주고 다음으로</p></div><div class="back">↩ 거치 안내로</div></div>
+      </div>
+      <div class="row"><div class="main">
+        <div class="step screen"><span class="k">화면</span><b>기기 연결</b><p>에어팟을 끼면 자동으로 찾음. 연결 상태 점</p></div>
+        <div class="arrow"></div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">결정</span><b>에어팟이 연결됐나?</b></div><div class="arrow">예</div></div>
+        <div class="branch"><div class="cond">아니오 · [이어폰 없이 계속]</div><div class="step screen"><span class="k">화면</span><b>폰 진동만으로 측정</b><p>정확도가 낮을 수 있다고 알림. 나중에 설정에서 연결 가능</p></div><div class="back">↩ 거치 안내로</div></div>
+      </div>
+      <div class="row"><div class="main">
+        <div class="step screen"><span class="k">화면</span><b>거치 안내</b><p>거치대 위치·폰 방향(가로) 그림. 진동 측정은 거치 상태에 따라 달라짐</p></div>
+        <div class="arrow"></div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">결정</span><b>지금 보정할까?</b></div><div class="arrow">지금 보정</div><div class="step sub"><span class="k">하위 흐름</span><b>F3 보정</b></div><div class="arrow"></div></div>
+        <div class="branch"><div class="cond">나중에</div><div class="step system"><span class="k">처리</span><b>키 기반 보폭으로 시작</b><p>홈에 “보정하기” 표시</p></div><div class="back">↩ 홈으로</div></div>
+      </div>
+      <div class="row"><div class="main">
+        <div class="step end"><span class="k">끝</span><b>홈</b></div>
+        <div class="why">로그인을 첫 실행에 넣지 않았습니다. 첫 달리기 전에 계정을 만들게 하면 이탈이 크고, 기록 백업·친구 기능을 쓰려는 순간에 물어도 늦지 않습니다(F4·F5).</div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- F2 -->
+  <section id="f2">
+    <div class="flow-head">
+      <div class="eyebrow">F2 · 4주 · 핵심 과업</div>
+      <h2>달리기</h2>
+      <dl class="meta"><dt>목표</dt><dd>코스와 함께 달릴 상대를 고르고, 손을 거의 쓰지 않고 달린다.</dd><dt>진입</dt><dd>홈 [달리기 시작] · 기록 상세 [이 기록과 다시 달리기] · 친구 프로필 [이 기록과 달리기]</dd></dl>
+    </div>
+    <div class="diagram">
+      <div class="row"><div class="main">
+        <div class="step end"><span class="k">시작</span><b>홈 [달리기 시작]</b></div>
+        <div class="arrow"></div>
+        <div class="step screen"><span class="k">화면</span><b>코스 선택</b><p>노을 호수 한 바퀴 6.67km · 거목 협곡 순환 9.69km · 해안 절벽 순환 8.78km · 섬 일주 10.88km. 함께 달릴 상대: 없음 / 페이스 봇 / 내 최고 기록 / 친구 기록(로그인 시). 다른 화면에서 들어오면 상대가 미리 골라져 있음</p></div>
+        <div class="arrow"></div>
+        <div class="step screen"><span class="k">화면</span><b>달리기 준비</b><p>센서 상태(이어폰·진동), 거치 확인, “러닝머신을 켜고 걷기 시작하세요”</p></div>
+        <div class="arrow"></div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">조건</span><b>센서 신호가 정상인가?</b></div><div class="arrow">예</div></div>
+        <div class="branch"><div class="cond">아니오</div><div class="step error"><span class="k">예외 화면</span><b>센서 문제</b><p>[다시 연결] [폰 진동만으로 계속] [취소]</p></div><div class="back">↩ 달리기 준비</div></div>
+      </div>
+      <div class="row"><div class="main">
+        <div class="step system"><span class="k">처리</span><b>걸음 감지 → 카운트다운 → 자동 시작</b></div>
+        <div class="arrow"></div>
+        <div class="step screen"><span class="k">화면</span><b>달리기</b><p>큰 숫자: 페이스·거리·시간 / 상대와 간격 / 큰 버튼 2개: 일시정지, 속도 ±(추정이 틀렸을 때 바로 맞춤) / 1km마다 구간 알림</p></div>
+        <div class="arrow"></div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">조건</span><b>걸음이 몇 초 넘게 멈췄나?</b></div><div class="arrow">아니오 · 계속 달림</div></div>
+        <div class="branch"><div class="cond">예 · 또는 [일시정지]</div><div class="step screen"><span class="k">화면</span><b>일시정지</b><p>다시 걸으면 자동으로 이어서 · [종료]</p></div><div class="back">↩ 다시 걸으면 달리기 / [종료]는 아래로</div></div>
+      </div>
+      <div class="row"><div class="main">
+        <div class="step decision"><span class="k">조건</span><b>끝났나? 코스 완주 또는 [종료]</b></div>
+        <div class="arrow">예</div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">조건</span><b>1분 이상 달렸나?</b></div><div class="arrow">예</div><div class="step sub"><span class="k">하위 흐름</span><b>F4 결과·저장</b></div></div>
+        <div class="branch"><div class="cond">아니오</div><div class="step screen"><span class="k">확인 창</span><b>너무 짧은 달리기</b><p>[저장 안 함] [그래도 저장]</p></div><div class="back">↩ 홈 또는 F4</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- F3 -->
+  <section id="f3">
+    <div class="flow-head">
+      <div class="eyebrow">F3 · 4주 · 공용 하위 흐름</div>
+      <h2>보정</h2>
+      <dl class="meta"><dt>목표</dt><dd>러닝머신 속도를 몇 단계로 맞추며 달려 속도별 보폭을 저장한다.</dd><dt>진입</dt><dd>F1 첫 실행 · 홈 “보정하기” · 설정 [다시 보정] · 결과에서 오차가 클 때 권유</dd><dt>끝</dt><dd>들어온 곳으로 돌아감</dd></dl>
+    </div>
+    <div class="diagram">
+      <div class="row"><div class="main">
+        <div class="step screen"><span class="k">화면</span><b>보정 안내</b><p>준비물(러닝머신), 단계 수와 예상 시간, 단계마다 화면을 한 번만 누르면 된다는 안내</p></div>
+        <div class="arrow"></div>
+        <div class="step screen"><span class="k">화면</span><b>보정 단계 (단계마다 반복)</b><p>“러닝머신을 ○ km/h로 맞추세요” → 맞춘 뒤 큰 [맞췄어요] 버튼</p></div>
+        <div class="arrow"></div>
+        <div class="step system"><span class="k">처리</span><b>걸음 주기 수집</b><p>속도를 바꾼 직후·흔들린 구간은 버림</p></div>
+        <div class="arrow"></div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">조건</span><b>쓸 만한 데이터가 충분한가?</b></div><div class="arrow">예</div></div>
+        <div class="branch"><div class="cond">아니오</div><div class="step error"><span class="k">예외</span><b>이 단계 다시 측정</b><p>[다시] [이 단계 건너뛰기]</p></div><div class="back">↩ 보정 단계</div></div>
+      </div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">조건</span><b>남은 단계가 있나?</b></div><div class="arrow">아니오</div></div>
+        <div class="branch"><div class="cond">예</div><div class="back">↩ 다음 속도로 보정 단계 반복</div></div>
+      </div>
+      <div class="row"><div class="main">
+        <div class="step system"><span class="k">처리</span><b>속도별 보폭 계산·저장</b><p>기기에 저장(로그인 시 서버에도)</p></div>
+        <div class="arrow"></div>
+        <div class="step screen"><span class="k">화면</span><b>보정 완료</b><p>[확인] → 들어온 곳으로</p></div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- F4 -->
+  <section id="f4">
+    <div class="flow-head">
+      <div class="eyebrow">F4 · 4주</div>
+      <h2>결과와 저장</h2>
+      <dl class="meta"><dt>목표</dt><dd>달린 내용을 확인하고, 기록을 잃지 않고, 다음 달리기가 더 정확해진다.</dd></dl>
+    </div>
+    <div class="diagram">
+      <div class="row"><div class="main">
+        <div class="step screen"><span class="k">화면</span><b>결과</b><p>거리·시간·평균 페이스, 1km 구간 기록, 상대와의 차이. [러닝머신 표시 거리 입력]</p></div>
+        <div class="arrow"></div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">결정</span><b>러닝머신 표시 거리를 입력했나?</b></div><div class="arrow">건너뛰기</div></div>
+        <div class="branch"><div class="cond">입력</div><div class="step system"><span class="k">처리</span><b>보폭 보정 갱신</b><p>이번 기록 거리도 입력값으로 고칠지 묻기</p></div><div class="back">↩ 저장으로</div></div>
+      </div>
+      <div class="row"><div class="main">
+        <div class="step system"><span class="k">처리</span><b>기기에 먼저 저장</b><p>네트워크와 상관없이 항상</p></div>
+        <div class="arrow"></div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">조건</span><b>로그인했나?</b></div><div class="arrow">예</div><div class="step system"><span class="k">처리</span><b>서버로 전송</b><p>실패하면 보관했다가 다음 실행 때 다시</p></div><div class="arrow"></div></div>
+        <div class="branch"><div class="cond">아니오</div><div class="step screen"><span class="k">카드</span><b>로그인 제안</b><p>“기록을 백업하고 친구와 달리려면 로그인” [로그인] [나중에]. 처음 몇 번만 보여 줌</p></div><div class="back">↩ [로그인]은 F5, [나중에]는 홈</div></div>
+      </div>
+      <div class="row"><div class="main">
+        <div class="step end"><span class="k">끝</span><b>홈 (최근 기록 갱신)</b></div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- F5 -->
+  <section id="f5">
+    <div class="flow-head">
+      <div class="eyebrow">F5 · 4주</div>
+      <h2>로그인·가입</h2>
+      <dl class="meta"><dt>진입</dt><dd>결과의 로그인 제안 · 친구 탭 · 설정 [계정]</dd><dt>끝</dt><dd>들어온 곳으로 돌아감</dd></dl>
+    </div>
+    <div class="diagram">
+      <div class="row"><div class="main">
+        <div class="step screen"><span class="k">화면</span><b>로그인</b><p>이메일·비밀번호 · [가입하기] · [비밀번호 찾기]</p></div>
+        <div class="arrow"></div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">결정</span><b>계정이 있나?</b></div><div class="arrow">예 · 로그인 성공</div></div>
+        <div class="branch"><div class="cond">아니오</div><div class="step screen"><span class="k">화면</span><b>가입</b><p>이메일, 비밀번호, 닉네임(친구에게 보이는 이름)</p></div><div class="back">↩ 가입 완료 후 아래로</div></div>
+      </div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">조건</span><b>이 기기에 로그인 전 기록이 있나?</b></div><div class="arrow">없음</div></div>
+        <div class="branch"><div class="cond">있음</div><div class="step system"><span class="k">처리</span><b>계정으로 옮기기</b><p>기본은 옮김. 보정값도 함께</p></div></div>
+      </div>
+      <div class="row"><div class="main">
+        <div class="step end"><span class="k">끝</span><b>들어온 곳으로</b></div>
+        <div class="why">구글·애플 로그인 대신 이메일로 제안했습니다. 앱스토어는 다른 소셜 로그인을 넣으면 애플 로그인도 함께 넣도록 요구하므로, 4주 안에는 이메일 하나가 가장 단순합니다. 최종 결정은 아래 “정할 것”에 있습니다.</div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- F6 -->
+  <section id="f6">
+    <div class="flow-head">
+      <div class="eyebrow">F6 · 4주</div>
+      <h2>기록</h2>
+      <dl class="meta"><dt>목표</dt><dd>지난 달리기를 보고, 그 기록과 다시 달린다.</dd></dl>
+    </div>
+    <div class="diagram">
+      <div class="row"><div class="main">
+        <div class="step end"><span class="k">시작</span><b>기록 탭</b></div>
+        <div class="arrow"></div>
+        <div class="step screen"><span class="k">화면</span><b>기록 목록</b><p>날짜·코스·거리·평균 페이스, 코스별 최고 기록 표시</p></div>
+        <div class="arrow"></div>
+        <div class="step screen"><span class="k">화면</span><b>기록 상세</b><p>구간 기록, 속도 변화, 측정 방식(에어팟·진동, 보정 여부)</p></div>
+        <div class="arrow"></div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">결정</span><b>무엇을 할까?</b></div><div class="arrow">[이 기록과 다시 달리기]</div><div class="step sub"><span class="k">하위 흐름</span><b>F2 달리기 (상대 = 이 기록)</b></div></div>
+        <div class="branch"><div class="cond">[삭제]</div><div class="step screen"><span class="k">확인 창</span><b>기록 삭제</b><p>되돌릴 수 없음을 알리고 [삭제] [취소]</p></div><div class="back">↩ 기록 목록</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- F7 -->
+  <section id="f7">
+    <div class="flow-head">
+      <div class="eyebrow">F7 · 4주(순위까지) · 실시간은 이후</div>
+      <h2>친구</h2>
+      <dl class="meta"><dt>목표</dt><dd>친구를 팔로우하고, 친구 기록과 같이 달리고, 코스 순위를 본다.</dd></dl>
+    </div>
+    <div class="diagram">
+      <div class="row"><div class="main">
+        <div class="step end"><span class="k">시작</span><b>친구 탭</b></div>
+        <div class="arrow"></div>
+      </div></div>
+      <div class="row">
+        <div class="main"><div class="step decision"><span class="k">조건</span><b>로그인했나?</b></div><div class="arrow">예</div></div>
+        <div class="branch"><div class="cond">아니오</div><div class="step screen"><span class="k">화면</span><b>로그인 필요 안내</b><p>친구 기능이 무엇인지 한 장 + [로그인]</p></div><div class="back">↩ F5 후 친구 탭</div></div>
+      </div>
+      <div class="row"><div class="main">
+        <div class="step screen"><span class="k">화면</span><b>친구 목록</b><p>팔로우 중인 사람, 최근 달리기 · [닉네임 검색] · [코스 순위]</p></div>
+        <div class="arrow">[닉네임 검색]</div>
+        <div class="step screen"><span class="k">화면</span><b>검색 결과</b><p>닉네임 · [팔로우]</p></div>
+        <div class="arrow">사람 선택</div>
+        <div class="step screen"><span class="k">화면</span><b>친구 프로필</b><p>최근 기록, 코스별 최고 기록 · [이 기록과 달리기]</p></div>
+        <div class="arrow">[이 기록과 달리기]</div>
+        <div class="step sub"><span class="k">하위 흐름</span><b>F2 달리기 (상대 = 친구 기록)</b></div>
+        <div class="why">같은 시간에 접속하지 않아도 친구 기록을 고스트로 불러와 같이 달립니다. 이미 있는 고스트 재생을 그대로 쓰고, 서버는 기록만 저장하면 돼서 4주 안에 가능합니다.</div>
+      </div></div>
+      <div class="row"><div class="main">
+        <div class="step screen"><span class="k">화면</span><b>코스 순위</b><p>코스별 최고 기록 순위(범위는 “정할 것” 참고)</p></div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- F8 -->
+  <section id="f8">
+    <div class="flow-head">
+      <div class="eyebrow">F8 · 4주</div>
+      <h2>설정</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>항목</th><th>하는 일</th><th>이어지는 흐름</th></tr></thead>
+        <tbody>
+          <tr><td>센서</td><td>에어팟 연결 상태, 다시 연결, 진동 측정 확인</td><td>F1의 기기 연결 화면 재사용</td></tr>
+          <tr><td>다시 보정</td><td>보정을 처음부터</td><td>F3</td></tr>
+          <tr><td>프로필·단위</td><td>키, 몸무게, km·mi</td><td>키를 바꾸면 보정 전 기본 보폭 다시 계산</td></tr>
+          <tr><td>그래픽 품질</td><td>자동 / 낮음 / 보통 / 높음</td><td>발열·배터리가 걱정될 때</td></tr>
+          <tr><td>기록 공개 범위</td><td>팔로워에게 공개 / 나만 보기</td><td>F7 친구 프로필·순위에 반영</td></tr>
+          <tr><td>계정</td><td>로그인·로그아웃, 계정 삭제</td><td>F5. 앱 안에서 계정을 삭제할 수 있어야 함(앱스토어 요구)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="ex">
+    <h2>예외</h2>
+    <p class="lead">어느 화면에서든 생길 수 있어서 흐름도 대신 표로 둡니다.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>상황</th><th>앱이 하는 일</th><th>사용자에게 보이는 것</th></tr></thead>
+        <tbody>
+          <tr><td>달리는 중 에어팟 연결이 끊김</td><td>폰 진동으로 바로 전환, 기록 계속</td><td>화면 위 알림 “이어폰이 끊겨 폰 진동으로 측정 중”</td></tr>
+          <tr><td>전화가 오거나 앱이 뒤로 감</td><td>일시정지, 기록 보존</td><td>돌아오면 [이어서 달리기] [종료]</td></tr>
+          <tr><td>앱이 꺼짐(오류·배터리 방전)</td><td>달리는 중 기록을 주기적으로 기기에 임시 저장</td><td>다음 실행 때 “지난 달리기를 저장할까요?”</td></tr>
+          <tr><td>걸음이 불규칙(손잡이 잡고 걷기 등)</td><td>직전 속도 유지</td><td>“속도가 다르면 ± 버튼으로 맞추세요”</td></tr>
+          <tr><td>폰이 뜨거워지거나 배터리 부족</td><td>그래픽 품질을 한 단계 낮춤</td><td>짧은 알림 한 번</td></tr>
+          <tr><td>달리는 중 화면 꺼짐</td><td>달리기 화면에서는 화면 꺼짐 방지</td><td>—</td></tr>
+          <tr><td>서버 오류·오프라인</td><td>기기에 보관하고 나중에 다시 전송</td><td>친구·순위 화면에 “연결되면 갱신”</td></tr>
+          <tr><td>설정에서 권한을 꺼 버림</td><td>다음 달리기 준비에서 확인</td><td>F1의 권한 안내 화면 재사용</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="screens">
+    <h2>화면 목록 (와이어프레임 대상)</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>화면</th><th>목적</th><th>흐름</th><th>범위</th></tr></thead>
+        <tbody>
+          <tr><td class="id">S01</td><td>환영</td><td>앱이 무엇인지 한 문장</td><td>F1</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S02</td><td>권한 안내</td><td>권한이 왜 필요한지</td><td>F1 · 예외</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S03</td><td>권한 거부 안내</td><td>설정으로 보내기</td><td>F1</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S04</td><td>프로필</td><td>키·몸무게·단위</td><td>F1 · F8</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S05</td><td>기기 연결</td><td>에어팟 연결(아이폰)</td><td>F1 · F8</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S06</td><td>거치 안내</td><td>폰 위치·방향</td><td>F1</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S07</td><td>보정 안내</td><td>준비물·단계·시간</td><td>F3</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S08</td><td>보정 단계</td><td>속도 맞추고 한 번 누르기</td><td>F3</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S09</td><td>보정 완료</td><td>끝났음을 알림</td><td>F3</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S10</td><td>홈</td><td>달리기 시작, 최근 기록, 보정 상태</td><td>전체</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S11</td><td>코스 선택</td><td>코스·함께 달릴 상대</td><td>F2</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S12</td><td>달리기 준비</td><td>센서·거치 확인</td><td>F2</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S13</td><td>센서 문제</td><td>다시 연결·진동만으로</td><td>F2</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S14</td><td>달리기</td><td>페이스·거리·시간, 큰 버튼 2개</td><td>F2</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S15</td><td>일시정지</td><td>이어서·종료</td><td>F2 · 예외</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S16</td><td>결과</td><td>기록 확인·표시 거리 입력</td><td>F4</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S17</td><td>로그인</td><td>이메일 로그인</td><td>F5</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S18</td><td>가입</td><td>이메일·비밀번호·닉네임</td><td>F5</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S19</td><td>기록 목록</td><td>지난 달리기</td><td>F6</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S20</td><td>기록 상세</td><td>구간·속도·측정 방식</td><td>F6</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S21</td><td>친구 목록·검색</td><td>팔로우</td><td>F7</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S22</td><td>친구 프로필</td><td>친구 기록과 달리기</td><td>F7</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S23</td><td>코스 순위</td><td>코스별 최고 기록</td><td>F7</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S24</td><td>설정</td><td>센서·보정·품질·공개 범위·계정</td><td>F8</td><td class="scope"><span class="pill now">4주</span></td></tr>
+          <tr><td class="id">S25</td><td>실시간 함께 달리기 로비</td><td>같은 코스 접속자</td><td>—</td><td class="scope"><span class="pill later">이후</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">확인 창(짧은 달리기, 기록 삭제, 지난 달리기 복구)과 로그인 제안 카드는 화면이 아니라 공용 부품으로 한 번만 그립니다.</p>
+  </section>
+
+  <section id="req">
+    <h2>흐름에서 나온 요구사항</h2>
+    <p class="lead">흐름을 그리면서 새로 드러난, 구현에 꼭 필요한 기능입니다. 요구사항 명세에 그대로 옮깁니다.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>요구사항</th><th>나온 곳</th><th>담당</th></tr></thead>
+        <tbody>
+          <tr><td class="id">R01</td><td>걸음 시작·정지 감지(자동 시작, 자동 일시정지)</td><td>F2</td><td>센서</td></tr>
+          <tr><td class="id">R02</td><td>아이폰에서 에어팟과 폰 진동을 동시에 수집하고, 끊기면 바로 전환</td><td>F2 · 예외</td><td>센서</td></tr>
+          <tr><td class="id">R03</td><td>다점 보정: 단계별 샘플 수집, 불량 구간 제외, 속도별 보폭 저장</td><td>F3</td><td>센서</td></tr>
+          <tr><td class="id">R04</td><td>결과의 표시 거리로 보정 갱신</td><td>F4</td><td>센서</td></tr>
+          <tr><td class="id">R05</td><td>달리는 중 수동 속도 ± 보정</td><td>F2</td><td>앱</td></tr>
+          <tr><td class="id">R06</td><td>센서 신호 상태 판정(정상·약함·없음)</td><td>F2 준비</td><td>센서</td></tr>
+          <tr><td class="id">R07</td><td>기록은 기기 먼저 저장, 실패한 전송은 다음 실행 때 다시</td><td>F4 · 예외</td><td>앱 · 서버</td></tr>
+          <tr><td class="id">R08</td><td>달리는 중 임시 저장과 앱이 꺼진 뒤 복구</td><td>예외</td><td>앱</td></tr>
+          <tr><td class="id">R09</td><td>로그인 전 기록·보정값을 계정으로 옮기기</td><td>F5</td><td>앱 · 서버</td></tr>
+          <tr><td class="id">R10</td><td>고스트 데이터 형식 하나(시간–거리)로 내 기록·친구 기록 모두 재생</td><td>F2 · F6 · F7</td><td>앱 · 서버</td></tr>
+          <tr><td class="id">R11</td><td>1km 구간 기록</td><td>F2 · F4</td><td>앱</td></tr>
+          <tr><td class="id">R12</td><td>팔로우, 닉네임 검색, 기록 공개 범위</td><td>F7 · F8</td><td>서버</td></tr>
+          <tr><td class="id">R13</td><td>앱 안에서 계정 삭제</td><td>F8</td><td>앱 · 서버</td></tr>
+          <tr><td class="id">R14</td><td>달리기 화면 꺼짐 방지, 발열 시 품질 낮춤</td><td>예외</td><td>앱</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="open">
+    <h2>팀이 정할 것</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>질문</th><th>제안</th><th>정하는 방법</th></tr></thead>
+        <tbody>
+          <tr><td>로그인 방식</td><td>이메일·비밀번호 하나</td><td>팀 회의. 소셜 로그인을 넣으면 애플 로그인도 필요</td></tr>
+          <tr><td>보정 단계 수와 속도</td><td>3단계</td><td>보정 없음 / 1점 / 3점 비교 실험</td></tr>
+          <tr><td>자동 일시정지까지 시간</td><td>몇 초 수준</td><td>러닝머신에서 내려올 때·손잡이 잡을 때 시험</td></tr>
+          <tr><td>짧은 달리기 기준</td><td>1분(지금 고스트 저장 기준과 같게)</td><td>팀 회의</td></tr>
+          <tr><td>코스 순위 범위</td><td>팔로우한 사람끼리 먼저</td><td>전체 순위는 부정 기록 문제가 있어 이후</td></tr>
+          <tr><td>실시간 함께 달리기 시점</td><td>4주 이후</td><td>4주차 끝에 남은 일정 보고 결정</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+</body>
+</html>

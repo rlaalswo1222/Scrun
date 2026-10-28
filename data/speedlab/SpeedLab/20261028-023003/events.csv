@@ -1,0 +1,16 @@
+t,event,value
+193.148,true_kmh,8
+245.325,true_kmh,7
+245.758,true_kmh,6
+254.765,calib_ready,6
+259.753,calib_start,6
+279.765,calib_done,6
+298.848,true_kmh,7
+299.448,true_kmh,8
+299.848,true_kmh,9
+300.080,true_kmh,10
+300.313,true_kmh,11
+300.545,true_kmh,12
+303.298,calib_ready,12
+308.290,calib_start,12
+328.305,calib_done,12

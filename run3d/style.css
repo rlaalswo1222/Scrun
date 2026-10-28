@@ -1,0 +1,75 @@
+/* 3D 화면(index.html)과 실사 모드(video.html)가 함께 쓰는 계기판 스타일 */
+:root {
+  --panel: rgba(255, 255, 255, 0.86);
+  --ink: #1d2433;
+  --muted: #5c6577;
+  --accent: #e8590c;
+}
+html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe8ff; color: var(--ink);
+  font-family: system-ui, -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+#scene { display: block; width: 100vw; height: 100vh; }
+.panel { position: fixed; background: var(--panel); border-radius: 16px; padding: 12px 16px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12); backdrop-filter: blur(6px); }
+
+#stats { top: 12px; left: 12px; min-width: 210px; }
+#course-name { font-size: 13px; color: var(--muted); font-weight: 600; max-width: 240px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#pace { font-size: clamp(40px, 9vmin, 64px); font-weight: 800; line-height: 1.05; letter-spacing: -1px; }
+#pace + small { font-size: 16px; color: var(--muted); margin-left: 4px; }
+.row { font-size: clamp(15px, 3.2vmin, 20px); margin-top: 4px; color: var(--muted); }
+.row b { color: var(--ink); font-size: 1.15em; }
+.bar { height: 6px; background: #e3e6ec; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+#progress { height: 100%; width: 0; background: var(--accent); }
+
+#board { top: 12px; right: 12px; margin: 0; padding: 8px 12px; list-style: none; min-width: 170px; }
+#board li { display: flex; align-items: center; gap: 8px; padding: 4px 0;
+  font-size: clamp(14px, 3vmin, 18px); }
+#board li.me { font-weight: 800; }
+#board .rank { width: 16px; color: var(--muted); }
+#board .dot { width: 10px; height: 10px; border-radius: 50%; }
+#board .name { flex: 1; }
+#board .gap { font-variant-numeric: tabular-nums; }
+
+#minimap { left: 12px; bottom: 12px; width: clamp(110px, 24vmin, 170px); height: clamp(110px, 24vmin, 170px);
+  padding: 0; }
+
+#controls { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 12px; }
+#controls button { font: inherit; font-weight: 800; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--panel); color: var(--ink); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+  min-width: 64px; height: 64px; font-size: 30px; }
+#controls #start { background: var(--accent); color: #fff; font-size: 22px; padding: 0 28px; }
+#controls #pick, #controls .pick { display: grid; place-items: center; height: 64px; padding: 0 18px; border-radius: 999px;
+  background: var(--panel); color: var(--ink); font-weight: 800; text-decoration: none;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15); }
+#controls #pick[hidden], #controls .pick[hidden] { display: none; }
+
+#overlay { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; }
+#overlay[hidden] { display: none; }
+#overlay .count { font-size: 160px; font-weight: 900; color: #fff; text-shadow: 0 6px 30px rgba(0, 0, 0, 0.35); }
+#overlay .card { pointer-events: auto; background: #fff; border-radius: 20px; padding: 24px 36px;
+  text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25); }
+#overlay .card h2 { margin: 0 0 4px; }
+#overlay .card .big { font-size: 48px; font-weight: 800; margin: 4px 0; }
+#overlay .card button { margin-top: 12px; font: inherit; font-weight: 700; padding: 10px 24px; border: 0;
+  border-radius: 999px; background: var(--accent); color: #fff; cursor: pointer; }
+
+#credit { position: fixed; right: 8px; bottom: 6px; font-size: 11px; color: var(--muted);
+  background: rgba(255, 255, 255, 0.7); padding: 2px 6px; border-radius: 6px; }
+#credit a { color: inherit; }
+#error { position: fixed; inset: auto 12px 90px 12px; background: #c92a2a; color: #fff; padding: 12px;
+  border-radius: 10px; font: 13px/1.4 monospace; white-space: pre-wrap; }
+#error:empty { display: none; }
+#debug { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 5;
+  background: rgba(0, 0, 0, 0.72); color: #fff; padding: 8px 12px; border-radius: 10px;
+  font: 12px/1.5 ui-monospace, monospace; text-align: center; max-width: 92vw; }
+#debug b { font-size: 18px; }
+#debug .good { color: #69db7c; } #debug .warn { color: #ffd43b; } #debug .bad { color: #ff6b6b; }
+#debug button { font: inherit; margin: 4px 2px 0; padding: 4px 8px; border-radius: 6px; border: 1px solid #888;
+  background: #333; color: #fff; }
+#debug button.on { background: #e8590c; border-color: #e8590c; }
+#loading { position: fixed; inset: 0; display: grid; place-items: center; font-size: 18px; color: var(--muted); }
+
+@media (max-width: 560px) {
+  #board { top: auto; bottom: 96px; }
+  #stats { min-width: 0; }
+}

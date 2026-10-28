@@ -1,0 +1,61 @@
+{
+ "height_cm": 175,
+ "stages": [],
+ "device": "Galaxy only",
+ "id": "20261012-215825",
+ "t0": 1791809905.4793055,
+ "created": "2026-10-12 21:58:25",
+ "segments": [
+  {
+   "index": 0,
+   "label": "걷기 5 km/h (나중에 붙임)",
+   "speed_kmh": 5,
+   "set": "warmup",
+   "start_s": 21,
+   "end_s": 78
+  },
+  {
+   "index": 1,
+   "label": "8 km/h (나중에 붙임)",
+   "speed_kmh": 8,
+   "set": "calib",
+   "start_s": 80,
+   "end_s": 141
+  },
+  {
+   "index": 2,
+   "label": "9 km/h (나중에 붙임)",
+   "speed_kmh": 9,
+   "set": "calib",
+   "start_s": 142,
+   "end_s": 204
+  },
+  {
+   "index": 3,
+   "label": "10 km/h (나중에 붙임)",
+   "speed_kmh": 10,
+   "set": "calib",
+   "start_s": 205,
+   "end_s": 262
+  },
+  {
+   "index": 4,
+   "label": "11 km/h (나중에 붙임)",
+   "speed_kmh": 11,
+   "set": "calib",
+   "start_s": 263,
+   "end_s": 319
+  },
+  {
+   "index": 5,
+   "label": "12 km/h (나중에 붙임)",
+   "speed_kmh": 12,
+   "set": "calib",
+   "start_s": 320,
+   "end_s": 344.3
+  }
+ ],
+ "finished": "2026-10-12 22:04:09",
+ "end_s": 344.407,
+ "note": "갤럭시만 기록. 속도는 기록 뒤 걸음 수 변화로 구간을 찾아 붙임 (사용자: 5 -> 8~12 약 1분씩)"
+}

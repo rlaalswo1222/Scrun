@@ -1,0 +1,1 @@
+{"id": "20261012-154421", "made": "2026-10-12 15:46:32", "height_cm": 175.0, "sources": {"airpods_acc": {"label": "에어팟 가속도", "fs": 25.0, "error": "ValueError: 구간 17~25s: 기록 범위 밖이거나 10초보다 짧습니다"}, "iphone_acc": {"label": "아이폰 진동", "fs": 100.0, "error": "ValueError: 구간 17~25s: 기록 범위 밖이거나 10초보다 짧습니다"}}}

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>코스 만들기</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root { --accent: #e8590c; --ink: #1d2433; --muted: #5c6577; --line: #e3e6ec; }
+  html, body { margin: 0; height: 100%; color: var(--ink);
+    font-family: system-ui, -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  #map { position: fixed; inset: 0; }
+  .sheet { position: fixed; left: 12px; right: 12px; bottom: 12px; max-width: 460px; margin: 0 auto; z-index: 1000;
+    box-sizing: border-box;
+    background: #fff; border-radius: 18px; padding: 16px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2); }
+  .sheet h1 { font-size: 18px; margin: 0 0 4px; }
+  .hint { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+  .row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+  .row > span { width: 40px; font-size: 14px; color: var(--muted); }
+  .chip { flex: 1; min-width: 0; font: inherit; font-weight: 600; padding: 10px 0; border-radius: 12px; cursor: pointer;
+    border: 1.5px solid var(--line); background: #fff; color: var(--ink); }
+  .chip.on { border-color: var(--accent); background: #fff4ec; color: var(--accent); }
+  input { flex: 1; font: inherit; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--line); min-width: 0; }
+  .main { width: 100%; font: inherit; font-weight: 800; font-size: 17px; padding: 14px; border: 0; border-radius: 14px;
+    background: var(--accent); color: #fff; cursor: pointer; margin-top: 4px; text-decoration: none;
+    display: block; text-align: center; box-sizing: border-box; }
+  .main[hidden] { display: none; }
+  .main:disabled { background: #c9ccd3; cursor: default; }
+  .main.run { background: #2b8a3e; }
+  #status { font-size: 14px; color: var(--muted); margin-top: 10px; min-height: 1em; }
+  #status.error { color: #c92a2a; }
+  .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid #ccc; border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -1px; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #mine { position: fixed; top: 12px; right: 12px; z-index: 1000; font: inherit; font-weight: 700; padding: 10px 14px;
+    border-radius: 999px; border: 0; background: #fff; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18); cursor: pointer; }
+  #list { position: fixed; top: 60px; right: 12px; z-index: 1000; width: min(320px, calc(100vw - 24px));
+    max-height: 50vh; overflow: auto; background: #fff; border-radius: 14px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    margin: 0; padding: 6px; list-style: none; }
+  #list[hidden] { display: none; }
+  #list li { padding: 10px 12px; border-radius: 10px; cursor: pointer; }
+  #list li:hover { background: #f4f5f7; }
+  #list small { color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<button id="mine">내 코스</button>
+<ul id="list" hidden></ul>
+
+<div class="sheet">
+  <h1>코스 만들기</h1>
+  <p class="hint" id="hint">지도를 눌러 출발점을 고르세요 (길 가까이)</p>
+  <div class="row"><span>거리</span>
+    <button class="chip" data-length="3000">3km</button>
+    <button class="chip on" data-length="5000">5km</button>
+    <button class="chip" data-length="10000">10km</button>
+  </div>
+  <div class="row"><span>모양</span>
+    <button class="chip on" data-mode="loop">한 바퀴</button>
+    <button class="chip" data-mode="out_and_back">갔다 오기</button>
+  </div>
+  <div class="row"><span>이름</span><input id="name" maxlength="30" placeholder="예) 우리 동네 5km (선택)"></div>
+  <button class="main" id="make" disabled>코스 만들기</button>
+  <a class="main run" id="run" hidden>이 코스로 달리기</a>
+  <div id="status"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module" src="src/make.js"></script>
+</body>
+</html>
