@@ -2,7 +2,7 @@
 
 폰(러닝머신 위에 올려놓기) + 무선 이어폰 센서만으로 러닝머신 속도를 추정하고, 그 속도로 아바타가 가상 섬 코스를 달리며 여러 명이 함께 달리는 앱. 캡스톤 팀 프로젝트.
 
-- 지금 하던 일: [HANDOFF.md](HANDOFF.md) / 작업 규칙·문서 지도: [CLAUDE.md](CLAUDE.md)
+- 각자 지금 하던 일: [handoff/](handoff/) (사람별 파일) / 작업 규칙·문서 지도: [CLAUDE.md](CLAUDE.md)
 - 속도 추정 현황: [docs/speed/README.md](docs/speed/README.md) / Unity 본 앱: [docs/unity/unity_map.md](docs/unity/unity_map.md)
 - 기술 결정: [docs/adr/](docs/adr/) / 작업 계획: [docs/plans/](docs/plans/)
 - 커밋 메시지 규칙: [docs/git_convention.md](docs/git_convention.md)

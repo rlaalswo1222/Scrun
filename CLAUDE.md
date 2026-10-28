@@ -4,7 +4,7 @@
 
 ## 작업 규칙
 - 답변은 항상 **한국어**. 범위는 "5에서 10분", "5–10분"처럼 쓰고 물결표(~)는 쓰지 않는다(채팅에서 취소선으로 보임)
-- 흐름: **계획 → 사용자 검토 → 구현 → 리뷰**. 기능·실험마다 `docs/plans/NNNN-이름.md` 1쪽(급하면 5줄) → 사용자 승인 → 구현 → `/code-review` → HANDOFF 갱신
+- 흐름: **계획 → 사용자 검토 → 구현 → 리뷰**. 기능·실험마다 `docs/plans/NNNN-이름.md` 1쪽(급하면 5줄) → 사용자 승인 → 구현 → `/code-review` → 자기 handoff 갱신
 - 기술 선택: 생소한 기술은 설명(로컬 HTML·그림)과 학습 자료를 먼저 주고 사용자가 이해한 뒤 고른다 → `docs/adr/`에 기록(템플릿 `0000-template.md`)
 - 보고서·발표 자료에 지어낸 수치, 실제로 없는 앱 흐름, 실측하지 않은 성능을 쓰지 않는다. 쓸 수 있는 수치는 `docs/speed/README.md`의 실측값뿐
 - 가설은 "가설"이라고 표시한다. 근거 연구를 말할 땐 실제로 찾아서 출처를 단다
@@ -16,7 +16,7 @@
 ## 문서 지도 — 하는 일에 맞는 것만 읽기
 | 하는 일 | 먼저 읽을 것 |
 |---|---|
-| 이어서 작업 | `HANDOFF.md` (지금 하던 일) |
+| 이어서 작업 | `handoff/<git user.name>.md` (그 사람의 지금 하던 일. `git config user.name`으로 확인, 남의 파일은 고치지 않음) |
 | 속도 추정·센서·SpeedLab 앱 | `docs/speed/README.md` → 필요하면 `speedlab_20261028.md`, `speed_ideas.md` |
 | Unity 본 앱(섬 맵·아바타·성능) | `docs/unity/unity_map.md`, `unity/tools/README.md` |
 | 화면·기능 기획 | `docs/product/scrun_userflow_v2.html`, `scrun_usecases_v1.md` |
@@ -24,7 +24,7 @@
 | 계획 중·승인된 작업 | `docs/plans/` |
 | 교수님·멘토 문서, HWP | `docs/meeting/`, `docs/hwp/` |
 | 유사 서비스 조사 | `docs/research/` (내부용, 보고서에 "Zwift 분석" 표현 금지) |
-| 지난 기록 | `docs/log/` (정리 전 HANDOFF 전체본, 회고) |
+| 지난 기록 | `docs/log/` (정리 전 인수인계 전체본, 회고) |
 
 ## 코드 위치
 - Unity 프로젝트 `unity/TestRun` (Unity 6.6 6000.6.7f1, URP, Android). 우리 코드는 `Assets/Scrun/`, 센서 플러그인 `Assets/Plugins/Android/`
