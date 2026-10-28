@@ -6,7 +6,7 @@ import Foundation
 final class Recorder: NSObject, ObservableObject, CMHeadphoneMotionManagerDelegate {
     static let columns: [String: [String]] = [
         "iphone_acc": ["x", "y", "z"], "iphone_gyro": ["x", "y", "z"],
-        "airpods_acc": ["x", "y", "z"], "airpods_gyro": ["x", "y", "z"],
+        "airpods_acc": ["x", "y", "z"], "airpods_gyro": ["x", "y", "z"], "airpods_grav": ["x", "y", "z"],
     ]
 
     @Published var headConnected = false
@@ -69,9 +69,11 @@ final class Recorder: NSObject, ObservableObject, CMHeadphoneMotionManagerDelega
                 // 에어팟 시각이 폰 시계와 크게 다르면(일부 iOS) 받은 시각을 쓴다
                 let now = ServerClient.localNow() + (self.server?.offset ?? 0)
                 if abs(t - now) > 2 { t = now }
-                let a = m.userAcceleration, r = m.rotationRate
+                let a = m.userAcceleration, gr = m.gravity, r = m.rotationRate
                 self.append("airpods_acc", [t, a.x * g, a.y * g, a.z * g])
                 self.append("airpods_gyro", [t, r.x, r.y, r.z])
+                // 중력 방향: airpods_acc + airpods_grav = 몸 전체 가속도 (공중에선 약 0g)
+                self.append("airpods_grav", [t, gr.x * g, gr.y * g, gr.z * g])
                 if !self.headConnected { DispatchQueue.main.async { self.headConnected = true } }
             }
         }

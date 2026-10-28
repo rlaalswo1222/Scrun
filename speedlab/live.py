@@ -26,6 +26,7 @@ LABELS = {
     "galaxy_acc": "갤럭시 진동", "galaxy_cam": "갤럭시 카메라(머리)",
     "galaxy_phyphox": "갤럭시 phyphox",
 }
+RAW_ONLY = {"airpods_grav"}  # 저장만 하고 걸음 분석은 안 하는 센서 (공중 시간 계산용, 계획 0008)
 
 
 # 러닝머신 거치대에 세워 두는 폰 진동: 걸음 = 발이 벨트를 치는 충격 (dsp.prepare mode="impact")
@@ -280,7 +281,7 @@ class Run:
                "segments": segs, "current": cur, "sources": {}}
         for name, src in sorted(self.sources.items()):
             last = src.last_t
-            if last is None:
+            if last is None or name in RAW_ONLY:
                 continue
             mode = mode_of(name)
             cad, q = cadence_of(src.window(last - WIN_S, last), mode)
@@ -314,6 +315,8 @@ class Run:
         height = float(self.meta.get("height_cm") or 170)
         out = {"id": self.id, "made": time.strftime("%Y-%m-%d %H:%M:%S"), "height_cm": height, "sources": {}}
         for name, src in sorted(self.sources.items()):
+            if name in RAW_ONLY:
+                continue
             res = {"label": label_of(name)}
             try:
                 t, s, fs = dsp.prepare(src.frame(), mode=mode_of(name))
