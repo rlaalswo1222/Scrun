@@ -21,6 +21,7 @@
 
 ## 이미 정한 방향 (바꾸려면 ADR부터)
 - 속도 추정: 폰은 계기판에 **그냥 올려놓은** 상태, 사용자 입력 없음. 마이크·FTMS·반자동 입력·버튼 감지 제외, 매번 보정은 최후의 수단 (ADR-0004, 0005, 0006)
+- 출시 대상: **아이폰 + 에어팟 먼저**(ADR-0007). Unity를 iOS로 빌드, 센서·속도 계산은 Swift 플러그인. 안드로이드 S22는 실험용
 - 3D: Unity 하나로(ADR-0001). 지도·이름·지형은 창작한 가상 섬, 손그림풍, 달리는 도로는 평지(경사 안내 없음). 서울 S-Map·실사 영상 코스는 제외
 
 ## 팀 작업 (git·GitHub `rlaalswo1222/Scrun`, 공개 저장소)
@@ -38,7 +39,7 @@
 | 속도 추정·센서·SpeedLab 앱 | `docs/speed/README.md` → 필요하면 `speedlab_20261028.md`, `speed_ideas.md` |
 | Unity 본 앱(섬 맵·아바타·성능) | `docs/unity/unity_map.md`, `unity/tools/README.md` |
 | 화면·기능 기획 | `docs/product/scrun_userflow_v2.html`, `scrun_usecases_v1.md` |
-| 기술 결정 이유 | `docs/adr/` (0001 Unity 통일, 0002 FastAPI, 0003 MCP 커뮤니티판, 0004 달릴 때 속도 추정, 0005 안내형 보정, 0006 속도 추정 제약) |
+| 기술 결정 이유 | `docs/adr/` (0001 Unity 통일, 0002 FastAPI, 0003 MCP 커뮤니티판, 0004 달릴 때 속도 추정, 0005 안내형 보정, 0006 속도 추정 제약, 0007 아이폰 우선) |
 | 계획 중·승인된 작업 | `docs/plans/` |
 | 교수님·멘토 문서, HWP | `docs/meeting/`, `docs/hwp/` |
 | 유사 서비스·관련 연구 | `docs/research/` (Zwift 자료는 참고용, 보고서에 "Zwift 분석" 표현 금지. 관련 연구 정리 `treadmill_sensing_papers.md`) |
