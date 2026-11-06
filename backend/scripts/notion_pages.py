@@ -19,6 +19,11 @@ FIXED_META = {"timestamp": "2026-11-06T00:00:00Z", "requestId": "req_example"}
 PUBLIC = {"/v1/auth/kakao", "/v1/agreements", "/v1/auth/refresh"}
 SIGNUP_OK = {"/v1/auth/signup", "/v1/users/nickname/check"}
 
+REPO = Path(__file__).resolve().parents[2]
+GITHUB_BLOB = "https://github.com/rlaalswo1222/Scrun/blob/develop/"
+# 표 맨 위 "공통 규칙 (먼저 읽기)" 줄(순서 0). 본문은 docs/api/README.md에서 만든다
+NOTION_COMMON_PAGE_ID = "4104ae82f1de81498364d7309a9a2e00"
+
 # 노션 API 명세 표(SCRUN > 문서 > API 명세)의 줄 ↔ API. 새 API를 노션에 추가하면 여기에도
 NOTION_PAGE_IDS = {
     ("POST", "/v1/auth/kakao"): "4104ae82f1de81c697e0f43099d9b126",
@@ -227,6 +232,24 @@ def build_page(spec: Spec, method: str, path: str, call, client: TestClient) -> 
     return "\n\n".join(parts)
 
 
+def build_common() -> str:
+    """docs/api/README.md → 노션 본문. 저장소 상대 링크는 GitHub 주소로, 첫 제목은 노션 제목과 겹쳐서 뺀다."""
+    readme = REPO / "docs" / "api" / "README.md"
+    text = readme.read_text(encoding="utf-8")
+    text = re.sub(r"^# .*\n+", "", text, count=1)
+
+    def fix(m: re.Match) -> str:
+        label, target = m.group(1), m.group(2)
+        if re.match(r"^[a-z]+://", target):
+            return m.group(0)
+        rel = (readme.parent / target).resolve().relative_to(REPO).as_posix()
+        return f"[{label}]({GITHUB_BLOB}{rel})"
+
+    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", fix, text)
+    return text.rstrip() + ("\n\n<p />\n\n<span color=\"gray\">자동 생성(`docs/api/README.md` → `backend/scripts/notion_pages.py`). "
+                            "손으로 고치지 말고 저장소 문서를 고친 뒤 다시 만든다.</span>")
+
+
 def main() -> None:
     spec = Spec(app.openapi())
     client = TestClient(app)
@@ -245,6 +268,9 @@ def main() -> None:
         name = _slug(method, path) + ".md"
         (OUT / name).write_text(md, encoding="utf-8")
         index.append({"method": method, "path": path, "pageId": page_id, "file": name})
+
+    (OUT / "_common.md").write_text(build_common(), encoding="utf-8")
+    index.insert(0, {"method": "-", "path": "공통 규칙", "pageId": NOTION_COMMON_PAGE_ID, "file": "_common.md"})
 
     missing = {(m.upper(), p) for p, item in spec.s["paths"].items() for m in item} - set(NOTION_PAGE_IDS)
     (OUT / "index.json").write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")

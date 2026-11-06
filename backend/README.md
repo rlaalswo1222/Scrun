@@ -50,7 +50,7 @@ tests/test_contract.py      모든 API가 공통 규칙대로 답하는지
 - `docs/api/examples/`는 Unity FakeApi가 읽을 예시. 시각·requestId는 고정값
 
 ## 노션 API 명세 페이지 본문
-노션 표의 각 줄을 열면 보이는 상세(설명 → Request Header → Path·Query Parameter → Request Body → 성공·실패 응답, DU 모양)는 **손으로 쓰지 않고** 서버 코드에서 만든다.
+노션 표 맨 위 "공통 규칙 (먼저 읽기)" 줄(`docs/api/README.md`에서)과, 각 줄을 열면 보이는 상세(설명 → Request Header → Path·Query Parameter → Request Body → 성공·실패 응답, DU 모양)는 **손으로 쓰지 않고** 서버 코드에서 만든다.
 ```bash
 ../.venv/Scripts/python -m scripts.notion_pages      # build/notion/*.md + index.json (git 제외)
 ```
