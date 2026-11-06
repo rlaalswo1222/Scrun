@@ -12,7 +12,8 @@ from fastapi.testclient import TestClient
 
 from app.core.errors import ERRORS, ErrorCode
 from app.main import app
-from app.stub_requests import CALLS
+from app.stub_requests import CALLS, REAL
+from scripts.real_examples import collect as collect_real
 
 OUT = Path(__file__).resolve().parents[1] / "build" / "notion"
 FIXED_META = {"timestamp": "2026-11-06T00:00:00Z", "requestId": "req_example"}
@@ -148,7 +149,7 @@ def _slug(method: str, path: str) -> str:
     return f"{method}_" + re.sub(r"[^A-Za-z0-9]+", "_", path.removeprefix("/v1/")).strip("_")
 
 
-def build_page(spec: Spec, method: str, path: str, call, client: TestClient) -> str:
+def build_page(spec: Spec, method: str, path: str, call, client: TestClient, real: dict) -> str:
     op = spec.s["paths"][path][method.lower()]
     parts = []
 
@@ -157,7 +158,9 @@ def build_page(spec: Spec, method: str, path: str, call, client: TestClient) -> 
 
     # Request Header
     headers = ["Content-Type: application/json"]
-    if path not in PUBLIC:
+    if (method, path) in real and real[(method, path)]["auth"]:
+        headers.append("Authorization: " + real[(method, path)]["auth"])
+    elif path not in PUBLIC and (method, path) not in real:
         headers.append("Authorization: Bearer {accessToken}" if path not in SIGNUP_OK
                        else "Authorization: Bearer {accessToken 또는 signupToken}")
     if call and call[2] == "PHOTO":
@@ -183,15 +186,22 @@ def build_page(spec: Spec, method: str, path: str, call, client: TestClient) -> 
         if "multipart/form-data" in content:
             parts.append("## Request Body\n\nmultipart/form-data\n\n" + spec.field_table(content["multipart/form-data"]["schema"]))
         else:
-            example = json.dumps(call[2], ensure_ascii=False, indent=2) if call else "{}"
+            req = real[(method, path)]["body"] if (method, path) in real else (call[2] if call else {})
+            example = json.dumps(req, ensure_ascii=False, indent=2)
             parts.append("## Request Body\n\n" + _code("json", example) + "\n\n" + spec.field_table(content["application/json"]["schema"]))
     else:
         parts.append("## Request Body\n\n없음")
 
     # Response(성공)
-    status = call[3] if call else 200
+    status = real[(method, path)]["status"] if (method, path) in real else (call[3] if call else 200)
     if status == 204:
         parts.append("## Response (성공)\n\n204 No Content(본문 없음)")
+    elif (method, path) in real:
+        j = real[(method, path)]["response"]
+        data_s = spec.data_schema(op)
+        table = spec.field_table(data_s) if data_s else ""
+        parts.append(f"## Response (성공)\n\n{status}\n\n" + _code("json", json.dumps(j, ensure_ascii=False, indent=2))
+                     + (f"\n\n<b>success.data</b>\n\n{table}" if table else ""))
     else:
         m, p, body, _ = call
         if body == "PHOTO":
@@ -261,10 +271,11 @@ def main() -> None:
                 calls[(c[0], p)] = c
                 break
 
+    real = collect_real()  # 진짜 API는 실제 흐름(테스트 DB)으로
     OUT.mkdir(parents=True, exist_ok=True)
     index = []
     for (method, path), page_id in NOTION_PAGE_IDS.items():
-        md = build_page(spec, method, path, calls.get((method, path)), client)
+        md = build_page(spec, method, path, calls.get((method, path)), client, real)
         name = _slug(method, path) + ".md"
         (OUT / name).write_text(md, encoding="utf-8")
         index.append({"method": method, "path": path, "pageId": page_id, "file": name})

@@ -1,6 +1,6 @@
 """OpenAPI 설명서와 예시 응답 JSON을 docs/api/에 내보낸다(앱 개발 참고·노션 확인용).
 
-실행: backend 폴더에서 `python -m scripts.export_openapi`
+실행: backend 폴더에서 `python -m scripts.export_openapi` (진짜 API 예시 때문에 `docker compose up -d` 필요)
 - docs/api/openapi.json: 표준 설명서(서버 코드에서 자동)
 - docs/api/examples/<동작>_<주소>.json: 정상 응답 예시(요청 본문 포함)
 - docs/api/examples/errors/<오류 코드>.json: 오류 응답 예시
@@ -14,7 +14,8 @@ from fastapi.testclient import TestClient
 
 from app.core.errors import ERRORS, ErrorCode
 from app.main import app
-from app.stub_requests import CALLS
+from app.stub_requests import CALLS, REAL
+from scripts.real_examples import collect as collect_real
 
 OUT = Path(__file__).resolve().parents[2] / "docs" / "api"
 FIXED_META = {"timestamp": "2026-11-06T00:00:00Z", "requestId": "req_example"}
@@ -44,7 +45,17 @@ def main() -> None:
     for old in examples.rglob("*.json"):
         old.unlink()
 
+    real = collect_real()  # 진짜 API는 실제 흐름(테스트 DB)으로
     for method, path, body, status in CALLS:
+        key = (method, path.split("?")[0])
+        if key in REAL:
+            ex = real[key]
+            _write(examples / f"{_slug(method, path)}.json", {
+                "request": {"method": method, "path": path, "auth": ex["auth"], "body": ex["body"]},
+                "status": ex["status"],
+                "response": ex["response"],
+            })
+            continue
         if body == "PHOTO":
             r = client.request(method, path, headers=auth, files={"photo": ("console.jpg", b"\xff\xd8", "image/jpeg")})
             request_body = "(multipart: photo=계기판 사진 JPEG)"

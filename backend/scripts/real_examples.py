@@ -1,0 +1,58 @@
+"""진짜로 구현된 API의 예시를 실제 흐름으로 만든다(테스트 DB + 가짜 카카오). export_openapi·notion_pages가 쓴다.
+
+흐름: 카카오 로그인(처음) → 약관 → 가입 → 토큰 재발급 → 로그아웃. 토큰 값은 매번 바뀌므로 고정 글자로 바꿔 넣는다.
+"""
+from fastapi.testclient import TestClient
+
+from app.db.testing import TestDatabase
+from app.main import app
+from app.stub_requests import REAL
+
+FIXED_META = {"timestamp": "2026-11-06T00:00:00Z", "requestId": "req_example"}
+PLACEHOLDER = {"accessToken": "eyJhbGciOi...(access)", "refreshToken": "(refresh 토큰 원문)", "signupToken": "eyJhbGciOi...(signup)"}
+
+
+def _clean(j):
+    if j is None:
+        return None
+    j["meta"].update(FIXED_META)
+    data = (j.get("success") or {}).get("data")
+    if isinstance(data, dict):
+        for k, v in PLACEHOLDER.items():
+            if data.get(k):
+                data[k] = v
+    return j
+
+
+def collect() -> dict:
+    """{(동작, 주소 틀): {"body": 요청 본문, "auth": 헤더 설명, "status": 상태, "response": 응답}}"""
+    tdb = TestDatabase(app).start()
+    try:
+        tdb.reset()
+        c = TestClient(app)
+        out = {}
+
+        def rec(method, path, body, auth, r):
+            out[(method, path)] = {"body": body, "auth": auth, "status": r.status_code,
+                                   "response": _clean(r.json()) if r.content else None}
+            return r.json() if r.content else None
+
+        body = {"kakaoAccessToken": "k_1"}
+        first = rec("POST", "/v1/auth/kakao", body, None, c.post("/v1/auth/kakao", json=body))["success"]["data"]
+        rec("GET", "/v1/agreements", None, None, c.get("/v1/agreements"))
+        body = {"agreedIds": ["terms", "privacy"], "nickname": "새벽러너", "heightCm": 175, "weightKg": 70, "timezone": "Asia/Seoul"}
+        tok = rec("POST", "/v1/auth/signup", body, "Bearer {signupToken}",
+                  c.post("/v1/auth/signup", json=body, headers={"Authorization": f"Bearer {first['signupToken']}"}))
+        tok = tok["success"]["data"]
+        body = {"refreshToken": tok["refreshToken"]}
+        tok2 = rec("POST", "/v1/auth/refresh", {"refreshToken": PLACEHOLDER["refreshToken"]}, None,
+                   c.post("/v1/auth/refresh", json=body))["success"]["data"]
+        rec("POST", "/v1/auth/logout", {"refreshToken": PLACEHOLDER["refreshToken"]}, "Bearer {accessToken}",
+            c.post("/v1/auth/logout", json={"refreshToken": tok2["refreshToken"]},
+                   headers={"Authorization": f"Bearer {tok2['accessToken']}"}))
+        missing = REAL - set(out)
+        assert not missing, f"real_examples에 흐름이 없는 진짜 API: {missing}"
+        tdb.reset()
+        return out
+    finally:
+        tdb.stop()

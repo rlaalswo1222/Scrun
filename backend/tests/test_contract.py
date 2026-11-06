@@ -10,13 +10,15 @@ from fastapi.testclient import TestClient
 
 from app.core.errors import ErrorCode
 from app.main import app
-from app.stub_requests import CALLS
+from app.stub_requests import CALLS, REAL
 
 client = TestClient(app)
 AUTH = {"Authorization": "Bearer demo"}
 README = Path(__file__).resolve().parents[2] / "docs" / "api" / "README.md"
 
 PUBLIC = {"/v1/auth/kakao", "/v1/agreements", "/v1/auth/refresh"}
+# 진짜가 된 API는 tests/test_auth.py 등에서 실제 흐름으로 확인. 여기선 스텁만
+STUB_CALLS = [c for c in CALLS if (c[0], c[1].split("?")[0]) not in REAL]
 
 
 def call(method, path, body, headers=None):
@@ -65,13 +67,13 @@ def test_all_operations_listed():
     assert ops == listed, f"CALLS에 빠짐: {ops - listed}, 없는 API: {listed - ops}"
 
 
-@pytest.mark.parametrize("method,path,body,status", CALLS, ids=[f"{m} {p}" for m, p, _, _ in CALLS])
+@pytest.mark.parametrize("method,path,body,status", STUB_CALLS, ids=[f"{m} {p}" for m, p, _, _ in STUB_CALLS])
 def test_success_envelope(method, path, body, status):
     assert_success(call(method, path, body, AUTH), status)
 
 
-@pytest.mark.parametrize("method,path,body,status", [c for c in CALLS if c[1].split("?")[0] not in PUBLIC],
-                         ids=[f"{m} {p}" for m, p, _, _ in CALLS if p.split("?")[0] not in PUBLIC])
+@pytest.mark.parametrize("method,path,body,status", [c for c in STUB_CALLS if c[1].split("?")[0] not in PUBLIC],
+                         ids=[f"{m} {p}" for m, p, _, _ in STUB_CALLS if p.split("?")[0] not in PUBLIC])
 def test_requires_login(method, path, body, status):
     assert_fail(call(method, path, body), 401, "UNAUTHORIZED")
 
@@ -83,8 +85,7 @@ def test_expired_and_signup_tokens():
 
 
 def test_validation_is_400_with_fields():
-    r = client.post("/v1/auth/signup", headers=AUTH,
-                    json={"agreedIds": ["terms", "privacy"], "nickname": "새벽러너", "heightCm": 500, "weightKg": 70})
+    r = client.patch("/v1/users/me", headers=AUTH, json={"heightCm": 500})
     assert_fail(r, 400, "VALIDATION_ERROR")
     assert any(f["field"] == "heightCm" for f in r.json()["error"]["details"]["fields"])
 
@@ -95,9 +96,6 @@ def test_unknown_path_and_method():
 
 
 @pytest.mark.parametrize("method,path,body,status,code", [
-    ("POST", "/v1/auth/kakao", {"kakaoAccessToken": "invalid"}, 401, "INVALID_KAKAO_TOKEN"),
-    ("POST", "/v1/auth/signup", {"agreedIds": ["terms"], "nickname": "새벽러너", "heightCm": 175, "weightKg": 70}, 400, "VALIDATION_ERROR"),
-    ("POST", "/v1/auth/signup", {"agreedIds": ["terms", "privacy"], "nickname": "taken", "heightCm": 175, "weightKg": 70}, 409, "NICKNAME_DUPLICATED"),
     ("GET", "/v1/courses/crs_x", None, 404, "COURSE_NOT_FOUND"),
     ("POST", "/v1/courses/crs_full/entries", None, 409, "COURSE_FULL"),
     ("POST", "/v1/courses/crs_nocalib/entries", None, 409, "CALIBRATION_REQUIRED"),
