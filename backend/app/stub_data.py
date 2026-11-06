@@ -1,7 +1,7 @@
 """스텁이 돌려주는 고정 예시(JSON 그대로 camelCase).
 
 계획 0014 2단계: 진짜 DB 대신 이 값을 돌려준다. scripts/export_openapi.py가 이 값을 공통 껍데기로 감싸
-docs/api/examples/에 내보내고, Unity FakeApi가 같은 파일을 쓴다. 숫자는 화면 확인용 예시이며 실측이 아니다.
+docs/api/examples/에 내보낸다(앱 개발 참고용). 숫자는 화면 확인용 예시이며 실측이 아니다.
 """
 
 DEMO_USER_ID = "usr_demo"
