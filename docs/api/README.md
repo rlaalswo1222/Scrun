@@ -4,6 +4,7 @@
 
 - **API 목록·진행판**: 노션 SCRUN > 문서 > [API 명세](https://app.notion.com/p/52fe88346253480692c492c862982087) (한 줄 = API 하나, 화면 ID·백로그 연결)
 - **요청·응답 세부 필드**: 서버 코드 [`backend/`](../../backend/README.md)(지금은 스텁)가 만드는 `/docs`(Swagger)와 [`openapi.json`](openapi.json). 예시 응답은 [`examples/`](examples/)(`python -m scripts.export_openapi`로 다시 만듦). 노션이나 이 문서에 필드를 손으로 적지 않는다(코드와 어긋남)
+- **DB 테이블(서버가 저장하는 구조)**: [data_model.md](data_model.md)
 - **이 문서**: 모든 API에 공통인 것만
 
 ## 주소
