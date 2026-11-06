@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "PUT",
+    "path": "/v1/runs/run_01J00/samples",
+    "body": {
+      "intervalS": 0.5,
+      "speedsKmh": [
+        8.0,
+        8.1
+      ]
+    }
+  },
+  "status": 204,
+  "response": null
+}

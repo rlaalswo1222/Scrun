@@ -1,0 +1,24 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/v1/users/nickname/check?nickname=새벽러너",
+    "body": null
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "nickname": "새벽러너",
+        "available": true,
+        "reason": null
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/users/nickname/check",
+      "requestId": "req_example"
+    }
+  }
+}

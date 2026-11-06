@@ -1,0 +1,36 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/v1/friends/usr_f1",
+    "body": null
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "userId": "usr_f1",
+        "nickname": "바닷바람",
+        "level": 3,
+        "verifiedCount": 6,
+        "runningNow": true,
+        "outfitStage": 3,
+        "recentVerifiedRuns": [
+          {
+            "runId": "run_f1_01",
+            "startedAt": "2026-11-05T21:00:00Z",
+            "distanceM": 5000,
+            "durationS": 1620,
+            "avgPaceSPerKm": 324
+          }
+        ]
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/friends/usr_f1",
+      "requestId": "req_example"
+    }
+  }
+}

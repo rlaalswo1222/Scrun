@@ -1,0 +1,41 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/v1/runs/run_01HZX/rewards",
+    "body": null
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "xpBeforeM": 1000,
+        "xpAfterM": 4120,
+        "levelBefore": 1,
+        "levelAfter": 2,
+        "leveledUp": true,
+        "outfitStageAfter": 2,
+        "nextLevelRemainingM": 5880,
+        "impactsUnlocked": [
+          {
+            "impactId": "imp_wind",
+            "name": "바람 꼬리",
+            "unlockAtCount": 2,
+            "unlocked": true
+          }
+        ],
+        "weeklyGoal": {
+          "counted": true,
+          "doneCount": 2,
+          "targetCount": 3
+        }
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/runs/run_01HZX/rewards",
+      "requestId": "req_example"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/v1/runs/run_01J00/discard",
+    "body": null
+  },
+  "status": 204,
+  "response": null
+}

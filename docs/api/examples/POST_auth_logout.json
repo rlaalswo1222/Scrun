@@ -1,0 +1,11 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/v1/auth/logout",
+    "body": {
+      "refreshToken": "r"
+    }
+  },
+  "status": 204,
+  "response": null
+}

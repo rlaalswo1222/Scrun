@@ -3,7 +3,7 @@
 서버(FastAPI)와 Unity 앱이 함께 따르는 규칙. 계획 [0014](../plans/0014-api-spec.md).
 
 - **API 목록·진행판**: 노션 SCRUN > 문서 > [API 명세](https://app.notion.com/p/52fe88346253480692c492c862982087) (한 줄 = API 하나, 화면 ID·백로그·유스케이스 연결)
-- **요청·응답 세부 필드**: FastAPI 스텁이 만드는 `/docs`(Swagger)와 `openapi.json`. 노션이나 이 문서에 필드를 손으로 적지 않는다(코드와 어긋남)
+- **요청·응답 세부 필드**: 서버 코드 [`backend/`](../../backend/README.md)(지금은 스텁)가 만드는 `/docs`(Swagger)와 [`openapi.json`](openapi.json). 예시 응답은 [`examples/`](examples/)(Unity FakeApi용, `python -m scripts.export_openapi`로 다시 만듦). 노션이나 이 문서에 필드를 손으로 적지 않는다(코드와 어긋남)
 - **이 문서**: 모든 API에 공통인 것만
 
 ## 주소
@@ -71,6 +71,8 @@
 | `INVALID_KAKAO_TOKEN` | 401 | 카카오 토큰 확인 실패 | A-05 | |
 | `SIGNUP_REQUIRED` | 403 | 가입 전 계정으로 일반 API 호출 | A-06 | |
 | `FORBIDDEN` | 403 | 남의 것에 접근 | I-08 | |
+| `NOT_FOUND` | 404 | 없는 주소(앱 버전이 서버와 안 맞을 때 등) | I-08 | |
+| `METHOD_NOT_ALLOWED` | 405 | 그 주소에서 안 되는 동작 | I-08 | |
 | `USER_NOT_FOUND` | 404 | 사용자 없음 | I-08 | |
 | `RUN_NOT_FOUND` | 404 | 기록 없음 | I-08 | |
 | `COURSE_NOT_FOUND` | 404 | 코스 없음 | I-08 | |

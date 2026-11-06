@@ -1,0 +1,17 @@
+{
+  "status": 400,
+  "response": {
+    "resultType": "FAIL",
+    "success": null,
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "요청 값이 올바르지 않습니다.",
+      "details": null
+    },
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "requestId": "req_example",
+      "path": "/v1/..."
+    }
+  }
+}

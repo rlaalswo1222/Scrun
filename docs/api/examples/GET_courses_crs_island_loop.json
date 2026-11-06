@@ -1,0 +1,30 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/v1/courses/crs_island_loop",
+    "body": null
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "courseId": "crs_island_loop",
+        "name": "섬 루프 코스(가칭)",
+        "type": "LOOP_3D",
+        "lengthM": 3000,
+        "runnersNow": 7,
+        "thumbnailUrl": "https://example.com/course/island_loop.png",
+        "description": "한 바퀴 3km를 계속 도는 3D 루프 코스.",
+        "mood": "해안 길과 숲을 지나는 아침",
+        "maxRunnersPerMap": 20
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/courses/crs_island_loop",
+      "requestId": "req_example"
+    }
+  }
+}

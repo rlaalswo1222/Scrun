@@ -1,0 +1,30 @@
+{
+  "request": {
+    "method": "PATCH",
+    "path": "/v1/users/me",
+    "body": {
+      "heightCm": 180
+    }
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "userId": "usr_demo",
+        "nickname": "새벽러너",
+        "heightCm": 180,
+        "weightKg": 70,
+        "friendCode": "SCR-7K2Q",
+        "timezone": "Asia/Seoul",
+        "createdAt": "2026-11-01T09:00:00Z"
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/users/me",
+      "requestId": "req_example"
+    }
+  }
+}
