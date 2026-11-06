@@ -2,8 +2,9 @@
   "request": {
     "method": "POST",
     "path": "/v1/auth/refresh",
+    "auth": null,
     "body": {
-      "refreshToken": "r"
+      "refreshToken": "(refresh 토큰 원문)"
     }
   },
   "status": 200,
@@ -11,8 +12,8 @@
     "resultType": "SUCCESS",
     "success": {
       "data": {
-        "accessToken": "stub-access",
-        "refreshToken": "stub-refresh",
+        "accessToken": "eyJhbGciOi...(access)",
+        "refreshToken": "(refresh 토큰 원문)",
         "expiresInS": 3600
       }
     },

@@ -13,12 +13,12 @@
 
 ## 로그인
 1. 앱이 카카오 iOS SDK로 로그인해 카카오 토큰을 받는다
-2. `POST /v1/auth/kakao`로 보내면 서버가 카카오에서 확인한다
+2. `POST /v1/auth/kakao`로 보내면 서버가 카카오에서 확인한다(개발 서버는 가짜 카카오: `k_123` → 카카오 회원번호 123)
    - 이미 가입한 사람: `accessToken`(짧게) + `refreshToken`
    - 처음: `isNewUser: true` + 가입용 토큰 → `POST /v1/auth/signup`(약관 동의·닉네임·키·몸무게·시간대) → 우리 토큰
 3. 이후 요청 헤더: `Authorization: Bearer {accessToken}`
 - 로그인 없이 되는 API: `POST /v1/auth/kakao`, `GET /v1/agreements`, `POST /v1/auth/refresh`. 가입용 토큰으로 되는 API: `POST /v1/auth/signup`, `GET /v1/users/nickname/check`. 나머지는 전부 `accessToken` 필요(실시간 메시지 포함)
-4. 401 `TOKEN_EXPIRED`를 받으면 앱이 `POST /v1/auth/refresh`로 새 토큰을 받고 원래 요청을 한 번 다시 보낸다
+4. 401 `TOKEN_EXPIRED`를 받으면 앱이 `POST /v1/auth/refresh`로 새 토큰을 받고 원래 요청을 한 번 다시 보낸다. refresh 토큰은 한 번만 쓸 수 있다(쓰면 새 것이 나옴). 이미 쓴 refresh 토큰이 다시 오면 탈취로 보고 그 사용자의 refresh 토큰을 전부 폐기 → 다시 로그인
 - 토큰은 아이폰 키체인에만 저장, 로그에 찍지 않는다
 - 로그인 제공자별 연결(제공자, 제공자 쪽 ID)을 계정과 따로 저장한다. Apple 로그인을 나중에 붙여도 계정 구조가 안 바뀜(PRD Q-39)
 

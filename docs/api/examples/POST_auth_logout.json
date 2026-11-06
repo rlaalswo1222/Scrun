@@ -2,8 +2,9 @@
   "request": {
     "method": "POST",
     "path": "/v1/auth/logout",
+    "auth": "Bearer {accessToken}",
     "body": {
-      "refreshToken": "r"
+      "refreshToken": "(refresh 토큰 원문)"
     }
   },
   "status": 204,

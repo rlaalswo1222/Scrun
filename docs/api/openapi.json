@@ -12,7 +12,7 @@
           "Auth"
         ],
         "summary": "카카오 로그인",
-        "description": "화면 A-05 · BL-1. 카카오 iOS SDK 토큰을 보내면 서버가 카카오에서 확인. 처음이면 isNewUser=true + signupToken.\n\n스텁: 토큰 `new` → 새 사용자, `invalid` → INVALID_KAKAO_TOKEN, 그 밖 → 기존 사용자",
+        "description": "화면 A-05 · BL-1. 카카오 iOS SDK 토큰을 보내면 서버가 카카오에서 확인. 이미 가입했으면 우리 토큰, 처음이면 isNewUser=true + signupToken(30분) → POST /v1/auth/signup.\n\n개발 서버(KAKAO_MODE=fake): 카카오 토큰 `k_123` → 카카오 회원번호 123",
         "operationId": "kakao_login_v1_auth_kakao_post",
         "requestBody": {
           "content": {
@@ -47,6 +47,16 @@
           },
           "401": {
             "description": "INVALID_KAKAO_TOKEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE",
             "content": {
               "application/json": {
                 "schema": {
@@ -96,7 +106,7 @@
           "Auth"
         ],
         "summary": "가입",
-        "description": "화면 A-06 · BL-1. 가입용 토큰 필요. 약관 동의·닉네임·키·몸무게·시간대.\n\n스텁: 닉네임 `taken` → NICKNAME_DUPLICATED",
+        "description": "화면 A-06 · BL-1. 헤더에 가입용 토큰(signupToken). 약관 동의·닉네임·키·몸무게·시간대 → 계정 생성 + 우리 토큰. 같은 카카오 계정으로 두 번 가입하면 새로 만들지 않고 기존 계정 토큰을 줌",
         "operationId": "signup_v1_auth_signup_post",
         "requestBody": {
           "content": {
@@ -130,7 +140,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED",
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
             "content": {
               "application/json": {
                 "schema": {
@@ -173,7 +183,7 @@
           "Auth"
         ],
         "summary": "토큰 재발급",
-        "description": "BL-44. 401 TOKEN_EXPIRED를 받으면 앱이 자동 호출하고 원래 요청을 한 번 다시 보냄.\n\n스텁: `expired` → TOKEN_EXPIRED(refresh도 만료 → 다시 로그인)",
+        "description": "BL-44. 401 TOKEN_EXPIRED를 받으면 앱이 자동 호출하고 원래 요청을 한 번 다시 보냄. 쓴 refresh 토큰은 폐기되고 새 refresh 토큰이 나옴(한 번만 쓸 수 있음). 이미 폐기된 refresh 토큰이 다시 오면 탈취로 보고 그 사용자의 refresh 토큰을 전부 폐기(다시 로그인).",
         "operationId": "refresh_v1_auth_refresh_post",
         "requestBody": {
           "content": {
@@ -207,7 +217,7 @@
             }
           },
           "401": {
-            "description": "TOKEN_EXPIRED",
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
             "content": {
               "application/json": {
                 "schema": {
@@ -235,7 +245,7 @@
           "Auth"
         ],
         "summary": "로그아웃",
-        "description": "화면 H-10 · BL-36. refresh 토큰 폐기",
+        "description": "화면 H-10 · BL-36. 이 기기의 refresh 토큰 폐기. 이미 폐기됐거나 남의 토큰이어도 204(알려 주지 않음)",
         "operationId": "logout_v1_auth_logout_post",
         "requestBody": {
           "content": {
@@ -252,7 +262,17 @@
             "description": "Successful Response"
           },
           "401": {
-            "description": "UNAUTHORIZED",
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
             "content": {
               "application/json": {
                 "schema": {

@@ -1,6 +1,6 @@
 # SCRUN 데이터 모델 (DB 테이블) v1
 
-서버가 무엇을 어떻게 저장하는지. 계획 [0015](../plans/0015-data-model.md), 백로그 BL-39. API가 주고받는 모양은 [README.md](README.md)·`backend/app/schemas/`, 이 문서는 그 뒤의 저장 구조다. 실제 DB 만들기·서버 코드는 BL-44.
+서버가 무엇을 어떻게 저장하는지. 계획 [0015](../plans/0015-data-model.md), 백로그 BL-39. API가 주고받는 모양은 [README.md](README.md)·`backend/app/schemas/`, 이 문서는 그 뒤의 저장 구조다. 코드는 `backend/app/db/models.py`, DB 변경 기록은 `backend/migrations/`(계획 0016에서 v1 그대로 만듦). 테이블을 바꾸면 이 문서도 같이 고친다.
 
 ## 원칙
 - **DB**: PostgreSQL(ADR-0008 제안)
