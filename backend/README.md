@@ -48,3 +48,10 @@ tests/test_contract.py      모든 API가 공통 규칙대로 답하는지
 - 새 API를 만들면 `stub_requests.py`에 한 줄 추가(빠지면 테스트가 실패)
 - 오류 코드를 더하면 `core/errors.py`와 `docs/api/README.md` 표를 같이(다르면 테스트가 실패)
 - `docs/api/examples/`는 Unity FakeApi가 읽을 예시. 시각·requestId는 고정값
+
+## 노션 API 명세 페이지 본문
+노션 표의 각 줄을 열면 보이는 상세(설명 → Request Header → Path·Query Parameter → Request Body → 성공·실패 응답, DU 모양)는 **손으로 쓰지 않고** 서버 코드에서 만든다.
+```bash
+../.venv/Scripts/python -m scripts.notion_pages      # build/notion/*.md + index.json (git 제외)
+```
+그다음 Claude에게 "노션 API 페이지 다시 올려"라고 하면 `index.json`의 pageId마다 본문을 덮어쓴다(노션 MCP). 새 API를 노션 표에 추가하면 `scripts/notion_pages.py`의 `NOTION_PAGE_IDS`에도 한 줄.

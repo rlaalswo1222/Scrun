@@ -49,3 +49,4 @@ unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/**
 
 # 서버 테스트 캐시
 .pytest_cache/
+backend/build/
