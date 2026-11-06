@@ -27,7 +27,7 @@ class CourseDetail(Course):
 
 
 class RealtimeAccess(CamelModel):
-    """실시간 접속 정보. 모양은 BL-36(FastAPI WebSocket vs Photon) 뒤에 확정(미정)."""
+    """실시간 접속 정보. 모양은 BL-25(FastAPI WebSocket vs Photon) 뒤에 확정(미정)."""
 
     url: str
     token: str

@@ -35,7 +35,7 @@ def kakao_login(body: KakaoLoginRequest, request: Request):
 @router.get(
     "/agreements",
     summary="가입 약관 목록",
-    description="화면 A-06 · BL-1, BL-31. 로그인 없이",
+    description="화면 A-06 · BL-1, BL-40. 로그인 없이",
     response_model=Envelope[list[Agreement]],
 )
 def agreements(request: Request):
@@ -63,7 +63,7 @@ def signup(body: SignupRequest, request: Request, _: Principal = Depends(signup_
 @router.post(
     "/auth/refresh",
     summary="토큰 재발급",
-    description="BL-43. 401 TOKEN_EXPIRED를 받으면 앱이 자동 호출하고 원래 요청을 한 번 다시 보냄.\n\n스텁: `expired` → TOKEN_EXPIRED(refresh도 만료 → 다시 로그인)",
+    description="BL-44. 401 TOKEN_EXPIRED를 받으면 앱이 자동 호출하고 원래 요청을 한 번 다시 보냄.\n\n스텁: `expired` → TOKEN_EXPIRED(refresh도 만료 → 다시 로그인)",
     response_model=Envelope[TokenPair],
     responses=error_responses(E.VALIDATION_ERROR, E.TOKEN_EXPIRED),
 )
@@ -77,7 +77,7 @@ def refresh(body: RefreshRequest, request: Request):
     "/auth/logout",
     status_code=204,
     summary="로그아웃",
-    description="화면 H-10 · BL-25. refresh 토큰 폐기",
+    description="화면 H-10 · BL-36. refresh 토큰 폐기",
     responses=error_responses(E.UNAUTHORIZED),
 )
 def logout(body: LogoutRequest, _: Principal = Depends(current_user)):

@@ -43,7 +43,7 @@
 | 이어서 작업 | `handoff/<git user.name>.md` (그 사람의 지금 하던 일. `git config user.name`으로 확인, 남의 파일은 고치지 않음) |
 | 속도 추정·센서·SpeedLab 앱 | `docs/speed/README.md` → 필요하면 `speedlab_20261028.md`, `speed_ideas.md` |
 | Unity 본 앱(섬 맵·아바타·성능·앱 화면) | `docs/unity/unity_map.md`(끝에 Figma → UI Toolkit 옮기기·남은 큰 것), `unity/tools/README.md` |
-| 화면·기능 기획 | 노션 SCRUN > 문서 > 기획 문서(PRD·백로그·유스케이스·열린 질문, 최신 원본), Figma 와이어프레임. 저장소의 `docs/product/`는 옛 초안 |
+| 화면·기능 기획 | 노션 SCRUN > 문서 > 기획 문서(PRD·유스케이스·열린 질문), **백로그 최신 원본은 [공개 개발 백로그](https://heavenly-beak-116.notion.site/eb95382a0c1a4745a33d3bd3c2380600?v=7fe2ce1da4a04daf8d778a5db8ebd139)**(연결된 노션의 백로그는 옛 번호), Figma 와이어프레임. 저장소의 `docs/product/`는 옛 초안 |
 | 서버 API | `docs/api/README.md`(공통 규칙·오류 코드), 노션 API 명세(목록·진행), 계획 0014 |
 | 기술 결정 이유 | `docs/adr/` (0001 Unity 통일, 0002 FastAPI, 0003 MCP 커뮤니티판, 0004 달릴 때 속도 추정, 0005 안내형 보정, 0006 속도 추정 제약, 0007 아이폰 우선, 0008 서버 올리는 곳(제안)) |
 | 계획 중·승인된 작업 | `docs/plans/` |

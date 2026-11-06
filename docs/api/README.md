@@ -109,5 +109,5 @@
 ## 미정 (정해지면 이 문서와 노션 표 갱신)
 - OCR을 서버에서 할지 앱에서 할지 → `verification/photo`와 `verification/reading` 둘 다 자리만
 - 오프라인 달리기 허용 여부
-- 실시간 공동 맵 전송 방식(FastAPI WebSocket vs Photon, BL-36). 노션 표의 Realtime 줄은 메시지 이름·필드만
+- 실시간 공동 맵 전송 방식(FastAPI WebSocket vs Photon, BL-25). 노션 표의 Realtime 줄은 메시지 이름·필드만
 - 실사 영상 코스는 최하위 → 코스 `type` 필드만 열어 둠
