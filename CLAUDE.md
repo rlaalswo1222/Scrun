@@ -42,13 +42,13 @@
 |---|---|
 | 이어서 작업 | `handoff/<git user.name>.md` (그 사람의 지금 하던 일. `git config user.name`으로 확인, 남의 파일은 고치지 않음) |
 | 속도 추정·센서·SpeedLab 앱 | `docs/speed/README.md` → 필요하면 `speedlab_20261028.md`, `speed_ideas.md` |
-| Unity 본 앱(섬 맵·아바타·성능) | `docs/unity/unity_map.md`, `unity/tools/README.md` |
+| Unity 본 앱(섬 맵·아바타·성능·앱 화면) | `docs/unity/unity_map.md`(끝에 Figma → UI Toolkit 옮기기·남은 큰 것), `unity/tools/README.md` |
 | 화면·기능 기획 | `docs/product/scrun_userflow_v2.html`, `scrun_usecases_v1.md` |
-| 기술 결정 이유 | `docs/adr/` (0001 Unity 통일, 0002 FastAPI, 0003 MCP 커뮤니티판, 0004 달릴 때 속도 추정, 0005 안내형 보정, 0006 속도 추정 제약, 0007 아이폰 우선) |
+| 기술 결정 이유 | `docs/adr/` (0001 Unity 통일, 0002 FastAPI, 0003 MCP 커뮤니티판, 0004 달릴 때 속도 추정, 0005 안내형 보정, 0006 속도 추정 제약, 0007 아이폰 우선, 0008 서버 올리는 곳(제안)) |
 | 계획 중·승인된 작업 | `docs/plans/` |
 | 교수님·멘토 문서, HWP | `docs/meeting/`, `docs/hwp/` |
 | 유사 서비스·관련 연구 | `docs/research/` (Zwift 자료는 참고용, 보고서에 "Zwift 분석" 표현 금지. 관련 연구 정리 `treadmill_sensing_papers.md`) |
-| 지난 기록 | `docs/log/` (정리 전 인수인계 전체본, 회고) |
+| 지난 기록 | `docs/log/` (정리 전 인수인계 전체본, 회고, 팀 논의 `team_discussions.md`) |
 
 ## 코드 위치
 - Unity 프로젝트 `unity/TestRun` (Unity 6.6 6000.6.7f1, URP, Android). 우리 코드는 `Assets/Scrun/`, 센서 플러그인 `Assets/Plugins/Android/`
