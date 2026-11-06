@@ -1,4 +1,4 @@
-"""OpenAPI 설명서와 예시 응답 JSON을 docs/api/에 내보낸다(Unity FakeApi·노션 확인용).
+"""OpenAPI 설명서와 예시 응답 JSON을 docs/api/에 내보낸다(앱 개발 참고·노션 확인용).
 
 실행: backend 폴더에서 `python -m scripts.export_openapi`
 - docs/api/openapi.json: 표준 설명서(서버 코드에서 자동)

@@ -47,7 +47,7 @@ tests/test_contract.py      모든 API가 공통 규칙대로 답하는지
 ```
 - 새 API를 만들면 `stub_requests.py`에 한 줄 추가(빠지면 테스트가 실패)
 - 오류 코드를 더하면 `core/errors.py`와 `docs/api/README.md` 표를 같이(다르면 테스트가 실패)
-- `docs/api/examples/`는 Unity FakeApi가 읽을 예시. 시각·requestId는 고정값
+- `docs/api/examples/`는 앱 개발 때 참고할 예시 응답. 시각·requestId는 고정값
 
 ## 노션 API 명세 페이지 본문
 노션 표 맨 위 "공통 규칙 (먼저 읽기)" 줄(`docs/api/README.md`에서)과, 각 줄을 열면 보이는 상세(설명 → Request Header → Path·Query Parameter → Request Body → 성공·실패 응답, DU 모양)는 **손으로 쓰지 않고** 서버 코드에서 만든다.

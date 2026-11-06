@@ -1,6 +1,6 @@
 """로그인 확인(스텁). 실제 토큰 검증은 계획 0015(서버 뼈대)에서 바꾼다.
 
-스텁 규칙(Unity FakeApi·Swagger에서 상태별 화면을 확인하려고):
+스텁 규칙(Unity·Swagger에서 상태별 화면을 확인하려고):
 - 헤더 없음·Bearer 아님 → 401 UNAUTHORIZED
 - `Bearer expired` → 401 TOKEN_EXPIRED
 - `Bearer signup` → 가입용 토큰(가입 전). 일반 API에 쓰면 403 SIGNUP_REQUIRED
