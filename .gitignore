@@ -46,3 +46,6 @@ unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/**
 !unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/**/
 !unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/**/*.meta
 !unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/README.md
+
+# 서버 테스트 캐시
+.pytest_cache/
