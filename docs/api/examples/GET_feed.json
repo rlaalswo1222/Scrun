@@ -1,0 +1,46 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/v1/feed",
+    "body": null
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "items": [
+          {
+            "feedId": "fd_01",
+            "userId": "usr_f1",
+            "nickname": "바닷바람",
+            "runId": "run_f1_01",
+            "startedAt": "2026-11-05T21:00:00Z",
+            "distanceM": 5000,
+            "durationS": 1620,
+            "avgPaceSPerKm": 324,
+            "verification": "VERIFIED"
+          },
+          {
+            "feedId": "fd_02",
+            "userId": "usr_f2",
+            "nickname": "주말러너",
+            "runId": "run_f2_01",
+            "startedAt": "2026-11-04T19:30:00Z",
+            "distanceM": 2100,
+            "durationS": 840,
+            "avgPaceSPerKm": 400,
+            "verification": "UNVERIFIED"
+          }
+        ],
+        "nextCursor": null
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/feed",
+      "requestId": "req_example"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/v1/auth/signup",
+    "body": {
+      "agreedIds": [
+        "terms",
+        "privacy"
+      ],
+      "nickname": "새벽러너",
+      "heightCm": 175,
+      "weightKg": 70
+    }
+  },
+  "status": 201,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "accessToken": "stub-access",
+        "refreshToken": "stub-refresh",
+        "expiresInS": 3600
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/auth/signup",
+      "requestId": "req_example"
+    }
+  }
+}

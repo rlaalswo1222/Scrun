@@ -1,0 +1,42 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/v1/agreements",
+    "body": null
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": [
+        {
+          "agreementId": "terms",
+          "title": "서비스 이용약관",
+          "required": true,
+          "version": "2026-11-01",
+          "url": "https://example.com/terms"
+        },
+        {
+          "agreementId": "privacy",
+          "title": "개인정보 수집·이용",
+          "required": true,
+          "version": "2026-11-01",
+          "url": "https://example.com/privacy"
+        },
+        {
+          "agreementId": "notice",
+          "title": "운동 알림 받기",
+          "required": false,
+          "version": "2026-11-01",
+          "url": "https://example.com/notice"
+        }
+      ]
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/agreements",
+      "requestId": "req_example"
+    }
+  }
+}

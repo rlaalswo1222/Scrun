@@ -1,0 +1,9 @@
+{
+  "request": {
+    "method": "DELETE",
+    "path": "/v1/friends/usr_f1",
+    "body": null
+  },
+  "status": 204,
+  "response": null
+}

@@ -1,0 +1,35 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/v1/friends",
+    "body": null
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": [
+        {
+          "userId": "usr_f1",
+          "nickname": "바닷바람",
+          "level": 3,
+          "verifiedCount": 6,
+          "runningNow": true
+        },
+        {
+          "userId": "usr_f2",
+          "nickname": "주말러너",
+          "level": 1,
+          "verifiedCount": 1,
+          "runningNow": false
+        }
+      ]
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/friends",
+      "requestId": "req_example"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/v1/events",
+    "body": {
+      "events": [
+        {
+          "name": "APP_OPEN",
+          "occurredAt": "2026-11-06T09:00:00Z"
+        }
+      ]
+    }
+  },
+  "status": 204,
+  "response": null
+}

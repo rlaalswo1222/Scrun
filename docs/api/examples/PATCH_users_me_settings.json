@@ -1,0 +1,24 @@
+{
+  "request": {
+    "method": "PATCH",
+    "path": "/v1/users/me/settings",
+    "body": {
+      "feedShareDefault": false
+    }
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "feedShareDefault": false
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/users/me/settings",
+      "requestId": "req_example"
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/v1/users/me/progress",
+    "body": null
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "level": 2,
+        "xpM": 4120,
+        "nextLevelAtM": 10000,
+        "nextLevelRemainingM": 5880,
+        "outfitStage": 2,
+        "verifiedCount": 3,
+        "impacts": [
+          {
+            "impactId": "imp_spark",
+            "name": "발자국 불꽃",
+            "unlockAtCount": 1,
+            "unlocked": true
+          },
+          {
+            "impactId": "imp_wind",
+            "name": "바람 꼬리",
+            "unlockAtCount": 2,
+            "unlocked": true
+          },
+          {
+            "impactId": "imp_wave",
+            "name": "물결",
+            "unlockAtCount": 4,
+            "unlocked": false
+          },
+          {
+            "impactId": "imp_star",
+            "name": "별 가루",
+            "unlockAtCount": 7,
+            "unlocked": false
+          },
+          {
+            "impactId": "imp_aurora",
+            "name": "오로라",
+            "unlockAtCount": 12,
+            "unlocked": false
+          }
+        ],
+        "selectedImpactId": "imp_wind"
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/users/me/progress",
+      "requestId": "req_example"
+    }
+  }
+}

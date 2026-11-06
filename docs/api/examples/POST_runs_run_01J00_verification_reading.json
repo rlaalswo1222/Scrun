@@ -1,0 +1,74 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/v1/runs/run_01J00/verification/reading",
+    "body": {
+      "distanceM": 3120,
+      "durationS": 1080,
+      "readAt": "2026-11-06T10:19:00Z"
+    }
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "status": "VERIFIED",
+        "reason": null,
+        "console": {
+          "distanceM": 3120,
+          "durationS": 1080
+        },
+        "sensor": {
+          "distanceM": 3080,
+          "durationS": 1080
+        },
+        "comparison": [
+          {
+            "item": "distance",
+            "console": 3120.0,
+            "sensor": 3080.0,
+            "diffRatio": 0.013,
+            "ok": true
+          },
+          {
+            "item": "duration",
+            "console": 1080.0,
+            "sensor": 1080.0,
+            "diffRatio": 0.0,
+            "ok": true
+          }
+        ],
+        "retakeDeadline": null,
+        "rewards": {
+          "xpBeforeM": 1000,
+          "xpAfterM": 4120,
+          "levelBefore": 1,
+          "levelAfter": 2,
+          "leveledUp": true,
+          "outfitStageAfter": 2,
+          "nextLevelRemainingM": 5880,
+          "impactsUnlocked": [
+            {
+              "impactId": "imp_wind",
+              "name": "바람 꼬리",
+              "unlockAtCount": 2,
+              "unlocked": true
+            }
+          ],
+          "weeklyGoal": {
+            "counted": true,
+            "doneCount": 2,
+            "targetCount": 3
+          }
+        }
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/runs/run_01J00/verification/reading",
+      "requestId": "req_example"
+    }
+  }
+}

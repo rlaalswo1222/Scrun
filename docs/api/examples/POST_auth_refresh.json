@@ -1,0 +1,26 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/v1/auth/refresh",
+    "body": {
+      "refreshToken": "r"
+    }
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "accessToken": "stub-access",
+        "refreshToken": "stub-refresh",
+        "expiresInS": 3600
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/auth/refresh",
+      "requestId": "req_example"
+    }
+  }
+}

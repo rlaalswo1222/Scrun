@@ -1,0 +1,121 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/v1/home",
+    "body": null
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "weeklyGoal": {
+          "targetCount": 3,
+          "cycleStart": "2026-11-03",
+          "cycleEnd": "2026-11-09",
+          "doneCount": 2,
+          "daysLeft": 3,
+          "nextTargetCount": null,
+          "history": [
+            {
+              "cycleStart": "2026-10-27",
+              "targetCount": 3,
+              "doneCount": 3
+            }
+          ]
+        },
+        "progress": {
+          "level": 2,
+          "xpM": 4120,
+          "nextLevelAtM": 10000,
+          "nextLevelRemainingM": 5880,
+          "outfitStage": 2,
+          "verifiedCount": 3,
+          "impacts": [
+            {
+              "impactId": "imp_spark",
+              "name": "발자국 불꽃",
+              "unlockAtCount": 1,
+              "unlocked": true
+            },
+            {
+              "impactId": "imp_wind",
+              "name": "바람 꼬리",
+              "unlockAtCount": 2,
+              "unlocked": true
+            },
+            {
+              "impactId": "imp_wave",
+              "name": "물결",
+              "unlockAtCount": 4,
+              "unlocked": false
+            },
+            {
+              "impactId": "imp_star",
+              "name": "별 가루",
+              "unlockAtCount": 7,
+              "unlocked": false
+            },
+            {
+              "impactId": "imp_aurora",
+              "name": "오로라",
+              "unlockAtCount": 12,
+              "unlocked": false
+            }
+          ],
+          "selectedImpactId": "imp_wind"
+        },
+        "runningFriends": [
+          {
+            "userId": "usr_f1",
+            "nickname": "바닷바람",
+            "courseId": "crs_island_loop",
+            "courseName": "섬 루프 코스(가칭)",
+            "distanceM": 1800,
+            "paceSPerKm": 330
+          }
+        ],
+        "recentRuns": [
+          {
+            "runId": "run_01HZX",
+            "startedAt": "2026-11-05T11:02:00Z",
+            "courseId": "crs_island_loop",
+            "courseName": "섬 루프 코스(가칭)",
+            "distanceM": 3120,
+            "durationS": 1080,
+            "avgPaceSPerKm": 346,
+            "verification": "VERIFIED",
+            "shared": true
+          },
+          {
+            "runId": "run_01HZW",
+            "startedAt": "2026-11-03T10:40:00Z",
+            "courseId": "crs_island_loop",
+            "courseName": "섬 루프 코스(가칭)",
+            "distanceM": 2450,
+            "durationS": 900,
+            "avgPaceSPerKm": 367,
+            "verification": "UNVERIFIED",
+            "shared": true
+          }
+        ],
+        "courses": [
+          {
+            "courseId": "crs_island_loop",
+            "name": "섬 루프 코스(가칭)",
+            "type": "LOOP_3D",
+            "lengthM": 3000,
+            "runnersNow": 7,
+            "thumbnailUrl": "https://example.com/course/island_loop.png"
+          }
+        ]
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/home",
+      "requestId": "req_example"
+    }
+  }
+}

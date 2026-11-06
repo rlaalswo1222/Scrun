@@ -1,0 +1,32 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/v1/runs",
+    "body": {
+      "clientRunId": "c1",
+      "mapInstanceId": "map_01",
+      "goal": {
+        "type": "DISTANCE",
+        "value": 3000
+      },
+      "startedAt": "2026-11-06T10:00:00Z"
+    }
+  },
+  "status": 201,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "runId": "run_01J00",
+        "clientRunId": "c1",
+        "startedAt": "2026-11-06T10:00:00Z"
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/runs",
+      "requestId": "req_example"
+    }
+  }
+}

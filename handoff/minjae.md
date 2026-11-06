@@ -3,8 +3,9 @@
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`)에 있고, 11/06까지의 자세한 전체본은 `docs/log/HANDOFF_minjae_20261106.md`.
 
 ## 다음 할 일 (순서대로)
-0. **API 명세서**: 계획 `docs/plans/0014-api-spec.md`(11/06 승인). **1단계 초안 끝**: 노션 SCRUN > 문서 > API 명세(44줄, 상태 "명세 검토", BE 담당 민재, 앱 담당 빈칸), `docs/api/README.md`(공통 규칙·오류 코드 23개, 문구 칸은 상준이 채움) → 다음: 상준·지환 검토 요청, Figma에서 화면 ID 확인(약관 A-06·친구 G-05에서 G-09·오류 I-08 추정, H-05·H-06 미확인), 백로그에 지표 이벤트(`/v1/events`) 추가 제안 → 2단계 FastAPI 스텁. 방식(11/06 DU 방식 합침): 노션 API 표 = 목록·진행판, 저장소 `docs/api/README.md` = 공통 규칙(DU 응답 껍데기 + HTTP 상태 코드 + requestId + 오류 코드 표), 세부 필드 = FastAPI 스텁의 `/docs`. 노션에 새 표 만드는 건 민재 확인 후. 데모 스텁은 scratchpad `api_demo/demo.py`(저장소 밖). 11/06 민재: 몸무게 필드 둠, OCR 위치·오프라인 달리기는 미정
-1. **아이폰 빌드 절차 문서**: 계획 0015로. 셋 다 맥 있음 → 각자 무료 Apple ID로 Xcode 설치(7일 만료 → 시연 1, 2일 전 재설치, TestFlight·Apple 로그인·푸시 불가). UI 확인 흐름(`unity_map.md` "앱 화면" 절)도 넣기
+- **지금: 계정 삭제(BL-39)** 계획 `docs/plans/0015-account-deletion.md`(11/06 제안, 민재가 먼저 하자고 함). 본 서버가 없어서 서버 최소 뼈대(`backend/`, FastAPI + PostgreSQL, users·auth_identities·refresh_tokens)와 같이. 결정 대기: 범위(서버만 추천), 카카오 개발자 앱 등록 여부, 카카오 연결 끊기 알림 처리 여부
+0. **API 명세서**(계획 0014): 1·2단계 끝(11/06). 노션 API 명세 표 + `docs/api/README.md` 공통 규칙 + **`backend/` FastAPI 스텁 42개**(계약 테스트 101개, 실행·스텁 규칙은 `backend/README.md`), `docs/api/openapi.json`·`docs/api/examples/`(Unity FakeApi용). 검토는 생략(민재). 다음: Figma 화면 ID 확인(약관 A-06·친구 G-05에서 G-09·오류 I-08 추정, H-05·H-06 미확인), 오류 문구 칸은 상준, 백로그에 지표 이벤트(`/v1/events`) 추가 제안 → 3단계 Unity FakeApi. 계획 0015(계정 삭제, 다른 세션에서 만든 제안)가 같은 `backend/`에 DB·토큰 진짜 구현을 얹을 예정
+1. 아이폰 빌드 절차 문서 → **11/06 민재: 패스**(별도 계획으로 안 함). 단 Unity 앱은 아직 iOS로 빌드해 본 적 없음 → 3번 플러그인 작업 때 아이폰 설치가 먼저 필요. 무료 Apple ID 7일 만료, UI 확인 흐름은 `unity_map.md` "앱 화면" 절
 2. **API 목록 + 화면 틀 + API 클라이언트·FakeApi**: `ISpeedSource`/`FakeSpeedSource`와 같은 방식, Normal·Empty·Error·지연 모드로 Figma 상태 화면 확인. **첫 화면은 닉네임 입력 + 긴 목록**(한글 입력·스크롤 감 확인, `unity_map.md` "앱 화면" 절)
 3. **Swift 속도 플러그인(11/13 시연)**: `ios/SpeedRecorder/SpeedEstimator.swift`를 Unity iOS 플러그인으로 → `ISpeedSource`로 아바타 연결
 4. **서버 뼈대 + 카카오 로그인**: ADR-0008(제안) 따라 오라클 무료 서버 + Docker Compose(FastAPI + PostgreSQL). 서버를 띄워 보고 ADR-0008 확정
@@ -19,7 +20,7 @@
 - 위험: 실시간 공동 맵(2주차에 하루 스파이크로 FastAPI WebSocket vs Photon, "몇 m 지점·속도"만 가끔 보내고 받는 쪽이 예측하는 방식 가설), 에셋 구매(월구독 11/20 17시 전), 헬스장 실험(2주차 초)
 
 ## 기다리는 것·확인할 것
-- **팀 메시지**: 역할 분담 메시지 아직 안 보냄. 카카오 먼저·무료 Apple ID·12/11·11/22 반영해서 다시 쓰기. 답 오면 CLAUDE.md "역할"과 ADR-0007의 "팀 공유 필요" 지우기
+- **팀 메시지**: 11/06 민재: Claude가 쓰는 건 패스(민재가 직접). 역할 분담·PRD 검토 전달이 팀에 공유됐다고 확인되면 CLAUDE.md "역할"과 ADR-0007의 "팀 공유 필요" 지우기
 - **팀원에게 확인**: 지환·상준 아이폰 유무, Apple Developer 계정 공유 방식, `shape-0218`이 상준인지
 - **지환 동의 대기**: `data/runs/20261029-004604/note.md`·`docs/speed/airpods_flight.md`에 키·몸무게 옆 "김지환" 실명 표기(커밋 안 함). 공개 저장소라 동의 받으면 커밋, 아니면 "팀원 J"처럼
 - **Git 남은 것**: 원격 `feat/airpods-treadmill`·`docs/handoff-1106` 삭제(자동 모드에서 막힘 → PR 화면 버튼), 지환 브랜치 `feat/airpods-flight`·`feat/airpods-flight-analysis`는 다 합쳐짐 → 지워도 되는지 지환에게

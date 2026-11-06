@@ -1,0 +1,6277 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SCRUN API",
+    "description": "\n러닝머신 실내 러닝 앱 SCRUN의 서버 API. **지금은 스텁**이라 고정 예시만 돌려준다.\n\n- 공통 규칙(응답 껍데기·상태 코드·오류 코드·단위): 저장소 `docs/api/README.md`\n- API 목록·진행: 노션 SCRUN > 문서 > API 명세\n- 로그인: 오른쪽 위 **Authorize**에 아무 토큰(예: `demo`)을 넣으면 예시 사용자로 호출된다.\n  `expired` → TOKEN_EXPIRED, `signup` → 가입용 토큰. 각 API 설명의 \"스텁:\"에 오류 화면을 부르는 값이 있다\n",
+    "version": "0.1.0-stub"
+  },
+  "paths": {
+    "/v1/auth/kakao": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "카카오 로그인",
+        "description": "화면 A-05 · BL-1. 카카오 iOS SDK 토큰을 보내면 서버가 카카오에서 확인. 처음이면 isNewUser=true + signupToken.\n\n스텁: 토큰 `new` → 새 사용자, `invalid` → INVALID_KAKAO_TOKEN, 그 밖 → 기존 사용자",
+        "operationId": "kakao_login_v1_auth_kakao_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KakaoLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_LoginResult_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_KAKAO_TOKEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agreements": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "가입 약관 목록",
+        "description": "화면 A-06 · BL-1, BL-31. 로그인 없이",
+        "operationId": "agreements_v1_agreements_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_list_Agreement__"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/signup": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "가입",
+        "description": "화면 A-06 · BL-1. 가입용 토큰 필요. 약관 동의·닉네임·키·몸무게·시간대.\n\n스텁: 닉네임 `taken` → NICKNAME_DUPLICATED",
+        "operationId": "signup_v1_auth_signup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_TokenPair_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR, NICKNAME_NOT_ALLOWED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NICKNAME_DUPLICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "토큰 재발급",
+        "description": "BL-43. 401 TOKEN_EXPIRED를 받으면 앱이 자동 호출하고 원래 요청을 한 번 다시 보냄.\n\n스텁: `expired` → TOKEN_EXPIRED(refresh도 만료 → 다시 로그인)",
+        "operationId": "refresh_v1_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_TokenPair_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "로그아웃",
+        "description": "화면 H-10 · BL-25. refresh 토큰 폐기",
+        "operationId": "logout_v1_auth_logout_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "UNAUTHORIZED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/nickname/check": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "닉네임 사용 가능 여부",
+        "description": "화면 A-06, H-01 · BL-1. 가입용 토큰으로도 됨. 중복·금칙어·길이.\n\n스텁: `taken` → DUPLICATED, `admin` → NOT_ALLOWED",
+        "operationId": "nickname_check_v1_users_nickname_check_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "nickname",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 12,
+              "title": "Nickname"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_NicknameCheck_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "내 정보",
+        "description": "화면 B-01, H-01 · BL-25",
+        "operationId": "get_me_v1_users_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Me_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "User"
+        ],
+        "summary": "계정 삭제",
+        "description": "화면 H-10 · BL-39 · 계획 0015. 모든 데이터 삭제 + 카카오 연결 해제, 유예 없이 바로. 카카오가 응답하지 않으면 아무것도 지우지 않고 503",
+        "operationId": "delete_me_v1_users_me_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "User"
+        ],
+        "summary": "내 정보 수정",
+        "description": "화면 H-01 · BL-25. 보낸 칸만 바뀜.\n\n스텁: 닉네임 `taken` → NICKNAME_DUPLICATED",
+        "operationId": "patch_me_v1_users_me_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Me_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR, NICKNAME_NOT_ALLOWED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NICKNAME_DUPLICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/settings": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "설정 보기",
+        "description": "화면 H-10 · BL-25. 알림은 폰 로컬이라 서버에 없음",
+        "operationId": "get_settings_v1_users_me_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Settings_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "User"
+        ],
+        "summary": "설정 바꾸기",
+        "description": "화면 H-10 · BL-25, BL-31",
+        "operationId": "patch_settings_v1_users_me_settings_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Settings_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/calibration": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "내 보정값",
+        "description": "화면 A-11, D-07, H-09 · BL-4, BL-10. 없으면 data=null → 맵 입장 전에 보정 화면으로",
+        "operationId": "get_calibration_v1_users_me_calibration_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Union_Calibration__NoneType__"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "보정값 올리기",
+        "description": "화면 A-15, H-09 · BL-4. 계산은 폰, 서버는 보관만. OCR 값은 받지 않음(독립성 원칙). 보정 단계(6·8·10 km/h vs 걷기 1 + 달리기 3점)는 PRD 검토 대기",
+        "operationId": "put_calibration_v1_users_me_calibration_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalibrationUpload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Calibration_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/weekly-goal": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "주간 목표 진행",
+        "description": "화면 B-01, B-02, B-03, H-07 · BL-17. 주기는 설정일부터 7일, 1회 = 인증 완료 + 5분 이상(서버 집계). 목표를 안 정했으면 targetCount=null",
+        "operationId": "get_weekly_goal_v1_users_me_weekly_goal_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_WeeklyGoal_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "주간 목표 설정·변경",
+        "description": "화면 A-16, H-08 · BL-17. 1에서 7회. 처음 설정은 바로, 변경은 현재 주기가 끝난 뒤 적용(nextTargetCount)",
+        "operationId": "put_weekly_goal_v1_users_me_weekly_goal_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeeklyGoalUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_WeeklyGoal_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/home": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "홈 한 번에",
+        "description": "화면 B-01에서 B-04 · BL-19. 각 항목 API도 따로 있음",
+        "operationId": "home_v1_home_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Home_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/courses": {
+      "get": {
+        "tags": [
+          "Course"
+        ],
+        "summary": "코스 목록",
+        "description": "화면 C-01 · BL-7, BL-42. 실사 영상 코스는 최하위라 type만 열어 둠",
+        "operationId": "list_courses_v1_courses_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_list_Course__"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/courses/{courseId}": {
+      "get": {
+        "tags": [
+          "Course"
+        ],
+        "summary": "코스 상세",
+        "description": "화면 C-02 · BL-7",
+        "operationId": "get_course_v1_courses__courseId__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Courseid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_CourseDetail_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "COURSE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/courses/{courseId}/entries": {
+      "post": {
+        "tags": [
+          "Course"
+        ],
+        "summary": "맵 입장",
+        "description": "화면 C-02, D-01, I-10, I-11 · BL-7, BL-32. 맵 인스턴스 배정(최대 20명), 입장 위치, 실시간 접속 정보(모양 미정, BL-36).\n\n스텁: courseId `crs_full` → COURSE_FULL, `crs_nocalib` → CALIBRATION_REQUIRED",
+        "operationId": "enter_map_v1_courses__courseId__entries_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Courseid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_MapEntry_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "COURSE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "COURSE_FULL, CALIBRATION_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs": {
+      "post": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "러닝 시작",
+        "description": "화면 D-01에서 D-03, D-09 · BL-8, BL-12, BL-50. 카운트다운이 끝나면. 같은 clientRunId가 다시 오면 처음 결과를 돌려줌",
+        "operationId": "start_run_v1_runs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_RunStarted_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "내 기록 목록",
+        "description": "화면 F-01, F-02, D-03 · BL-30, BL-50. 월별, 커서 방식. 고스트 고르기에도 씀. 기록이 없으면 items=[]",
+        "operationId": "list_runs_v1_runs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM. 없으면 최근부터",
+              "title": "Month"
+            },
+            "description": "YYYY-MM. 없으면 최근부터"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_CursorPage_RunSummary__"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/active": {
+      "get": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "끝나지 않은 러닝 찾기",
+        "description": "화면 I-04 · BL-27. 앱 재실행 때. 앱 종료 후 24시간 안이면 복구 가능. 없으면 run=null",
+        "operationId": "active_run_v1_runs_active_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_ActiveRun_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/runs/{runId}": {
+      "get": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "기록 상세",
+        "description": "화면 F-03, F-04, E-12 · BL-28, BL-30. 공식 값과 출처(계기판/센서), 그래프용 시계열, 함께 달린 러너\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "operationId": "get_run_v1_runs__runId__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Runid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_RunDetail_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RUN_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "피드 공유 바꾸기",
+        "description": "화면 E-12 · BL-28. 공유만. 기록 값 수정·삭제는 없음(PRD)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "operationId": "patch_run_v1_runs__runId__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Runid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_RunSummary_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RUN_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{runId}/samples": {
+      "put": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "속도 시계열 올리기",
+        "description": "화면 D-10 · BL-14, BL-28. 고스트 재생·인증 대조 근거. 나눠 올리면 offsetS로 이어 붙임. 같은 묶음이 다시 오면 덮어씀\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "operationId": "put_samples_v1_runs__runId__samples_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Runid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SamplesUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RUN_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RUN_ALREADY_FINISHED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{runId}/finish": {
+      "post": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "러닝 종료",
+        "description": "화면 D-18, D-19 · BL-18. 센서 거리·시간·종료 시각 → 인증 대기(PENDING)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "operationId": "finish_run_v1_runs__runId__finish_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Runid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunFinishRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_RunSummary_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RUN_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RUN_ALREADY_FINISHED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{runId}/discard": {
+      "post": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "복구한 러닝 버리기",
+        "description": "화면 I-04 · BL-27. 끝나지 않은 러닝만. 끝난 기록은 지울 수 없음(PRD)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "operationId": "discard_run_v1_runs__runId__discard_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Runid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RUN_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RUN_ALREADY_FINISHED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{runId}/ghost": {
+      "get": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "고스트 재생용 시계열",
+        "description": "화면 D-13 · BL-50. 본인 기록만, 코스와 무관하게 씀(PRD F04)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "operationId": "ghost_v1_runs__runId__ghost_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Runid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_GhostTrack_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RUN_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{runId}/verification/photo": {
+      "post": {
+        "tags": [
+          "Verification"
+        ],
+        "summary": "계기판 사진으로 인증",
+        "description": "화면 E-04에서 E-09 · BL-22, BL-24, BL-26. **OCR 위치 미정**(서버 vs 앱): 서버에서 하면 이 API, 사진은 OCR 직후 폐기.\n\n재촬영 필요(OCR 실패)·미인증(오차 초과, OCR 불가 계기판)은 오류가 아니라 200 + status. 인증 완료·미인증이면 rewards에 반영 결과(E-11).\n\n스텁: 파일 이름에 `blur` → RETAKE_REQUIRED, 그 밖 → VERIFIED\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "operationId": "verify_photo_v1_runs__runId__verification_photo_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Runid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_verify_photo_v1_runs__runId__verification_photo_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_VerificationResult_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RUN_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VERIFICATION_CLOSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{runId}/verification/reading": {
+      "post": {
+        "tags": [
+          "Verification"
+        ],
+        "summary": "앱이 읽은 계기판 값으로 인증",
+        "description": "화면 E-05, E-06 · BL-24, BL-26. **OCR 위치 미정**: 앱에서 OCR하면 이 API. 정해지면 photo/reading 중 하나만 남김.\n\n재촬영 필요(OCR 실패)·미인증(오차 초과, OCR 불가 계기판)은 오류가 아니라 200 + status. 인증 완료·미인증이면 rewards에 반영 결과(E-11).\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "operationId": "verify_reading_v1_runs__runId__verification_reading_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Runid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsoleReading"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_VerificationResult_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RUN_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VERIFICATION_CLOSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{runId}/verification/skip": {
+      "post": {
+        "tags": [
+          "Verification"
+        ],
+        "summary": "인증 없이 마무리",
+        "description": "화면 D-22, E-10 · BL-22, BL-28. 촬영 없이 마무리·시간 초과·재촬영 포기 → 미인증 저장. 나중에 인증 불가\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "operationId": "verify_skip_v1_runs__runId__verification_skip_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Runid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkipRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_VerificationResult_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RUN_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VERIFICATION_CLOSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{runId}/rewards": {
+      "get": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "이번 운동 반영 결과",
+        "description": "화면 E-11 · BL-21. 경험치 전후·레벨업·러닝복 단계·임팩트 해금·주간 목표. 결과 화면을 다시 열 때(인증 응답에도 같은 내용)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "operationId": "rewards_v1_runs__runId__rewards_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Runid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Rewards_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RUN_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/progress": {
+      "get": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "레벨·인증 마크",
+        "description": "화면 H-02, H-03, H-04, B-01 · BL-23, BL-35, BL-37. 레벨 임계값 3·10·25·50·100 km는 서버 설정",
+        "operationId": "progress_v1_users_me_progress_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Progress_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/impact": {
+      "put": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "임팩트 고르기",
+        "description": "화면 H-03 · BL-35, BL-37. 해금한 것만. null이면 끄기",
+        "operationId": "select_impact_v1_users_me_impact_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImpactSelect"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Progress_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/friends": {
+      "get": {
+        "tags": [
+          "Friend"
+        ],
+        "summary": "친구 목록",
+        "description": "화면 G-04, G-09 · BL-11. 없으면 빈 배열(G-04 빈 상태)",
+        "operationId": "list_friends_v1_friends_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_list_Friend__"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Friend"
+        ],
+        "summary": "친구 코드로 추가",
+        "description": "화면 G-05에서 G-08(Figma 확인 필요) · BL-11. 최대 50명.\n\n스텁: 내 코드 `SCR-7K2Q` → SELF_FRIEND_CODE, `SCR-NONE` → FRIEND_CODE_NOT_FOUND, `SCR-FRND` → ALREADY_FRIEND, `SCR-FULL` → FRIEND_LIMIT_EXCEEDED, 그 밖 → 추가됨",
+        "operationId": "add_friend_v1_friends_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FriendAddRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Friend_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR, SELF_FRIEND_CODE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "FRIEND_CODE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_FRIEND, FRIEND_LIMIT_EXCEEDED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/friends/running": {
+      "get": {
+        "tags": [
+          "Friend"
+        ],
+        "summary": "지금 달리는 친구",
+        "description": "화면 G-01, G-02, B-01 · BL-13, BL-19",
+        "operationId": "running_friends_v1_friends_running_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_list_RunningFriend__"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/friends/{userId}": {
+      "get": {
+        "tags": [
+          "Friend"
+        ],
+        "summary": "친구 프로필",
+        "description": "화면 G-09(Figma 확인 필요) · BL-11. 최근 인증 러닝·인증 마크·레벨",
+        "operationId": "friend_profile_v1_friends__userId__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Userid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_FriendProfile_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "USER_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Friend"
+        ],
+        "summary": "친구 삭제",
+        "description": "화면 G-10 · BL-11",
+        "operationId": "delete_friend_v1_friends__userId__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Userid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "USER_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/friends/{userId}/run-together": {
+      "post": {
+        "tags": [
+          "Friend"
+        ],
+        "summary": "같이 달리기",
+        "description": "화면 G-03, D-20 · BL-15. 친구가 있는 맵 인스턴스로 입장, 친구 근처 위치(Q-22). 응답은 맵 입장과 같은 모양.\n\n스텁: 달리지 않는 친구(`usr_f2`) → FRIEND_NOT_RUNNING(앱은 일반 입장으로)",
+        "operationId": "run_together_v1_friends__userId__run_together_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Userid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_MapEntry_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "USER_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "FRIEND_NOT_RUNNING, COURSE_FULL, CALIBRATION_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/feed": {
+      "get": {
+        "tags": [
+          "Friend"
+        ],
+        "summary": "친구 러닝 피드",
+        "description": "화면 G-01 · BL-13. 커서 방식. 미인증 기록도 공유됨(앱이 '미인증' 마크). 친구에게만 공개",
+        "operationId": "feed_v1_feed_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_CursorPage_FeedItem__"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events": {
+      "post": {
+        "tags": [
+          "Event"
+        ],
+        "summary": "지표 이벤트 올리기",
+        "description": "PRD 2.4 검증 지표(목표 완주율, 재방문율, 인증 성공률, 운동 직후 지루함). 앱이 모아서 한 번에 최대 100개. 백로그에 없음 → 추가 제안. 이벤트 목록은 상준과 확정",
+        "operationId": "post_events_v1_events_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventBatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActiveRun": {
+        "properties": {
+          "run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "끝나지 않은 러닝. 없으면 null"
+          },
+          "recoverableUntil": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recoverableuntil",
+            "description": "앱 종료 후 24시간"
+          }
+        },
+        "type": "object",
+        "title": "ActiveRun"
+      },
+      "Agreement": {
+        "properties": {
+          "agreementId": {
+            "type": "string",
+            "title": "Agreementid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "약관 본문 주소"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agreementId",
+          "title",
+          "required",
+          "version",
+          "url"
+        ],
+        "title": "Agreement"
+      },
+      "Body_verify_photo_v1_runs__runId__verification_photo_post": {
+        "properties": {
+          "photo": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Photo",
+            "description": "앱 카메라로 찍은 계기판 사진(JPEG)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "photo"
+        ],
+        "title": "Body_verify_photo_v1_runs__runId__verification_photo_post"
+      },
+      "Calibration": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/CalibrationPoint"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Points",
+            "description": "보정한 구간들"
+          },
+          "model": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Model",
+            "description": "폰 SpeedEstimator가 만든 보정값(계수 등). 서버는 해석하지 않고 보관만. OCR 값은 넣지 않음(독립성 원칙)"
+          },
+          "device": {
+            "type": "string",
+            "title": "Device",
+            "description": "보정한 폰 기종. 기종이 바뀌면 재보정 안내에 씀"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "points",
+          "model",
+          "device",
+          "createdAt"
+        ],
+        "title": "Calibration"
+      },
+      "CalibrationPoint": {
+        "properties": {
+          "speedKmh": {
+            "type": "number",
+            "maximum": 25.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Speedkmh",
+            "description": "안내한 러닝머신 속도"
+          },
+          "gait": {
+            "$ref": "#/components/schemas/Gait"
+          },
+          "durationS": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Durations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "speedKmh",
+          "gait",
+          "durationS"
+        ],
+        "title": "CalibrationPoint"
+      },
+      "CalibrationUpload": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/CalibrationPoint"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Points",
+            "description": "보정한 구간들"
+          },
+          "model": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Model",
+            "description": "폰 SpeedEstimator가 만든 보정값(계수 등). 서버는 해석하지 않고 보관만. OCR 값은 넣지 않음(독립성 원칙)"
+          },
+          "device": {
+            "type": "string",
+            "title": "Device",
+            "description": "보정한 폰 기종. 기종이 바뀌면 재보정 안내에 씀"
+          }
+        },
+        "type": "object",
+        "required": [
+          "points",
+          "model",
+          "device"
+        ],
+        "title": "CalibrationUpload"
+      },
+      "Companion": {
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CompanionKind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nickname",
+          "kind"
+        ],
+        "title": "Companion"
+      },
+      "CompanionKind": {
+        "type": "string",
+        "enum": [
+          "RUNNER",
+          "FRIEND",
+          "BOT"
+        ],
+        "title": "CompanionKind"
+      },
+      "ComparisonRow": {
+        "properties": {
+          "item": {
+            "type": "string",
+            "title": "Item",
+            "description": "distance 또는 duration"
+          },
+          "console": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Console"
+          },
+          "sensor": {
+            "type": "number",
+            "title": "Sensor"
+          },
+          "diffRatio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diffratio",
+            "description": "(계기판 − 센서) / 계기판"
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item",
+          "sensor",
+          "ok"
+        ],
+        "title": "ComparisonRow"
+      },
+      "ConsoleReading": {
+        "properties": {
+          "distanceM": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distancem"
+          },
+          "durationS": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Durations"
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Readat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "distanceM",
+          "durationS",
+          "readAt"
+        ],
+        "title": "ConsoleReading",
+        "description": "OCR을 앱에서 할 때의 대안(미정)."
+      },
+      "Course": {
+        "properties": {
+          "courseId": {
+            "type": "string",
+            "title": "Courseid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CourseType"
+          },
+          "lengthM": {
+            "type": "integer",
+            "title": "Lengthm",
+            "description": "한 바퀴(루프) 또는 전체(영상) 길이"
+          },
+          "runnersNow": {
+            "type": "integer",
+            "title": "Runnersnow",
+            "description": "지금 달리는 러너 수(봇 제외)"
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "title": "Thumbnailurl"
+          }
+        },
+        "type": "object",
+        "required": [
+          "courseId",
+          "name",
+          "type",
+          "lengthM",
+          "runnersNow",
+          "thumbnailUrl"
+        ],
+        "title": "Course"
+      },
+      "CourseDetail": {
+        "properties": {
+          "courseId": {
+            "type": "string",
+            "title": "Courseid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CourseType"
+          },
+          "lengthM": {
+            "type": "integer",
+            "title": "Lengthm",
+            "description": "한 바퀴(루프) 또는 전체(영상) 길이"
+          },
+          "runnersNow": {
+            "type": "integer",
+            "title": "Runnersnow",
+            "description": "지금 달리는 러너 수(봇 제외)"
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "title": "Thumbnailurl"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "mood": {
+            "type": "string",
+            "title": "Mood",
+            "description": "분위기 한 줄"
+          },
+          "maxRunnersPerMap": {
+            "type": "integer",
+            "title": "Maxrunnerspermap",
+            "description": "맵 인스턴스당 최대 인원(20)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "courseId",
+          "name",
+          "type",
+          "lengthM",
+          "runnersNow",
+          "thumbnailUrl",
+          "description",
+          "mood",
+          "maxRunnersPerMap"
+        ],
+        "title": "CourseDetail"
+      },
+      "CourseType": {
+        "type": "string",
+        "enum": [
+          "LOOP_3D",
+          "VIDEO"
+        ],
+        "title": "CourseType"
+      },
+      "CursorPage_FeedItem_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FeedItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor",
+            "description": "다음 쪽 커서. 없으면 null"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "CursorPage[FeedItem]"
+      },
+      "CursorPage_RunSummary_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RunSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor",
+            "description": "다음 쪽 커서. 없으면 null"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "CursorPage[RunSummary]"
+      },
+      "Envelope_ActiveRun_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_ActiveRun_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[ActiveRun]"
+      },
+      "Envelope_Calibration_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_Calibration_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[Calibration]"
+      },
+      "Envelope_CourseDetail_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_CourseDetail_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[CourseDetail]"
+      },
+      "Envelope_CursorPage_FeedItem__": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_CursorPage_FeedItem__"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[CursorPage[FeedItem]]"
+      },
+      "Envelope_CursorPage_RunSummary__": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_CursorPage_RunSummary__"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[CursorPage[RunSummary]]"
+      },
+      "Envelope_FriendProfile_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_FriendProfile_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[FriendProfile]"
+      },
+      "Envelope_Friend_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_Friend_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[Friend]"
+      },
+      "Envelope_GhostTrack_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_GhostTrack_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[GhostTrack]"
+      },
+      "Envelope_Home_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_Home_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[Home]"
+      },
+      "Envelope_LoginResult_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_LoginResult_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[LoginResult]"
+      },
+      "Envelope_MapEntry_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_MapEntry_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[MapEntry]"
+      },
+      "Envelope_Me_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_Me_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[Me]"
+      },
+      "Envelope_NicknameCheck_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_NicknameCheck_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[NicknameCheck]"
+      },
+      "Envelope_Progress_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_Progress_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[Progress]"
+      },
+      "Envelope_Rewards_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_Rewards_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[Rewards]"
+      },
+      "Envelope_RunDetail_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_RunDetail_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[RunDetail]"
+      },
+      "Envelope_RunStarted_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_RunStarted_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[RunStarted]"
+      },
+      "Envelope_RunSummary_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_RunSummary_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[RunSummary]"
+      },
+      "Envelope_Settings_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_Settings_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[Settings]"
+      },
+      "Envelope_TokenPair_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_TokenPair_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[TokenPair]"
+      },
+      "Envelope_Union_Calibration__NoneType__": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_Union_Calibration__NoneType__"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[Union[Calibration, NoneType]]"
+      },
+      "Envelope_VerificationResult_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_VerificationResult_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[VerificationResult]"
+      },
+      "Envelope_WeeklyGoal_": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_WeeklyGoal_"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[WeeklyGoal]"
+      },
+      "Envelope_list_Agreement__": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_list_Agreement__"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[list[Agreement]]"
+      },
+      "Envelope_list_Course__": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_list_Course__"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[list[Course]]"
+      },
+      "Envelope_list_Friend__": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_list_Friend__"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[list[Friend]]"
+      },
+      "Envelope_list_RunningFriend__": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "SUCCESS",
+            "title": "Resulttype"
+          },
+          "success": {
+            "$ref": "#/components/schemas/SuccessBody_list_RunningFriend__"
+          },
+          "error": {
+            "type": "null",
+            "title": "Error"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "success",
+          "meta"
+        ],
+        "title": "Envelope[list[RunningFriend]]"
+      },
+      "ErrorBody": {
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "details": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorBody"
+      },
+      "ErrorCode": {
+        "type": "string",
+        "enum": [
+          "VALIDATION_ERROR",
+          "UNAUTHORIZED",
+          "TOKEN_EXPIRED",
+          "INVALID_KAKAO_TOKEN",
+          "SIGNUP_REQUIRED",
+          "FORBIDDEN",
+          "NOT_FOUND",
+          "METHOD_NOT_ALLOWED",
+          "USER_NOT_FOUND",
+          "RUN_NOT_FOUND",
+          "COURSE_NOT_FOUND",
+          "FRIEND_CODE_NOT_FOUND",
+          "NICKNAME_DUPLICATED",
+          "NICKNAME_NOT_ALLOWED",
+          "CALIBRATION_REQUIRED",
+          "COURSE_FULL",
+          "RUN_ALREADY_FINISHED",
+          "VERIFICATION_CLOSED",
+          "SELF_FRIEND_CODE",
+          "ALREADY_FRIEND",
+          "FRIEND_LIMIT_EXCEEDED",
+          "FRIEND_NOT_RUNNING",
+          "RATE_LIMITED",
+          "INTERNAL_ERROR",
+          "SERVICE_UNAVAILABLE"
+        ],
+        "title": "ErrorCode"
+      },
+      "ErrorEnvelope": {
+        "properties": {
+          "resultType": {
+            "type": "string",
+            "const": "FAIL",
+            "title": "Resulttype"
+          },
+          "success": {
+            "type": "null",
+            "title": "Success"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resultType",
+          "error",
+          "meta"
+        ],
+        "title": "ErrorEnvelope"
+      },
+      "Event": {
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/EventName"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurredat"
+          },
+          "props": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Props"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "occurredAt"
+        ],
+        "title": "Event"
+      },
+      "EventBatch": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "events"
+        ],
+        "title": "EventBatch"
+      },
+      "EventName": {
+        "type": "string",
+        "enum": [
+          "APP_OPEN",
+          "RUN_GOAL_REACHED",
+          "RUN_ENDED_EARLY",
+          "VERIFICATION_ATTEMPT",
+          "BOREDOM_SURVEY"
+        ],
+        "title": "EventName",
+        "description": "PRD 2.4 검증 지표용. 목록은 상준과 확정(초안)."
+      },
+      "FeedItem": {
+        "properties": {
+          "feedId": {
+            "type": "string",
+            "title": "Feedid"
+          },
+          "userId": {
+            "type": "string",
+            "title": "Userid"
+          },
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          },
+          "runId": {
+            "type": "string",
+            "title": "Runid"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Startedat"
+          },
+          "distanceM": {
+            "type": "integer",
+            "title": "Distancem"
+          },
+          "durationS": {
+            "type": "integer",
+            "title": "Durations"
+          },
+          "avgPaceSPerKm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avgpacesperkm"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/Verification",
+            "description": "미인증이면 앱이 '미인증' 마크"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feedId",
+          "userId",
+          "nickname",
+          "runId",
+          "startedAt",
+          "distanceM",
+          "durationS",
+          "verification"
+        ],
+        "title": "FeedItem"
+      },
+      "Friend": {
+        "properties": {
+          "userId": {
+            "type": "string",
+            "title": "Userid"
+          },
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          },
+          "level": {
+            "type": "integer",
+            "title": "Level"
+          },
+          "verifiedCount": {
+            "type": "integer",
+            "title": "Verifiedcount"
+          },
+          "runningNow": {
+            "type": "boolean",
+            "title": "Runningnow"
+          }
+        },
+        "type": "object",
+        "required": [
+          "userId",
+          "nickname",
+          "level",
+          "verifiedCount",
+          "runningNow"
+        ],
+        "title": "Friend"
+      },
+      "FriendAddRequest": {
+        "properties": {
+          "friendCode": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Friendcode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "friendCode"
+        ],
+        "title": "FriendAddRequest"
+      },
+      "FriendProfile": {
+        "properties": {
+          "userId": {
+            "type": "string",
+            "title": "Userid"
+          },
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          },
+          "level": {
+            "type": "integer",
+            "title": "Level"
+          },
+          "verifiedCount": {
+            "type": "integer",
+            "title": "Verifiedcount"
+          },
+          "runningNow": {
+            "type": "boolean",
+            "title": "Runningnow"
+          },
+          "outfitStage": {
+            "type": "integer",
+            "title": "Outfitstage"
+          },
+          "recentVerifiedRuns": {
+            "items": {
+              "$ref": "#/components/schemas/FriendRun"
+            },
+            "type": "array",
+            "title": "Recentverifiedruns"
+          }
+        },
+        "type": "object",
+        "required": [
+          "userId",
+          "nickname",
+          "level",
+          "verifiedCount",
+          "runningNow",
+          "outfitStage",
+          "recentVerifiedRuns"
+        ],
+        "title": "FriendProfile"
+      },
+      "FriendRun": {
+        "properties": {
+          "runId": {
+            "type": "string",
+            "title": "Runid"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Startedat"
+          },
+          "distanceM": {
+            "type": "integer",
+            "title": "Distancem"
+          },
+          "durationS": {
+            "type": "integer",
+            "title": "Durations"
+          },
+          "avgPaceSPerKm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avgpacesperkm"
+          }
+        },
+        "type": "object",
+        "required": [
+          "runId",
+          "startedAt",
+          "distanceM",
+          "durationS"
+        ],
+        "title": "FriendRun"
+      },
+      "Gait": {
+        "type": "string",
+        "enum": [
+          "WALK",
+          "RUN"
+        ],
+        "title": "Gait"
+      },
+      "GhostTrack": {
+        "properties": {
+          "runId": {
+            "type": "string",
+            "title": "Runid"
+          },
+          "distanceM": {
+            "type": "integer",
+            "title": "Distancem"
+          },
+          "durationS": {
+            "type": "integer",
+            "title": "Durations"
+          },
+          "speedSeries": {
+            "$ref": "#/components/schemas/SpeedSeries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "runId",
+          "distanceM",
+          "durationS",
+          "speedSeries"
+        ],
+        "title": "GhostTrack"
+      },
+      "Goal": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/GoalType"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "description": "DISTANCE면 m, TIME이면 초"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "Goal"
+      },
+      "GoalType": {
+        "type": "string",
+        "enum": [
+          "DISTANCE",
+          "TIME",
+          "NONE"
+        ],
+        "title": "GoalType"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Home": {
+        "properties": {
+          "weeklyGoal": {
+            "$ref": "#/components/schemas/WeeklyGoal"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/Progress"
+          },
+          "runningFriends": {
+            "items": {
+              "$ref": "#/components/schemas/RunningFriend"
+            },
+            "type": "array",
+            "title": "Runningfriends"
+          },
+          "recentRuns": {
+            "items": {
+              "$ref": "#/components/schemas/RunSummary"
+            },
+            "type": "array",
+            "title": "Recentruns"
+          },
+          "courses": {
+            "items": {
+              "$ref": "#/components/schemas/Course"
+            },
+            "type": "array",
+            "title": "Courses"
+          }
+        },
+        "type": "object",
+        "required": [
+          "weeklyGoal",
+          "progress",
+          "runningFriends",
+          "recentRuns",
+          "courses"
+        ],
+        "title": "Home",
+        "description": "홈 진입 때 한 번에(B-01에서 B-04). 각 항목 API도 따로 있음."
+      },
+      "Impact": {
+        "properties": {
+          "impactId": {
+            "type": "string",
+            "title": "Impactid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "unlockAtCount": {
+            "type": "integer",
+            "title": "Unlockatcount",
+            "description": "이 인증 횟수에 자동 해금"
+          },
+          "unlocked": {
+            "type": "boolean",
+            "title": "Unlocked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "impactId",
+          "name",
+          "unlockAtCount",
+          "unlocked"
+        ],
+        "title": "Impact"
+      },
+      "ImpactSelect": {
+        "properties": {
+          "impactId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impactid",
+            "description": "해금한 임팩트만. null이면 끄기"
+          }
+        },
+        "type": "object",
+        "required": [
+          "impactId"
+        ],
+        "title": "ImpactSelect"
+      },
+      "KakaoLoginRequest": {
+        "properties": {
+          "kakaoAccessToken": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Kakaoaccesstoken",
+            "description": "앱이 카카오 iOS SDK로 받은 토큰"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kakaoAccessToken"
+        ],
+        "title": "KakaoLoginRequest"
+      },
+      "LoginResult": {
+        "properties": {
+          "isNewUser": {
+            "type": "boolean",
+            "title": "Isnewuser",
+            "description": "true면 가입 화면으로. 그때는 signupToken만 있음"
+          },
+          "accessToken": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accesstoken"
+          },
+          "refreshToken": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refreshtoken"
+          },
+          "expiresInS": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresins",
+            "description": "access 토큰 수명(초)"
+          },
+          "signupToken": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signuptoken",
+            "description": "가입·닉네임 확인에만 쓰는 토큰"
+          }
+        },
+        "type": "object",
+        "required": [
+          "isNewUser"
+        ],
+        "title": "LoginResult"
+      },
+      "LogoutRequest": {
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Refreshtoken"
+          }
+        },
+        "type": "object",
+        "required": [
+          "refreshToken"
+        ],
+        "title": "LogoutRequest"
+      },
+      "MapEntry": {
+        "properties": {
+          "mapInstanceId": {
+            "type": "string",
+            "title": "Mapinstanceid"
+          },
+          "courseId": {
+            "type": "string",
+            "title": "Courseid"
+          },
+          "entryPositionM": {
+            "type": "number",
+            "title": "Entrypositionm",
+            "description": "입장 위치(코스 시작점부터 m). 러너 많은 구간 근처, 없으면 랜덤"
+          },
+          "realtime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RealtimeAccess"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "mapInstanceId",
+          "courseId",
+          "entryPositionM"
+        ],
+        "title": "MapEntry"
+      },
+      "Me": {
+        "properties": {
+          "userId": {
+            "type": "string",
+            "title": "Userid"
+          },
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          },
+          "heightCm": {
+            "type": "integer",
+            "title": "Heightcm"
+          },
+          "weightKg": {
+            "type": "integer",
+            "title": "Weightkg"
+          },
+          "friendCode": {
+            "type": "string",
+            "title": "Friendcode",
+            "description": "친구 추가용 코드"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "userId",
+          "nickname",
+          "heightCm",
+          "weightKg",
+          "friendCode",
+          "timezone",
+          "createdAt"
+        ],
+        "title": "Me"
+      },
+      "MeUpdate": {
+        "properties": {
+          "nickname": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 12,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nickname"
+          },
+          "heightCm": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 230.0,
+                "minimum": 100.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heightcm"
+          },
+          "weightKg": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 250.0,
+                "minimum": 20.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weightkg"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          }
+        },
+        "type": "object",
+        "title": "MeUpdate",
+        "description": "보낸 칸만 바뀜."
+      },
+      "Meta": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "requestId": {
+            "type": "string",
+            "title": "Requestid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "timestamp",
+          "path",
+          "requestId"
+        ],
+        "title": "Meta"
+      },
+      "NicknameCheck": {
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NicknameReason"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "쓸 수 없을 때 이유"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nickname",
+          "available"
+        ],
+        "title": "NicknameCheck"
+      },
+      "NicknameReason": {
+        "type": "string",
+        "enum": [
+          "DUPLICATED",
+          "NOT_ALLOWED"
+        ],
+        "title": "NicknameReason"
+      },
+      "OfficialSource": {
+        "type": "string",
+        "enum": [
+          "CONSOLE",
+          "SENSOR"
+        ],
+        "title": "OfficialSource"
+      },
+      "Progress": {
+        "properties": {
+          "level": {
+            "type": "integer",
+            "title": "Level"
+          },
+          "xpM": {
+            "type": "integer",
+            "title": "Xpm",
+            "description": "경험치 = 인증 완료 기록의 누적 거리(m). 줄지 않음"
+          },
+          "nextLevelAtM": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextlevelatm",
+            "description": "다음 레벨 경험치. 임계값은 서버 설정"
+          },
+          "nextLevelRemainingM": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextlevelremainingm"
+          },
+          "outfitStage": {
+            "type": "integer",
+            "maximum": 6.0,
+            "minimum": 1.0,
+            "title": "Outfitstage",
+            "description": "러닝복 세트 단계(Lv.6에서 완성, 이후는 배지 프레임)"
+          },
+          "verifiedCount": {
+            "type": "integer",
+            "title": "Verifiedcount",
+            "description": "인증 완료 횟수(인증 마크)"
+          },
+          "impacts": {
+            "items": {
+              "$ref": "#/components/schemas/Impact"
+            },
+            "type": "array",
+            "title": "Impacts"
+          },
+          "selectedImpactId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selectedimpactid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "level",
+          "xpM",
+          "outfitStage",
+          "verifiedCount",
+          "impacts"
+        ],
+        "title": "Progress"
+      },
+      "RealtimeAccess": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url",
+          "token"
+        ],
+        "title": "RealtimeAccess",
+        "description": "실시간 접속 정보. 모양은 BL-36(FastAPI WebSocket vs Photon) 뒤에 확정(미정)."
+      },
+      "RefreshRequest": {
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Refreshtoken"
+          }
+        },
+        "type": "object",
+        "required": [
+          "refreshToken"
+        ],
+        "title": "RefreshRequest"
+      },
+      "Rewards": {
+        "properties": {
+          "xpBeforeM": {
+            "type": "integer",
+            "title": "Xpbeforem"
+          },
+          "xpAfterM": {
+            "type": "integer",
+            "title": "Xpafterm"
+          },
+          "levelBefore": {
+            "type": "integer",
+            "title": "Levelbefore"
+          },
+          "levelAfter": {
+            "type": "integer",
+            "title": "Levelafter"
+          },
+          "leveledUp": {
+            "type": "boolean",
+            "title": "Leveledup"
+          },
+          "outfitStageAfter": {
+            "type": "integer",
+            "title": "Outfitstageafter"
+          },
+          "nextLevelRemainingM": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextlevelremainingm"
+          },
+          "impactsUnlocked": {
+            "items": {
+              "$ref": "#/components/schemas/Impact"
+            },
+            "type": "array",
+            "title": "Impactsunlocked"
+          },
+          "weeklyGoal": {
+            "$ref": "#/components/schemas/WeeklyGoalReflect"
+          }
+        },
+        "type": "object",
+        "required": [
+          "xpBeforeM",
+          "xpAfterM",
+          "levelBefore",
+          "levelAfter",
+          "leveledUp",
+          "outfitStageAfter",
+          "impactsUnlocked",
+          "weeklyGoal"
+        ],
+        "title": "Rewards",
+        "description": "결과 화면(E-11) 연출용. 미인증이면 경험치·횟수 변화 없음."
+      },
+      "RunDetail": {
+        "properties": {
+          "runId": {
+            "type": "string",
+            "title": "Runid"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Startedat"
+          },
+          "courseId": {
+            "type": "string",
+            "title": "Courseid"
+          },
+          "courseName": {
+            "type": "string",
+            "title": "Coursename"
+          },
+          "distanceM": {
+            "type": "integer",
+            "title": "Distancem",
+            "description": "공식 값: 인증 완료면 계기판, 미인증이면 센서"
+          },
+          "durationS": {
+            "type": "integer",
+            "title": "Durations"
+          },
+          "avgPaceSPerKm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avgpacesperkm"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/Verification"
+          },
+          "shared": {
+            "type": "boolean",
+            "title": "Shared",
+            "description": "친구 피드 공유 여부"
+          },
+          "officialSource": {
+            "$ref": "#/components/schemas/OfficialSource"
+          },
+          "sensor": {
+            "$ref": "#/components/schemas/RunStats"
+          },
+          "console": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunStats"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "계기판 값(인증 완료일 때)"
+          },
+          "speedSeries": {
+            "$ref": "#/components/schemas/SpeedSeries",
+            "description": "그래프용으로 줄인 시계열"
+          },
+          "companions": {
+            "items": {
+              "$ref": "#/components/schemas/Companion"
+            },
+            "type": "array",
+            "title": "Companions"
+          },
+          "ghostRunId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ghostrunid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "runId",
+          "startedAt",
+          "courseId",
+          "courseName",
+          "distanceM",
+          "durationS",
+          "verification",
+          "shared",
+          "officialSource",
+          "sensor",
+          "speedSeries",
+          "companions"
+        ],
+        "title": "RunDetail"
+      },
+      "RunFinishRequest": {
+        "properties": {
+          "endedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Endedat"
+          },
+          "sensor": {
+            "$ref": "#/components/schemas/RunStats",
+            "description": "센서로 잰 거리·시간"
+          }
+        },
+        "type": "object",
+        "required": [
+          "endedAt",
+          "sensor"
+        ],
+        "title": "RunFinishRequest"
+      },
+      "RunStartRequest": {
+        "properties": {
+          "clientRunId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Clientrunid",
+            "description": "앱이 만든 ID. 같은 값이 다시 오면 처음 결과를 돌려줌"
+          },
+          "mapInstanceId": {
+            "type": "string",
+            "title": "Mapinstanceid"
+          },
+          "goal": {
+            "$ref": "#/components/schemas/Goal"
+          },
+          "ghostRunId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ghostrunid",
+            "description": "고스트로 쓸 내 기록"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Startedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clientRunId",
+          "mapInstanceId",
+          "goal",
+          "startedAt"
+        ],
+        "title": "RunStartRequest"
+      },
+      "RunStarted": {
+        "properties": {
+          "runId": {
+            "type": "string",
+            "title": "Runid"
+          },
+          "clientRunId": {
+            "type": "string",
+            "title": "Clientrunid"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Startedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "runId",
+          "clientRunId",
+          "startedAt"
+        ],
+        "title": "RunStarted"
+      },
+      "RunStats": {
+        "properties": {
+          "distanceM": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distancem",
+            "description": "거리(m)"
+          },
+          "durationS": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Durations",
+            "description": "시간(초)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "distanceM",
+          "durationS"
+        ],
+        "title": "RunStats"
+      },
+      "RunSummary": {
+        "properties": {
+          "runId": {
+            "type": "string",
+            "title": "Runid"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Startedat"
+          },
+          "courseId": {
+            "type": "string",
+            "title": "Courseid"
+          },
+          "courseName": {
+            "type": "string",
+            "title": "Coursename"
+          },
+          "distanceM": {
+            "type": "integer",
+            "title": "Distancem",
+            "description": "공식 값: 인증 완료면 계기판, 미인증이면 센서"
+          },
+          "durationS": {
+            "type": "integer",
+            "title": "Durations"
+          },
+          "avgPaceSPerKm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avgpacesperkm"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/Verification"
+          },
+          "shared": {
+            "type": "boolean",
+            "title": "Shared",
+            "description": "친구 피드 공유 여부"
+          }
+        },
+        "type": "object",
+        "required": [
+          "runId",
+          "startedAt",
+          "courseId",
+          "courseName",
+          "distanceM",
+          "durationS",
+          "verification",
+          "shared"
+        ],
+        "title": "RunSummary"
+      },
+      "RunUpdate": {
+        "properties": {
+          "shared": {
+            "type": "boolean",
+            "title": "Shared",
+            "description": "공유만 바꿀 수 있음. 기록 값 수정은 없음(PRD)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "shared"
+        ],
+        "title": "RunUpdate"
+      },
+      "RunningFriend": {
+        "properties": {
+          "userId": {
+            "type": "string",
+            "title": "Userid"
+          },
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          },
+          "courseId": {
+            "type": "string",
+            "title": "Courseid"
+          },
+          "courseName": {
+            "type": "string",
+            "title": "Coursename"
+          },
+          "distanceM": {
+            "type": "integer",
+            "title": "Distancem",
+            "description": "지금까지 달린 거리"
+          },
+          "paceSPerKm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pacesperkm"
+          }
+        },
+        "type": "object",
+        "required": [
+          "userId",
+          "nickname",
+          "courseId",
+          "courseName",
+          "distanceM"
+        ],
+        "title": "RunningFriend"
+      },
+      "SamplesUpload": {
+        "properties": {
+          "intervalS": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Intervals",
+            "description": "칸 간격(초)"
+          },
+          "speedsKmh": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Speedskmh"
+          },
+          "offsetS": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Offsets",
+            "description": "이 묶음의 시작 시각(러닝 시작부터 초). 나눠 올릴 때",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "intervalS",
+          "speedsKmh"
+        ],
+        "title": "SamplesUpload"
+      },
+      "Settings": {
+        "properties": {
+          "feedShareDefault": {
+            "type": "boolean",
+            "title": "Feedsharedefault",
+            "description": "새 기록을 피드에 공유할지 기본값(PRD: 켜짐)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feedShareDefault"
+        ],
+        "title": "Settings"
+      },
+      "SettingsUpdate": {
+        "properties": {
+          "feedShareDefault": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedsharedefault"
+          }
+        },
+        "type": "object",
+        "title": "SettingsUpdate"
+      },
+      "SignupRequest": {
+        "properties": {
+          "agreedIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Agreedids",
+            "description": "동의한 약관 ID. 필수 약관이 빠지면 400"
+          },
+          "nickname": {
+            "type": "string",
+            "maxLength": 12,
+            "minLength": 2,
+            "title": "Nickname"
+          },
+          "heightCm": {
+            "type": "integer",
+            "maximum": 230.0,
+            "minimum": 100.0,
+            "title": "Heightcm",
+            "description": "아바타 크기에 씀"
+          },
+          "weightKg": {
+            "type": "integer",
+            "maximum": 250.0,
+            "minimum": 20.0,
+            "title": "Weightkg",
+            "description": "속도 추정엔 안 씀. 용도는 개인정보처리방침에 명시"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone",
+            "description": "주간 목표 주기 계산용",
+            "default": "Asia/Seoul"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agreedIds",
+          "nickname",
+          "heightCm",
+          "weightKg"
+        ],
+        "title": "SignupRequest"
+      },
+      "SkipReason": {
+        "type": "string",
+        "enum": [
+          "SKIPPED",
+          "TIMEOUT",
+          "RETAKE_GIVEN_UP"
+        ],
+        "title": "SkipReason"
+      },
+      "SkipRequest": {
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/SkipReason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "SkipRequest"
+      },
+      "SpeedSeries": {
+        "properties": {
+          "intervalS": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Intervals",
+            "description": "칸 간격(초)"
+          },
+          "speedsKmh": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Speedskmh"
+          }
+        },
+        "type": "object",
+        "required": [
+          "intervalS",
+          "speedsKmh"
+        ],
+        "title": "SpeedSeries"
+      },
+      "SuccessBody_ActiveRun_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ActiveRun"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[ActiveRun]"
+      },
+      "SuccessBody_Calibration_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Calibration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[Calibration]"
+      },
+      "SuccessBody_CourseDetail_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CourseDetail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[CourseDetail]"
+      },
+      "SuccessBody_CursorPage_FeedItem__": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CursorPage_FeedItem_"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[CursorPage[FeedItem]]"
+      },
+      "SuccessBody_CursorPage_RunSummary__": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CursorPage_RunSummary_"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[CursorPage[RunSummary]]"
+      },
+      "SuccessBody_FriendProfile_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FriendProfile"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[FriendProfile]"
+      },
+      "SuccessBody_Friend_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Friend"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[Friend]"
+      },
+      "SuccessBody_GhostTrack_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GhostTrack"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[GhostTrack]"
+      },
+      "SuccessBody_Home_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Home"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[Home]"
+      },
+      "SuccessBody_LoginResult_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LoginResult"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[LoginResult]"
+      },
+      "SuccessBody_MapEntry_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MapEntry"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[MapEntry]"
+      },
+      "SuccessBody_Me_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Me"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[Me]"
+      },
+      "SuccessBody_NicknameCheck_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/NicknameCheck"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[NicknameCheck]"
+      },
+      "SuccessBody_Progress_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Progress"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[Progress]"
+      },
+      "SuccessBody_Rewards_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Rewards"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[Rewards]"
+      },
+      "SuccessBody_RunDetail_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RunDetail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[RunDetail]"
+      },
+      "SuccessBody_RunStarted_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RunStarted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[RunStarted]"
+      },
+      "SuccessBody_RunSummary_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RunSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[RunSummary]"
+      },
+      "SuccessBody_Settings_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Settings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[Settings]"
+      },
+      "SuccessBody_TokenPair_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TokenPair"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[TokenPair]"
+      },
+      "SuccessBody_Union_Calibration__NoneType__": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Calibration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[Union[Calibration, NoneType]]"
+      },
+      "SuccessBody_VerificationResult_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/VerificationResult"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[VerificationResult]"
+      },
+      "SuccessBody_WeeklyGoal_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/WeeklyGoal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[WeeklyGoal]"
+      },
+      "SuccessBody_list_Agreement__": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Agreement"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[list[Agreement]]"
+      },
+      "SuccessBody_list_Course__": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Course"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[list[Course]]"
+      },
+      "SuccessBody_list_Friend__": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Friend"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[list[Friend]]"
+      },
+      "SuccessBody_list_RunningFriend__": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/RunningFriend"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessBody[list[RunningFriend]]"
+      },
+      "TokenPair": {
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "title": "Accesstoken"
+          },
+          "refreshToken": {
+            "type": "string",
+            "title": "Refreshtoken"
+          },
+          "expiresInS": {
+            "type": "integer",
+            "title": "Expiresins"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "expiresInS"
+        ],
+        "title": "TokenPair"
+      },
+      "UnverifiedReason": {
+        "type": "string",
+        "enum": [
+          "MISMATCH",
+          "UNSUPPORTED_CONSOLE",
+          "SKIPPED",
+          "TIMEOUT",
+          "RETAKE_GIVEN_UP"
+        ],
+        "title": "UnverifiedReason"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Verification": {
+        "type": "string",
+        "enum": [
+          "VERIFIED",
+          "UNVERIFIED",
+          "PENDING"
+        ],
+        "title": "Verification",
+        "description": "저장되는 인증 상태는 2개(PRD F06). PENDING은 러닝을 끝내고 인증을 아직 안 한 동안만."
+      },
+      "VerificationResult": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/VerificationStatus"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UnverifiedReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "console": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunStats"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "계기판에서 읽은 값"
+          },
+          "sensor": {
+            "$ref": "#/components/schemas/RunStats"
+          },
+          "comparison": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonRow"
+            },
+            "type": "array",
+            "title": "Comparison"
+          },
+          "retakeDeadline": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retakedeadline",
+            "description": "재촬영 필요일 때 마감 시각"
+          },
+          "rewards": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Rewards"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "저장됐을 때(인증 완료·미인증) 반영 결과"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "sensor",
+          "comparison"
+        ],
+        "title": "VerificationResult"
+      },
+      "VerificationStatus": {
+        "type": "string",
+        "enum": [
+          "VERIFIED",
+          "UNVERIFIED",
+          "RETAKE_REQUIRED"
+        ],
+        "title": "VerificationStatus"
+      },
+      "WeeklyGoal": {
+        "properties": {
+          "targetCount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 7.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Targetcount",
+            "description": "목표를 안 정했으면 null"
+          },
+          "cycleStart": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cyclestart",
+            "description": "이번 주기 시작일(설정일부터 7일 단위)"
+          },
+          "cycleEnd": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycleend"
+          },
+          "doneCount": {
+            "type": "integer",
+            "title": "Donecount",
+            "description": "이번 주기 인정 횟수(인증 완료 + 5분 이상)"
+          },
+          "daysLeft": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daysleft"
+          },
+          "nextTargetCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nexttargetcount",
+            "description": "변경 예약값. 다음 주기부터 적용"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/WeeklyGoalCycle"
+            },
+            "type": "array",
+            "title": "History",
+            "description": "최근 8주기"
+          }
+        },
+        "type": "object",
+        "required": [
+          "doneCount",
+          "history"
+        ],
+        "title": "WeeklyGoal"
+      },
+      "WeeklyGoalCycle": {
+        "properties": {
+          "cycleStart": {
+            "type": "string",
+            "format": "date",
+            "title": "Cyclestart"
+          },
+          "targetCount": {
+            "type": "integer",
+            "title": "Targetcount"
+          },
+          "doneCount": {
+            "type": "integer",
+            "title": "Donecount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cycleStart",
+          "targetCount",
+          "doneCount"
+        ],
+        "title": "WeeklyGoalCycle"
+      },
+      "WeeklyGoalReflect": {
+        "properties": {
+          "counted": {
+            "type": "boolean",
+            "title": "Counted",
+            "description": "이번 운동이 주간 목표 1회로 인정됐는지(인증 완료 + 5분 이상)"
+          },
+          "doneCount": {
+            "type": "integer",
+            "title": "Donecount"
+          },
+          "targetCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Targetcount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "counted",
+          "doneCount"
+        ],
+        "title": "WeeklyGoalReflect"
+      },
+      "WeeklyGoalUpdate": {
+        "properties": {
+          "targetCount": {
+            "type": "integer",
+            "maximum": 7.0,
+            "minimum": 1.0,
+            "title": "Targetcount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "targetCount"
+        ],
+        "title": "WeeklyGoalUpdate"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "description": "POST /v1/auth/kakao·signup·refresh로 받은 토큰",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

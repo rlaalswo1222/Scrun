@@ -1,0 +1,46 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/v1/runs?month=2026-11",
+    "body": null
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "items": [
+          {
+            "runId": "run_01HZX",
+            "startedAt": "2026-11-05T11:02:00Z",
+            "courseId": "crs_island_loop",
+            "courseName": "섬 루프 코스(가칭)",
+            "distanceM": 3120,
+            "durationS": 1080,
+            "avgPaceSPerKm": 346,
+            "verification": "VERIFIED",
+            "shared": true
+          },
+          {
+            "runId": "run_01HZW",
+            "startedAt": "2026-11-03T10:40:00Z",
+            "courseId": "crs_island_loop",
+            "courseName": "섬 루프 코스(가칭)",
+            "distanceM": 2450,
+            "durationS": 900,
+            "avgPaceSPerKm": 367,
+            "verification": "UNVERIFIED",
+            "shared": true
+          }
+        ],
+        "nextCursor": null
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/runs",
+      "requestId": "req_example"
+    }
+  }
+}

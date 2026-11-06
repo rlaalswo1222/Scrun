@@ -1,0 +1,45 @@
+{
+  "request": {
+    "method": "PUT",
+    "path": "/v1/users/me/calibration",
+    "body": {
+      "points": [
+        {
+          "speedKmh": 8,
+          "gait": "RUN",
+          "durationS": 20
+        }
+      ],
+      "model": {
+        "runA": 1.0
+      },
+      "device": "iPhone15,4"
+    }
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "points": [
+          {
+            "speedKmh": 8.0,
+            "gait": "RUN",
+            "durationS": 20
+          }
+        ],
+        "model": {
+          "runA": 1.0
+        },
+        "device": "iPhone15,4",
+        "createdAt": "2026-11-06T07:11:25.777630Z"
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/users/me/calibration",
+      "requestId": "req_example"
+    }
+  }
+}

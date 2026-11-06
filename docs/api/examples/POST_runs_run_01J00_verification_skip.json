@@ -1,0 +1,47 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/v1/runs/run_01J00/verification/skip",
+    "body": {
+      "reason": "SKIPPED"
+    }
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "status": "UNVERIFIED",
+        "reason": "SKIPPED",
+        "console": null,
+        "sensor": {
+          "distanceM": 3080,
+          "durationS": 1080
+        },
+        "comparison": [],
+        "retakeDeadline": null,
+        "rewards": {
+          "xpBeforeM": 4120,
+          "xpAfterM": 4120,
+          "levelBefore": 2,
+          "levelAfter": 2,
+          "leveledUp": false,
+          "outfitStageAfter": 2,
+          "nextLevelRemainingM": 5880,
+          "impactsUnlocked": [],
+          "weeklyGoal": {
+            "counted": false,
+            "doneCount": 2,
+            "targetCount": 3
+          }
+        }
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/runs/run_01J00/verification/skip",
+      "requestId": "req_example"
+    }
+  }
+}

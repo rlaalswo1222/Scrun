@@ -1,0 +1,36 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/v1/runs/run_01J00/finish",
+    "body": {
+      "endedAt": "2026-11-06T10:18:00Z",
+      "sensor": {
+        "distanceM": 3080,
+        "durationS": 1080
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "runId": "run_01J00",
+        "startedAt": "2026-11-05T11:02:00Z",
+        "courseId": "crs_island_loop",
+        "courseName": "섬 루프 코스(가칭)",
+        "distanceM": 3080,
+        "durationS": 1080,
+        "avgPaceSPerKm": 346,
+        "verification": "PENDING",
+        "shared": true
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/runs/run_01J00/finish",
+      "requestId": "req_example"
+    }
+  }
+}
