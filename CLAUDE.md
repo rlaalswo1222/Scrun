@@ -44,6 +44,7 @@
 | 속도 추정·센서·SpeedLab 앱 | `docs/speed/README.md` → 필요하면 `speedlab_20261028.md`, `speed_ideas.md` |
 | Unity 본 앱(섬 맵·아바타·성능·앱 화면) | `docs/unity/unity_map.md`(끝에 Figma → UI Toolkit 옮기기·남은 큰 것), `unity/tools/README.md` |
 | 화면·기능 기획 | 노션 SCRUN > 문서 > 기획 문서(PRD·백로그·유스케이스·열린 질문, 최신 원본), Figma 와이어프레임. 저장소의 `docs/product/`는 옛 초안 |
+| 서버 API | `docs/api/README.md`(공통 규칙·오류 코드), 노션 API 명세(목록·진행), 계획 0014 |
 | 기술 결정 이유 | `docs/adr/` (0001 Unity 통일, 0002 FastAPI, 0003 MCP 커뮤니티판, 0004 달릴 때 속도 추정, 0005 안내형 보정, 0006 속도 추정 제약, 0007 아이폰 우선, 0008 서버 올리는 곳(제안)) |
 | 계획 중·승인된 작업 | `docs/plans/` |
 | 교수님·멘토 문서, HWP | `docs/meeting/`, `docs/hwp/` |
