@@ -1,0 +1,161 @@
+{
+ "height_cm": 177,
+ "stages": [
+  {
+   "label": "검증 7",
+   "duration_s": 30,
+   "set": "calib",
+   "speed_kmh": 7
+  },
+  {
+   "speed_kmh": 8,
+   "label": "검증 8",
+   "duration_s": 30,
+   "set": "calib"
+  },
+  {
+   "speed_kmh": 9,
+   "label": "검증 9",
+   "duration_s": 30,
+   "set": "calib"
+  },
+  {
+   "set": "calib",
+   "label": "검증 10",
+   "speed_kmh": 10,
+   "duration_s": 30
+  },
+  {
+   "label": "검증 9",
+   "set": "test",
+   "speed_kmh": 9,
+   "duration_s": 30
+  },
+  {
+   "duration_s": 30,
+   "label": "검증 8",
+   "speed_kmh": 8,
+   "set": "test"
+  },
+  {
+   "set": "test",
+   "speed_kmh": 7,
+   "duration_s": 30,
+   "label": "검증 7"
+  },
+  {
+   "set": "test",
+   "speed_kmh": 10,
+   "duration_s": 30,
+   "label": "검증 10"
+  },
+  {
+   "speed_kmh": 9,
+   "set": "test",
+   "duration_s": 30,
+   "label": "검증 9"
+  },
+  {
+   "speed_kmh": 8,
+   "set": "test",
+   "duration_s": 30,
+   "label": "검증 8"
+  },
+  {
+   "label": "검증 7",
+   "speed_kmh": 7,
+   "duration_s": 30,
+   "set": "test"
+  },
+  {
+   "label": "검증 8",
+   "duration_s": 30,
+   "set": "test",
+   "speed_kmh": 8
+  },
+  {
+   "speed_kmh": 9,
+   "set": "test",
+   "duration_s": 30,
+   "label": "검증 9"
+  },
+  {
+   "duration_s": 30,
+   "set": "test",
+   "label": "검증 10",
+   "speed_kmh": 10
+  }
+ ],
+ "device": "iPhone + AirPods",
+ "id": "20261029-025507",
+ "t0": 1793210107.344256,
+ "created": "2026-10-29 02:55:07",
+ "segments": [
+  {
+   "index": 0,
+   "label": "검증 7",
+   "speed_kmh": 7,
+   "set": "calib",
+   "start_s": 0.065,
+   "end_s": 30.094
+  },
+  {
+   "index": 1,
+   "label": "검증 8",
+   "speed_kmh": 8,
+   "set": "calib",
+   "start_s": 30.094,
+   "end_s": 60.344
+  },
+  {
+   "index": 2,
+   "label": "검증 9",
+   "speed_kmh": 9,
+   "set": "calib",
+   "start_s": 60.344,
+   "end_s": 90.594
+  },
+  {
+   "index": 3,
+   "label": "검증 10",
+   "speed_kmh": 10,
+   "set": "calib",
+   "start_s": 90.594,
+   "end_s": 302.341
+  },
+  {
+   "index": 10,
+   "label": "검증 7",
+   "speed_kmh": 7,
+   "set": "test",
+   "start_s": 302.341,
+   "end_s": 332.591
+  },
+  {
+   "index": 11,
+   "label": "검증 8",
+   "speed_kmh": 8,
+   "set": "test",
+   "start_s": 332.591,
+   "end_s": 362.84
+  },
+  {
+   "index": 12,
+   "label": "검증 9",
+   "speed_kmh": 9,
+   "set": "test",
+   "start_s": 362.84,
+   "end_s": 393.09
+  },
+  {
+   "index": 13,
+   "label": "검증 10",
+   "speed_kmh": 10,
+   "set": "test",
+   "start_s": 393.09,
+   "end_s": 423.343
+  }
+ ],
+ "finished": "2026-10-29 03:02:10",
+ "end_s": 423.343
+}

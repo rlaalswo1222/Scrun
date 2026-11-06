@@ -3,7 +3,9 @@
     "allow": [
       "mcp__claude-in-chrome__tabs_context_mcp",
       "ClaudeInChromeDomain(www.mixamo.com)",
-      "ClaudeInChromeDomain(www.youtube.com)"
+      "ClaudeInChromeDomain(www.youtube.com)",
+      "ClaudeInChromeDomain(localhost:8000)",
+      "ClaudeInChromeDomain(www.figma.com)"
     ]
   }
 }

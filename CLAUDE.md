@@ -21,11 +21,18 @@
 
 ## 이미 정한 방향 (바꾸려면 ADR부터)
 - 속도 추정: 폰은 계기판에 **그냥 올려놓은** 상태, 사용자 입력 없음. 마이크·FTMS·반자동 입력·버튼 감지 제외, 매번 보정은 최후의 수단 (ADR-0004, 0005, 0006)
+- 출시 대상: **아이폰 + 에어팟 먼저**(ADR-0007). Unity를 iOS로 빌드, 센서·속도 계산은 Swift 플러그인. 안드로이드 S22는 실험용
 - 3D: Unity 하나로(ADR-0001). 지도·이름·지형은 창작한 가상 섬, 손그림풍, 달리는 도로는 평지(경사 안내 없음). 서울 S-Map·실사 영상 코스는 제외
 
+## 역할 (11/05 민재 제안, 팀 공유 필요)
+- **김민재**: 풀스택 + 리드. 속도 플러그인·달리기 화면·보정, 서버 전부(FastAPI·DB·Apple 로그인), API 목록·화면 틀, 모든 PR 리뷰, 실시간 공동 맵
+- **김지환**: 3D·맵 + 데이터. 맵 풍경 배치·달리는 길 시스템·아이폰 성능, OCR·인증 판정, 헬스장 실험(빌드·진행·분석), 화면 동작 연결 일부, 고스트
+- **고상준**: PM + UI 디자인·퍼블리싱. 백로그·PRD·와이어프레임, Figma, 화면 모양(UXML·USS, 동작 코드는 민재·지환), 맵 방향·코스 기획·에셋 고르기, 문구·개인정보처리방침·테스트
+
 ## 팀 작업 (git·GitHub `rlaalswo1222/Scrun`, 공개 저장소)
-- 커밋은 `docs/git_convention.md` 규칙(`유형: 제목`, 한글, 한 커밋 한 문제). 커밋·푸시는 사용자가 요청할 때만
-- 작업 시작 전에 `git pull`. 새 계획 번호는 pull한 뒤 마지막 번호 + 1 (동시에 만들면 겹침)
+- 브랜치: `develop`에서 `feat/...`(또는 `fix/...`, `docs/...`)를 따서 작업하고 `develop`으로 PR. `main`·`develop`에 직접 커밋하지 않는다. `develop` → `main`은 발표·출시 때만 (`docs/git_convention.md`)
+- 커밋은 `docs/git_convention.md` 규칙(`유형: 제목`, 한글, 한 커밋 한 문제). 커밋·푸시·PR은 사용자가 요청할 때만
+- 작업 시작 전에 `develop`에서 `git pull`. 새 계획 번호는 pull한 뒤 마지막 번호 + 1 (동시에 만들면 겹침)
 - 남의 `handoff/` 파일은 고치지 않는다
 - 팀 전체가 지킬 규칙·결정은 개인 Claude 메모리가 아니라 이 파일이나 `docs/adr/`에 적는다(메모리는 그 사람 컴퓨터에만 있음)
 - 공개 저장소라 비밀(키·토큰·인증서)과 다른 사람의 개인정보는 올리지 않는다
@@ -37,7 +44,7 @@
 | 속도 추정·센서·SpeedLab 앱 | `docs/speed/README.md` → 필요하면 `speedlab_20261028.md`, `speed_ideas.md` |
 | Unity 본 앱(섬 맵·아바타·성능) | `docs/unity/unity_map.md`, `unity/tools/README.md` |
 | 화면·기능 기획 | `docs/product/scrun_userflow_v2.html`, `scrun_usecases_v1.md` |
-| 기술 결정 이유 | `docs/adr/` (0001 Unity 통일, 0002 FastAPI, 0003 MCP 커뮤니티판, 0004 달릴 때 속도 추정, 0005 안내형 보정, 0006 속도 추정 제약) |
+| 기술 결정 이유 | `docs/adr/` (0001 Unity 통일, 0002 FastAPI, 0003 MCP 커뮤니티판, 0004 달릴 때 속도 추정, 0005 안내형 보정, 0006 속도 추정 제약, 0007 아이폰 우선) |
 | 계획 중·승인된 작업 | `docs/plans/` |
 | 교수님·멘토 문서, HWP | `docs/meeting/`, `docs/hwp/` |
 | 유사 서비스·관련 연구 | `docs/research/` (Zwift 자료는 참고용, 보고서에 "Zwift 분석" 표현 금지. 관련 연구 정리 `treadmill_sensing_papers.md`) |

@@ -1,0 +1,97 @@
+{
+ "height_cm": 177,
+ "stages": [
+  {
+   "set": "still",
+   "speed_kmh": null,
+   "label": "가만히 서기",
+   "duration_s": 10
+  },
+  {
+   "duration_s": 10,
+   "label": "제자리 점프 3번",
+   "speed_kmh": null,
+   "set": "sync"
+  },
+  {
+   "label": "낮게 뛰기",
+   "speed_kmh": null,
+   "set": "hop",
+   "duration_s": 30
+  },
+  {
+   "duration_s": 30,
+   "speed_kmh": null,
+   "set": "hop",
+   "label": "보통으로 뛰기"
+  },
+  {
+   "set": "hop",
+   "duration_s": 30,
+   "speed_kmh": null,
+   "label": "높게 뛰기"
+  },
+  {
+   "duration_s": 10,
+   "speed_kmh": null,
+   "set": "sync",
+   "label": "멈추고 점프 3번"
+  }
+ ],
+ "device": "iPhone + AirPods",
+ "id": "20261029-004604",
+ "t0": 1793202364.0713449,
+ "created": "2026-10-29 00:46:04",
+ "segments": [
+  {
+   "index": 0,
+   "label": "가만히 서기",
+   "speed_kmh": null,
+   "set": "still",
+   "start_s": 0.033,
+   "end_s": 10.035
+  },
+  {
+   "index": 1,
+   "label": "제자리 점프 3번",
+   "speed_kmh": null,
+   "set": "sync",
+   "start_s": 10.035,
+   "end_s": 20.285
+  },
+  {
+   "index": 2,
+   "label": "낮게 뛰기",
+   "speed_kmh": null,
+   "set": "hop",
+   "start_s": 20.285,
+   "end_s": 50.285
+  },
+  {
+   "index": 3,
+   "label": "보통으로 뛰기",
+   "speed_kmh": null,
+   "set": "hop",
+   "start_s": 50.285,
+   "end_s": 80.285
+  },
+  {
+   "index": 4,
+   "label": "높게 뛰기",
+   "speed_kmh": null,
+   "set": "hop",
+   "start_s": 80.285,
+   "end_s": 110.285
+  },
+  {
+   "index": 5,
+   "label": "멈추고 점프 3번",
+   "speed_kmh": null,
+   "set": "sync",
+   "start_s": 110.285,
+   "end_s": 120.291
+  }
+ ],
+ "finished": "2026-10-29 00:48:04",
+ "end_s": 120.291
+}
