@@ -50,3 +50,6 @@ unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/**
 # 서버 테스트 캐시
 .pytest_cache/
 backend/build/
+
+# 서버 접속 정보·키(예시는 backend/.env.example)
+backend/.env

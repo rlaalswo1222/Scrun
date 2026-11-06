@@ -1,0 +1,21 @@
+# 로컬 개발·테스트용 PostgreSQL. 실행: backend 폴더에서 `docker compose up -d`
+# DB 두 개: scrun(개발), scrun_test(pytest 전용, 테스트가 매번 비움)
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: scrun
+      POSTGRES_PASSWORD: scrun-local-only
+      POSTGRES_DB: scrun
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scrun"]
+      interval: 2s
+      retries: 30
+
+volumes:
+  pgdata:
