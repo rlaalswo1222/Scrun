@@ -74,7 +74,7 @@
           "Auth"
         ],
         "summary": "가입 약관 목록",
-        "description": "화면 A-06 · BL-1, BL-31. 로그인 없이",
+        "description": "화면 A-06 · BL-1, BL-40. 로그인 없이",
         "operationId": "agreements_v1_agreements_get",
         "responses": {
           "200": {
@@ -173,7 +173,7 @@
           "Auth"
         ],
         "summary": "토큰 재발급",
-        "description": "BL-43. 401 TOKEN_EXPIRED를 받으면 앱이 자동 호출하고 원래 요청을 한 번 다시 보냄.\n\n스텁: `expired` → TOKEN_EXPIRED(refresh도 만료 → 다시 로그인)",
+        "description": "BL-44. 401 TOKEN_EXPIRED를 받으면 앱이 자동 호출하고 원래 요청을 한 번 다시 보냄.\n\n스텁: `expired` → TOKEN_EXPIRED(refresh도 만료 → 다시 로그인)",
         "operationId": "refresh_v1_auth_refresh_post",
         "requestBody": {
           "content": {
@@ -235,7 +235,7 @@
           "Auth"
         ],
         "summary": "로그아웃",
-        "description": "화면 H-10 · BL-25. refresh 토큰 폐기",
+        "description": "화면 H-10 · BL-36. refresh 토큰 폐기",
         "operationId": "logout_v1_auth_logout_post",
         "requestBody": {
           "content": {
@@ -355,7 +355,7 @@
           "User"
         ],
         "summary": "내 정보",
-        "description": "화면 B-01, H-01 · BL-25",
+        "description": "화면 B-01, H-01 · BL-36",
         "operationId": "get_me_v1_users_me_get",
         "responses": {
           "200": {
@@ -400,7 +400,7 @@
           "User"
         ],
         "summary": "계정 삭제",
-        "description": "화면 H-10 · BL-39 · 계획 0015. 모든 데이터 삭제 + 카카오 연결 해제, 유예 없이 바로. 카카오가 응답하지 않으면 아무것도 지우지 않고 503",
+        "description": "화면 H-10 · BL-48 · 계획 0015. 모든 데이터 삭제 + 카카오 연결 해제, 유예 없이 바로. 카카오가 응답하지 않으면 아무것도 지우지 않고 503",
         "operationId": "delete_me_v1_users_me_delete",
         "responses": {
           "204": {
@@ -448,7 +448,7 @@
           "User"
         ],
         "summary": "내 정보 수정",
-        "description": "화면 H-01 · BL-25. 보낸 칸만 바뀜.\n\n스텁: 닉네임 `taken` → NICKNAME_DUPLICATED",
+        "description": "화면 H-01 · BL-36. 보낸 칸만 바뀜.\n\n스텁: 닉네임 `taken` → NICKNAME_DUPLICATED",
         "operationId": "patch_me_v1_users_me_patch",
         "requestBody": {
           "content": {
@@ -535,7 +535,7 @@
           "User"
         ],
         "summary": "설정 보기",
-        "description": "화면 H-10 · BL-25. 알림은 폰 로컬이라 서버에 없음",
+        "description": "화면 H-10 · BL-36. 알림은 폰 로컬이라 서버에 없음",
         "operationId": "get_settings_v1_users_me_settings_get",
         "responses": {
           "200": {
@@ -580,7 +580,7 @@
           "User"
         ],
         "summary": "설정 바꾸기",
-        "description": "화면 H-10 · BL-25, BL-31",
+        "description": "화면 H-10 · BL-36, BL-40",
         "operationId": "patch_settings_v1_users_me_settings_patch",
         "requestBody": {
           "content": {
@@ -779,7 +779,7 @@
           "User"
         ],
         "summary": "주간 목표 진행",
-        "description": "화면 B-01, B-02, B-03, H-07 · BL-17. 주기는 설정일부터 7일, 1회 = 인증 완료 + 5분 이상(서버 집계). 목표를 안 정했으면 targetCount=null",
+        "description": "화면 B-01, B-02, B-03, H-07 · BL-30. 주기는 설정일부터 7일, 1회 = 인증 완료 + 5분 이상(서버 집계). 목표를 안 정했으면 targetCount=null",
         "operationId": "get_weekly_goal_v1_users_me_weekly_goal_get",
         "responses": {
           "200": {
@@ -824,7 +824,7 @@
           "User"
         ],
         "summary": "주간 목표 설정·변경",
-        "description": "화면 A-16, H-08 · BL-17. 1에서 7회. 처음 설정은 바로, 변경은 현재 주기가 끝난 뒤 적용(nextTargetCount)",
+        "description": "화면 A-16, H-08 · BL-30. 1에서 7회. 처음 설정은 바로, 변경은 현재 주기가 끝난 뒤 적용(nextTargetCount)",
         "operationId": "put_weekly_goal_v1_users_me_weekly_goal_put",
         "requestBody": {
           "content": {
@@ -901,7 +901,7 @@
           "User"
         ],
         "summary": "홈 한 번에",
-        "description": "화면 B-01에서 B-04 · BL-19. 각 항목 API도 따로 있음",
+        "description": "화면 B-01에서 B-04 · BL-31. 각 항목 API도 따로 있음",
         "operationId": "home_v1_home_get",
         "responses": {
           "200": {
@@ -948,7 +948,7 @@
           "Course"
         ],
         "summary": "코스 목록",
-        "description": "화면 C-01 · BL-7, BL-42. 실사 영상 코스는 최하위라 type만 열어 둠",
+        "description": "화면 C-01 · BL-7, BL-43. 실사 영상 코스는 최하위라 type만 열어 둠",
         "operationId": "list_courses_v1_courses_get",
         "responses": {
           "200": {
@@ -1073,7 +1073,7 @@
           "Course"
         ],
         "summary": "맵 입장",
-        "description": "화면 C-02, D-01, I-10, I-11 · BL-7, BL-32. 맵 인스턴스 배정(최대 20명), 입장 위치, 실시간 접속 정보(모양 미정, BL-36).\n\n스텁: courseId `crs_full` → COURSE_FULL, `crs_nocalib` → CALIBRATION_REQUIRED",
+        "description": "화면 C-02, D-01, I-10, I-11 · BL-7, BL-21. 맵 인스턴스 배정(최대 20명), 입장 위치, 실시간 접속 정보(모양 미정, BL-25).\n\n스텁: courseId `crs_full` → COURSE_FULL, `crs_nocalib` → CALIBRATION_REQUIRED",
         "operationId": "enter_map_v1_courses__courseId__entries_post",
         "security": [
           {
@@ -1161,7 +1161,7 @@
           "Run"
         ],
         "summary": "러닝 시작",
-        "description": "화면 D-01에서 D-03, D-09 · BL-8, BL-12, BL-50. 카운트다운이 끝나면. 같은 clientRunId가 다시 오면 처음 결과를 돌려줌",
+        "description": "화면 D-01에서 D-03, D-09 · BL-8, BL-11, BL-24. 카운트다운이 끝나면. 같은 clientRunId가 다시 오면 처음 결과를 돌려줌",
         "operationId": "start_run_v1_runs_post",
         "security": [
           {
@@ -1236,7 +1236,7 @@
           "Run"
         ],
         "summary": "내 기록 목록",
-        "description": "화면 F-01, F-02, D-03 · BL-30, BL-50. 월별, 커서 방식. 고스트 고르기에도 씀. 기록이 없으면 items=[]",
+        "description": "화면 F-01, F-02, D-03 · BL-20, BL-24. 월별, 커서 방식. 고스트 고르기에도 씀. 기록이 없으면 items=[]",
         "operationId": "list_runs_v1_runs_get",
         "security": [
           {
@@ -1340,7 +1340,7 @@
           "Run"
         ],
         "summary": "끝나지 않은 러닝 찾기",
-        "description": "화면 I-04 · BL-27. 앱 재실행 때. 앱 종료 후 24시간 안이면 복구 가능. 없으면 run=null",
+        "description": "화면 I-04 · BL-37. 앱 재실행 때. 앱 종료 후 24시간 안이면 복구 가능. 없으면 run=null",
         "operationId": "active_run_v1_runs_active_get",
         "responses": {
           "200": {
@@ -1387,7 +1387,7 @@
           "Run"
         ],
         "summary": "기록 상세",
-        "description": "화면 F-03, F-04, E-12 · BL-28, BL-30. 공식 값과 출처(계기판/센서), 그래프용 시계열, 함께 달린 러너\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 F-03, F-04, E-12 · BL-19, BL-20. 공식 값과 출처(계기판/센서), 그래프용 시계열, 함께 달린 러너\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
         "operationId": "get_run_v1_runs__runId__get",
         "security": [
           {
@@ -1463,7 +1463,7 @@
           "Run"
         ],
         "summary": "피드 공유 바꾸기",
-        "description": "화면 E-12 · BL-28. 공유만. 기록 값 수정·삭제는 없음(PRD)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 E-12 · BL-19. 공유만. 기록 값 수정·삭제는 없음(PRD)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
         "operationId": "patch_run_v1_runs__runId__patch",
         "security": [
           {
@@ -1561,7 +1561,7 @@
           "Run"
         ],
         "summary": "속도 시계열 올리기",
-        "description": "화면 D-10 · BL-14, BL-28. 고스트 재생·인증 대조 근거. 나눠 올리면 offsetS로 이어 붙임. 같은 묶음이 다시 오면 덮어씀\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 D-10 · BL-12, BL-19. 고스트 재생·인증 대조 근거. 나눠 올리면 offsetS로 이어 붙임. 같은 묶음이 다시 오면 덮어씀\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
         "operationId": "put_samples_v1_runs__runId__samples_put",
         "security": [
           {
@@ -1662,7 +1662,7 @@
           "Run"
         ],
         "summary": "러닝 종료",
-        "description": "화면 D-18, D-19 · BL-18. 센서 거리·시간·종료 시각 → 인증 대기(PENDING)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 D-18, D-19 · BL-14. 센서 거리·시간·종료 시각 → 인증 대기(PENDING)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
         "operationId": "finish_run_v1_runs__runId__finish_post",
         "security": [
           {
@@ -1770,7 +1770,7 @@
           "Run"
         ],
         "summary": "복구한 러닝 버리기",
-        "description": "화면 I-04 · BL-27. 끝나지 않은 러닝만. 끝난 기록은 지울 수 없음(PRD)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 I-04 · BL-37. 끝나지 않은 러닝만. 끝난 기록은 지울 수 없음(PRD)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
         "operationId": "discard_run_v1_runs__runId__discard_post",
         "security": [
           {
@@ -1851,7 +1851,7 @@
           "Run"
         ],
         "summary": "고스트 재생용 시계열",
-        "description": "화면 D-13 · BL-50. 본인 기록만, 코스와 무관하게 씀(PRD F04)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 D-13 · BL-24. 본인 기록만, 코스와 무관하게 씀(PRD F04)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
         "operationId": "ghost_v1_runs__runId__ghost_get",
         "security": [
           {
@@ -1929,7 +1929,7 @@
           "Verification"
         ],
         "summary": "계기판 사진으로 인증",
-        "description": "화면 E-04에서 E-09 · BL-22, BL-24, BL-26. **OCR 위치 미정**(서버 vs 앱): 서버에서 하면 이 API, 사진은 OCR 직후 폐기.\n\n재촬영 필요(OCR 실패)·미인증(오차 초과, OCR 불가 계기판)은 오류가 아니라 200 + status. 인증 완료·미인증이면 rewards에 반영 결과(E-11).\n\n스텁: 파일 이름에 `blur` → RETAKE_REQUIRED, 그 밖 → VERIFIED\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 E-04에서 E-09 · BL-16, BL-17, BL-18. **OCR 위치 미정**(서버 vs 앱): 서버에서 하면 이 API, 사진은 OCR 직후 폐기.\n\n재촬영 필요(OCR 실패)·미인증(오차 초과, OCR 불가 계기판)은 오류가 아니라 200 + status. 인증 완료·미인증이면 rewards에 반영 결과(E-11).\n\n스텁: 파일 이름에 `blur` → RETAKE_REQUIRED, 그 밖 → VERIFIED\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
         "operationId": "verify_photo_v1_runs__runId__verification_photo_post",
         "security": [
           {
@@ -2037,7 +2037,7 @@
           "Verification"
         ],
         "summary": "앱이 읽은 계기판 값으로 인증",
-        "description": "화면 E-05, E-06 · BL-24, BL-26. **OCR 위치 미정**: 앱에서 OCR하면 이 API. 정해지면 photo/reading 중 하나만 남김.\n\n재촬영 필요(OCR 실패)·미인증(오차 초과, OCR 불가 계기판)은 오류가 아니라 200 + status. 인증 완료·미인증이면 rewards에 반영 결과(E-11).\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 E-05, E-06 · BL-17, BL-18. **OCR 위치 미정**: 앱에서 OCR하면 이 API. 정해지면 photo/reading 중 하나만 남김.\n\n재촬영 필요(OCR 실패)·미인증(오차 초과, OCR 불가 계기판)은 오류가 아니라 200 + status. 인증 완료·미인증이면 rewards에 반영 결과(E-11).\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
         "operationId": "verify_reading_v1_runs__runId__verification_reading_post",
         "security": [
           {
@@ -2145,7 +2145,7 @@
           "Verification"
         ],
         "summary": "인증 없이 마무리",
-        "description": "화면 D-22, E-10 · BL-22, BL-28. 촬영 없이 마무리·시간 초과·재촬영 포기 → 미인증 저장. 나중에 인증 불가\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 D-22, E-10 · BL-16, BL-19. 촬영 없이 마무리·시간 초과·재촬영 포기 → 미인증 저장. 나중에 인증 불가\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
         "operationId": "verify_skip_v1_runs__runId__verification_skip_post",
         "security": [
           {
@@ -2253,7 +2253,7 @@
           "Progress"
         ],
         "summary": "이번 운동 반영 결과",
-        "description": "화면 E-11 · BL-21. 경험치 전후·레벨업·러닝복 단계·임팩트 해금·주간 목표. 결과 화면을 다시 열 때(인증 응답에도 같은 내용)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 E-11 · BL-32. 경험치 전후·레벨업·러닝복 단계·임팩트 해금·주간 목표. 결과 화면을 다시 열 때(인증 응답에도 같은 내용)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
         "operationId": "rewards_v1_runs__runId__rewards_get",
         "security": [
           {
@@ -2331,7 +2331,7 @@
           "Progress"
         ],
         "summary": "레벨·인증 마크",
-        "description": "화면 H-02, H-03, H-04, B-01 · BL-23, BL-35, BL-37. 레벨 임계값 3·10·25·50·100 km는 서버 설정",
+        "description": "화면 H-02, H-03, H-04, B-01 · BL-34, BL-33, BL-35. 레벨 임계값 3·10·25·50·100 km는 서버 설정",
         "operationId": "progress_v1_users_me_progress_get",
         "responses": {
           "200": {
@@ -2378,7 +2378,7 @@
           "Progress"
         ],
         "summary": "임팩트 고르기",
-        "description": "화면 H-03 · BL-35, BL-37. 해금한 것만. null이면 끄기",
+        "description": "화면 H-03 · BL-33, BL-35. 해금한 것만. null이면 끄기",
         "operationId": "select_impact_v1_users_me_impact_put",
         "requestBody": {
           "content": {
@@ -2455,7 +2455,7 @@
           "Friend"
         ],
         "summary": "친구 목록",
-        "description": "화면 G-04, G-09 · BL-11. 없으면 빈 배열(G-04 빈 상태)",
+        "description": "화면 G-04, G-09 · BL-27. 없으면 빈 배열(G-04 빈 상태)",
         "operationId": "list_friends_v1_friends_get",
         "responses": {
           "200": {
@@ -2500,7 +2500,7 @@
           "Friend"
         ],
         "summary": "친구 코드로 추가",
-        "description": "화면 G-05에서 G-08(Figma 확인 필요) · BL-11. 최대 50명.\n\n스텁: 내 코드 `SCR-7K2Q` → SELF_FRIEND_CODE, `SCR-NONE` → FRIEND_CODE_NOT_FOUND, `SCR-FRND` → ALREADY_FRIEND, `SCR-FULL` → FRIEND_LIMIT_EXCEEDED, 그 밖 → 추가됨",
+        "description": "화면 G-05에서 G-08(Figma 확인 필요) · BL-27. 최대 50명.\n\n스텁: 내 코드 `SCR-7K2Q` → SELF_FRIEND_CODE, `SCR-NONE` → FRIEND_CODE_NOT_FOUND, `SCR-FRND` → ALREADY_FRIEND, `SCR-FULL` → FRIEND_LIMIT_EXCEEDED, 그 밖 → 추가됨",
         "operationId": "add_friend_v1_friends_post",
         "requestBody": {
           "content": {
@@ -2607,7 +2607,7 @@
           "Friend"
         ],
         "summary": "지금 달리는 친구",
-        "description": "화면 G-01, G-02, B-01 · BL-13, BL-19",
+        "description": "화면 G-01, G-02, B-01 · BL-28, BL-31",
         "operationId": "running_friends_v1_friends_running_get",
         "responses": {
           "200": {
@@ -2654,7 +2654,7 @@
           "Friend"
         ],
         "summary": "친구 프로필",
-        "description": "화면 G-09(Figma 확인 필요) · BL-11. 최근 인증 러닝·인증 마크·레벨",
+        "description": "화면 G-09(Figma 확인 필요) · BL-27. 최근 인증 러닝·인증 마크·레벨",
         "operationId": "friend_profile_v1_friends__userId__get",
         "security": [
           {
@@ -2730,7 +2730,7 @@
           "Friend"
         ],
         "summary": "친구 삭제",
-        "description": "화면 G-10 · BL-11",
+        "description": "화면 G-10 · BL-27",
         "operationId": "delete_friend_v1_friends__userId__delete",
         "security": [
           {
@@ -2801,7 +2801,7 @@
           "Friend"
         ],
         "summary": "같이 달리기",
-        "description": "화면 G-03, D-20 · BL-15. 친구가 있는 맵 인스턴스로 입장, 친구 근처 위치(Q-22). 응답은 맵 입장과 같은 모양.\n\n스텁: 달리지 않는 친구(`usr_f2`) → FRIEND_NOT_RUNNING(앱은 일반 입장으로)",
+        "description": "화면 G-03, D-20 · BL-29. 친구가 있는 맵 인스턴스로 입장, 친구 근처 위치(Q-22). 응답은 맵 입장과 같은 모양.\n\n스텁: 달리지 않는 친구(`usr_f2`) → FRIEND_NOT_RUNNING(앱은 일반 입장으로)",
         "operationId": "run_together_v1_friends__userId__run_together_post",
         "security": [
           {
@@ -2889,7 +2889,7 @@
           "Friend"
         ],
         "summary": "친구 러닝 피드",
-        "description": "화면 G-01 · BL-13. 커서 방식. 미인증 기록도 공유됨(앱이 '미인증' 마크). 친구에게만 공개",
+        "description": "화면 G-01 · BL-28. 커서 방식. 미인증 기록도 공유됨(앱이 '미인증' 마크). 친구에게만 공개",
         "operationId": "feed_v1_feed_get",
         "security": [
           {
@@ -5042,7 +5042,7 @@
           "token"
         ],
         "title": "RealtimeAccess",
-        "description": "실시간 접속 정보. 모양은 BL-36(FastAPI WebSocket vs Photon) 뒤에 확정(미정)."
+        "description": "실시간 접속 정보. 모양은 BL-25(FastAPI WebSocket vs Photon) 뒤에 확정(미정)."
       },
       "RefreshRequest": {
         "properties": {

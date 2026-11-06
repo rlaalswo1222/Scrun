@@ -20,7 +20,7 @@ OUTCOME = (
 @router.post(
     "/runs/{runId}/verification/photo",
     summary="계기판 사진으로 인증",
-    description="화면 E-04에서 E-09 · BL-22, BL-24, BL-26. **OCR 위치 미정**(서버 vs 앱): 서버에서 하면 이 API, 사진은 OCR 직후 폐기."
+    description="화면 E-04에서 E-09 · BL-16, BL-17, BL-18. **OCR 위치 미정**(서버 vs 앱): 서버에서 하면 이 API, 사진은 OCR 직후 폐기."
     + OUTCOME + "\n\n스텁: 파일 이름에 `blur` → RETAKE_REQUIRED, 그 밖 → VERIFIED" + STUB_NOTE,
     response_model=Envelope[VerificationResult],
     responses=ERRS,
@@ -34,7 +34,7 @@ def verify_photo(runId: str, request: Request, photo: UploadFile = File(descript
 @router.post(
     "/runs/{runId}/verification/reading",
     summary="앱이 읽은 계기판 값으로 인증",
-    description="화면 E-05, E-06 · BL-24, BL-26. **OCR 위치 미정**: 앱에서 OCR하면 이 API. 정해지면 photo/reading 중 하나만 남김."
+    description="화면 E-05, E-06 · BL-17, BL-18. **OCR 위치 미정**: 앱에서 OCR하면 이 API. 정해지면 photo/reading 중 하나만 남김."
     + OUTCOME + STUB_NOTE,
     response_model=Envelope[VerificationResult],
     responses=ERRS,
@@ -47,7 +47,7 @@ def verify_reading(runId: str, body: ConsoleReading, request: Request, _: Princi
 @router.post(
     "/runs/{runId}/verification/skip",
     summary="인증 없이 마무리",
-    description="화면 D-22, E-10 · BL-22, BL-28. 촬영 없이 마무리·시간 초과·재촬영 포기 → 미인증 저장. 나중에 인증 불가" + STUB_NOTE,
+    description="화면 D-22, E-10 · BL-16, BL-19. 촬영 없이 마무리·시간 초과·재촬영 포기 → 미인증 저장. 나중에 인증 불가" + STUB_NOTE,
     response_model=Envelope[VerificationResult],
     responses=ERRS,
 )

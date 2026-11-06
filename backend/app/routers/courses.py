@@ -11,7 +11,7 @@ E = ErrorCode
 AUTH = error_responses(E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)
 
 
-@router.get("/courses", summary="코스 목록", description="화면 C-01 · BL-7, BL-42. 실사 영상 코스는 최하위라 type만 열어 둠",
+@router.get("/courses", summary="코스 목록", description="화면 C-01 · BL-7, BL-43. 실사 영상 코스는 최하위라 type만 열어 둠",
             response_model=Envelope[list[Course]], responses=AUTH)
 def list_courses(request: Request, _: Principal = Depends(current_user)):
     return ok(request, d.COURSES)
@@ -29,7 +29,7 @@ def get_course(courseId: str, request: Request, _: Principal = Depends(current_u
     "/courses/{courseId}/entries",
     status_code=201,
     summary="맵 입장",
-    description="화면 C-02, D-01, I-10, I-11 · BL-7, BL-32. 맵 인스턴스 배정(최대 20명), 입장 위치, 실시간 접속 정보(모양 미정, BL-36)."
+    description="화면 C-02, D-01, I-10, I-11 · BL-7, BL-21. 맵 인스턴스 배정(최대 20명), 입장 위치, 실시간 접속 정보(모양 미정, BL-25)."
     "\n\n스텁: courseId `crs_full` → COURSE_FULL, `crs_nocalib` → CALIBRATION_REQUIRED",
     response_model=Envelope[MapEntry],
     responses={**AUTH, **error_responses(E.COURSE_NOT_FOUND, E.COURSE_FULL, E.CALIBRATION_REQUIRED)},

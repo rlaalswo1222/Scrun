@@ -3,7 +3,7 @@
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`)에 있고, 11/06까지의 자세한 전체본은 `docs/log/HANDOFF_minjae_20261106.md`.
 
 ## 다음 할 일 (순서대로)
-- **지금: 계정 삭제(BL-39)** 계획 `docs/plans/0015-account-deletion.md`(11/06 제안, 민재가 먼저 하자고 함). 본 서버가 없어서 서버 최소 뼈대(`backend/`, FastAPI + PostgreSQL, users·auth_identities·refresh_tokens)와 같이. 결정 대기: 범위(서버만 추천), 카카오 개발자 앱 등록 여부, 카카오 연결 끊기 알림 처리 여부
+- **지금: 계정 삭제(BL-48)** 계획 `docs/plans/0015-account-deletion.md`(11/06 제안, 민재가 먼저 하자고 함). 본 서버가 없어서 서버 최소 뼈대(`backend/`, FastAPI + PostgreSQL, users·auth_identities·refresh_tokens)와 같이. 결정 대기: 범위(서버만 추천), 카카오 개발자 앱 등록 여부, 카카오 연결 끊기 알림 처리 여부
 0. **API 명세서**(계획 0014): 1·2단계 끝, PR #8로 develop에 합침(11/06). 노션 API 명세 표 + `docs/api/README.md` 공통 규칙 + **`backend/` FastAPI 스텁 42개**(계약 테스트 101개, 실행·스텁 규칙은 `backend/README.md`), `docs/api/openapi.json`·`docs/api/examples/`(Unity FakeApi용). 노션 각 줄 본문(DU 모양)과 맨 위 "공통 규칙" 줄은 `scripts/notion_pages.py`로 자동 생성해 올림(서버 API를 바꾸면 다시 생성 → Claude가 노션에 덮어쓰기). 노션 상태는 시작 전·진행 중·완료(11/06 전부 시작 전), 표에 제목 빈 줄 하나(민재 생성 추정, 안 지움). 검토는 생략(민재). 다음: Figma 화면 ID 확인(약관 A-06·친구 G-05에서 G-09·오류 I-08 추정, H-05·H-06 미확인), 오류 문구 칸은 상준, 백로그에 지표 이벤트(`/v1/events`) 추가 제안 → 3단계 Unity FakeApi. 계획 0015(계정 삭제, 다른 세션에서 만든 제안)가 같은 `backend/`에 DB·토큰 진짜 구현을 얹을 예정
 1. 아이폰 빌드 절차 문서 → **11/06 민재: 패스**(별도 계획으로 안 함). 단 Unity 앱은 아직 iOS로 빌드해 본 적 없음 → 3번 플러그인 작업 때 아이폰 설치가 먼저 필요. 무료 Apple ID 7일 만료, UI 확인 흐름은 `unity_map.md` "앱 화면" 절
 2. **화면 틀**: API 목록은 끝(0번). FakeApi는 11/06 민재 결정으로 안 함(스텁 서버로 충분). API 클라이언트는 첫 화면을 서버에 연결할 때 연결 코드를 한 파일에 모으는 것으로(별도 작업 아님). **첫 화면은 닉네임 입력 + 긴 목록**(한글 입력·스크롤 감 확인, `unity_map.md` "앱 화면" 절)
@@ -25,6 +25,7 @@
 - **지환 동의 대기**: `data/runs/20261029-004604/note.md`·`docs/speed/airpods_flight.md`에 키·몸무게 옆 "김지환" 실명 표기(커밋 안 함). 공개 저장소라 동의 받으면 커밋, 아니면 "팀원 J"처럼
 - **Git 남은 것**: 원격 `feat/airpods-treadmill`·`docs/handoff-1106` 삭제(자동 모드에서 막힘 → PR 화면 버튼), 지환 브랜치 `feat/airpods-flight`·`feat/airpods-flight-analysis`는 다 합쳐짐 → 지워도 되는지 지환에게
 - **PRD v0.5·유스케이스 v0.2·백로그 v0.2 검토 끝(11/06)** → `docs/product/prd_v05_review.md`(14개 + 빠진 항목). **상준에게 전달 대기**. 그중 결정: 실사 영상 최하위, 몸무게 필드 둠, OCR 위치·오프라인 달리기 미정
+- **백로그 최신 원본 = 상준의 공개 개발 백로그**(https://heavenly-beak-116.notion.site/eb95382a0c1a4745a33d3bd3c2380600, 11/06 민재 "여기가 항상 최신"). 11번부터 번호가 바뀜(예: HUD 14→12, 계정 삭제 39→48, 실시간 스파이크 36→25). 11/06 저장소 문서·서버 설명·노션 API 표의 백로그 번호를 새 번호로 바꿈(대응표 51개 기준). 연결된 노션(SCRUN > 문서)의 백로그 DB는 옛 번호. 계획 0015(다른 세션 작성, 커밋 안 됨)의 BL 번호는 안 건드림
 - **노션**: 구조는 SCRUN > 문서 > 기획 문서(유스케이스 v0.1·열린 질문 Q-01에서 Q-32·백로그·PRD), 캡스톤 디자인 공지(일정·평가). Front-End의 "API를 Query hook으로 연동하기"는 다른 프로젝트(displayu, React) 템플릿 → 상준에게 지우거나 SCRUN용으로. 열린 질문 중 개발이 답할 것: Q-07·08·09(걷기 1 + 달리기 3 × 20초)·10(calibration.json)·11(5에서 10초)·12·13(ADR-0001·0007)·29(카카오)
 - **와이어프레임 v1 초안** `docs/product/scrun_wireframe_v1.html`(커밋 안 함, 더 고칠 예정). 결정할 것·앱 기획 미정 항목(방 실시간, 인증 오차·시한, 화면 방향, 속도 ± 등)은 `docs/product/scrun_usecases_v1.md` 끝 "기획 결정·미정 기록"
 - **문서 형식 논의(11/02, 상준과 이견)**: `docs/log/team_discussions.md`. 상준 3종 문서 방향에 답이 왔는지 PRD 받을 때 확인
