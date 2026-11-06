@@ -2,7 +2,7 @@
 
 # (동작, 주소, 본문, 기대 상태). 새 API를 만들면 여기 한 줄 추가(빠지면 test_all_operations_listed 실패). 본문 "PHOTO"는 사진 파일 업로드
 CALLS = [
-    ("POST", "/v1/auth/kakao", {"kakaoAccessToken": "k"}, 200),
+    ("POST", "/v1/auth/kakao", {"kakaoAccessToken": "k_1"}, 200),
     ("GET", "/v1/agreements", None, 200),
     ("POST", "/v1/auth/signup", {"agreedIds": ["terms", "privacy"], "nickname": "새벽러너", "heightCm": 175, "weightKg": 70}, 201),
     ("POST", "/v1/auth/refresh", {"refreshToken": "r"}, 200),
@@ -49,3 +49,12 @@ CALLS = [
     ("GET", "/v1/feed", None, 200),
     ("POST", "/v1/events", {"events": [{"name": "APP_OPEN", "occurredAt": "2026-11-06T09:00:00Z"}]}, 204),
 ]
+
+# 진짜로 구현된 API(동작, 주소). 계약 테스트의 스텁 검사에서 빠지고, 예시는 scripts/real_examples.py가 실제 흐름으로 만든다
+REAL = {
+    ("POST", "/v1/auth/kakao"),
+    ("GET", "/v1/agreements"),
+    ("POST", "/v1/auth/signup"),
+    ("POST", "/v1/auth/refresh"),
+    ("POST", "/v1/auth/logout"),
+}

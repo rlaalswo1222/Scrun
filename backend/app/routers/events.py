@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Response
 
-from ..core.auth import Principal, current_user
+from ..core.auth import Principal, stub_user
 from ..core.envelope import error_responses
 from ..core.errors import ErrorCode
 from ..schemas.event import EventBatch
@@ -17,5 +17,5 @@ E = ErrorCode
     "백로그에 없음 → 추가 제안. 이벤트 목록은 상준과 확정",
     responses=error_responses(E.VALIDATION_ERROR, E.UNAUTHORIZED, E.TOKEN_EXPIRED),
 )
-def post_events(body: EventBatch, _: Principal = Depends(current_user)):
+def post_events(body: EventBatch, _: Principal = Depends(stub_user)):
     return Response(status_code=204)

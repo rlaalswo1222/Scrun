@@ -1,4 +1,4 @@
-"""로그인 확인(스텁). 실제 토큰 검증은 계획 0015(서버 뼈대)에서 바꾼다.
+"""스텁 API용 로그인 확인. 진짜 로그인 확인은 core/security.py(로그인 API부터 하나씩 옮김).
 
 스텁 규칙(Unity·Swagger에서 상태별 화면을 확인하려고):
 - 헤더 없음·Bearer 아님 → 401 UNAUTHORIZED
@@ -33,7 +33,7 @@ def _principal(cred: Optional[HTTPAuthorizationCredentials]) -> Principal:
     return Principal(user_id="usr_demo")
 
 
-def current_user(cred: Optional[HTTPAuthorizationCredentials] = Depends(bearer)) -> Principal:
+def stub_user(cred: Optional[HTTPAuthorizationCredentials] = Depends(bearer)) -> Principal:
     """가입을 마친 사용자만."""
     p = _principal(cred)
     if p.signup_only:
@@ -41,6 +41,6 @@ def current_user(cred: Optional[HTTPAuthorizationCredentials] = Depends(bearer))
     return p
 
 
-def signup_or_user(cred: Optional[HTTPAuthorizationCredentials] = Depends(bearer)) -> Principal:
+def stub_signup_or_user(cred: Optional[HTTPAuthorizationCredentials] = Depends(bearer)) -> Principal:
     """가입용 토큰도 허용(가입, 닉네임 확인)."""
     return _principal(cred)

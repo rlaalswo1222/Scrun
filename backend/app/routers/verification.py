@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 
 from .. import stub_data as d
-from ..core.auth import Principal, current_user
+from ..core.auth import Principal, stub_user
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ErrorCode
 from ..schemas.verification import ConsoleReading, SkipRequest, VerificationResult
@@ -26,7 +26,7 @@ OUTCOME = (
     responses=ERRS,
 )
 def verify_photo(runId: str, request: Request, photo: UploadFile = File(description="앱 카메라로 찍은 계기판 사진(JPEG)"),
-                 _: Principal = Depends(current_user)):
+                 _: Principal = Depends(stub_user)):
     _check_run(runId, KNOWN)
     return ok(request, d.RETAKE_REQUIRED if "blur" in (photo.filename or "") else d.VERIFIED)
 
@@ -39,7 +39,7 @@ def verify_photo(runId: str, request: Request, photo: UploadFile = File(descript
     response_model=Envelope[VerificationResult],
     responses=ERRS,
 )
-def verify_reading(runId: str, body: ConsoleReading, request: Request, _: Principal = Depends(current_user)):
+def verify_reading(runId: str, body: ConsoleReading, request: Request, _: Principal = Depends(stub_user)):
     _check_run(runId, KNOWN)
     return ok(request, d.VERIFIED)
 
@@ -51,6 +51,6 @@ def verify_reading(runId: str, body: ConsoleReading, request: Request, _: Princi
     response_model=Envelope[VerificationResult],
     responses=ERRS,
 )
-def verify_skip(runId: str, body: SkipRequest, request: Request, _: Principal = Depends(current_user)):
+def verify_skip(runId: str, body: SkipRequest, request: Request, _: Principal = Depends(stub_user)):
     _check_run(runId, KNOWN)
     return ok(request, {**d.UNVERIFIED_SKIPPED, "reason": body.reason.value})
