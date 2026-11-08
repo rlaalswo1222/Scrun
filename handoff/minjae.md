@@ -3,17 +3,11 @@
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`, `docs/plans/`)에 있고, 11/07까지의 전체본은 `docs/log/HANDOFF_minjae_20261107.md`(그 전은 `_20261106.md`).
 
 ## 지금 (11/08, S1 시작일)
-- **브랜치 `feat/server-auth`(로컬만, 푸시 안 함)**: BL-44 1단계(계획 0016, PostgreSQL + 테이블 20개 + 로그인 API 5개, 테스트 102개). 11/08 `/code-review` 결과 10건 → **결정 대기: 이 브랜치에서 다 고치고 PR → 합치기(추천) vs 지금 합치고 다음 브랜치에서 고치기**. S1 로그인 화면이 이 API 위에 올라가므로 먼저 처리
-  1. `JWT_SECRET` 없으면 공개 저장소의 개발용 키로 서명 → 없거나 개발 값이면 서버가 시작을 거부해야 함 (`core/config.py`)
-  2. `KAKAO_MODE` 기본값이 `fake` → 기본은 real, fake는 명시할 때만, 모르는 값은 시작 거부 (`core/config.py`)
-  3. 카카오 토큰이 우리 앱 것인지 확인 안 함(`/v1/user/access_token_info`의 app_id), 응답 JSON 오류가 500으로 샘 (`core/kakao.py`)
-  4. 가입 시 IntegrityError를 전부 닉네임 중복으로 보고 → 같은 가입 두 번(재시도)이면 기존 계정 토큰을 돌려줘야 함 (`routers/auth.py` 가입)
-  5. refresh 동시 요청 둘 다 성공(잠금 없음) → 행 잠금 또는 조건부 UPDATE (`routers/auth.py` refresh)
-  6. 이미 폐기된 refresh가 오면 무조건 전부 폐기 → 응답 유실 재시도·로그아웃과 겹침에도 전 기기 로그아웃. **정책 결정 필요**(예: 회전 직후 몇 초 안의 같은 토큰은 같은 결과)
-  7. 닉네임 정규화가 길이 검사 뒤 strip만 → 공백만 닉네임 가입, NFC·전각 우회 (`core/nickname.py`)
-  8. 닉네임 확인 API는 아직 스텁이라 가입과 판정이 다름 (`routers/users.py`, S1 작업과 겹침)
-  9. 재로그인해도 예전 refresh가 30일 살아 있음, 만료 줄 정리 없음
-  10. 테스트에서 alembic `fileConfig`가 기존 로거를 끔 (`migrations/env.py`)
+- **브랜치 `feat/server-auth`(로컬만, 푸시 안 함, 커밋 안 함)**: BL-44 1단계(계획 0016) + **11/08 리뷰 10건 수정 + 2차 리뷰 7건 반영**(계획 0016 "리뷰 후 수정", 테스트 165개 통과). 커밋·PR은 아래 "PR" 줄. 민재 결정(11/08): refresh 재사용은 30초 유예 + 그 로그인(family)만 폐기, 재로그인은 deviceId로 같은 기기 폐기 + 사용자당 5개, 닉네임은 한글 완성형·영문·숫자·`_`만(NFKC)
+  - 바뀐 것: 설정 검사(`JWT_SECRET` 필수·32자 이상·공개값 금지, `KAKAO_MODE` 기본 real, real이면 `KAKAO_APP_ID` 필수), 카카오는 `access_token_info`로 app_id 확인, 가입 동시 충돌 처리, `core/sessions.py`(refresh 수명), 닉네임 규칙·확인 API 진짜(이유 `INVALID` 추가), 마이그레이션 `3f1c9a7e52d4`(refresh_tokens 칸 4개), alembic이 로그 설정을 안 건드림, `scripts/purge_refresh_tokens.py`
+  - **민재가 할 것**: 이 컴퓨터에 `backend/.env`가 없음(지금까지 기본값으로 돌았음) → `cp .env.example .env` + `JWT_SECRET` 새로 만들어 넣기 → 개발 DB `alembic upgrade head`(마이그레이션은 `.env` 없이도 됨). 안 하면 uvicorn이 `ConfigError`로 안 뜸(테스트·예시 내보내기는 `.env` 없이 돎). Claude는 `.env` 만들기가 권한에서 막힘
+  - 노션 API 명세: 닉네임 확인(진짜·`INVALID`)·로그인/가입 `deviceId`·refresh 설명이 바뀜 → `python -m scripts.notion_pages` 해 둠, 노션 덮어쓰기는 아직
+  - S1 ApiClient에 넣을 것: 재발급은 한 번에 하나만(single-flight), 로그인·가입에 `deviceId`(identifierForVendor), 닉네임 확인 응답의 정규화된 `nickname` 보여 주기
 - **PR #15**(`docs/sprint-plan-0017` → develop, 11/08 생성, 합치기 전): 계획 0017, CLAUDE.md "역할", unity_map.md, iOS 번들 ID. 인수인계는 `feat/server-auth`와 충돌해서 이 브랜치(`feat/server-auth`)에 커밋
 - **커밋 안 한 것**: `Lm_LampGlass.mat`(11/07 Unity 설정 저장 때 Unity가 다시 써서 `_EMISSION` 키워드 한 줄 빠짐, 의도 아님 → 되돌릴지 확인), 지환 실명 파일 2개(아래), 와이어프레임 초안, 중간발표 자료, `.claude/settings.json`
 

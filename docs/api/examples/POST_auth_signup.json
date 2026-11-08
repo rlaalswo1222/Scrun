@@ -11,7 +11,8 @@
       "nickname": "새벽러너",
       "heightCm": 175,
       "weightKg": 70,
-      "timezone": "Asia/Seoul"
+      "timezone": "Asia/Seoul",
+      "deviceId": "6F1A2B3C-0000-4000-8000-000000000001"
     }
   },
   "status": 201,

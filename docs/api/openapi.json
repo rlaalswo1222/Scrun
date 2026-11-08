@@ -12,7 +12,7 @@
           "Auth"
         ],
         "summary": "카카오 로그인",
-        "description": "화면 A-05 · BL-1. 카카오 iOS SDK 토큰을 보내면 서버가 카카오에서 확인. 이미 가입했으면 우리 토큰, 처음이면 isNewUser=true + signupToken(30분) → POST /v1/auth/signup.\n\n개발 서버(KAKAO_MODE=fake): 카카오 토큰 `k_123` → 카카오 회원번호 123",
+        "description": "화면 A-05 · BL-1. 카카오 iOS SDK 토큰을 보내면 서버가 카카오에서 확인. 이미 가입했으면 우리 토큰, 처음이면 isNewUser=true + signupToken(30분) → POST /v1/auth/signup. deviceId를 보내면 같은 기기의 예전 로그인은 폐기, 살아 있는 로그인은 사용자당 5개까지(넘으면 오래된 것부터 폐기).\n\n개발 서버(KAKAO_MODE=fake): 카카오 토큰 `k_123` → 카카오 회원번호 123",
         "operationId": "kakao_login_v1_auth_kakao_post",
         "requestBody": {
           "content": {
@@ -106,7 +106,7 @@
           "Auth"
         ],
         "summary": "가입",
-        "description": "화면 A-06 · BL-1. 헤더에 가입용 토큰(signupToken). 약관 동의·닉네임·키·몸무게·시간대 → 계정 생성 + 우리 토큰. 같은 카카오 계정으로 두 번 가입하면 새로 만들지 않고 기존 계정 토큰을 줌",
+        "description": "화면 A-06 · BL-1. 헤더에 가입용 토큰(signupToken). 약관 동의·닉네임·키·몸무게·시간대 → 계정 생성 + 우리 토큰. 같은 카카오 계정으로 두 번 가입하면(동시에 와도) 새로 만들지 않고 기존 계정 토큰을 줌. 닉네임은 서버가 정규화해서 검사·저장(GET /v1/users/nickname/check와 같은 판정)",
         "operationId": "signup_v1_auth_signup_post",
         "requestBody": {
           "content": {
@@ -159,6 +159,16 @@
               }
             }
           },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -183,7 +193,7 @@
           "Auth"
         ],
         "summary": "토큰 재발급",
-        "description": "BL-44. 401 TOKEN_EXPIRED를 받으면 앱이 자동 호출하고 원래 요청을 한 번 다시 보냄. 쓴 refresh 토큰은 폐기되고 새 refresh 토큰이 나옴(한 번만 쓸 수 있음). 이미 폐기된 refresh 토큰이 다시 오면 탈취로 보고 그 사용자의 refresh 토큰을 전부 폐기(다시 로그인).",
+        "description": "BL-44. 401 TOKEN_EXPIRED를 받으면 앱이 자동 호출하고 원래 요청을 한 번 다시 보냄. 쓴 refresh 토큰은 폐기되고 새 refresh 토큰이 나옴(한 번만 쓸 수 있음). 앱은 재발급을 한 번에 하나만 보낸다. 응답을 못 받아 30초 안에 같은 토큰으로 다시 보내면 새 토큰을 다시 줌. 그 밖에 이미 쓴 토큰이 다시 오면 탈취로 보고 그 로그인(이 기기)만 폐기 → 401, 다시 로그인.",
         "operationId": "refresh_v1_auth_refresh_post",
         "requestBody": {
           "content": {
@@ -245,7 +255,7 @@
           "Auth"
         ],
         "summary": "로그아웃",
-        "description": "화면 H-10 · BL-36. 이 기기의 refresh 토큰 폐기. 이미 폐기됐거나 남의 토큰이어도 204(알려 주지 않음)",
+        "description": "화면 H-10 · BL-36. 이 기기의 로그인(그 refresh 토큰과 거기서 이어진 토큰) 폐기. 이미 폐기됐거나 남의 토큰이어도 204(알려 주지 않음)",
         "operationId": "logout_v1_auth_logout_post",
         "requestBody": {
           "content": {
@@ -305,7 +315,7 @@
           "User"
         ],
         "summary": "닉네임 사용 가능 여부",
-        "description": "화면 A-06, H-01 · BL-1. 가입용 토큰으로도 됨. 중복·금칙어·길이.\n\n스텁: `taken` → DUPLICATED, `admin` → NOT_ALLOWED",
+        "description": "화면 A-06, H-01 · BL-1. 가입용 토큰으로도 됨. 가입·내 정보 수정과 같은 판정: 정규화(NFKC·앞뒤 공백 제거) → 형식(2에서 12자, 한글·영문·숫자·_만, 아니면 INVALID) → 금칙어(NOT_ALLOWED) → 중복(DUPLICATED). 로그인한 사람의 지금 닉네임은 사용 가능. 응답의 nickname은 정규화된 값",
         "operationId": "nickname_check_v1_users_nickname_check_get",
         "security": [
           {
@@ -319,8 +329,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "minLength": 2,
-              "maxLength": 12,
+              "minLength": 1,
+              "maxLength": 40,
               "title": "Nickname"
             }
           }
@@ -347,7 +357,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED",
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
             "content": {
               "application/json": {
                 "schema": {
@@ -4683,6 +4693,20 @@
             "minLength": 1,
             "title": "Kakaoaccesstoken",
             "description": "앱이 카카오 iOS SDK로 받은 토큰"
+          },
+          "deviceId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deviceid",
+            "description": "기기 ID(iOS identifierForVendor). 같은 기기의 예전 로그인을 폐기하는 데 씀. 없어도 됨"
           }
         },
         "type": "object",
@@ -4850,14 +4874,15 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 12,
-                "minLength": 2
+                "maxLength": 40,
+                "minLength": 1
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Nickname"
+            "title": "Nickname",
+            "description": "2에서 12자, 한글·영문·숫자·_만"
           },
           "heightCm": {
             "anyOf": [
@@ -4929,7 +4954,8 @@
         "properties": {
           "nickname": {
             "type": "string",
-            "title": "Nickname"
+            "title": "Nickname",
+            "description": "서버가 정규화한 닉네임(가입 때 이대로 저장됨)"
           },
           "available": {
             "type": "boolean",
@@ -4957,8 +4983,9 @@
       "NicknameReason": {
         "type": "string",
         "enum": [
-          "DUPLICATED",
-          "NOT_ALLOWED"
+          "INVALID",
+          "NOT_ALLOWED",
+          "DUPLICATED"
         ],
         "title": "NicknameReason"
       },
@@ -5544,9 +5571,10 @@
           },
           "nickname": {
             "type": "string",
-            "maxLength": 12,
-            "minLength": 2,
-            "title": "Nickname"
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Nickname",
+            "description": "2에서 12자, 한글·영문·숫자·_만. 서버가 정규화(NFKC·앞뒤 공백 제거)해서 저장"
           },
           "heightCm": {
             "type": "integer",
@@ -5567,6 +5595,20 @@
             "title": "Timezone",
             "description": "주간 목표 주기 계산용",
             "default": "Asia/Seoul"
+          },
+          "deviceId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deviceid",
+            "description": "기기 ID(iOS identifierForVendor). 같은 기기의 예전 로그인을 폐기하는 데 씀. 없어도 됨"
           }
         },
         "type": "object",

@@ -13,14 +13,26 @@
 
 ## 로그인
 1. 앱이 카카오 iOS SDK로 로그인해 카카오 토큰을 받는다
-2. `POST /v1/auth/kakao`로 보내면 서버가 카카오에서 확인한다(개발 서버는 가짜 카카오: `k_123` → 카카오 회원번호 123)
-   - 이미 가입한 사람: `accessToken`(짧게) + `refreshToken`
-   - 처음: `isNewUser: true` + 가입용 토큰 → `POST /v1/auth/signup`(약관 동의·닉네임·키·몸무게·시간대) → 우리 토큰
+2. `POST /v1/auth/kakao`로 보내면 서버가 카카오 "액세스 토큰 정보 조회"로 확인한다(우리 앱(`KAKAO_APP_ID`)에서 발급된 토큰만 받음. 로컬 개발·테스트 서버는 가짜 카카오: `k_123` → 카카오 회원번호 123)
+   - 이미 가입한 사람: `accessToken`(1시간) + `refreshToken`(30일)
+   - 처음: `isNewUser: true` + 가입용 토큰(30분) → `POST /v1/auth/signup`(약관 동의·닉네임·키·몸무게·시간대) → 우리 토큰. 같은 가입을 다시 보내면(응답 유실·두 번 누름) 새 계정 없이 그 계정 토큰
+   - 로그인·가입에 `deviceId`(iOS `identifierForVendor`)를 같이 보낸다. 같은 기기의 예전 로그인은 폐기, 살아 있는 로그인은 사용자당 5개까지(넘으면 오래된 것부터 폐기)
 3. 이후 요청 헤더: `Authorization: Bearer {accessToken}`
 - 로그인 없이 되는 API: `POST /v1/auth/kakao`, `GET /v1/agreements`, `POST /v1/auth/refresh`. 가입용 토큰으로 되는 API: `POST /v1/auth/signup`, `GET /v1/users/nickname/check`. 나머지는 전부 `accessToken` 필요(실시간 메시지 포함)
-4. 401 `TOKEN_EXPIRED`를 받으면 앱이 `POST /v1/auth/refresh`로 새 토큰을 받고 원래 요청을 한 번 다시 보낸다. refresh 토큰은 한 번만 쓸 수 있다(쓰면 새 것이 나옴). 이미 쓴 refresh 토큰이 다시 오면 탈취로 보고 그 사용자의 refresh 토큰을 전부 폐기 → 다시 로그인
+4. 401 `TOKEN_EXPIRED`를 받으면 앱이 `POST /v1/auth/refresh`로 새 토큰을 받고 원래 요청을 한 번 다시 보낸다. **재발급은 한 번에 하나만**(여러 요청이 동시에 만료돼도 재발급 요청은 하나, 나머지는 그 결과를 기다림)
+   - refresh 토큰은 한 번만 쓸 수 있다(쓰면 새 것이 나옴)
+   - 응답을 못 받았으면 30초 안에 같은 refresh 토큰으로 다시 보내도 된다(새 토큰을 다시 줌)
+   - 그 밖에 이미 쓴 refresh 토큰이 다시 오면 탈취로 보고 **그 로그인(그 기기)만** 폐기 → 401 → 다시 로그인. 다른 기기 로그인은 유지
+   - 로그아웃은 그 기기 로그인만 끝낸다
 - 토큰은 아이폰 키체인에만 저장, 로그에 찍지 않는다
 - 로그인 제공자별 연결(제공자, 제공자 쪽 ID)을 계정과 따로 저장한다. Apple 로그인을 나중에 붙여도 계정 구조가 안 바뀜(PRD Q-39)
+
+## 닉네임
+다른 러너의 이름표에 보이므로 서버가 한 곳(`backend/app/core/nickname.py`)에서 판정한다. 가입·내 정보 수정·`GET /v1/users/nickname/check`가 같은 규칙
+1. 정규화: NFKC(전각 `ＡＤＭＩＮ` → `ADMIN`) → 앞뒤 공백 제거. 저장·응답은 정규화된 값
+2. 형식: 2에서 12자, 한글 완성형·영문·숫자·`_`만(공백·이모지·특수문자·보이지 않는 글자·자모 단독 `ㅋㅋ` 안 됨) → 가입·수정은 400 `VALIDATION_ERROR`, 확인 API는 `reason: INVALID`
+3. 금칙어: 대소문자·`_` 무시 → 400 `NICKNAME_NOT_ALLOWED` / `NOT_ALLOWED`
+4. 중복: 대소문자 무시 → 409 `NICKNAME_DUPLICATED` / `DUPLICATED`. 로그인한 사람의 지금 닉네임은 사용 가능
 
 ## 응답 껍데기
 성공:
