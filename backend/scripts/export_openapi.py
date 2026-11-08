@@ -6,6 +6,10 @@
 - docs/api/examples/errors/<오류 코드>.json: 오류 응답 예시
 시각·requestId는 다시 내보내도 바뀌지 않게 고정값으로 바꾼다.
 """
+from app.testenv import use_test_settings
+
+use_test_settings()  # app보다 먼저(임시 서명 키 + 가짜 카카오)
+
 import json
 import re
 from pathlib import Path

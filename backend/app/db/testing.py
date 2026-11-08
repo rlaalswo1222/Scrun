@@ -53,6 +53,7 @@ class TestDatabase:
         try:
             cfg = Config(str(BACKEND / "alembic.ini"))
             cfg.set_main_option("script_location", str(BACKEND / "migrations"))
+            cfg.attributes["configure_logger"] = False  # 앱·pytest 로그 설정을 그대로 둠(migrations/env.py)
             command.upgrade(cfg, "head")
         finally:
             os.environ.pop("ALEMBIC_DATABASE_URL", None)

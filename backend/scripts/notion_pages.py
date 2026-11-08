@@ -4,6 +4,10 @@
 노션에 올리는 건 Claude(노션 MCP)가 index.json의 pageId마다 본문을 덮어쓴다. 손으로 고치지 않는다(다시 만들면 덮어씀).
 순서: 설명 → Request Header → Path·Query Parameter → Request Body → Response(성공) → Response(실패)
 """
+from app.testenv import use_test_settings
+
+use_test_settings()  # app보다 먼저(임시 서명 키 + 가짜 카카오)
+
 import json
 import re
 from pathlib import Path

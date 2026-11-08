@@ -11,17 +11,21 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# 명령줄 alembic일 때만 alembic.ini 로그 설정을 쓴다. 코드에서 부를 때(테스트·예시 내보내기, app/db/testing.py)는
+# configure_logger=False → 루트 로거의 처리기(pytest 로그 캡처 등)를 갈아 끼우지 않음.
+# disable_existing_loggers=False: 이미 만든 로거(scrun.* 등)를 끄지 않게(기본값 True면 마이그레이션 뒤 로그가 사라짐)
+if config.config_file_name is not None and config.attributes.get("configure_logger", True):
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
-# 우리 테이블(app/db/models.py)과 접속 주소(환경 변수 DATABASE_URL, 없으면 backend/.env)
+# 우리 테이블(app/db/models.py)과 접속 주소(환경 변수 DATABASE_URL, 없으면 backend/.env).
+# DB 주소만 읽는다(app.core.config의 JWT_SECRET·카카오 설정 검사 없이 마이그레이션이 돌게)
 import os
 
-from app.core.config import settings
+from app.core.envfile import database_url
 from app.db.models import Base
 
 target_metadata = Base.metadata
-config.set_main_option("sqlalchemy.url", os.environ.get("ALEMBIC_DATABASE_URL", settings.database_url))
+config.set_main_option("sqlalchemy.url", os.environ.get("ALEMBIC_DATABASE_URL") or database_url())
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
