@@ -172,7 +172,7 @@ PlayerSettings:
   applicationIdentifier:
     Android: com.scrun.dev
     Standalone: com.Unity-Technologies.com.unity.template.urp-blank
-    iPhone: com.Unity-Technologies.com.unity.template.urp-blank
+    iPhone: com.scrun.app
     tvOS: com.Unity-Technologies.com.unity.template.urp-blank
   buildNumber:
     Standalone: 0
