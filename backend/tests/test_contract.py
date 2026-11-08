@@ -81,7 +81,6 @@ def test_requires_login(method, path, body, status):
 def test_expired_and_signup_tokens():
     assert_fail(client.get("/v1/users/me", headers={"Authorization": "Bearer expired"}), 401, "TOKEN_EXPIRED")
     assert_fail(client.get("/v1/users/me", headers={"Authorization": "Bearer signup"}), 403, "SIGNUP_REQUIRED")
-    assert_success(client.get("/v1/users/nickname/check?nickname=새벽러너", headers={"Authorization": "Bearer signup"}), 200)
 
 
 def test_validation_is_400_with_fields():

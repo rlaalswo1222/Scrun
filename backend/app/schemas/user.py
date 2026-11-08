@@ -2,8 +2,9 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Any, Optional
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
+from ..core import nickname as nick
 from ..core.model import CamelModel
 
 
@@ -20,19 +21,25 @@ class Me(CamelModel):
 class MeUpdate(CamelModel):
     """보낸 칸만 바뀜."""
 
-    nickname: Optional[str] = Field(default=None, min_length=2, max_length=12)
+    nickname: Optional[str] = Field(default=None, min_length=1, max_length=nick.RAW_MAX_LEN, description=nick.FORMAT_RULE)
     height_cm: Optional[int] = Field(default=None, ge=100, le=230)
     weight_kg: Optional[int] = Field(default=None, ge=20, le=250)
     timezone: Optional[str] = None
 
+    @field_validator("nickname")
+    @classmethod
+    def _nickname(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None else nick.validate_field(v)
+
 
 class NicknameReason(str, Enum):
+    INVALID = "INVALID"  # 형식(길이·글자)
+    NOT_ALLOWED = "NOT_ALLOWED"  # 금칙어
     DUPLICATED = "DUPLICATED"
-    NOT_ALLOWED = "NOT_ALLOWED"
 
 
 class NicknameCheck(CamelModel):
-    nickname: str
+    nickname: str = Field(description="서버가 정규화한 닉네임(가입 때 이대로 저장됨)")
     available: bool
     reason: Optional[NicknameReason] = Field(default=None, description="쓸 수 없을 때 이유")
 

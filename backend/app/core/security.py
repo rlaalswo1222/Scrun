@@ -21,15 +21,20 @@ def _claims(cred: Optional[HTTPAuthorizationCredentials]) -> dict:
     return tokens.decode(cred.credentials)
 
 
+def _user(claims: dict, db: Session) -> User:
+    """access 토큰의 사용자. 사용자 검사(탈퇴 등)는 여기 한 곳에만 둔다. 없으면 401."""
+    user = db.get(User, claims["sub"])
+    if user is None:
+        raise ApiError(ErrorCode.UNAUTHORIZED)
+    return user
+
+
 def current_user(cred: Optional[HTTPAuthorizationCredentials] = Depends(bearer), db: Session = Depends(get_db)) -> User:
     """가입을 마친 사용자. 가입용 토큰이면 403 SIGNUP_REQUIRED, 탈퇴한 사용자 토큰이면 401."""
     claims = _claims(cred)
     if claims["typ"] == tokens.SIGNUP:
         raise ApiError(ErrorCode.SIGNUP_REQUIRED)
-    user = db.get(User, claims["sub"])
-    if user is None:
-        raise ApiError(ErrorCode.UNAUTHORIZED)
-    return user
+    return _user(claims, db)
 
 
 def signup_identity(cred: Optional[HTTPAuthorizationCredentials] = Depends(bearer)) -> tuple[str, str]:
@@ -39,3 +44,12 @@ def signup_identity(cred: Optional[HTTPAuthorizationCredentials] = Depends(beare
         raise ApiError(ErrorCode.UNAUTHORIZED, "가입용 토큰이 아닙니다.")
     provider, _, provider_user_id = claims["sub"].partition(":")
     return provider, provider_user_id
+
+
+def signup_or_user_id(cred: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
+                      db: Session = Depends(get_db)) -> Optional[str]:
+    """가입용 토큰 또는 가입한 사용자(닉네임 확인). 가입용이면 None, 사용자면 그 id. 탈퇴한 사용자 토큰이면 401."""
+    claims = _claims(cred)
+    if claims["typ"] == tokens.SIGNUP:
+        return None
+    return _user(claims, db).id

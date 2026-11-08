@@ -2,7 +2,7 @@
 
 # (동작, 주소, 본문, 기대 상태). 새 API를 만들면 여기 한 줄 추가(빠지면 test_all_operations_listed 실패). 본문 "PHOTO"는 사진 파일 업로드
 CALLS = [
-    ("POST", "/v1/auth/kakao", {"kakaoAccessToken": "k_1"}, 200),
+    ("POST", "/v1/auth/kakao", {"kakaoAccessToken": "k_1", "deviceId": "6F1A2B3C-0000-4000-8000-000000000001"}, 200),
     ("GET", "/v1/agreements", None, 200),
     ("POST", "/v1/auth/signup", {"agreedIds": ["terms", "privacy"], "nickname": "새벽러너", "heightCm": 175, "weightKg": 70}, 201),
     ("POST", "/v1/auth/refresh", {"refreshToken": "r"}, 200),
@@ -57,4 +57,5 @@ REAL = {
     ("POST", "/v1/auth/signup"),
     ("POST", "/v1/auth/refresh"),
     ("POST", "/v1/auth/logout"),
+    ("GET", "/v1/users/nickname/check"),
 }

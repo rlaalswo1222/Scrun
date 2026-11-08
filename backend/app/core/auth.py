@@ -3,7 +3,7 @@
 스텁 규칙(Unity·Swagger에서 상태별 화면을 확인하려고):
 - 헤더 없음·Bearer 아님 → 401 UNAUTHORIZED
 - `Bearer expired` → 401 TOKEN_EXPIRED
-- `Bearer signup` → 가입용 토큰(가입 전). 일반 API에 쓰면 403 SIGNUP_REQUIRED
+- `Bearer signup` → 가입용 토큰(가입 전). 스텁 API에 쓰면 403 SIGNUP_REQUIRED
 - 그 밖의 아무 토큰 → 예시 사용자 usr_demo
 """
 from dataclasses import dataclass
@@ -40,7 +40,3 @@ def stub_user(cred: Optional[HTTPAuthorizationCredentials] = Depends(bearer)) ->
         raise ApiError(ErrorCode.SIGNUP_REQUIRED)
     return p
 
-
-def stub_signup_or_user(cred: Optional[HTTPAuthorizationCredentials] = Depends(bearer)) -> Principal:
-    """가입용 토큰도 허용(가입, 닉네임 확인)."""
-    return _principal(cred)

@@ -67,12 +67,24 @@ class AuthIdentity(_Created, Base):
 
 
 class RefreshToken(_Created, Base):
+    """로그인 한 번 = family 하나. 재발급하면 같은 family에 새 줄이 생기고 예전 줄은 ROTATED로 폐기."""
     __tablename__ = "refresh_tokens"
     id: Mapped[str] = mapped_column(Text, primary_key=True)
     user_id: Mapped[str] = user_fk()
+    family_id: Mapped[str] = mapped_column(Text, index=True)  # 처음 로그인 때 만든 줄의 id
+    device_id: Mapped[Optional[str]] = mapped_column(Text)  # 앱이 보낸 기기 ID(없을 수 있음)
     token_hash: Mapped[str] = mapped_column(Text, unique=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    # ROTATED(재발급) · LOGOUT · REUSED(탈취 의심) · REPLACED(같은 기기 재로그인) · LIMIT(로그인 수 상한)
+    revoked_reason: Mapped[Optional[str]] = mapped_column(Text)
+    replaced_by_id: Mapped[Optional[str]] = mapped_column(Text)  # ROTATED일 때 대신 나간 줄
+
+    __table_args__ = (
+        CheckConstraint("revoked_reason IN ('ROTATED', 'LOGOUT', 'REUSED', 'REPLACED', 'LIMIT')",
+                        name="ck_refresh_tokens_revoked_reason"),
+        CheckConstraint("(revoked_at IS NULL) = (revoked_reason IS NULL)", name="ck_refresh_tokens_revoked_pair"),
+    )
 
 
 class Agreement(_Created, Base):

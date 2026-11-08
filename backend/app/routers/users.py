@@ -1,9 +1,13 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request, Response
+from sqlalchemy.orm import Session
 
 from .. import stub_data as d
-from ..core.auth import Principal, stub_user, stub_signup_or_user
+from ..core import nickname as nick
+from ..core.auth import Principal, stub_user
+from ..core.security import signup_or_user_id
+from ..db.session import get_db
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
 from ..schemas.home import Home
@@ -27,13 +31,16 @@ AUTH = error_responses(E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)
 @router.get(
     "/users/nickname/check",
     summary="닉네임 사용 가능 여부",
-    description="화면 A-06, H-01 · BL-1. 가입용 토큰으로도 됨. 중복·금칙어·길이.\n\n스텁: `taken` → DUPLICATED, `admin` → NOT_ALLOWED",
+    description="화면 A-06, H-01 · BL-1. 가입용 토큰으로도 됨. 가입·내 정보 수정과 같은 판정: "
+    f"정규화(NFKC·앞뒤 공백 제거) → 형식({nick.FORMAT_RULE}, 아니면 INVALID) → 금칙어(NOT_ALLOWED) → 중복(DUPLICATED). "
+    "로그인한 사람의 지금 닉네임은 사용 가능. 응답의 nickname은 정규화된 값",
     response_model=Envelope[NicknameCheck],
-    responses=error_responses(E.VALIDATION_ERROR, E.UNAUTHORIZED),
+    responses=error_responses(E.VALIDATION_ERROR, E.UNAUTHORIZED, E.TOKEN_EXPIRED),
 )
-def nickname_check(request: Request, nickname: str = Query(min_length=2, max_length=12), _: Principal = Depends(stub_signup_or_user)):
-    reason = {"taken": "DUPLICATED", "admin": "NOT_ALLOWED"}.get(nickname)
-    return ok(request, {"nickname": nickname, "available": reason is None, "reason": reason})
+def nickname_check(request: Request, nickname: str = Query(min_length=1, max_length=nick.RAW_MAX_LEN),
+                   user_id: Optional[str] = Depends(signup_or_user_id), db: Session = Depends(get_db)):
+    name, problem = nick.check(db, nickname, exclude_user_id=user_id)
+    return ok(request, {"nickname": name, "available": problem is None, "reason": problem.value if problem else None})
 
 
 @router.get("/users/me", summary="내 정보", description="화면 B-01, H-01 · BL-36",
