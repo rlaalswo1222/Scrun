@@ -3,7 +3,7 @@
 서버(FastAPI)와 Unity 앱이 함께 따르는 규칙. 계획 [0014](../plans/0014-api-spec.md).
 
 - **API 목록·진행판**: 노션 SCRUN > 문서 > [API 명세](https://app.notion.com/p/52fe88346253480692c492c862982087) (한 줄 = API 하나, 화면 ID·백로그 연결)
-- **요청·응답 세부 필드**: 서버 코드 [`backend/`](../../backend/README.md)(지금은 스텁)가 만드는 `/docs`(Swagger)와 [`openapi.json`](openapi.json). 예시 응답은 [`examples/`](examples/)(`python -m scripts.export_openapi`로 다시 만듦). 노션이나 이 문서에 필드를 손으로 적지 않는다(코드와 어긋남)
+- **요청·응답 세부 필드**: 서버 코드 [`backend/`](../../backend/README.md)(로그인·닉네임 확인은 진짜, 나머지는 스텁)가 만드는 `/docs`(Swagger)와 [`openapi.json`](openapi.json). 예시 응답은 [`examples/`](examples/)(`python -m scripts.export_openapi`로 다시 만듦). 노션이나 이 문서에 필드를 손으로 적지 않는다(코드와 어긋남)
 - **DB 테이블(서버가 저장하는 구조)**: [data_model.md](data_model.md)
 - **이 문서**: 모든 API에 공통인 것만
 
@@ -92,7 +92,7 @@
 | `COURSE_NOT_FOUND` | 404 | 코스 없음 | I-08 | |
 | `FRIEND_CODE_NOT_FOUND` | 404 | 친구 코드 없음 | G-08 | |
 | `NICKNAME_DUPLICATED` | 409 | 닉네임 중복 | A-06, H-01 | |
-| `NICKNAME_NOT_ALLOWED` | 400 | 금칙어·길이 | A-06, H-01 | |
+| `NICKNAME_NOT_ALLOWED` | 400 | 금칙어(형식·길이는 `VALIDATION_ERROR`) | A-06, H-01 | |
 | `CALIBRATION_REQUIRED` | 409 | 보정 없이 맵 입장 | A-11 | |
 | `COURSE_FULL` | 409 | 맵 인스턴스가 모두 가득 참(20명) | I-11 | |
 | `RUN_ALREADY_FINISHED` | 409 | 이미 끝난 러닝에 종료·시계열 올리기 | | |

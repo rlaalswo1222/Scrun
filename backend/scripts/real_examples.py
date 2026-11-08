@@ -45,7 +45,7 @@ def collect() -> dict:
         body = {"kakaoAccessToken": "k_1", "deviceId": DEVICE_ID}
         first = rec("POST", "/v1/auth/kakao", body, None, c.post("/v1/auth/kakao", json=body))["success"]["data"]
         rec("GET", "/v1/agreements", None, None, c.get("/v1/agreements"))
-        rec("GET", "/v1/users/nickname/check", None, "Bearer {signupToken}",
+        rec("GET", "/v1/users/nickname/check", None, "Bearer {accessToken 또는 signupToken}",
             c.get("/v1/users/nickname/check", params={"nickname": "새벽러너"},
                   headers={"Authorization": f"Bearer {first['signupToken']}"}))
         body = {"agreedIds": ["terms", "privacy"], "nickname": "새벽러너", "heightCm": 175, "weightKg": 70,
