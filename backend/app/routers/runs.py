@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request, Response
 
 from .. import stub_data as d
-from ..core.auth import Principal, current_user
+from ..core.auth import Principal, stub_user
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
 from ..schemas.common import CursorPage
@@ -44,7 +44,7 @@ KNOWN = {r["runId"] for r in d.RUNS} | {d.RUN_STARTED["runId"]}
     response_model=Envelope[RunStarted],
     responses={**AUTH, **error_responses(E.VALIDATION_ERROR)},
 )
-def start_run(body: RunStartRequest, request: Request, _: Principal = Depends(current_user)):
+def start_run(body: RunStartRequest, request: Request, _: Principal = Depends(stub_user)):
     return ok(request, {**d.RUN_STARTED, "clientRunId": body.client_run_id, "startedAt": body.started_at})
 
 
@@ -55,7 +55,7 @@ def start_run(body: RunStartRequest, request: Request, _: Principal = Depends(cu
     response_model=Envelope[ActiveRun],
     responses=AUTH,
 )
-def active_run(request: Request, _: Principal = Depends(current_user)):
+def active_run(request: Request, _: Principal = Depends(stub_user)):
     return ok(request, d.ACTIVE_RUN_NONE)
 
 
@@ -70,7 +70,7 @@ def list_runs(
     request: Request,
     month: Optional[str] = Query(default=None, pattern=r"^\d{4}-\d{2}$", description="YYYY-MM. 없으면 최근부터"),
     cursor: Optional[str] = None,
-    _: Principal = Depends(current_user),
+    _: Principal = Depends(stub_user),
 ):
     return ok(request, {"items": d.RUNS, "nextCursor": None})
 
@@ -78,7 +78,7 @@ def list_runs(
 @router.get("/runs/{runId}", summary="기록 상세",
             description="화면 F-03, F-04, E-12 · BL-19, BL-20. 공식 값과 출처(계기판/센서), 그래프용 시계열, 함께 달린 러너" + STUB_NOTE,
             response_model=Envelope[RunDetail], responses={**AUTH, **RUN_ERRORS})
-def get_run(runId: str, request: Request, _: Principal = Depends(current_user)):
+def get_run(runId: str, request: Request, _: Principal = Depends(stub_user)):
     _check_run(runId, KNOWN)
     return ok(request, {**d.RUN_DETAIL, "runId": runId})
 
@@ -86,7 +86,7 @@ def get_run(runId: str, request: Request, _: Principal = Depends(current_user)):
 @router.patch("/runs/{runId}", summary="피드 공유 바꾸기",
               description="화면 E-12 · BL-19. 공유만. 기록 값 수정·삭제는 없음(PRD)" + STUB_NOTE,
               response_model=Envelope[RunSummary], responses={**AUTH, **RUN_ERRORS, **error_responses(E.VALIDATION_ERROR)})
-def patch_run(runId: str, body: RunUpdate, request: Request, _: Principal = Depends(current_user)):
+def patch_run(runId: str, body: RunUpdate, request: Request, _: Principal = Depends(stub_user)):
     _check_run(runId, KNOWN)
     return ok(request, {**d.RUNS[0], "runId": runId, "shared": body.shared})
 
@@ -98,7 +98,7 @@ def patch_run(runId: str, body: RunUpdate, request: Request, _: Principal = Depe
     description="화면 D-10 · BL-12, BL-19. 고스트 재생·인증 대조 근거. 나눠 올리면 offsetS로 이어 붙임. 같은 묶음이 다시 오면 덮어씀" + STUB_NOTE,
     responses={**AUTH, **RUN_ERRORS, **error_responses(E.VALIDATION_ERROR, E.RUN_ALREADY_FINISHED)},
 )
-def put_samples(runId: str, body: SamplesUpload, _: Principal = Depends(current_user)):
+def put_samples(runId: str, body: SamplesUpload, _: Principal = Depends(stub_user)):
     _check_run(runId, KNOWN)
     return Response(status_code=204)
 
@@ -110,7 +110,7 @@ def put_samples(runId: str, body: SamplesUpload, _: Principal = Depends(current_
     response_model=Envelope[RunSummary],
     responses={**AUTH, **RUN_ERRORS, **error_responses(E.VALIDATION_ERROR, E.RUN_ALREADY_FINISHED)},
 )
-def finish_run(runId: str, body: RunFinishRequest, request: Request, _: Principal = Depends(current_user)):
+def finish_run(runId: str, body: RunFinishRequest, request: Request, _: Principal = Depends(stub_user)):
     _check_run(runId, KNOWN)
     return ok(request, {**d.RUNS[0], "runId": runId, "verification": "PENDING",
                         "distanceM": body.sensor.distance_m, "durationS": body.sensor.duration_s})
@@ -123,7 +123,7 @@ def finish_run(runId: str, body: RunFinishRequest, request: Request, _: Principa
     description="화면 I-04 · BL-37. 끝나지 않은 러닝만. 끝난 기록은 지울 수 없음(PRD)" + STUB_NOTE,
     responses={**AUTH, **RUN_ERRORS, **error_responses(E.RUN_ALREADY_FINISHED)},
 )
-def discard_run(runId: str, _: Principal = Depends(current_user)):
+def discard_run(runId: str, _: Principal = Depends(stub_user)):
     _check_run(runId, KNOWN)
     return Response(status_code=204)
 
@@ -131,6 +131,6 @@ def discard_run(runId: str, _: Principal = Depends(current_user)):
 @router.get("/runs/{runId}/ghost", summary="고스트 재생용 시계열",
             description="화면 D-13 · BL-24. 본인 기록만, 코스와 무관하게 씀(PRD F04)" + STUB_NOTE,
             response_model=Envelope[GhostTrack], responses={**AUTH, **RUN_ERRORS})
-def ghost(runId: str, request: Request, _: Principal = Depends(current_user)):
+def ghost(runId: str, request: Request, _: Principal = Depends(stub_user)):
     _check_run(runId, KNOWN)
     return ok(request, {**d.GHOST, "runId": runId})

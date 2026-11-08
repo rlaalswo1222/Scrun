@@ -1,6 +1,6 @@
 # SCRUN 데이터 모델 (DB 테이블) v1
 
-서버가 무엇을 어떻게 저장하는지. 계획 [0015](../plans/0015-data-model.md), 백로그 BL-39. API가 주고받는 모양은 [README.md](README.md)·`backend/app/schemas/`, 이 문서는 그 뒤의 저장 구조다. 실제 DB 만들기·서버 코드는 BL-44.
+서버가 무엇을 어떻게 저장하는지. 계획 [0015](../plans/0015-data-model.md), 백로그 BL-39. API가 주고받는 모양은 [README.md](README.md)·`backend/app/schemas/`, 이 문서는 그 뒤의 저장 구조다. 코드는 `backend/app/db/models.py`, DB 변경 기록은 `backend/migrations/`(계획 0016에서 v1 그대로 만듦). 테이블을 바꾸면 이 문서도 같이 고친다.
 
 ## 원칙
 - **DB**: PostgreSQL(ADR-0008 제안)
@@ -59,14 +59,18 @@ erDiagram
 | provider | text | `KAKAO`·`APPLE`·`GOOGLE` |
 | provider_user_id | text | 카카오 회원번호 등. (provider, provider_user_id) 유일 |
 
-**refresh_tokens** — access 토큰은 저장 안 함(짧은 수명, 서명으로 확인)
+**refresh_tokens** — access 토큰은 저장 안 함(짧은 수명, 서명으로 확인). 로그인 한 번 = family 하나, 재발급하면 같은 family에 새 줄(규칙은 [README "로그인"](README.md), 코드 `backend/app/core/sessions.py`)
 | 칸 | 형식 | 설명 |
 |---|---|---|
 | **id** | text | |
 | user_id | → users (CASCADE) | |
+| family_id | text (색인) | 처음 로그인 때 만든 줄의 id. 탈취 의심·로그아웃 때 이 단위로 폐기 |
+| device_id | text | 앱이 보낸 기기 ID(없을 수 있음). 같은 기기 재로그인 때 예전 것 폐기 |
 | token_hash | text | 원문은 저장 안 함 |
-| expires_at | timestamptz | |
-| revoked_at | timestamptz | 로그아웃·재발급 때 |
+| expires_at | timestamptz | 만료 줄은 로그인 때(그 사용자)와 하루 한 번 정리(`scripts/purge_refresh_tokens.py`)에서 삭제 |
+| revoked_at | timestamptz | 폐기 시각 |
+| revoked_reason | text | `ROTATED`(재발급) · `LOGOUT` · `REUSED`(탈취 의심) · `REPLACED`(같은 기기 재로그인) · `LIMIT`(로그인 5개 초과). revoked_at과 같이 있거나 같이 없음 |
+| replaced_by_id | text | ROTATED일 때 대신 나간 줄. 30초 유예 판단(그 줄을 아직 안 썼는지). 유예 재시도면 새 줄로 바뀜 |
 
 **agreements** — 약관 목록(운영 데이터) / **user_agreements** — 동의 기록
 | 테이블 | 칸 |

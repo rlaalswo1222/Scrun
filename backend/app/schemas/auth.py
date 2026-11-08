@@ -1,12 +1,20 @@
 from typing import Optional
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
+from ..core import nickname as nick
 from ..core.model import CamelModel
+
+
+
+def _device_id():
+    return Field(default=None, min_length=1, max_length=100,
+                 description="기기 ID(iOS identifierForVendor). 같은 기기의 예전 로그인을 폐기하는 데 씀. 없어도 됨")
 
 
 class KakaoLoginRequest(CamelModel):
     kakao_access_token: str = Field(min_length=1, description="앱이 카카오 iOS SDK로 받은 토큰")
+    device_id: Optional[str] = _device_id()
 
 
 class LoginResult(CamelModel):
@@ -27,10 +35,17 @@ class Agreement(CamelModel):
 
 class SignupRequest(CamelModel):
     agreed_ids: list[str] = Field(description="동의한 약관 ID. 필수 약관이 빠지면 400")
-    nickname: str = Field(min_length=2, max_length=12)
+    nickname: str = Field(min_length=1, max_length=nick.RAW_MAX_LEN,
+                          description=f"{nick.FORMAT_RULE}. 서버가 정규화(NFKC·앞뒤 공백 제거)해서 저장")
     height_cm: int = Field(ge=100, le=230, description="아바타 크기에 씀")
     weight_kg: int = Field(ge=20, le=250, description="속도 추정엔 안 씀. 용도는 개인정보처리방침에 명시")
     timezone: str = Field(default="Asia/Seoul", description="주간 목표 주기 계산용")
+    device_id: Optional[str] = _device_id()
+
+    @field_validator("nickname")
+    @classmethod
+    def _nickname(cls, v: str) -> str:
+        return nick.validate_field(v)
 
 
 class TokenPair(CamelModel):

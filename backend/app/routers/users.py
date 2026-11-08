@@ -1,9 +1,13 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request, Response
+from sqlalchemy.orm import Session
 
 from .. import stub_data as d
-from ..core.auth import Principal, current_user, signup_or_user
+from ..core import nickname as nick
+from ..core.auth import Principal, stub_user
+from ..core.security import signup_or_user_id
+from ..db.session import get_db
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
 from ..schemas.home import Home
@@ -27,18 +31,21 @@ AUTH = error_responses(E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)
 @router.get(
     "/users/nickname/check",
     summary="닉네임 사용 가능 여부",
-    description="화면 A-06, H-01 · BL-1. 가입용 토큰으로도 됨. 중복·금칙어·길이.\n\n스텁: `taken` → DUPLICATED, `admin` → NOT_ALLOWED",
+    description="화면 A-06, H-01 · BL-1. 가입용 토큰으로도 됨. 가입·내 정보 수정과 같은 판정: "
+    f"정규화(NFKC·앞뒤 공백 제거) → 형식({nick.FORMAT_RULE}, 아니면 INVALID) → 금칙어(NOT_ALLOWED) → 중복(DUPLICATED). "
+    "로그인한 사람의 지금 닉네임은 사용 가능. 응답의 nickname은 정규화된 값",
     response_model=Envelope[NicknameCheck],
-    responses=error_responses(E.VALIDATION_ERROR, E.UNAUTHORIZED),
+    responses=error_responses(E.VALIDATION_ERROR, E.UNAUTHORIZED, E.TOKEN_EXPIRED),
 )
-def nickname_check(request: Request, nickname: str = Query(min_length=2, max_length=12), _: Principal = Depends(signup_or_user)):
-    reason = {"taken": "DUPLICATED", "admin": "NOT_ALLOWED"}.get(nickname)
-    return ok(request, {"nickname": nickname, "available": reason is None, "reason": reason})
+def nickname_check(request: Request, nickname: str = Query(min_length=1, max_length=nick.RAW_MAX_LEN),
+                   user_id: Optional[str] = Depends(signup_or_user_id), db: Session = Depends(get_db)):
+    name, problem = nick.check(db, nickname, exclude_user_id=user_id)
+    return ok(request, {"nickname": name, "available": problem is None, "reason": problem.value if problem else None})
 
 
 @router.get("/users/me", summary="내 정보", description="화면 B-01, H-01 · BL-36",
             response_model=Envelope[Me], responses=AUTH)
-def get_me(request: Request, _: Principal = Depends(current_user)):
+def get_me(request: Request, _: Principal = Depends(stub_user)):
     return ok(request, d.ME)
 
 
@@ -49,7 +56,7 @@ def get_me(request: Request, _: Principal = Depends(current_user)):
     response_model=Envelope[Me],
     responses={**AUTH, **error_responses(E.VALIDATION_ERROR, E.NICKNAME_DUPLICATED, E.NICKNAME_NOT_ALLOWED)},
 )
-def patch_me(body: MeUpdate, request: Request, _: Principal = Depends(current_user)):
+def patch_me(body: MeUpdate, request: Request, _: Principal = Depends(stub_user)):
     if body.nickname == "taken":
         raise ApiError(E.NICKNAME_DUPLICATED)
     return ok(request, {**d.ME, **body.model_dump(by_alias=True, exclude_none=True)})
@@ -62,19 +69,19 @@ def patch_me(body: MeUpdate, request: Request, _: Principal = Depends(current_us
     description="화면 H-10 · BL-48 · 계획 0015. 모든 데이터 삭제 + 카카오 연결 해제, 유예 없이 바로. 카카오가 응답하지 않으면 아무것도 지우지 않고 503",
     responses={**AUTH, **error_responses(E.SERVICE_UNAVAILABLE)},
 )
-def delete_me(_: Principal = Depends(current_user)):
+def delete_me(_: Principal = Depends(stub_user)):
     return Response(status_code=204)
 
 
 @router.get("/users/me/settings", summary="설정 보기", description="화면 H-10 · BL-36. 알림은 폰 로컬이라 서버에 없음",
             response_model=Envelope[Settings], responses=AUTH)
-def get_settings(request: Request, _: Principal = Depends(current_user)):
+def get_settings(request: Request, _: Principal = Depends(stub_user)):
     return ok(request, d.SETTINGS)
 
 
 @router.patch("/users/me/settings", summary="설정 바꾸기", description="화면 H-10 · BL-36, BL-40",
               response_model=Envelope[Settings], responses={**AUTH, **error_responses(E.VALIDATION_ERROR)})
-def patch_settings(body: SettingsUpdate, request: Request, _: Principal = Depends(current_user)):
+def patch_settings(body: SettingsUpdate, request: Request, _: Principal = Depends(stub_user)):
     return ok(request, {**d.SETTINGS, **body.model_dump(by_alias=True, exclude_none=True)})
 
 
@@ -85,7 +92,7 @@ def patch_settings(body: SettingsUpdate, request: Request, _: Principal = Depend
     response_model=Envelope[Optional[Calibration]],
     responses=AUTH,
 )
-def get_calibration(request: Request, _: Principal = Depends(current_user)):
+def get_calibration(request: Request, _: Principal = Depends(stub_user)):
     return ok(request, d.CALIBRATION)
 
 
@@ -97,7 +104,7 @@ def get_calibration(request: Request, _: Principal = Depends(current_user)):
     response_model=Envelope[Calibration],
     responses={**AUTH, **error_responses(E.VALIDATION_ERROR)},
 )
-def put_calibration(body: CalibrationUpload, request: Request, _: Principal = Depends(current_user)):
+def put_calibration(body: CalibrationUpload, request: Request, _: Principal = Depends(stub_user)):
     # 스텁: 예시가 다시 내보낼 때마다 바뀌지 않게 고정 시각. 진짜 서버는 저장 시각
     return ok(request, {**body.model_dump(by_alias=True, mode="json"), "createdAt": d.CALIBRATION["createdAt"]})
 
@@ -109,7 +116,7 @@ def put_calibration(body: CalibrationUpload, request: Request, _: Principal = De
     response_model=Envelope[WeeklyGoal],
     responses=AUTH,
 )
-def get_weekly_goal(request: Request, _: Principal = Depends(current_user)):
+def get_weekly_goal(request: Request, _: Principal = Depends(stub_user)):
     return ok(request, d.WEEKLY_GOAL)
 
 
@@ -120,11 +127,11 @@ def get_weekly_goal(request: Request, _: Principal = Depends(current_user)):
     response_model=Envelope[WeeklyGoal],
     responses={**AUTH, **error_responses(E.VALIDATION_ERROR)},
 )
-def put_weekly_goal(body: WeeklyGoalUpdate, request: Request, _: Principal = Depends(current_user)):
+def put_weekly_goal(body: WeeklyGoalUpdate, request: Request, _: Principal = Depends(stub_user)):
     return ok(request, {**d.WEEKLY_GOAL, "nextTargetCount": body.target_count})
 
 
 @router.get("/home", summary="홈 한 번에", description="화면 B-01에서 B-04 · BL-31. 각 항목 API도 따로 있음",
             response_model=Envelope[Home], responses=AUTH)
-def home(request: Request, _: Principal = Depends(current_user)):
+def home(request: Request, _: Principal = Depends(stub_user)):
     return ok(request, d.HOME)

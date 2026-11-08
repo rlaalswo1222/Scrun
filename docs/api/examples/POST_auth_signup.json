@@ -2,6 +2,7 @@
   "request": {
     "method": "POST",
     "path": "/v1/auth/signup",
+    "auth": "Bearer {signupToken}",
     "body": {
       "agreedIds": [
         "terms",
@@ -9,7 +10,9 @@
       ],
       "nickname": "새벽러너",
       "heightCm": 175,
-      "weightKg": 70
+      "weightKg": 70,
+      "timezone": "Asia/Seoul",
+      "deviceId": "6F1A2B3C-0000-4000-8000-000000000001"
     }
   },
   "status": 201,
@@ -17,8 +20,8 @@
     "resultType": "SUCCESS",
     "success": {
       "data": {
-        "accessToken": "stub-access",
-        "refreshToken": "stub-refresh",
+        "accessToken": "eyJhbGciOi...(access)",
+        "refreshToken": "(refresh 토큰 원문)",
         "expiresInS": 3600
       }
     },

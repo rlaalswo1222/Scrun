@@ -2,6 +2,8 @@
 
 실행: backend 폴더에서 `uvicorn app.main:app --reload` → http://localhost:8000/docs
 """
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -14,6 +16,7 @@ from .core.envelope import (
     validation_error_handler,
 )
 from .core.errors import ApiError
+from .core.kakao import close_client as close_kakao_client
 from .routers import auth, courses, events, friends, progress, runs, users, verification
 
 DESCRIPTION = """
@@ -25,7 +28,13 @@ DESCRIPTION = """
   `expired` → TOKEN_EXPIRED, `signup` → 가입용 토큰. 각 API 설명의 "스텁:"에 오류 화면을 부르는 값이 있다
 """
 
-app = FastAPI(title="SCRUN API", version="0.1.0-stub", description=DESCRIPTION)
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    yield
+    close_kakao_client()
+
+
+app = FastAPI(title="SCRUN API", version="0.1.0-stub", description=DESCRIPTION, lifespan=lifespan)
 
 app.middleware("http")(request_id_middleware)
 app.add_exception_handler(ApiError, api_error_handler)

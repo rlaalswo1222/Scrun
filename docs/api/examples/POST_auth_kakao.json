@@ -2,8 +2,10 @@
   "request": {
     "method": "POST",
     "path": "/v1/auth/kakao",
+    "auth": null,
     "body": {
-      "kakaoAccessToken": "k"
+      "kakaoAccessToken": "k_1",
+      "deviceId": "6F1A2B3C-0000-4000-8000-000000000001"
     }
   },
   "status": 200,
@@ -11,11 +13,11 @@
     "resultType": "SUCCESS",
     "success": {
       "data": {
-        "isNewUser": false,
-        "accessToken": "stub-access",
-        "refreshToken": "stub-refresh",
-        "expiresInS": 3600,
-        "signupToken": null
+        "isNewUser": true,
+        "accessToken": null,
+        "refreshToken": null,
+        "expiresInS": null,
+        "signupToken": "eyJhbGciOi...(signup)"
       }
     },
     "error": null,

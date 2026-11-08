@@ -16,23 +16,9 @@ ME = {
     "createdAt": "2026-11-01T09:00:00Z",
 }
 
-AGREEMENTS = [
-    {"agreementId": "terms", "title": "서비스 이용약관", "required": True, "version": "2026-11-01", "url": "https://example.com/terms"},
-    {"agreementId": "privacy", "title": "개인정보 수집·이용", "required": True, "version": "2026-11-01", "url": "https://example.com/privacy"},
-    {"agreementId": "notice", "title": "운동 알림 받기", "required": False, "version": "2026-11-01", "url": "https://example.com/notice"},
-]
 
-LOGIN_EXISTING = {
-    "isNewUser": False,
-    "accessToken": "stub-access",
-    "refreshToken": "stub-refresh",
-    "expiresInS": 3600,
-    "signupToken": None,
-}
 
-LOGIN_NEW = {"isNewUser": True, "accessToken": None, "refreshToken": None, "expiresInS": None, "signupToken": "signup"}
 
-TOKENS = {"accessToken": "stub-access", "refreshToken": "stub-refresh", "expiresInS": 3600}
 
 SETTINGS = {"feedShareDefault": True}
 
