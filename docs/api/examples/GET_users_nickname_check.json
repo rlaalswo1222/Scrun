@@ -2,7 +2,7 @@
   "request": {
     "method": "GET",
     "path": "/v1/users/nickname/check?nickname=새벽러너",
-    "auth": "Bearer {signupToken}",
+    "auth": "Bearer {accessToken 또는 signupToken}",
     "body": null
   },
   "status": 200,
