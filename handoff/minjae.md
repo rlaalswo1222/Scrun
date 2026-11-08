@@ -10,6 +10,12 @@
   - 후속 PR(`docs/nickname-check-auth`): 닉네임 확인 예시 헤더를 `accessToken 또는 signupToken`으로, `docs/api/README.md`의 "(지금은 스텁)"·`NICKNAME_NOT_ALLOWED` 뜻 바로잡기
   - S1 ApiClient에 넣을 것: 재발급은 한 번에 하나만(single-flight), 로그인·가입에 `deviceId`(identifierForVendor), 닉네임 확인 응답의 정규화된 `nickname` 보여 주기
   - 공통 규칙 "미정"에 "OCR 서버/앱 미정"이 남아 있음(11/06 서버 처리로 확정) → OCR API 진짜로 만들 때 같이 고침
+- **스프린트 재분배(11/08, PR #18, 노션 작업 표 15줄 반영)**: 지환에게 권한 안내·에어팟 화면(S1), 내 정보·설정·보정값 API·임시 아바타 애니메이션(S2), 센서 준비·카운트다운 화면(S3). 페이스 봇 S3로, 멈춤·측정 예외 S4로, 계기판 촬영 화면 S4로, 기종 조사는 공통(담당 없음), 상준 S3 새 화면 모양 2개. 계획 0017 "11/08 재분배"
+  - **11/13 시연 범위 확정**: 로그인 → 권한·에어팟 → 코스 → 러닝 설정·거치 → 보정 → 센서 준비·카운트다운 → 다른 러너·페이스 봇과 실시간 달리기. 결과·OCR·인증 제외
+  - **민재 S1 남은 것(6)**: 브리지(**첫 단계로 C# `Native.Permissions`·`Native.Headphones` 모양 + `FakeNative`를 올려야 지환이 안 막힘**), 카카오 iOS SDK, 권한 Swift, ApiClient, 탭 틀, 로그인·약관·프로필 화면. 구현 전에 계획 0018(S1) 1쪽
+  - 브리지 설계(11/08 설명, 민재 아직 확정 전): C#→Swift는 `DllImport("__Internal")` + `@_cdecl` 함수 하나(`scrun_call`, 기능 이름 + JSON), Swift→C#은 등록한 콜백(요청 번호 + 결과 JSON) → 메인 스레드 큐. 센서는 이 통로 안 씀(Swift가 속도까지 계산, Unity는 매 프레임 결과만 읽음). Xcode 프로젝트 종류는 기존(Objective-C) 추천(Swift 방식은 iOS 16 최소·회전 처리 다름). 정하면 ADR-0009
+  - 맥북은 있음, 아이폰은 11/09부터 → 11/08은 시뮬레이터(Simulator SDK)로 브리지·카카오(웹 로그인)·권한 팝업 확인, 센서·에어팟·카메라·카카오톡 앱 로그인은 11/09 아이폰
+  - 지환에게 알릴 것: 재분배·이음매(민재가 C# 모양을 먼저 올림)
 - **커밋 안 한 것**: `Lm_LampGlass.mat`(11/07 Unity 설정 저장 때 Unity가 다시 써서 `_EMISSION` 키워드 한 줄 빠짐, 의도 아님 → 되돌릴지 확인), 지환 실명 파일 2개(아래), 와이어프레임 초안, 중간발표 자료, `.claude/settings.json`
 
 ## 개발 계획 (계획 0017, 노션 SCRUN > [개발 계획](https://app.notion.com/p/4114ae82f1de81a9bec2db16a9bfe635))
