@@ -1,19 +1,17 @@
-# 민재 인수인계 (2026-11-09 밤)
+# 민재 인수인계 (2026-11-10 새벽, 맥)
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`, `docs/plans/`)에 있고, 11/09까지의 전체본은 `docs/log/HANDOFF_minjae_20261109.md`(그 전은 `_20261107.md`, `_20261106.md`).
 
-## 지금: 계획 0018(S1 앱 뼈대) 5번부터, **맥에서**
-- **1–4번 끝, develop에 합침(PR #19–#24)**. 무엇이 있는지는 `docs/unity/unity_map.md` "앱 코드 묶음 Scrun.App", 계획 0018
-  - 1 `Native`(권한·헤드폰·보안 저장소·카카오) 모양 + 에디터 가짜 `FakeNative`(메뉴 Scrun → Fake Native), 2 `ApiClient`·`Session`·`Api.Auth/Users`(메뉴 Scrun → API 서버), 3 앱 씬·화면 틀·탭(메뉴 Scrun → Build App Scene), 4 로그인·약관·프로필 화면 + `Feedback`(로딩·오류). EditMode 테스트 37개 통과, 로컬 서버로 화면을 눌러 가입까지 확인
-  - 빌드(에디터 밖)에선 `Native.cs`의 `#else`가 예외를 던짐 → 5번에서 진짜 구현으로 채움
-- **맥 준비 상태(11/09 밤)**: macOS 업데이트 후 Xcode 설치 끝(App Store Xcode가 macOS 26.6 이상 요구). 민재는 **맥에서도 VS Code + Claude Code 확장**으로 작업
-  - 남은 준비: Xcode 한 번 열어 iOS 구성요소 설치·Settings → Accounts에 Apple ID, Unity Hub 6000.6.7f1 + **iOS Build Support**, `git clone https://github.com/rlaalswo1222/Scrun.git` → `develop`, `git config user.name minjae`(이 handoff를 찾는 이름), VS Code(응용 프로그램 폴더로 옮김) + Claude Code 확장(+ 선택 C# Dev Kit·Swift), 아이폰 연결·신뢰·개발자 모드, 카카오 네이티브 앱 키(아래 "카카오 개발자 앱", 저장소에 안 올림). 푸시하려면 `gh` 로그인
-  - 맥 Claude 첫 말: "handoff 로드해와 → 계획 0018의 5번부터"
-- **5번**: 빌드 대상 iOS 전환(Bundle ID `com.scrun.app`, 최소 iOS 15.0, Objective-C Xcode 틀), `Assets/Plugins/iOS/`에 Swift 브리지(`scrun_call(reqId, name, json)` + `scrun_query` + 등록 콜백 → C# 메인 스레드 큐), `IosNative`로 `Native.Permissions`(모션·카메라·헤드폰 모션·알림)·`Headphones`·`SecureStore`(키체인)·`Kakao` 진짜 구현. 결정 내용은 ADR-0009로. 센서는 이 통로를 안 씀(Swift가 속도까지 계산, Unity는 매 프레임 결과만 읽음)
-- **6번**: 카카오 SDK를 빌드 후처리로 SPM 추가(`PBXProject.AddRemotePackageReferenceAtVersion`, `kakao-ios-sdk`), URL 스킴 `kakao{앱키}`·`LSApplicationQueriesSchemes`, 앱 키는 git 밖 로컬 파일에서 주입. 안 되면 Append 빌드로 손 추가
-- **아이폰 확인**: 노치 여백(Device Simulator로도), 한글 입력·키보드 가림, 공용 서버(`https://161-118-211-155.sslip.io`, 진짜 카카오)로 실제 가입, 권한 팝업, 에어팟 끼고 빼기, 키체인 토큰이 앱 재실행 뒤에도 남는지
-- 맥에서 주의: `unity/tools/*.sh`에 이 Windows 노트북 경로(`/c/Users/rlaal/...`)가 박혀 있음 → 맥 경로로 고치거나 MCP 도구 직접 사용(Window → MCP for Unity → Start Server). 처음 열면 가져오기가 오래 걸림. Game 창이 가로(Free Aspect)면 세로 앱이 크게 잘림 → Device Simulator(Apple iPhone 15)나 1170×2532
-- **그다음 S2(11/10–11)**: 실시간 방식 설명 자료(WebSocket vs Photon, BL-25) → 민재 선택 → ADR, 센서 준비·걸음 감지 C# 모양 + 가짜(지환 S3 센서 준비·카운트다운 화면이 기다림, 지금 `ISpeedSource`는 `SpeedKmh` 하나뿐), S2 계획(속도 플러그인·보정 계산·보정 화면). 맥 업데이트를 기다리는 동안 Windows에서 하려던 것(11/09 밤 제안, 아직 시작 안 함)
+## 지금: 계획 0018 5번 끝(브랜치 `feat/ios-bridge`, 커밋 전) → 리뷰·PR → 6번(카카오 SDK)
+- **5번(11/10, 맥)**: Swift 브리지 + `IosNative`, 빌드 메뉴 Scrun → iOS → Xcode 만들기, 개발 빌드 전용 "네이티브 점검" 화면(로그인 아래 링크). ADR-0009, 사용법·주의는 `docs/unity/unity_map.md` "아이폰 진짜 구현"·"아이폰 빌드". 테스트 48개 통과, 시뮬레이터에서 카메라·알림 팝업·키체인·설정 앱 확인
+- **다음**: `/code-review` → 커밋·PR(커밋할 땐 아래 "맥 주의"의 Unity가 바꾼 파일을 빼고 내 파일만) → 6번: 카카오 SDK를 빌드 후처리로 SPM 추가(`PBXProject.AddRemotePackageReferenceAtVersion`, `kakao-ios-sdk`), URL 스킴 `kakao{앱키}`·`LSApplicationQueriesSchemes`, 앱 키는 `unity/TestRun/ScrunLocal.json`의 `kakaoNativeAppKey`(git 밖), Swift `ScrunKakao.swift`를 채우고 카카오톡 앱에서 돌아오는 URL은 Unity `AppDelegateListener`(Objective-C)로 받아 `AuthController.handleOpenUrl`
+- **아이폰 확인(남음)**: 모션·헤드폰 모션 팝업(에어팟 없이도 뜨는지 = 가설), 에어팟 끼고 빼기 → 이벤트, 거부 → 설정 앱에서 허용 → 돌아오면 이벤트, 앱 재실행 뒤 키체인 토큰, 노치·한글 입력, 공용 서버로 실제 가입(6번 뒤). 서명: Xcode → Settings → Accounts에 Apple ID → 팀 ID를 `ScrunLocal.json` `appleTeamId`에(또는 Xcode Signing에서 고름), 아이폰 개발자 모드
+- **그다음 S2(11/10–11)**: 실시간 방식 설명 자료(WebSocket vs Photon, BL-25) → 민재 선택 → ADR, 센서 준비·걸음 감지 C# 모양 + 가짜(지환 S3 화면이 기다림, 지금 `ISpeedSource`는 `SpeedKmh` 하나), S2 계획(속도 플러그인·보정 계산·보정 화면)
+- **맥 상태(11/10)**: Xcode 27.2, Unity 6000.6.7f1 + iOS 모듈, 빌드 대상 iOS로 전환됨, MCP for Unity 서버 켜짐(`unity/tools/*.sh`가 이제 맥에서도 됨). uv·Python 3.12는 `~/.local/bin`(셸 PATH엔 아직 없음: 필요하면 `~/.local/bin/uv python update-shell`). `gh` 없음(푸시·PR 하려면 설치·로그인, Homebrew도 없음). 시뮬레이터 앱이 없고 Xcode 27의 DeviceHub가 시뮬레이터 화면을 보여 주는 듯(가설)
+- **맥 주의(Unity가 바꾼 파일, 커밋 금지)**: Mixamo 파일(`Characters/YBot/*.fbx`)이 이 맥에 없어 Unity가 그 `.meta` 7개를 지움 → mixamo.com에서 받기 전엔 커밋 때 빼고, 받은 뒤 `git checkout -- unity/TestRun/Assets/Scrun/Characters/YBot`. Poly Haven은 받았지만 iOS로 전환하며 Unity가 `.meta`에 iOS 칸·`materialImportMode`를 고쳐 씀(빼고 커밋). 맥 기본 화면 배치에 열려 있던 "Unity Version Control" 창이 버전 관리 모드를 계속 "Unity Version Control"로 바꿔서 창을 닫고 "Visible Meta Files"로 되돌림(그 창을 다시 열지 않기). URP 전역 설정·ProjectSettings(시뮬레이터 SDK 값)도 Unity가 다시 썼던 것 되돌림
+- `/code-review`(11/10) 반영: 키체인 저장 실패에도 로그인 전환을 끝까지(`Session.Persist`), `AppRoot`가 모든 예외에서 로그인 화면으로, 팝업 기다리기는 "활성 2초 연속"이면 끝(제어 센터를 내려도 안 멈춤), 시작 때 알림 상태를 기다리지 않음, 에어팟 모션은 `Headphones.Changed` 구독 중에만 켬(배터리), 메인 스레드 넘기기는 PlayerLoop 대신 SynchronizationContext. 안 고친 것: 이어폰 `Status`·`DeviceName`이 따로 조회(작음), `unity/tools/*.sh` 머리 3줄 중복
+- 빌드(에디터 밖) 안드로이드에선 `Native`가 예외(아이폰만). Island01은 Mixamo가 없어 캐릭터가 빠진 채 빌드됨
+- `App.uss`의 `:last-child`는 UI Toolkit이 모름(콘솔 경고, `.field-col`·`.dialog-buttons` 마지막 여백) → 클래스로 바꾸기
 
 ## 공용 개발 서버 (계획 0019 완료, ADR-0008)
 - `https://161-118-211-155.sslip.io`(오라클 싱가포르 ARM, SSH `ubuntu@161.118.211.155` 키 `~/.ssh/oracle_key` — Windows 노트북에만 있음). 진짜 카카오만, 아이폰용(에디터는 localhost 가짜 `k_123`). develop 기준으로 올라가 있음, 다시 올리기 `~/scrun/backend/deploy/update.sh [브랜치]`. 비밀값은 서버 `backend/deploy/.env`에만. 매일 KST 4:30 백업(`~/scrun-backups`)
