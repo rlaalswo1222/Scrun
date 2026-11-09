@@ -46,7 +46,7 @@
 | Unity 본 앱(섬 맵·아바타·성능·앱 화면) | `docs/unity/unity_map.md`(끝에 Figma → UI Toolkit 옮기기·남은 큰 것), `unity/tools/README.md` |
 | 화면·기능 기획 | **상준 공개 노션 사이트가 항상 최신 원본**(PRD·백로그·유스케이스, [개발 백로그](https://heavenly-beak-116.notion.site/eb95382a0c1a4745a33d3bd3c2380600?v=7fe2ce1da4a04daf8d778a5db8ebd139)). 민재 노션의 기획 문서는 참고하지 않음(옛 사본). Figma 와이어프레임. 저장소 `docs/product/`는 옛 초안 |
 | 서버 API | `docs/api/README.md`(공통 규칙·오류 코드), 노션 API 명세(목록·진행), 계획 0014 |
-| 기술 결정 이유 | `docs/adr/` (0001 Unity 통일, 0002 FastAPI, 0003 MCP 커뮤니티판, 0004 달릴 때 속도 추정, 0005 안내형 보정, 0006 속도 추정 제약, 0007 아이폰 우선, 0008 서버 올리는 곳(오라클)) |
+| 기술 결정 이유 | `docs/adr/` (0001 Unity 통일, 0002 FastAPI, 0003 MCP 커뮤니티판, 0004 달릴 때 속도 추정, 0005 안내형 보정, 0006 속도 추정 제약, 0007 아이폰 우선, 0008 서버 올리는 곳(오라클), 0010 실시간은 FastAPI WebSocket) |
 | 계획 중·승인된 작업 | `docs/plans/` |
 | 교수님·멘토 문서, HWP | `docs/meeting/`, `docs/hwp/` |
 | 유사 서비스·관련 연구 | `docs/research/` (Zwift 자료는 참고용, 보고서에 "Zwift 분석" 표현 금지. 관련 연구 정리 `treadmill_sensing_papers.md`) |

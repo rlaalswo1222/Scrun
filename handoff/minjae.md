@@ -13,7 +13,7 @@
 - **6번**: 카카오 SDK를 빌드 후처리로 SPM 추가(`PBXProject.AddRemotePackageReferenceAtVersion`, `kakao-ios-sdk`), URL 스킴 `kakao{앱키}`·`LSApplicationQueriesSchemes`, 앱 키는 git 밖 로컬 파일에서 주입. 안 되면 Append 빌드로 손 추가
 - **아이폰 확인**: 노치 여백(Device Simulator로도), 한글 입력·키보드 가림, 공용 서버(`https://161-118-211-155.sslip.io`, 진짜 카카오)로 실제 가입, 권한 팝업, 에어팟 끼고 빼기, 키체인 토큰이 앱 재실행 뒤에도 남는지
 - 맥에서 주의: `unity/tools/*.sh`에 이 Windows 노트북 경로(`/c/Users/rlaal/...`)가 박혀 있음 → 맥 경로로 고치거나 MCP 도구 직접 사용(Window → MCP for Unity → Start Server). 처음 열면 가져오기가 오래 걸림. Game 창이 가로(Free Aspect)면 세로 앱이 크게 잘림 → Device Simulator(Apple iPhone 15)나 1170×2532
-- **그다음 S2(11/10–11)**: 실시간 방식 설명 자료(WebSocket vs Photon, BL-25) → 민재 선택 → ADR, 센서 준비·걸음 감지 C# 모양 + 가짜(지환 S3 센서 준비·카운트다운 화면이 기다림, 지금 `ISpeedSource`는 `SpeedKmh` 하나뿐), S2 계획(속도 플러그인·보정 계산·보정 화면). 맥 업데이트를 기다리는 동안 Windows에서 하려던 것(11/09 밤 제안, 아직 시작 안 함)
+- **S2(11/10–11)**: **실시간 방식 결정 끝(11/10): FastAPI WebSocket**(ADR-0010, 설명 자료 `docs/research/realtime_options.html`, 오라클 싱가포르 지연 중앙값 222ms 실측). 남은 S2: 센서 준비·걸음 감지 C# 모양 + 가짜(지환 S3 센서 준비·카운트다운 화면이 기다림, 지금 `ISpeedSource`는 `SpeedKmh` 하나뿐), S2 계획(속도 플러그인·보정 계산·보정 화면). S3 "실시간 방 서버 기본" 계획에 넣을 것: 메시지 모양(입장·상태·들어옴/나감·봇), 입장 응답 `realtime.url`·`token` 확정, 재접속, 앱 연결 인터페이스(나중에 바꿀 수 있게), 아이폰 2대로 지연 실측
 
 ## 공용 개발 서버 (계획 0019 완료, ADR-0008)
 - `https://161-118-211-155.sslip.io`(오라클 싱가포르 ARM, SSH `ubuntu@161.118.211.155` 키 `~/.ssh/oracle_key` — Windows 노트북에만 있음). 진짜 카카오만, 아이폰용(에디터는 localhost 가짜 `k_123`). develop 기준으로 올라가 있음, 다시 올리기 `~/scrun/backend/deploy/update.sh [브랜치]`. 비밀값은 서버 `backend/deploy/.env`에만. 매일 KST 4:30 백업(`~/scrun-backups`)
@@ -23,7 +23,7 @@
 - 서버 정해진 것(11/08, 계획 0016·`docs/api/README.md`): refresh 재사용 30초 유예 + 그 로그인만 폐기, 재로그인은 deviceId로 같은 기기 폐기 + 사용자당 5개, 닉네임은 한글 완성형·영문·숫자·`_`(NFKC). 공통 규칙 "미정"에 "OCR 서버/앱 미정"이 남아 있음(11/06 서버 처리로 확정) → OCR API 만들 때 같이 고침
 
 ## 민재가 직접 할 것
-- **지환에게**: 11/09 답장(수정본: 샘플 주기·thumbnailUrl·20명 임시 방식) + "FakeNative·앱 틀·로그인 화면 develop에 있음, 권한·에어팟 화면 시작해도 됨(사용법 `docs/unity/unity_map.md` "앱 코드 묶음")". 보냈으면 이 줄 지우기
+- **지환에게**: 11/09 답장(수정본: 샘플 주기·thumbnailUrl·20명 임시 방식) + "FakeNative·앱 틀·로그인 화면 develop에 있음, 권한·에어팟 화면 시작해도 됨(사용법 `docs/unity/unity_map.md` "앱 코드 묶음")". 추가로 알릴 것: 실시간은 WebSocket으로 결정 → "지금 달리는 사람 수"는 연결 수로 세니 샘플 주기·`updated_at` 갱신은 신경 안 써도 됨. 보냈으면 이 줄 지우기
 - 원격 옛 브랜치 `feat/dev-server` 지우기(PR 화면)
 - `Lm_LampGlass.mat`: 11/07 Unity 설정 저장 때 Unity가 다시 써서 `_EMISSION` 키워드 한 줄 빠짐(의도 아님) → 되돌릴지 결정. 커밋 안 한 것: 이 파일, 지환 실명 파일 2개(아래), 와이어프레임 초안, 중간발표 자료, `.claude/settings.json`
 - 스프린트 재분배(11/08)·11/13 시연 범위는 계획 0017 "11/08 재분배"·"11/13 시연"
