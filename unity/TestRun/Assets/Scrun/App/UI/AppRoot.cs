@@ -70,10 +70,10 @@ namespace Scrun.App
                 subscribed = true;
                 loggedIn = Api.Session.IsLoggedIn;
             }
-            catch (PlatformNotSupportedException e)
+            catch (Exception e)
             {
-                // 아직 기기 기능(키체인 등)이 없는 빌드: 빈 화면 대신 로그인 화면을 띄우고, 누르면 안내가 뜬다
-                Debug.LogError("[App] " + e.Message);
+                // 기기 기능이 없는 빌드(PlatformNotSupportedException)·네이티브 초기화 실패: 빈 화면 대신 로그인 화면을 띄우고, 누르면 안내가 뜬다
+                Debug.LogException(e);
             }
             if (loggedIn) Nav.ShowTabs(AppTab.Home);
             else Nav.StartFlow(new LoginScreen());
@@ -96,7 +96,7 @@ namespace Scrun.App
         {
             if (Nav == null) return;
             Feedback.HideError();
-            try { Api.Session.Clear(); } catch (PlatformNotSupportedException) { } // 만료된 가입용 토큰까지 정리
+            try { Api.Session.Clear(); } catch (Exception e) { Debug.LogException(e); } // 만료된 가입용 토큰까지 정리. 실패해도 로그인 화면으로는 간다
             if (!Nav.InTabs && Nav.Current is LoginScreen) return;
             Nav.StartFlow(new LoginScreen(notice));
         }
