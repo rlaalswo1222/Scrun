@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>실시간 방식 고르기</title>
+<style>
+:root{--bg:#fbfaf7;--fg:#1f2328;--muted:#5d6670;--card:#ffffff;--line:#d9dde3;--accent:#2f6fde;--accent-bg:#e8f0fd;--good:#1f8a4c;--good-bg:#e6f4ec;--warn:#b25e00;--warn-bg:#fdf1e2;--ws:#2f6fde;--ph:#8a3ffc}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181c;--fg:#e6e8eb;--muted:#9aa3ad;--card:#1d2126;--line:#353b43;--accent:#7aa7ff;--accent-bg:#1f2a3d;--good:#5cc98a;--good-bg:#1b2e24;--warn:#f0a14a;--warn-bg:#33281a;--ws:#7aa7ff;--ph:#b48cff}}
+:root[data-theme="dark"]{--bg:#15181c;--fg:#e6e8eb;--muted:#9aa3ad;--card:#1d2126;--line:#353b43;--accent:#7aa7ff;--accent-bg:#1f2a3d;--good:#5cc98a;--good-bg:#1b2e24;--warn:#f0a14a;--warn-bg:#33281a;--ws:#7aa7ff;--ph:#b48cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+main{max-width:880px;margin:0 auto;padding:32px 16px 80px}
+h1{font-size:26px;margin:0 0 6px}
+h2{font-size:21px;margin:44px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+h3{font-size:16px;margin:20px 0 6px}
+.lead{color:var(--muted);margin:0 0 20px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}
+.rec{background:var(--good-bg);border-color:transparent}
+.note{background:var(--warn-bg);border-color:transparent}
+.tag{display:inline-block;font-size:12px;padding:0 7px;border-radius:9px;background:var(--warn-bg);color:var(--warn);margin-left:4px;vertical-align:1px}
+.tag.m{background:var(--good-bg);color:var(--good)}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px;margin:10px 0;min-width:620px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--accent-bg)}
+td.k{font-weight:600;white-space:nowrap}
+.win{background:var(--good-bg)}
+code{font-family:ui-monospace,Consolas,monospace;font-size:14px;background:var(--accent-bg);padding:1px 5px;border-radius:4px}
+svg{width:100%;height:auto;display:block;margin:12px 0}
+svg text{font-family:inherit;fill:var(--fg)}
+.s-line{stroke:var(--muted);stroke-width:2;fill:none}
+.s-box{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+.s-ws{fill:var(--card);stroke:var(--ws);stroke-width:2.5}
+.s-ph{fill:var(--card);stroke:var(--ph);stroke-width:2.5}
+.small{font-size:13px;fill:var(--muted)}
+a{color:var(--accent)}
+.toc a{text-decoration:none}
+</style>
+</head>
+<body>
+<main>
+<h1>실시간 같이 뛰기: 어떤 방식으로 주고받을까</h1>
+<div class="box rec"><b>결정(11/10 민재): A. FastAPI WebSocket</b> → <code>docs/adr/0010-realtime-websocket.md</code></div>
+<p class="lead">S2 할 일 "실시간 방식 정하기(BL-25)" 설명 자료. 후보는 <b>우리 서버(FastAPI)에 WebSocket을 붙이기</b>와 <b>Photon(실시간 중계 회사의 서비스) 쓰기</b> 두 개입니다. 읽고 고르시면 ADR로 남기고 S3(11/12–13) "실시간 방 서버 기본"을 그 방식으로 만듭니다. 2026-11-10 작성.</p>
+
+<div class="box toc">
+<a href="#what">1. 무엇을 주고받나 (우리 앱은 게임보다 훨씬 단순)</a><br>
+<a href="#two">2. 두 방식 그림으로</a><br>
+<a href="#cmp">3. 항목별 비교</a><br>
+<a href="#lat">4. 지연 실측 (11/10)</a><br>
+<a href="#rec">5. 추천과 위험</a><br>
+<a href="#etc">6. 안 고른 후보 · 공부 자료</a>
+</div>
+
+<h2 id="what">1. 무엇을 주고받나</h2>
+<p>같은 코스(= 맵 하나, 최대 20명)에 들어온 사람들의 폰이 서로의 상태를 계속 알아야 합니다. 백로그 BL-21(공동 맵)·BL-23(페이스 봇)·BL-25(스파이크)에서 필요한 것만 뽑으면:</p>
+<div class="box">
+<b>폰 → 모두</b>: 나는 코스 시작점에서 <code>1240.5 m</code>, 지금 <code>9.8 km/h</code> (+ 닉네임·인증 마크는 입장 때 한 번)<br>
+<b>서버 → 모두</b>: 누가 들어왔다 / 나갔다, 봇은 몇 시에 출발해서 몇 km/h로 달린다<br>
+<b>얼마나 자주</b>: 1초에 1–2번 (기획 흐름도 v2 "실시간 러너는 위치를 1초에 1–2번 주고받음")
+</div>
+<p>여기서 중요한 사실 세 가지:</p>
+<ul>
+<li><b>위치가 1차원</b>입니다. 코스 위 거리(m) 숫자 하나. 총 게임처럼 방향·충돌·물리가 없습니다.</li>
+<li><b>속도 추정 자체가 이미 늦습니다.</b> 러닝머신 속도를 바꾼 뒤 우리 추정이 따라오기까지 예비 실험 평균 약 5–6초(BL-13 열린 질문 Q-11). 네트워크가 0.2초 늦는 건 그에 비하면 작습니다.</li>
+<li><b>양이 아주 적습니다</b> <span class="tag">계산</span>. 한 사람 상태가 JSON 약 80바이트라면, 20명 × 1초 2번 × 80B = 폰 한 대가 받는 양 <b>초당 약 3.2KB</b>. 사진 한 장보다 훨씬 작습니다.</li>
+</ul>
+<p>그래서 다른 사람 아바타는 "받은 위치를 그대로" 그리지 않고, <b>마지막으로 받은 위치 + 그 사람 속도 × 지난 시간</b>으로 계속 앞으로 움직이다가 새 값이 오면 부드럽게 맞춥니다(보간). 러닝머신 속도는 천천히 바뀌어서 이 방식이 잘 맞습니다. 어느 방식을 고르든 앱 쪽은 이렇게 그립니다.</p>
+
+<h2 id="two">2. 두 방식 그림으로</h2>
+<svg viewBox="0 0 860 330" role="img" aria-label="FastAPI WebSocket 방식과 Photon 방식 비교 그림">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker></defs>
+  <!-- A -->
+  <text x="210" y="24" text-anchor="middle" font-weight="700">A. 우리 서버에 WebSocket</text>
+  <rect class="s-ws" x="80" y="44" width="260" height="120" rx="10"/>
+  <text x="210" y="70" text-anchor="middle" font-weight="700">우리 서버 (오라클 싱가포르)</text>
+  <text x="210" y="95" text-anchor="middle" font-size="14">기존: 로그인 · 코스 · 기록 API</text>
+  <text x="210" y="118" text-anchor="middle" font-size="14">추가: /v1/rt 방(맵)마다 중계</text>
+  <text x="210" y="141" text-anchor="middle" class="small">20명 · 입장 · 봇 · 지금 달리는 수 = 한 곳</text>
+  <rect class="s-box" x="20" y="230" width="110" height="60" rx="10"/><text x="75" y="265" text-anchor="middle">아이폰 1</text>
+  <rect class="s-box" x="155" y="230" width="110" height="60" rx="10"/><text x="210" y="265" text-anchor="middle">아이폰 2</text>
+  <rect class="s-box" x="290" y="230" width="110" height="60" rx="10"/><text x="345" y="265" text-anchor="middle">아이폰 …20</text>
+  <path class="s-line" d="M75 228 L150 166" marker-end="url(#ar)" marker-start="url(#ar)"/>
+  <path class="s-line" d="M210 228 L210 166" marker-end="url(#ar)" marker-start="url(#ar)"/>
+  <path class="s-line" d="M345 228 L270 166" marker-end="url(#ar)" marker-start="url(#ar)"/>
+  <text x="210" y="318" text-anchor="middle" class="small">연결 하나로 REST와 같은 서버 · 같은 로그인 토큰</text>
+  <!-- B -->
+  <text x="650" y="24" text-anchor="middle" font-weight="700">B. Photon Fusion 2 (공유 모드)</text>
+  <rect class="s-box" x="470" y="44" width="150" height="80" rx="10"/>
+  <text x="545" y="72" text-anchor="middle" font-size="14">우리 서버</text>
+  <text x="545" y="94" text-anchor="middle" class="small">로그인 · 코스 · 기록</text>
+  <text x="545" y="112" text-anchor="middle" class="small">+ Photon 로그인 확인</text>
+  <rect class="s-ph" x="660" y="44" width="180" height="120" rx="10"/>
+  <text x="750" y="70" text-anchor="middle" font-weight="700">Photon 클라우드</text>
+  <text x="750" y="95" text-anchor="middle" font-size="14">서울 지역(kr)</text>
+  <text x="750" y="118" text-anchor="middle" font-size="14">방 · 중계 · 인원 제한</text>
+  <text x="750" y="141" text-anchor="middle" class="small">우리가 서버 코드 안 씀</text>
+  <path class="s-line" d="M622 84 L658 84" stroke-dasharray="5 4" marker-end="url(#ar)" marker-start="url(#ar)"/>
+  <rect class="s-box" x="470" y="230" width="110" height="60" rx="10"/><text x="525" y="265" text-anchor="middle">아이폰 1</text>
+  <rect class="s-box" x="600" y="230" width="110" height="60" rx="10"/><text x="655" y="258" text-anchor="middle">아이폰 2</text><text x="655" y="279" text-anchor="middle" class="small">봇 담당(방장)</text>
+  <rect class="s-box" x="730" y="230" width="110" height="60" rx="10"/><text x="785" y="265" text-anchor="middle">아이폰 …20</text>
+  <path class="s-line" d="M545 228 L700 166" marker-end="url(#ar)" marker-start="url(#ar)"/>
+  <path class="s-line" d="M655 228 L740 166" marker-end="url(#ar)" marker-start="url(#ar)"/>
+  <path class="s-line" d="M785 228 L775 166" marker-end="url(#ar)" marker-start="url(#ar)"/>
+  <path class="s-line" d="M515 228 L530 126" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+  <text x="650" y="318" text-anchor="middle" class="small">폰이 두 곳에 붙음: 기록은 우리 서버, 같이 뛰기는 Photon</text>
+</svg>
+<div class="box">
+<b>비유</b> — A는 우리 가게에 <b>전화선을 직접 까는 것</b>입니다. 손님(폰)이 이미 우리 가게(서버)에 회원증(로그인 토큰)을 보여 주고 들어오니, 같은 문으로 대화방까지 들어오게 합니다. 대신 전화 교환 일은 우리가 합니다.<br>
+B는 <b>전화 교환 회사(Photon)를 빌리는 것</b>입니다. 교환·인원 제한·끊김 처리는 회사가 해 주고 서울에 지점도 있습니다. 대신 손님 명단(누가 몇 명 들어와 있는지)이 회사에 있어서, 우리 가게가 그걸 알려면 따로 물어봐야 합니다.
+</div>
+
+<h2 id="cmp">3. 항목별 비교</h2>
+<p>초록 칸이 우리 앱에 더 유리한 쪽입니다.</p>
+<div class="wrap"><table>
+<tr><th style="width:17%"></th><th>A. FastAPI WebSocket</th><th>B. Photon Fusion 2 (공유 모드)</th></tr>
+<tr><td class="k">서버 코드</td><td>우리가 씀: 방 입장·퇴장, 받은 상태를 같은 방에 다시 보내기, 20명 제한, 봇 정보. FastAPI 공식 문서에 같은 모양의 예제가 있음</td><td class="win">안 씀. 방·중계는 Photon이 함</td></tr>
+<tr><td class="k">앱 코드</td><td class="win">WebSocket 라이브러리 하나 + 메시지 3–4종(JSON). 지금 ApiClient처럼 C# 몇 파일</td><td>Fusion SDK를 넣고 그 방식(NetworkRunner, NetworkObject 프리팹, 네트워크 변수)으로 짬. 게임용 틀이라 우리가 안 쓰는 기능(틱·예측·물리)이 큼</td></tr>
+<tr><td class="k">로그인</td><td class="win">지금 accessToken 그대로. 만료 처리도 ApiClient와 같은 규칙</td><td>Photon "커스텀 인증" 설정: Photon이 우리 서버 주소로 토큰을 보내 확인받음. 우리 서버에 확인용 API 하나 추가</td></tr>
+<tr><td class="k">20명 · 입장 잠금</td><td class="win">입장 API와 같은 서버가 셈 → 숫자가 항상 맞음</td><td>Photon 방 최대 인원으로 막을 수 있음. 다만 입장 API(우리 서버)의 인원과 Photon 방 인원이 따로 놀아서 둘을 맞춰야 함</td></tr>
+<tr><td class="k">지금 달리는 사람 수</td><td class="win">서버에 붙어 있는 연결 수 그대로 (지환 질문 1 해결: 샘플 주기와 상관없어짐)</td><td>우리 서버는 Photon 방 인원을 바로 모름 → 지금 임시 방식(기록 + <code>updated_at</code>) 유지</td></tr>
+<tr><td class="k">봇 (BL-23: 모두에게 똑같이, 수·페이스는 서버 설정)</td><td class="win">서버가 "출발 시각·페이스"를 내려 주고 각 폰이 위치를 계산 → 모두 같은 위치</td><td>방장(방을 만든 폰)이 봇을 맡는 게 기본. 방장이 나가면 다른 폰으로 자동으로 넘어감. A처럼 서버 설정값을 받아 계산하게 할 수도 있음</td></tr>
+<tr><td class="k">지연</td><td>오라클 싱가포르. 이 노트북에서 실측 중앙값 약 0.22초 (아래 4절)</td><td class="win">서울 지역(kr) 있음. 실측은 안 함 — 같은 시각 서울 AWS가 0.04초라 그 근처일 것 <span class="tag">가설</span></td></tr>
+<tr><td class="k">끊겼다 다시 붙기 (BL-25 ⑤)</td><td>직접 짬: 다시 연결 → 방 상태 다시 받기. 헬스장 와이파이 70초 끊김(10/29 실측)도 이 처리로</td><td>Fusion의 재접속 지원 범위는 이번에 확인 안 함. 어느 쪽이든 70초 끊김은 앱이 따로 처리해야 함</td></tr>
+<tr><td class="k">비용 (출시 뒤)</td><td class="win">지금 쓰는 오라클 무료 서버 안에서. 위 계산대로 양이 작아 2코어·11GiB면 여유 <span class="tag">가설</span></td><td>무료 100 CCU(동시 접속 100명, 출시 가능, 앱 1개). 넘으면 500 CCU 월 $125. 개발용 무료 20 CCU는 출시 불가</td></tr>
+<tr><td class="k">우리가 지킬 것</td><td>서버가 꺼지면 같이 뛰기도 멈춤. 서버 한 프로세스 안에 방이 있어서, 나중에 서버를 여러 대로 늘리면 Redis 같은 공유 저장소가 필요</td><td class="win">중계 서버 운영은 Photon 몫. 우리는 대시보드·앱 ID 관리</td></tr>
+<tr><td class="k">11/13 시연까지</td><td class="win">이미 아는 것(FastAPI·JSON·우리 인증)만 씀</td><td>Fusion을 처음 익혀야 함 + 우리 서버와 두 군데를 맞춰야 함</td></tr>
+</table></div>
+
+<h2 id="lat">4. 지연 실측 (11/10, 이 Windows 노트북 와이파이)</h2>
+<p>"서버까지 갔다 오는 데 걸리는 시간"을 보려고 TCP 연결 시간(왕복 한 번)을 12–15번 쟀습니다. <span class="tag m">실측</span></p>
+<div class="wrap"><table>
+<tr><th>대상</th><th>중앙값</th><th>최소</th><th>최대</th></tr>
+<tr><td>AWS 서울 (비교용)</td><td>39 ms</td><td>22</td><td>357</td></tr>
+<tr><td>AWS 싱가포르 (비교용)</td><td>96 ms</td><td>78</td><td>1698</td></tr>
+<tr><td><b>오라클 싱가포르 (우리 서버)</b></td><td><b>222 ms</b></td><td>107</td><td>318</td></tr>
+</table></div>
+<ul>
+<li>같은 싱가포르인데 오라클이 AWS보다 2배 넘게 깁니다. 오라클까지 가는 길(통신사 경로) 문제로 보입니다 <span class="tag">가설</span>. 최대값이 튀는 건 노트북 와이파이 탓일 수 있습니다.</li>
+<li><b>화면에서는 얼마나 차이 날까</b> <span class="tag">계산</span>: 10 km/h는 초당 2.8 m. 0.22초 늦으면 다른 사람 아바타가 약 0.6 m 뒤에 그려집니다. 1절의 보간을 쓰면 이 차이는 "조금 늦게 따라오는 것"으로만 보입니다.</li>
+<li>아직 모르는 것: 아이폰 LTE·헬스장 와이파이에서의 값, 실제 WebSocket 메시지 왕복. S3에서 기기 2대로 잽니다.</li>
+</ul>
+
+<h2 id="rec">5. 추천과 위험</h2>
+<div class="box rec">
+<b>추천: A. FastAPI WebSocket</b> <span class="tag">제안</span><br>
+① 우리가 주고받는 건 숫자 두 개(거리·속도)를 1초에 1–2번이라 Photon Fusion 같은 게임 엔진급 도구의 장점(틱·예측·물리)을 쓸 데가 없습니다.<br>
+② 서버가 정해야 하는 규칙(20명, 입장 잠금, 봇, 지금 달리는 사람 수)이 이미 우리 서버에 있습니다. A면 한 곳에서 다 정하고, B면 우리 서버와 Photon 두 곳을 맞춰야 합니다.<br>
+③ 로그인 토큰과 오류 규칙을 그대로 씁니다. 앱도 ApiClient 옆에 비슷한 크기의 코드 하나가 붙는 정도입니다.<br>
+④ 출시 뒤 동시 접속 100명을 넘어도 서버비가 갑자기 생기지 않습니다.
+</div>
+<div class="box note">
+<b>A의 위험과 대응</b><br>
+• <b>싱가포르 지연(약 0.22초)</b>: 보간으로 가립니다. S3에서 아이폰으로 실측해 화면에서 문제가 보이면 서버를 서울·춘천으로 옮기는 걸 운영 서버 작업(BL-51)에 넣습니다.<br>
+• <b>끊김·재접속을 직접 짜야 함</b>: S3에는 "다시 붙으면 방 상태 다시 받기"까지만, 오래 끊긴 경우는 S4 측정 예외(BL-15)와 같이 처리합니다.<br>
+• <b>서버 한 대·한 프로세스</b>: 지금 서버는 uvicorn 하나로 떠 있어 방을 메모리에 둬도 됩니다. 사람이 많아져 서버를 여러 대로 늘릴 때 Redis를 붙입니다(그전엔 안 함).<br>
+• <b>나중에 바꿀 길</b>: 앱에서는 화면 코드가 "같이 뛰기 연결" 인터페이스만 보게 만들어, 나중에 Photon으로 바꿔도 화면은 그대로 둡니다.
+</div>
+<p><b>B를 고를 만한 경우</b>: 지연이 실제로 화면에서 문제가 되는데 서버를 옮기기 어려울 때, 또는 나중에 같이 뛰기에 몸싸움·실시간 경쟁처럼 게임다운 동작이 많이 붙을 때입니다. 그때는 이 표를 다시 보고 바꿉니다.</p>
+
+<h3>A로 정하면 바로 할 일</h3>
+<ol>
+<li>ADR 작성(번호는 맥에서 쓰는 브리지 ADR-0009 다음).</li>
+<li>메시지 정하기: <code>join</code>(입장 정보) · <code>state</code>(거리·속도) · <code>roster</code>(들어옴·나감) · <code>bots</code>(봇 출발 시각·페이스). 입장 API 응답의 <code>realtime.url</code>·<code>token</code> 모양을 확정하고, <code>docs/api/README.md</code>의 "지금 달리는 사람 수"를 "실시간 연결 수"로 바꿉니다.</li>
+<li>S3: 서버 <code>/v1/rt</code> + 앱 연결 코드 + 기기 2대로 지연 실측(BL-25 ①⑤⑥).</li>
+<li>지환님께 알림: 샘플 주기와 <code>runs.updated_at</code> 문제는 더 신경 쓰지 않아도 됩니다.</li>
+</ol>
+
+<h2 id="etc">6. 안 고른 후보 · 공부 자료</h2>
+<ul>
+<li><b>Photon PUN 2 · Photon Realtime</b>: 같은 회사의 옛 방식/저수준 방식. 출시 가능한 무료 100 CCU는 Fusion·Quantum에만 해당해서 비교 대상을 Fusion으로 잡았습니다.</li>
+<li><b>Unity Netcode + Unity Relay, Colyseus, Nakama</b>: 게임용 넷코드이거나 서버를 하나 더 두는 방식이라 B와 같은 이유(우리에겐 과함, 규칙이 두 곳)로 깊게 보지 않았습니다. 가격도 이번에 확인하지 않았습니다.</li>
+</ul>
+<h3>공부 자료</h3>
+<ul>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API">MDN — WebSocket API</a>: WebSocket이 무엇인지(연결 한 번 열어 두고 양쪽이 아무 때나 보냄)</li>
+<li><a href="https://fastapi.tiangolo.com/advanced/websockets/">FastAPI — WebSockets</a>: "Handling disconnections and multiple clients"의 ConnectionManager가 A 서버의 뼈대와 같은 모양</li>
+<li><a href="https://github.com/endel/NativeWebSocket">NativeWebSocket</a>: Unity용 WebSocket 라이브러리(iOS 지원, Apache 2.0). A의 앱 쪽 후보</li>
+<li><a href="https://www.gabrielgambetta.com/entity-interpolation.html">Gabriel Gambetta — Entity Interpolation</a>: 다른 사람을 "조금 과거"로 부드럽게 그리는 방법(1절 보간)</li>
+<li><a href="https://doc.photonengine.com/fusion/current/manual/network-topologies">Photon Fusion — Network Topologies</a>: 공유 모드(각 폰이 자기 것을 책임) 설명</li>
+<li><a href="https://doc.photonengine.com/fusion/current/manual/shared-mode-master-client">Photon Fusion — Shared Mode Master Client</a>: 방장이 나가면 자동으로 넘어가는 규칙</li>
+<li><a href="https://www.photonengine.com/fusion/pricing">Photon Fusion 가격</a> · <a href="https://doc.photonengine.com/photon/current/pricing">요금제 설명</a> (무료 20 CCU는 개발용, 무료 100 CCU는 출시 가능·앱 1개)</li>
+<li><a href="https://doc.photonengine.com/realtime/current/connection-and-authentication/regions">Photon 지역 목록</a> (서울 <code>kr</code>) · <a href="https://doc.photonengine.com/realtime/current/connection-and-authentication/authentication/custom-authentication">커스텀 인증</a></li>
+<li><a href="https://caddyserver.com/docs/caddyfile/directives/reverse_proxy">Caddy reverse_proxy</a>: 지금 서버 앞단(Caddy)이 WebSocket을 설정 없이 통과시킴 → A는 서버 설정을 안 바꿔도 됨</li>
+</ul>
+<p class="lead">근거: 백로그 BL-7·13·21·23·25(상준 공개 노션), <code>docs/api/README.md</code> "코스와 맵 인원", 계획 0017(S2·S3), 계획 0019(서버 사양: 오라클 싱가포르 ARM 2코어·11GiB, uvicorn 한 프로세스).</p>
+</main>
+</body>
+</html>
