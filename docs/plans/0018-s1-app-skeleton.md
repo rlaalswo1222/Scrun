@@ -1,0 +1,49 @@
+# 계획 0018: S1 앱 뼈대 — 브리지·ApiClient·탭 틀·로그인 (민재 S1)
+
+- 상태: **결정 1–4 승인**(11/09 민재, 추천안 그대로), 결정 5는 오라클 서버를 미리 올릴지에 따라 바뀜(검토 중). 설명 자료 [0018-decisions.html](0018-decisions.html)
+- 담당: 민재. 기간 S1(11/08–11/09). 근거: 계획 0017(스프린트·11/08 재분배), ADR-0001(Unity 하나), ADR-0007(아이폰 우선), [API 공통 규칙](../api/README.md)
+- 노션 작업 표 S1 민재 6줄: 브리지(BL-6), 카카오 iOS SDK(BL-1), 권한 Swift(BL-2), API 연결 코드(BL-38), 앱 기본 틀(BL-41), 로그인·약관·프로필 화면(BL-1). 서버 쪽 약관·닉네임 확인 API는 끝남(PR #16)
+
+## 왜
+Unity 프로젝트엔 아직 앱 화면(UI Toolkit)이 하나도 없고, 서버를 부르는 코드나 iOS 네이티브를 부르는 통로도 없다. 지환의 권한·에어팟 화면, 코스 화면, 이후 모든 화면이 이 세 가지(**네이티브 통로, 서버 통로, 화면 틀**) 위에 올라가므로 S1에 먼저 깐다.
+
+## 순서 (지환이 안 막히는 것부터)
+| # | 할 일 | 어디서 | 끝나면 |
+|---|---|---|---|
+| 1 | **C# 네이티브 모양 + `FakeNative`**: `Native.Permissions`(상태 읽기·요청·설정 앱 열기), `Native.Headphones`(사용 가능·연결됨·바뀜 이벤트). 에디터에선 가짜 구현, 메뉴 창에서 허용/거부/연결/끊김을 바꿔 봄 | 에디터 | **바로 PR** → 지환이 화면 시작 |
+| 2 | **ApiClient**: 응답 껍데기 해석, `ApiError(code, status, requestId)`, 토큰 붙이기, 401 `TOKEN_EXPIRED`면 재발급 한 번만(single-flight) 후 재시도, 시간 초과·네트워크 끊김 구분. API 묶음 `Auth`(카카오·가입·재발급·로그아웃·약관)·`Users`(닉네임 확인). 토큰 보관은 `ISecureStore`(에디터 가짜, iOS 키체인) | 에디터 + 노트북 서버 | EditMode 테스트 + `k_123`로 실제 가입·로그인 |
+| 3 | **앱 기본 틀**: UI Toolkit 첫 파일(PanelSettings·UXML·USS), 화면 전환(쌓기·뒤로), 아래 탭 4개(홈·기록·친구·내 정보, 내용은 빈 화면), 세로 고정 + 달리기 씬만 가로, 안전 영역(노치) | 에디터 Device Simulator | 아이폰 기종별로 탭·전환이 깨지지 않음 |
+| 4 | **로그인·약관·프로필 화면**(A-05, A-06): 카카오 버튼 → 처음이면 약관 동의 → 닉네임(확인 API, 정규화된 값 보여 줌)·키·몸무게 → 가입 → 홈. 다음 실행엔 저장된 토큰으로 바로 홈. 로딩·오류 공통 처리(I-07, I-08, I-09) | 에디터(가짜 카카오 `k_123`) | 아래 "완료 확인" 1–3 |
+| 5 | **iOS 전환 + 진짜 브리지**: 빌드 대상 iOS, Swift 파일 `Assets/Plugins/iOS/`, 1번 모양의 진짜 구현(권한 4종·헤드폰 연결·키체인) | 맥, 시뮬레이터 | 시뮬레이터에서 권한 팝업·설정 앱 이동 |
+| 6 | **카카오 iOS SDK**: SDK 넣기, URL 스킴·`LSApplicationQueriesSchemes`, 앱 키는 git 밖 로컬 파일에서 빌드 때 주입 | 맥, 시뮬레이터(웹 로그인) → 11/09 아이폰(카카오톡 앱 로그인) | 실제 카카오 계정으로 가입 |
+
+1–4는 맥 없이 오늘 끝까지 간다. 5–6은 맥에서 이어 하고, 센서·에어팟·키체인·카카오톡 앱 로그인은 11/09 아이폰에서 확인한다.
+
+## 브리지 설계 (11/08 설명안 그대로, 승인되면 ADR-0009)
+- **C# → Swift**: `[DllImport("__Internal")]` 함수 하나 `scrun_call(reqId, "permissions.request", json)` + 바로 답하는 상태 읽기용 `scrun_query(name, json) → json`. Swift 쪽은 `@_cdecl`로 내보냄
+- **Swift → C#**: 시작할 때 등록한 콜백 `(reqId, resultJson)` → C# 큐에 넣고 메인 스레드에서 꺼내 `Awaitable` 완료. 연결·끊김 같은 이벤트도 같은 콜백(`reqId = 0` + 이벤트 이름)
+- **센서는 이 통로를 안 씀**: Swift가 속도까지 계산하고 Unity는 매 프레임 결과 숫자만 읽음(S2, 계획 따로)
+- **Xcode 프로젝트 종류**: Unity 기본(Objective-C 틀, 우리 Swift 파일은 그대로 들어감) 추천. Swift 틀은 Unity 6.5에 생긴 실험 기능이고 최소 iOS 16을 강제함(우리는 15.0) ([Unity 문서](https://docs.unity3d.com/Manual/ios-swift-xcode-project-type.html))
+- 같은 C# 모양에 `IosNative`·`FakeNative` 두 구현 → 에디터와 아이폰에서 화면 코드가 똑같음
+
+## 결정 필요 (추천 먼저)
+1. **브리지 방식·Xcode 종류**: 위 설계 + 기본(Objective-C) 프로젝트 → ADR-0009
+2. **JSON 라이브러리**: Unity 공식 `com.unity.nuget.newtonsoft-json` 추천(`JsonUtility`는 null·딕셔너리·중첩 선택 칸을 못 다룸) / 직접 파서
+3. **카카오 SDK 넣는 방법**: 빌드 후처리 스크립트가 Xcode 프로젝트에 Swift Package Manager 패키지(`kakao-ios-sdk`)를 자동으로 추가(`PBXProject.AddRemotePackageReferenceAtVersion`, Unity 6 문서에 있음). 카카오는 2.23.0부터 SPM만 지원(CocoaPods 중단, [카카오 문서](https://developers.kakao.com/docs/latest/ko/ios/getting-started)). 실제 빌드에서 되는지는 5번에서 확인(가설), 안 되면 Unity가 만든 Xcode 프로젝트에 "덧붙이기(Append)" 빌드로 손으로 한 번 추가
+4. **asmdef**: 새 앱 코드만 `Scrun.App` + 테스트 `Scrun.App.Tests`로 묶기 추천(ApiClient 테스트 때문). 기존 달리기 스크립트는 S2에 속도 플러그인 붙일 때 옮김
+5. **노트북 서버로 http 허용**: Player Settings "Allow downloads over HTTP"를 **개발 빌드에서만**, 출시 빌드는 HTTPS만. 아이폰은 로컬 네트워크 권한 문구(`NSLocalNetworkUsageDescription`)가 필요할 수 있음(가설, 11/09 확인)
+
+## 하지 않는 것
+Apple 로그인·계정 삭제(출시 전, BL-48), 홈·기록·친구·내 정보 탭 내용, 내 정보 API(지환 S2), 권한·에어팟 화면(지환 S1, 민재는 1·5번만), 센서·속도 플러그인(S2), UI 모양 다듬기(상준 UI Kit이 오면 USS 변수만 바꿈)
+
+## 완료 확인 (노션 작업 표 "완료 확인" 칸에 옮김)
+1. 에디터 Play: 처음 실행 → `k_123` 로그인 → 약관(필수 빠지면 다음 버튼 꺼짐) → 닉네임 확인(`ＡＢ` 입력 시 `AB`로 보임, 중복·금칙어·형식 문구) → 가입 → 홈 탭. 서버 DB에 사용자·약관 동의·refresh 토큰이 생김
+2. 다시 Play → 로그인 화면 없이 홈. access를 만료시키고 동시에 요청 3개 → 서버 재발급 로그 1번, 3개 다 성공. 서버를 끄면 네트워크 오류 화면에 `requestId` 대신 "연결 안 됨"
+3. EditMode 테스트: 응답 껍데기·오류 변환·single-flight·재발급 실패 시 로그아웃 상태로
+4. `FakeNative` 창에서 권한·에어팟 상태를 바꾸면 이벤트가 옴(지환 화면이 이것으로 개발)
+5. 시뮬레이터: 권한 4종(모션·피트니스, 카메라, 헤드폰 모션, 알림) 팝업 → 상태가 C#으로 돌아옴, 거부 후 설정 앱 열기. 카카오 웹 로그인 → 서버 `KAKAO_MODE=real`로 가입
+6. 11/09 아이폰: 카카오톡 앱 로그인, 키체인 토큰이 앱 재실행 뒤에도 남음, 에어팟 끼고 빼면 연결 상태 바뀜, 같은 와이파이 노트북 서버 연결
+
+## 위험
+- 카카오 SDK + Unity Xcode 프로젝트 합치기는 처음 → 막히면 6번을 11/09로 미루고 1–5부터 PR(시연은 에디터 가짜 로그인으로도 흐름이 보임, 다만 시연 목표는 진짜 로그인)
+- 서버가 `KAKAO_MODE` 하나라 에디터(가짜)와 아이폰(진짜)을 동시에 못 씀 → 확인할 때 `.env`를 바꿔 재시작(운영과 개발 서버를 나누는 BL-51 전까지)
