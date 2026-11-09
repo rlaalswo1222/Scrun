@@ -1,0 +1,5 @@
+<!-- 아이폰 빌드(IL2CPP)가 쓰지 않는 것처럼 보이는 코드를 지울 때, 서버 응답을 반사(reflection)로 채우는
+     DTO의 setter까지 지우지 않게 앱 묶음 전체를 남긴다(Newtonsoft가 이름으로 찾아 씀). -->
+<linker>
+  <assembly fullname="Scrun.App" preserve="all" />
+</linker>
