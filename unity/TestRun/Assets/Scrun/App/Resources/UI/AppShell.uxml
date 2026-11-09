@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- 앱 전체 틀: 화면 자리(screen-host) + 아래 탭 4개. AppRoot가 띄우고 Navigator가 화면을 바꾼다 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/App.uss" />
+    <ui:VisualElement name="app-root" class="app-root">
+        <ui:VisualElement name="safe-area" class="safe-area">
+            <ui:VisualElement name="screen-host" class="screen-host" />
+            <ui:VisualElement name="tab-bar" class="tab-bar">
+                <ui:Button name="tab-home" class="tab" text="홈" />
+                <ui:Button name="tab-records" class="tab" text="기록" />
+                <ui:Button name="tab-friends" class="tab" text="친구" />
+                <ui:Button name="tab-me" class="tab" text="내 정보" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,94 @@
+/* 앱 공통 스타일. 색·크기 값은 임시 — 상준 UI Kit(Figma)이 오면 아래 변수만 바꾼다.
+   화면별 모양은 화면 UXML 옆에 따로 USS를 두고, 색·크기는 이 변수를 쓴다. */
+:root {
+    --color-bg: #F6F5F1;
+    --color-surface: #FFFFFF;
+    --color-text: #1F2328;
+    --color-muted: #6B7280;
+    --color-primary: #2F6FDE;
+    --color-line: #E3E5E8;
+
+    --font-size-title: 24px;
+    --font-size-body: 16px;
+    --font-size-tab: 12px;
+
+    --space-2: 8px;
+    --space-4: 16px;
+    --space-6: 24px;
+
+    --tab-bar-height: 56px;
+}
+
+.app-root {
+    flex-grow: 1;
+    background-color: var(--color-bg);
+}
+
+.safe-area {
+    flex-grow: 1;
+}
+
+.screen-host {
+    flex-grow: 1;
+    position: relative;
+}
+
+/* 화면 하나(AppScreen.Root)는 screen-host를 꽉 채운다 */
+.screen-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.screen {
+    flex-grow: 1;
+    padding: var(--space-6) var(--space-4) 0 var(--space-4);
+}
+
+.screen-title {
+    font-size: var(--font-size-title);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+    color: var(--color-text);
+    margin-bottom: var(--space-4);
+}
+
+.screen-body {
+    flex-grow: 1;
+}
+
+.body-text {
+    font-size: var(--font-size-body);
+    color: var(--color-muted);
+    white-space: normal;
+}
+
+/* 아래 탭 */
+.tab-bar {
+    flex-direction: row;
+    height: var(--tab-bar-height);
+    background-color: var(--color-surface);
+    border-top-width: 1px;
+    border-top-color: var(--color-line);
+}
+
+.tab {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: 0;
+    border-width: 0;
+    border-radius: 0;
+    background-color: rgba(0, 0, 0, 0);
+    font-size: var(--font-size-tab);
+    color: var(--color-muted);
+}
+
+.tab:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.tab--selected {
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}

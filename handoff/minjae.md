@@ -8,7 +8,9 @@
   - PR #19·#20 합침(11/09), 공용 서버는 `update.sh develop`로 develop 기준
   - **2번 끝(PR `feat/api-client`)**: `Api.Auth`·`Api.Users`·`ApiClient`·`Session`, 테스트 18개(Scrun.App 전체 25개 통과), 메뉴 Scrun → 개발 → 서버 로그인 흐름 확인으로 로컬 서버 실제 가입 성공. 에디터 서버 주소는 Scrun → API 서버 창
   - 이 노트북: 8000 포트는 예전 속도 실험 `server.py`(pid 29012)가 씀 → 로컬 Scrun 서버는 8001에 띄워 확인함(에디터 API 서버 창에서 `http://localhost:8001`). `server.py`를 끄면 8000으로
-  - 다음: 3번 탭 틀(UI Toolkit 첫 파일·화면 전환·세로 고정·안전 영역) → 4번 로그인·약관·프로필 화면 → 맥(5·6번)
+  - PR #21 합침. 노션 기능 보드 "보정·달리기 준비" 카드를 "보정"(BL-4, 민재·지환 S2)과 "센서 준비·카운트다운"(BL-10·11, 지환 S3)으로 나눔. 지환과 정한 코스·맵 인원 규칙은 PR #22(`docs/api/README.md`)
+  - **3번 끝(PR `feat/app-shell`)**: 앱 씬·화면 틀·Pretendard·메뉴 Scrun → Build App Scene, 테스트 33개. 프로젝트 설정에서 세로 자동 회전이 꺼져 있던 것(`allowedAutorotateToPortrait: 0`)을 켬. `Lm_LampGlass.mat`은 여전히 안 건드림(SaveAssets 뒤에도 원래 변경 한 줄 그대로)
+  - 다음: 4번 로그인·약관·프로필 화면(Api + Navigator.StartFlow) → 맥(5·6번: iOS 전환, Swift 브리지, 카카오 SDK, 권한)
 - **계획 0019 완료: 팀 공용 개발 서버** `https://161-118-211-155.sslip.io`(오라클 싱가포르 ARM, SSH `ubuntu@161.118.211.155` 키 `~/.ssh/oracle_key`). 진짜 카카오만, 아이폰용(에디터는 localhost 가짜). 다시 올리기 `~/scrun/backend/deploy/update.sh [브랜치]`, 지금 서버는 `feat/shared-dev-server` 브랜치 → **PR #19·#20 합친 뒤 서버에서 `update.sh develop`**. 원격에 옛 브랜치 `feat/dev-server`가 남아 있음(rebase 뒤 강제 push가 막혀 이름을 바꿈) → PR 화면에서 지우기. 비밀값은 서버 `backend/deploy/.env`에만. 매일 KST 4:30 백업(`~/scrun-backups`). Bandly는 멈춤(볼륨 유지, cron 주석, 백업 `Desktop/Bandly_backup_20261109/`, 되살리기: cron 주석 풀고 `~/server`에서 `docker compose -f docker-compose.oracle.yml up -d`, 단 80·443을 Scrun Caddy가 씀)
   - 남은 것: 로그인 시도 제한(429), 서버 밖 백업, 진짜 도메인(BL-51). 오라클 계정이 유휴 회수 대상인지 콘솔 확인
 - PR #17·#18은 11/08에 합쳐짐

@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scrun/Scenes/App/App.unity
+    guid: 64dadbfe28384eb45bffe75582ad4c10
+  - enabled: 1
     path: Assets/Scrun/Scenes/Island01.unity
     guid: 092405e904a61ca40b4f9e73b704cb4d
   - enabled: 0

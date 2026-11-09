@@ -1,0 +1,6 @@
+/* 앱 기본 테마: Unity 기본 런타임 테마 + 기본 글꼴 Pretendard(한글). AppSceneBuilder가 만듦 */
+@import url("unity-theme://default");
+
+:root {
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Regular.asset");
+}

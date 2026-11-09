@@ -210,7 +210,8 @@ public static class ScrunEditorUtil
     {
         var scenes = new System.Collections.Generic.List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
         if (scenes.Exists(s => s.path == path)) return;
-        scenes.Insert(0, new EditorBuildSettingsScene(path, true));
+        // 맨 앞(앱이 처음 여는 씬)은 앱 씬(App.unity, Scrun → Build App Scene) 자리 → 다른 씬은 뒤에 붙인다
+        scenes.Add(new EditorBuildSettingsScene(path, true));
         EditorBuildSettings.scenes = scenes.ToArray();
     }
 }

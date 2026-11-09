@@ -1,7 +1,9 @@
 {
     "name": "Scrun.App",
     "rootNamespace": "Scrun.App",
-    "references": [],
+    "references": [
+        "Unity.InputSystem"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
