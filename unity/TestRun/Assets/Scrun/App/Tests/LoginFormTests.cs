@@ -42,5 +42,31 @@ namespace Scrun.App.Tests
             Assert.IsFalse(dup.canRetry);
             Assert.AreEqual("이미 쓰는 닉네임이에요.", dup.body, "서버 문구를 그대로");
         }
+
+        [Test]
+        public void 오류창의_다시_시도는_창을_닫고_그_일을_한_번_다시_한다()
+        {
+            var root = new UnityEngine.UIElements.VisualElement();
+            foreach (var n in new[] { "loading", "error" }) root.Add(new UnityEngine.UIElements.VisualElement { name = n });
+            foreach (var n in new[] { "error-title", "error-body", "error-id" }) root.Add(new UnityEngine.UIElements.Label { name = n });
+            foreach (var n in new[] { "error-retry", "error-close" }) root.Add(new UnityEngine.UIElements.Button { name = n });
+            Feedback.Attach(root);
+            try
+            {
+                int count = 0;
+                Feedback.ShowError("연결이 안 돼요", "다시", null, () => count++);
+                Assert.IsTrue(Feedback.IsBlocking);
+                Feedback.PressRetry();
+                Assert.AreEqual(1, count);
+                Assert.IsFalse(Feedback.IsBlocking, "창은 닫힘");
+                Feedback.PressRetry();
+                Assert.AreEqual(1, count, "닫힌 창의 다시 시도는 아무것도 안 함");
+            }
+            finally
+            {
+                Feedback.Detach();
+            }
+        }
     }
 }
+

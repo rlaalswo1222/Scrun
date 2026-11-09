@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
@@ -21,6 +22,7 @@ namespace Scrun.App
         VisualElement safeArea;
         bool started;
         bool pendingInit;
+        bool subscribed;
         bool landscape;
         bool orientationApplied;
         // 안전 영역을 마지막으로 맞춘 조건(화면 크기·안전 영역·패널 크기 중 하나라도 바뀌면 다시)
@@ -59,16 +61,28 @@ namespace Scrun.App
             lastPanelSize = default;
             Feedback.Attach(root);
             Feedback.OnNotLoggedIn = GoToLogin;
-            Api.Session.Expired += OnSessionExpired;
 
             // 저장된 로그인이 있으면 바로 홈, 없으면 로그인부터(토큰이 실제로 살아 있는지는 첫 서버 호출 때 재발급으로 확인)
-            if (Api.Session.IsLoggedIn) Nav.ShowTabs(AppTab.Home);
+            bool loggedIn = false;
+            try
+            {
+                Api.Session.Expired += OnSessionExpired;
+                subscribed = true;
+                loggedIn = Api.Session.IsLoggedIn;
+            }
+            catch (PlatformNotSupportedException e)
+            {
+                // 아직 기기 기능(키체인 등)이 없는 빌드: 빈 화면 대신 로그인 화면을 띄우고, 누르면 안내가 뜬다
+                Debug.LogError("[App] " + e.Message);
+            }
+            if (loggedIn) Nav.ShowTabs(AppTab.Home);
             else Nav.StartFlow(new LoginScreen());
         }
 
         void OnDisable()
         {
-            if (started) Api.Session.Expired -= OnSessionExpired;
+            if (subscribed) Api.Session.Expired -= OnSessionExpired;
+            subscribed = false;
             Feedback.OnNotLoggedIn = null;
             Feedback.Detach();
             Nav?.Dispose(); // 화면마다 OnHide·OnDestroy(구독 해제)가 불리게
@@ -82,6 +96,7 @@ namespace Scrun.App
         {
             if (Nav == null) return;
             Feedback.HideError();
+            try { Api.Session.Clear(); } catch (PlatformNotSupportedException) { } // 만료된 가입용 토큰까지 정리
             if (!Nav.InTabs && Nav.Current is LoginScreen) return;
             Nav.StartFlow(new LoginScreen(notice));
         }
@@ -101,6 +116,7 @@ namespace Scrun.App
 
         void OnScreenChanged(AppScreen screen)
         {
+            Feedback.HideError(); // 오류창은 그 화면 것 → 화면이 바뀌면 닫음(다시 시도가 사라진 화면을 부르지 않게)
             if (orientationApplied && screen.Landscape == landscape) return;
             orientationApplied = true;
             landscape = screen.Landscape;
@@ -137,7 +153,7 @@ namespace Scrun.App
 
             // 뒤로 가기: 에디터·안드로이드는 Esc/뒤로 키. 아이폰은 화면의 뒤로 버튼(각 화면이 Nav.Pop)
             var kb = Keyboard.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame) Nav?.Pop();
+            if (kb != null && kb.escapeKey.wasPressedThisFrame && !Feedback.IsBlocking) Nav?.Pop(); // 로딩·오류창 중엔 막음
         }
     }
 }

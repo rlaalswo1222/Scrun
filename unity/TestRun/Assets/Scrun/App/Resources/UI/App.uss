@@ -251,6 +251,11 @@
     font-size: 14px;
 }
 
+.empty-state {
+    align-items: center;
+    padding: var(--space-6) 0;
+}
+
 /* 로딩·오류 덮개 */
 .overlay {
     position: absolute;

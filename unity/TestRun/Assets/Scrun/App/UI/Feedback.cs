@@ -30,11 +30,19 @@ namespace Scrun.App
             errorId = root.Q<Label>("error-id");
             errorRetry = root.Q<Button>("error-retry");
             errorClose = root.Q<Button>("error-close");
-            errorRetry.clicked += () => { HideError(); retryAction?.Invoke(); };
+            errorRetry.clicked += PressRetry;
             errorClose.clicked += HideError;
             loadingCount = 0;
             Set(loading, false);
             Set(errorBox, false);
+        }
+
+        // 오류창의 "다시 시도"
+        internal static void PressRetry()
+        {
+            var retry = retryAction; // HideError가 지우기 전에 잡아 둠
+            HideError();
+            retry?.Invoke();
         }
 
         internal static void Detach()
@@ -44,8 +52,12 @@ namespace Scrun.App
             loadingCount = 0;
         }
 
-        // 서버 호출 하나를 로딩 표시와 함께 돌리고, 실패하면 알맞은 안내를 띄운다. 성공하면 true
-        public static async Task<bool> Run(Func<Task> work, Action retry = null)
+        // 로딩 덮개나 오류창이 떠 있으면 true(그동안 뒤로 가기 키를 막음)
+        public static bool IsBlocking => IsShown(loading) || IsShown(errorBox);
+
+        // 서버 호출 하나를 로딩 표시와 함께 돌리고, 실패하면 알맞은 안내를 띄운다. 성공하면 true.
+        // onError가 true를 돌려주면 그 화면이 직접 처리한 것(예: 닉네임 중복은 입력 칸 아래에)이라 안내창을 띄우지 않음
+        public static async Task<bool> Run(Func<Task> work, Action retry = null, Func<ApiException, bool> onError = null)
         {
             ShowLoading(true);
             try
@@ -55,7 +67,14 @@ namespace Scrun.App
             }
             catch (ApiException e)
             {
-                Handle(e, retry);
+                if (onError == null || !onError(e)) Handle(e, retry);
+                return false;
+            }
+            catch (Exception e)
+            {
+                // 앱 쪽 버그·기기 기능 오류. 화면이 멈춘 것처럼 보이지 않게 안내는 띄우고 기록은 남긴다
+                Debug.LogException(e);
+                ShowError("문제가 생겼어요", "잠시 후 다시 시도해 주세요.", null, retry);
                 return false;
             }
             finally
@@ -115,6 +134,8 @@ namespace Scrun.App
             retryAction = null;
             Set(errorBox, false);
         }
+
+        static bool IsShown(VisualElement e) => e != null && e.style.display == DisplayStyle.Flex;
 
         static void Set(VisualElement e, bool on)
         {

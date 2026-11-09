@@ -8,7 +8,8 @@ namespace Scrun.App
     // 닉네임은 입력을 멈추면 서버에 확인하고(가입과 같은 판정), 서버가 정리한 값(정규화)을 보여 주고 그 값으로 가입한다.
     public sealed class ProfileScreen : AppScreen
     {
-        const long CheckDelayMs = 400; // 입력을 멈추고 이만큼 지나면 확인
+        const long CheckDelayMs = 400;   // 입력을 멈추고 이만큼 지나면 확인
+        const long RetryDelayMs = 3000;  // 연결 문제로 확인을 못 했으면 이만큼 뒤 다시(입력이 그대로일 때)
 
         readonly List<string> agreedIds;
         TextField nickname, height, weight;
@@ -18,6 +19,7 @@ namespace Scrun.App
         int checkSeq;          // 늦게 온 옛 확인 결과를 버리려고
         NicknameCheck checkedNick; // 지금 입력에 대한 확인 결과(입력이 바뀌면 null)
         bool submitting;
+        bool showBodyError; // 키·몸무게 칸을 벗어난 뒤에만 오류를 보여 줌(적는 중 "1"에 빨간 글씨가 뜨지 않게)
 
         public ProfileScreen(List<string> agreedIds) => this.agreedIds = agreedIds;
 
@@ -41,6 +43,8 @@ namespace Scrun.App
             nickname.RegisterValueChangedCallback(_ => OnNicknameChanged());
             height.RegisterValueChangedCallback(_ => Refresh());
             weight.RegisterValueChangedCallback(_ => Refresh());
+            height.RegisterCallback<FocusOutEvent>(_ => { showBodyError = true; Refresh(); });
+            weight.RegisterCallback<FocusOutEvent>(_ => { showBodyError = true; Refresh(); });
             submit.clicked += Submit;
             Refresh();
         }
@@ -75,7 +79,10 @@ namespace Scrun.App
             {
                 if (seq != checkSeq || Root.panel == null) return;
                 if (e.Failure == ApiFailure.NotLoggedIn) { Feedback.Handle(e); return; } // 가입용 토큰 만료(30분)
-                SetNickStatus(e.Failure == ApiFailure.Network ? "연결이 안 돼 확인하지 못했어요" : e.Message, true);
+                bool transient = e.Failure != ApiFailure.Server || e.Status >= 500 || e.Status == 429;
+                SetNickStatus(transient ? "확인하지 못했어요. 잠시 뒤 다시 확인해요" : e.Message, true);
+                // 연결·서버 문제면 입력이 그대로인 동안 다시 확인(사용자가 글자를 지웠다 다시 쓰지 않아도 되게)
+                if (transient) pendingCheck = Root.schedule.Execute(CheckNickname).StartingIn(RetryDelayMs);
                 return;
             }
             if (seq != checkSeq || Root.panel == null) return; // 그사이 입력이 바뀜
@@ -93,7 +100,8 @@ namespace Scrun.App
         void Refresh()
         {
             var bodyProblem = ProfileForm.CheckBody(height.value, weight.value, out _, out _);
-            bodyStatus.text = bodyProblem ?? "";
+            if (bodyProblem == null) showBodyError = false; // 고치면 바로 지움
+            bodyStatus.text = showBodyError ? bodyProblem ?? "" : "";
             submit.SetEnabled(!submitting && checkedNick != null && checkedNick.Available && bodyProblem == null
                               && !string.IsNullOrEmpty(height.value) && !string.IsNullOrEmpty(weight.value));
         }
@@ -105,27 +113,18 @@ namespace Scrun.App
             submitting = true;
             Refresh();
             var req = new SignupRequest { AgreedIds = agreedIds, Nickname = checkedNick.Nickname, HeightCm = h, WeightKg = w };
-            bool ok = false;
-            try
+            // 로딩 덮개가 가입이 끝날 때까지 화면(뒤로 버튼 포함)을 막는다
+            bool ok = await Feedback.Run(() => Api.Auth.SignupAsync(req), retry: Submit, onError: e =>
             {
-                await Api.Auth.SignupAsync(req);
-                ok = true;
-            }
-            catch (ApiException e)
-            {
-                if (e.Code == "NICKNAME_DUPLICATED" || e.Code == "NICKNAME_NOT_ALLOWED")
-                {
-                    // 확인과 가입 사이에 다른 사람이 가져감 등 → 닉네임 칸에 알림
-                    checkedNick = null;
-                    SetNickStatus(e.Message, true);
-                }
-                else Feedback.Handle(e, Submit);
-            }
-            finally
-            {
-                submitting = false;
-                if (Root.panel != null) Refresh();
-            }
+                if (e.Code != "NICKNAME_DUPLICATED" && e.Code != "NICKNAME_NOT_ALLOWED") return false;
+                // 확인과 가입 사이에 다른 사람이 가져감 등 → 안내창 대신 닉네임 칸 아래에
+                checkedNick = null;
+                if (Root.panel != null) SetNickStatus(e.Message, true);
+                return true;
+            });
+            submitting = false;
+            if (Root.panel == null) return; // 그사이 로그인 화면 등으로
+            Refresh();
             if (ok) Nav.ShowTabs(); // 권한·에어팟 화면(지환)이 생기면 이 사이에 넣음
         }
     }

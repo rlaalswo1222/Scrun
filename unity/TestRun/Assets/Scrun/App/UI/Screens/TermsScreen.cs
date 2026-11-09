@@ -13,7 +13,7 @@ namespace Scrun.App
         readonly Dictionary<string, Toggle> toggles = new Dictionary<string, Toggle>();
         Toggle all;
         Button next;
-        VisualElement list;
+        VisualElement list, loadFailed;
         bool loading;
 
         protected override string Uxml => "UI/Terms";
@@ -22,6 +22,9 @@ namespace Scrun.App
         {
             Q<Button>("back").clicked += () => Nav.Pop();
             list = Q<VisualElement>("list");
+            loadFailed = Q<VisualElement>("load-failed");
+            loadFailed.style.display = DisplayStyle.None;
+            Q<Button>("reload").clicked += Load;
             all = Q<Toggle>("all");
             all.RegisterValueChangedCallback(e =>
             {
@@ -50,7 +53,9 @@ namespace Scrun.App
             List<Agreement> got = null;
             bool ok = await Feedback.Run(async () => got = await Api.Auth.AgreementsAsync(), Load);
             loading = false;
-            if (!ok || Root.panel == null) return;
+            if (Root.panel == null) return;
+            loadFailed.style.display = ok ? DisplayStyle.None : DisplayStyle.Flex;
+            if (!ok) return;
             agreements = got ?? new List<Agreement>();
             Build();
         }
