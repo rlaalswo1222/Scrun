@@ -1,4 +1,4 @@
-# 민재 인수인계 (2026-11-08)
+# 민재 인수인계 (2026-11-09)
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`, `docs/plans/`)에 있고, 11/07까지의 전체본은 `docs/log/HANDOFF_minjae_20261107.md`(그 전은 `_20261106.md`).
 
@@ -11,7 +11,14 @@
   - PR #21 합침. 노션 기능 보드 "보정·달리기 준비" 카드를 "보정"(BL-4, 민재·지환 S2)과 "센서 준비·카운트다운"(BL-10·11, 지환 S3)으로 나눔. 지환과 정한 코스·맵 인원 규칙은 PR #22(`docs/api/README.md`)
   - **3번 끝(PR `feat/app-shell`)**: 앱 씬·화면 틀·Pretendard·메뉴 Scrun → Build App Scene, 테스트 33개. 프로젝트 설정에서 세로 자동 회전이 꺼져 있던 것(`allowedAutorotateToPortrait: 0`)을 켬. `Lm_LampGlass.mat`은 여전히 안 건드림(SaveAssets 뒤에도 원래 변경 한 줄 그대로)
   - PR #22·#23 합침. **4번 끝(PR `feat/login-screens`)**: 로그인·약관·프로필 화면 + `Native.Kakao`(가짜) + `Feedback`(로딩·오류), 테스트 37개, 로컬 서버로 화면을 눌러 가입까지
-  - 다음: 맥(5·6번: iOS 빌드 대상 전환, Swift 브리지 `scrun_call`, 권한·헤드폰·키체인·카카오 진짜 구현, 카카오 SDK 빌드 후처리). 노치 여백·한글 입력은 아이폰으로
+  - PR #24 합침(11/09 저녁). **다음은 맥에서**(이 Windows 노트북 Claude는 맥을 못 다룸):
+    - 맥 준비: Xcode(한 번 열어 구성요소 설치, Settings → Accounts에 Apple ID), Unity Hub 6000.6.7f1 + **iOS Build Support**, `gh repo clone rlaalswo1222/Scrun` → `develop` pull, Claude Code, 아이폰 연결·신뢰·개발자 모드, 카카오 네이티브 앱 키(카카오 개발자 → SCRUN → 앱 키, 저장소에 안 올림)
+    - 맥 Claude 첫 말: "handoff 로드해와 → 계획 0018의 5번부터"
+    - 5번: 빌드 대상 iOS 전환(Bundle ID `com.scrun.app`, 최소 iOS 15.0, Objective-C Xcode 틀), `Assets/Plugins/iOS/`에 Swift 브리지(`scrun_call(reqId, name, json)` + `scrun_query` + 등록 콜백 → C# 메인 스레드 큐), `IosNative`로 `Native.Permissions`(모션·카메라·헤드폰 모션·알림)·`Headphones`·`SecureStore`(키체인)·`Kakao` 진짜 구현(지금 `Native.cs`의 `#else`가 예외 던지는 자리). 결정 내용은 ADR-0009로
+    - 6번: 카카오 SDK를 빌드 후처리로 SPM 추가(`PBXProject.AddRemotePackageReferenceAtVersion`, `kakao-ios-sdk`), URL 스킴 `kakao{앱키}`·`LSApplicationQueriesSchemes`, 앱 키는 git 밖 로컬 파일에서 주입. 안 되면 Append 빌드로 손 추가
+    - 아이폰 확인: 노치 여백(Device Simulator로도), 한글 입력·키보드 가림, 공용 서버(`https://161-118-211-155.sslip.io`, 진짜 카카오)로 실제 가입, 권한 팝업, 에어팟 끼고 빼기, 키체인 토큰이 앱 재실행 뒤에도 남는지
+    - 맥에서 주의: `unity/tools/*.sh`에 이 노트북 경로(`/c/Users/rlaal/...`)가 박혀 있음 → 맥 경로로 고치거나 MCP 도구 직접 사용. Unity에서 Window → MCP for Unity → Start Server. 처음 열면 가져오기가 오래 걸림
+    - 에디터 Game 창이 가로(Free Aspect)면 세로 앱이 크게 잘려 보임 → Device Simulator(Apple iPhone 15)나 1170×2532 고정 해상도로
 - **계획 0019 완료: 팀 공용 개발 서버** `https://161-118-211-155.sslip.io`(오라클 싱가포르 ARM, SSH `ubuntu@161.118.211.155` 키 `~/.ssh/oracle_key`). 진짜 카카오만, 아이폰용(에디터는 localhost 가짜). 다시 올리기 `~/scrun/backend/deploy/update.sh [브랜치]`, 지금 서버는 `feat/shared-dev-server` 브랜치 → **PR #19·#20 합친 뒤 서버에서 `update.sh develop`**. 원격에 옛 브랜치 `feat/dev-server`가 남아 있음(rebase 뒤 강제 push가 막혀 이름을 바꿈) → PR 화면에서 지우기. 비밀값은 서버 `backend/deploy/.env`에만. 매일 KST 4:30 백업(`~/scrun-backups`). Bandly는 멈춤(볼륨 유지, cron 주석, 백업 `Desktop/Bandly_backup_20261109/`, 되살리기: cron 주석 풀고 `~/server`에서 `docker compose -f docker-compose.oracle.yml up -d`, 단 80·443을 Scrun Caddy가 씀)
   - 남은 것: 로그인 시도 제한(429), 서버 밖 백업, 진짜 도메인(BL-51). 오라클 계정이 유휴 회수 대상인지 콘솔 확인
 - PR #17·#18은 11/08에 합쳐짐
