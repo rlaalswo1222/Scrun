@@ -8,7 +8,7 @@
 - **이 문서**: 모든 API에 공통인 것만
 
 ## 주소
-- `https://{apiHost}/v1/...`. 경로는 소문자·하이픈(`weekly-goal`), 모음은 복수형(`/runs`, `/friends`), 내 것은 `/users/me/...`
+- `https://{apiHost}/v1/...`. 지금 `apiHost`: 팀 공용 개발 서버 `161-118-211-155.sslip.io`(진짜 카카오, 아이폰용), 에디터는 로컬 `localhost:8000`(가짜 카카오). `backend/README.md` "팀 공용 개발 서버". 경로는 소문자·하이픈(`weekly-goal`), 모음은 복수형(`/runs`, `/friends`), 내 것은 `/users/me/...`
 - JSON 필드 이름은 camelCase(`heightCm`, `distanceM`)
 
 ## 로그인

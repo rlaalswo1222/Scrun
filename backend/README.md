@@ -83,5 +83,12 @@ tests/               test_contract(스텁 API 계약), test_auth(로그인·닉�
 ```
 그다음 Claude에게 "노션 API 페이지 다시 올려"라고 하면 `index.json`의 pageId마다 본문을 덮어쓴다(노션 MCP). 새 API를 노션 표에 추가하면 `scripts/notion_pages.py`의 `NOTION_PAGE_IDS`에도 한 줄.
 
+## 팀 공용 개발 서버 (11/09, 계획 0019)
+- 주소 **`https://161-118-211-155.sslip.io`** (`/docs`로 눌러 보기). 오라클 싱가포르 ARM, Docker Compose(API + PostgreSQL + Caddy), HTTPS 인증서는 Caddy가 자동
+- **진짜 카카오만**(`KAKAO_MODE=real`) → 아이폰 앱이 붙는 곳. 에디터의 가짜 로그인(`k_123`)은 이 서버에서 `INVALID_KAKAO_TOKEN`으로 거절되니 에디터는 지금처럼 로컬 서버(localhost)를 쓴다
+- 접속은 민재만(SSH). 다시 올리기: 서버에서 `~/scrun/backend/deploy/update.sh [브랜치, 기본 develop]`(git pull → 빌드 → 마이그레이션(실패하면 멈추고 지금 API는 그대로) → 재시작 → API 건강 확인)
+- 비밀값은 서버의 `backend/deploy/.env`에만(칸은 `deploy/.env.server.example`). 매일 한국 시간 4시 30분 `deploy/daily.sh`: DB 백업 최근 7개(`~/scrun-backups`, 이 계정만 읽기) + 만료 토큰 정리. 서버 밖 백업·운영 서버 분리·진짜 도메인은 BL-51
+- 지금은 개발용이라 데이터가 지워질 수 있음(테이블을 바꾸는 PR이 합쳐지면 마이그레이션이 그대로 돎)
+
 ## 운영 서버에서 꼭 바꿀 것
 `.env`의 `JWT_SECRET`(새로 만든 무작위 값, 개발용과 다르게), `DATABASE_URL`(운영 DB), `KAKAO_MODE=real` + `KAKAO_APP_ID`(`fake`는 절대 안 됨). 하루 한 번 `python -m scripts.purge_refresh_tokens`. 배포는 BL-51

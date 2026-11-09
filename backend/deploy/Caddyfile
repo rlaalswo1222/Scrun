@@ -1,0 +1,5 @@
+# 주소(SITE_ADDRESS)로 오는 HTTPS를 API로 넘긴다. 인증서는 Caddy가 자동으로 받고 갱신한다.
+{$SITE_ADDRESS} {
+	encode gzip
+	reverse_proxy api:8000
+}
