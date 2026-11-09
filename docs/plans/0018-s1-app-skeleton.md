@@ -1,6 +1,7 @@
 # 계획 0018: S1 앱 뼈대 — 브리지·ApiClient·탭 틀·로그인 (민재 S1)
 
-- 상태: **결정 1–4 승인**(11/09 민재, 추천안 그대로), 결정 5는 오라클 서버를 미리 올릴지에 따라 바뀜(검토 중). 설명 자료 [0018-decisions.html](0018-decisions.html)
+- 상태: **승인 · 구현 중** (11/09 민재, 결정 1–4 추천안 그대로, 결정 5는 계획 0019(오라클 공용 개발 서버)로 대체: 아이폰은 HTTPS만, http 허용 안 켬). 설명 자료 [0018-decisions.html](0018-decisions.html)
+  - **1번 완료(11/09)**: `Assets/Scrun/App/`(asmdef `Scrun.App`)에 `Native.Permissions`·`Native.Headphones` 모양, 에디터 가짜 `FakeNative` + 메뉴 Scrun → Fake Native 창, EditMode 테스트 7개. 빌드에서는 진짜 구현(5번) 전까지 `Native`가 바로 예외(가짜가 몰래 "허용"을 주지 않게, 기기에서 가짜로 보려면 `SCRUN_FAKE_NATIVE`). 사용법은 `docs/unity/unity_map.md` "앱 코드 묶음"
 - 담당: 민재. 기간 S1(11/08–11/09). 근거: 계획 0017(스프린트·11/08 재분배), ADR-0001(Unity 하나), ADR-0007(아이폰 우선), [API 공통 규칙](../api/README.md)
 - 노션 작업 표 S1 민재 6줄: 브리지(BL-6), 카카오 iOS SDK(BL-1), 권한 Swift(BL-2), API 연결 코드(BL-38), 앱 기본 틀(BL-41), 로그인·약관·프로필 화면(BL-1). 서버 쪽 약관·닉네임 확인 API는 끝남(PR #16)
 
