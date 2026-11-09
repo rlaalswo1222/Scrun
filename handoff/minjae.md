@@ -1,8 +1,10 @@
-# 민재 인수인계 (2026-11-09 밤)
+# 민재 인수인계 (2026-11-10)
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`, `docs/plans/`)에 있고, 11/09까지의 전체본은 `docs/log/HANDOFF_minjae_20261109.md`(그 전은 `_20261107.md`, `_20261106.md`).
 
 ## 지금: 계획 0018(S1 앱 뼈대) 5번부터, **맥에서**
+- **다음 세션 바로 할 일**: (Windows) **계획 0020 쓰기: 센서 준비·걸음 감지 C# 모양 + 가짜**(FakeNative처럼 에디터에서 상태를 흉내, 지환 S3 센서 준비·카운트다운 화면이 기다림) → 민재 승인 → 구현. 번호는 develop pull 뒤 마지막 + 1(지금 마지막 0019, 맥에서 0020을 먼저 쓰면 0021). (맥) 아래 0018 5번
+- **맥 진행(11/10 아침)**: Xcode 설치 끝, Xcode iOS 시뮬레이터 받는 중, Unity Hub 설치·로그인 끝, Unity 6000.6.7f1 + iOS Build Support 받는 중(Hub가 먼저 받던 6000.6.8f1은 취소 — 팀과 버전이 달라짐). 맥은 Apple silicon/Intel 확인 안 함
 - **1–4번 끝, develop에 합침(PR #19–#24)**. 무엇이 있는지는 `docs/unity/unity_map.md` "앱 코드 묶음 Scrun.App", 계획 0018
   - 1 `Native`(권한·헤드폰·보안 저장소·카카오) 모양 + 에디터 가짜 `FakeNative`(메뉴 Scrun → Fake Native), 2 `ApiClient`·`Session`·`Api.Auth/Users`(메뉴 Scrun → API 서버), 3 앱 씬·화면 틀·탭(메뉴 Scrun → Build App Scene), 4 로그인·약관·프로필 화면 + `Feedback`(로딩·오류). EditMode 테스트 37개 통과, 로컬 서버로 화면을 눌러 가입까지 확인
   - 빌드(에디터 밖)에선 `Native.cs`의 `#else`가 예외를 던짐 → 5번에서 진짜 구현으로 채움
