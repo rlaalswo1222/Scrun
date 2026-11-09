@@ -42,7 +42,7 @@ namespace Scrun.App.Editor
             EditorGUILayout.Space();
             if (GUILayout.Button("저장된 로그인 지우기(처음 실행처럼)"))
             {
-                new Session(FakeSecureStore.Instance).Clear();
+                Api.ClearSavedLogin();
                 Debug.Log("[Api] 에디터에 저장된 로그인 토큰을 지웠습니다. Play를 다시 시작하세요.");
             }
         }

@@ -142,7 +142,7 @@
   Api.Session.Expired += GoToLogin;                        // 재발급이 거절돼 다시 로그인해야 할 때
   ```
   - 실패는 전부 `ApiException`: `Failure`(Server = 서버가 거절, `Code`로 문구 / Network = 연결 안 됨·시간 초과 / BadResponse = 응답을 못 읽음 / NotLoggedIn = 로그인 화면으로), `Status`, `RequestId`(오류 화면에 작게)
-  - 토큰은 `ApiClient`가 붙이고, 401 `TOKEN_EXPIRED`면 재발급을 **한 번만** 보내고(동시에 여러 요청이 만료돼도) 원래 요청을 한 번 다시 보낸다. 재발급 중 네트워크가 끊기면 토큰은 그대로(서버 30초 유예), 거절되면 로그인을 지우고 `Session.Expired`. 로그아웃은 서버에 못 알려도 이 기기 토큰을 지움
+  - 토큰은 `ApiClient`가 붙이고, 401 `TOKEN_EXPIRED`면 재발급을 **한 번만** 보내고(동시에 여러 요청이 만료돼도) 원래 요청을 한 번 다시 보낸다. 재발급 중 네트워크가 끊기면 토큰은 그대로(서버 30초 유예), 거절되면 로그인을 지우고 `Session.Expired`. 로그아웃은 서버에 못 알려도 이 기기 토큰을 지움. 재발급이 도는 사이 로그아웃·다른 계정 로그인이 끼면 그 재발급 결과는 버린다(`Session.Epoch`)
   - 토큰 저장: `Native.SecureStore`(아이폰 키체인은 5번, 에디터는 가짜 PlayerPrefs). 가입용 토큰은 저장 안 함
   - 서버 주소 `ApiConfig.BaseUrl`: 에디터 기본 로컬 `http://localhost:8000`(가짜 카카오 `k_123`), 빌드는 공용 개발 서버(HTTPS). 에디터에서는 메뉴 **Scrun → API 서버** 창(주소 바꾸기, 저장된 로그인 지우기)
   - 확인: 메뉴 **Scrun → 개발 → 서버 로그인 흐름 확인**(Play 중, 로컬 서버) = 약관 → 새 사람 로그인 → 닉네임 확인 → 가입 → 다시 로그인 → 로그아웃을 실제 서버로. 11/09 로컬 서버로 성공, DB에 사용자·약관 동의 2개 확인

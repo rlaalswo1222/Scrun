@@ -135,7 +135,7 @@ namespace Scrun.App.Tests
         [Test]
         public void 가입은_가입용_토큰을_붙이고_끝나면_로그인된다()
         {
-            client.Session.SetSignupToken("s1");
+            client.Session.BeginSignup("s1");
             http.Handler = r => Reply(201, Pair("a1", "r1"));
             Done(new AuthApi(client).SignupAsync(new SignupRequest
             {
@@ -152,7 +152,7 @@ namespace Scrun.App.Tests
         public void 닉네임_확인은_가입_중엔_가입용_토큰_로그인_뒤엔_access를_쓰고_한글을_주소에_맞게_바꾼다()
         {
             http.Handler = r => Reply(200, Ok("{\"nickname\":\"AB\",\"available\":true,\"reason\":null}"));
-            client.Session.SetSignupToken("s1");
+            client.Session.BeginSignup("s1");
             var n = Run(new UsersApi(client).CheckNicknameAsync("ＡＢ 민재"));
             Assert.AreEqual("AB", n.Nickname);
             Assert.AreEqual("Bearer s1", AuthHeader(0));
@@ -264,5 +264,66 @@ namespace Scrun.App.Tests
             Assert.AreEqual(ApiFailure.Server, e.Failure);
             Assert.AreEqual("INVALID_KAKAO_TOKEN", e.Code);
         }
+        [Test]
+        public void 재발급_중에_로그아웃하면_옛_토큰을_되살리지_않는다()
+        {
+            client.Session.SetTokens("a1", "r1");
+            var refresh = new TaskCompletionSource<HttpResponse>();
+            http.Handler = r => r.Url.EndsWith("/v1/auth/refresh") ? refresh.Task : Reply(401, Fail("TOKEN_EXPIRED"));
+            var call = client.GetAsync<Me>("/v1/users/me", AuthMode.User);
+            client.Session.Clear(); // 그사이 사용자가 로그아웃
+            refresh.SetResult(new HttpResponse { Status = 200, Body = Pair("a2", "r2") });
+            Assert.AreEqual(ApiFailure.NotLoggedIn, Throws(call).Failure);
+            Assert.IsFalse(client.Session.IsLoggedIn);
+            Assert.IsNull(new Session(store).RefreshToken, "저장소에도 되살아나지 않음");
+        }
+
+        [Test]
+        public void 다른_카카오_계정이_새로_오면_예전_로그인을_지우고_가입용_토큰을_쓴다()
+        {
+            client.Session.SetTokens("a1", "r1");
+            http.Handler = r => r.Url.Contains("/v1/auth/kakao")
+                ? Reply(200, Ok("{\"isNewUser\":true,\"signupToken\":\"s2\"}"))
+                : Reply(200, Ok("{\"nickname\":\"B\",\"available\":true}"));
+            Run(new AuthApi(client).KakaoLoginAsync("k_999"));
+            Assert.IsTrue(client.Session.IsSigningUp);
+            Assert.IsNull(client.Session.AccessToken);
+            Assert.IsNull(new Session(store).RefreshToken);
+            Run(new UsersApi(client).CheckNicknameAsync("B"));
+            Assert.AreEqual("Bearer s2", AuthHeader(1));
+        }
+
+        [Test]
+        public void 우리_껍데기가_아닌_JSON_오류나_빈_재발급_응답도_ApiException()
+        {
+            http.Handler = r => Reply(502, "{\"error\":\"Bad Gateway\"}");
+            Assert.AreEqual(ApiFailure.BadResponse, Throws(new AuthApi(client).AgreementsAsync()).Failure);
+
+            client.Session.SetTokens("a1", "r1");
+            http.Handler = r => r.Url.EndsWith("/v1/auth/refresh") ? Reply(200, "") : Reply(401, Fail("TOKEN_EXPIRED"));
+            Assert.AreEqual(ApiFailure.BadResponse, Throws(client.GetAsync<Me>("/v1/users/me", AuthMode.User)).Failure);
+        }
+
+        [Test]
+        public void 반쪽만_저장된_로그인은_로그인으로_보지_않는다()
+        {
+            store.Set("session.v1", "{\"a\":null,\"r\":\"r1\"}");
+            var s = new Session(store);
+            Assert.IsFalse(s.IsLoggedIn);
+            Assert.IsNull(store.Get("session.v1"), "버림");
+        }
+
+        [Test]
+        public void 로그아웃_중_재발급이_거절돼도_Expired를_보내지_않는다()
+        {
+            client.Session.SetTokens("a1", "r1");
+            int expired = 0;
+            client.Session.Expired += () => expired++;
+            http.Handler = r => r.Url.EndsWith("/v1/auth/refresh") ? Reply(401, Fail("UNAUTHORIZED")) : Reply(401, Fail("TOKEN_EXPIRED"));
+            Done(new AuthApi(client).LogoutAsync());
+            Assert.AreEqual(0, expired);
+            Assert.IsFalse(client.Session.IsLoggedIn);
+        }
     }
 }
+

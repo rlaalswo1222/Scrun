@@ -44,7 +44,8 @@ namespace Scrun.App
 
             await Awaitable.FromAsyncOperation(req.SendWebRequest());
 
-            if (req.result == UnityWebRequest.Result.ConnectionError)
+            // 연결 안 됨·시간 초과, 받는 도중 끊김 → 네트워크 실패(화면은 "다시 시도")
+            if (req.result == UnityWebRequest.Result.ConnectionError || req.result == UnityWebRequest.Result.DataProcessingError)
                 return new HttpResponse { Status = 0, NetworkError = req.error };
             return new HttpResponse { Status = (int)req.responseCode, Body = req.downloadHandler?.text };
         }

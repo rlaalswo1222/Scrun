@@ -13,18 +13,32 @@ namespace Scrun.App
     public static class Api
     {
         static ApiClient client;
+        static AuthApi auth;
+        static UsersApi users;
 
-        public static ApiClient Client => client ??= Create();
+        public static ApiClient Client { get { Ensure(); return client; } }
         public static Session Session => Client.Session;
-        public static AuthApi Auth => new AuthApi(Client);
-        public static UsersApi Users => new UsersApi(Client);
+        public static AuthApi Auth { get { Ensure(); return auth; } }
+        public static UsersApi Users { get { Ensure(); return users; } }
 
-        static ApiClient Create() =>
-            new ApiClient(new UnityHttpTransport(), new Session(Native.SecureStore), () => ApiConfig.BaseUrl);
+        static void Ensure()
+        {
+            if (client != null) return;
+            client = new ApiClient(new UnityHttpTransport(), new Session(Native.SecureStore), () => ApiConfig.BaseUrl);
+            auth = new AuthApi(client);
+            users = new UsersApi(client);
+        }
 
         // Play마다 저장된 로그인부터 다시 읽는다(이 프로젝트는 Play 때 도메인 리로드를 꺼 둠).
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetOnPlay() => client = null;
+
+        // 에디터 창의 "저장된 로그인 지우기": 지금 쓰는 로그인(메모리)과 저장소를 같이 지운다
+        internal static void ClearSavedLogin()
+        {
+            if (client != null) client.Session.Clear();
+            else new Session(Native.SecureStore).Clear();
+        }
 
         // 이 기기를 가리키는 값(iOS는 identifierForVendor). 같은 기기의 예전 로그인을 서버가 폐기하는 데 씀.
         internal static string DeviceId
@@ -49,7 +63,7 @@ namespace Scrun.App
             var r = await c.PostAsync<LoginResult>("/v1/auth/kakao",
                 new { kakaoAccessToken, deviceId = Api.DeviceId }, AuthMode.None);
             if (r == null) throw new ApiException(ApiFailure.BadResponse, "로그인 응답이 비었습니다.");
-            if (r.IsNewUser) c.Session.SetSignupToken(r.SignupToken);
+            if (r.IsNewUser) c.Session.BeginSignup(r.SignupToken);
             else c.Session.SetTokens(r.AccessToken, r.RefreshToken);
             return r;
         }
@@ -69,6 +83,7 @@ namespace Scrun.App
         public async Task LogoutAsync()
         {
             var refresh = c.Session.RefreshToken;
+            c.Session.LoggingOut = true; // 여기서 재발급이 거절돼도 "다시 로그인하세요"(Expired)를 띄우지 않음
             try
             {
                 if (refresh != null && c.Session.AccessToken != null)
@@ -80,6 +95,7 @@ namespace Scrun.App
             }
             finally
             {
+                c.Session.LoggingOut = false;
                 c.Session.Clear();
             }
         }

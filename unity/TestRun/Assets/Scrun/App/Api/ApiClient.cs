@@ -31,8 +31,9 @@ namespace Scrun.App
         readonly Func<string> baseUrl;
         public Session Session { get; }
 
-        // 진행 중인 재발급. 끝나면 null(동시에 만료된 요청들이 이 하나를 같이 기다림)
+        // 진행 중인 재발급과 그것이 속한 로그인(Epoch). 끝나면 null(동시에 만료된 요청들이 이 하나를 같이 기다림)
         Task<bool> refreshing;
+        int refreshingEpoch;
 
         public ApiClient(IHttpTransport http, Session session, Func<string> baseUrl)
         {
@@ -47,19 +48,16 @@ namespace Scrun.App
         public async Task<T> SendAsync<T>(string method, string path, object body, AuthMode auth)
         {
             string json = body == null ? null : JsonConvert.SerializeObject(body, JsonSettings);
+            int epoch = Session.Epoch;
             string usedToken = TokenFor(auth);
             var res = await SendOnce(method, path, json, usedToken);
 
-            // access 만료 → 재발급 한 번 → 원래 요청 한 번 다시
-            if (res.Status == 401 && usedToken != null && usedToken == Session.AccessToken && ErrorCode(res) == "TOKEN_EXPIRED")
+            // access 만료 → (아직 같은 로그인이면) 재발급 한 번 → 원래 요청 한 번 다시
+            bool sentAccess = usedToken != null && auth != AuthMode.Signup && usedToken != Session.SignupToken;
+            if (res.Status == 401 && sentAccess && Session.Epoch == epoch && ErrorCode(res) == "TOKEN_EXPIRED")
             {
                 await RefreshAsync(usedToken);
-                res = await SendOnce(method, path, json, TokenFor(auth));
-            }
-            else if (res.Status == 401 && usedToken != null && usedToken != Session.AccessToken && Session.AccessToken != null
-                     && ErrorCode(res) == "TOKEN_EXPIRED")
-            {
-                // 이 요청이 나가는 사이 다른 요청이 이미 재발급함 → 새 토큰으로 한 번 다시
+                if (Session.Epoch != epoch) throw NotLoggedIn("로그인이 바뀌었습니다. 다시 시도하세요.");
                 res = await SendOnce(method, path, json, TokenFor(auth));
             }
             return Parse<T>(res);
@@ -94,17 +92,16 @@ namespace Scrun.App
         {
             if (Session.AccessToken != expiredAccess && Session.AccessToken != null)
                 return Task.CompletedTask; // 그사이 다른 요청이 이미 재발급함
-            if (refreshing == null)
+            if (refreshing != null && refreshingEpoch == Session.Epoch) return Unwrap(refreshing);
+
+            var t = DoRefresh();
+            if (!t.IsCompleted)
             {
-                var t = DoRefresh();
-                if (!t.IsCompleted)
-                {
-                    refreshing = t;
-                    _ = ClearWhenDone(t);
-                }
-                return Unwrap(t);
+                refreshing = t;
+                refreshingEpoch = Session.Epoch;
+                _ = ClearWhenDone(t);
             }
-            return Unwrap(refreshing);
+            return Unwrap(t);
         }
 
         async Task ClearWhenDone(Task<bool> t)
@@ -118,20 +115,24 @@ namespace Scrun.App
             if (!await t) throw NotLoggedIn("다시 로그인해 주세요.");
         }
 
-        // true = 새 토큰 받음, false = 거절(로그인 끝남). 네트워크 실패는 예외(토큰은 그대로 → 30초 안에 같은 토큰으로 다시 보내도 됨)
+        // true = 새 토큰 받음, false = 거절됐거나 그사이 로그인이 바뀜.
+        // 네트워크 실패는 예외(토큰은 그대로 → 서버가 30초 안에 같은 토큰을 다시 받아 줌)
         async Task<bool> DoRefresh()
         {
             var refresh = Session.RefreshToken;
+            int epoch = Session.Epoch;
             if (refresh == null) return false;
             var body = JsonConvert.SerializeObject(new { refreshToken = refresh }, JsonSettings);
             var res = await SendOnce("POST", "/v1/auth/refresh", body, null);
+
+            if (Session.Epoch != epoch) return false; // 그사이 로그아웃·다른 로그인 → 이 결과는 버림(되살리지 않음)
             if (res.NetworkError == null && (res.Status == 401 || res.Status == 403))
             {
-                if (Session.RefreshToken == refresh) Session.Expire(); // 그사이 다른 로그인이 들어오지 않았으면
+                Session.Expire();
                 return false;
             }
-            var pair = Parse<TokenPair>(res);
-            Session.SetTokens(pair.AccessToken, pair.RefreshToken);
+            var pair = Parse<TokenPair>(res) ?? throw new ApiException(ApiFailure.BadResponse, "재발급 응답이 비었습니다.", res.Status);
+            Session.RotateTokens(pair.AccessToken, pair.RefreshToken);
             return true;
         }
 
@@ -140,7 +141,7 @@ namespace Scrun.App
         static string ErrorCode(HttpResponse res)
         {
             try { return (string)JObject.Parse(res.Body ?? "")["error"]?["code"]; }
-            catch (JsonException) { return null; }
+            catch (Exception) { return null; } // JSON이 아니거나 모양이 다름
         }
 
         static T Parse<T>(HttpResponse res)
@@ -152,29 +153,33 @@ namespace Scrun.App
                 if (res.Status >= 200 && res.Status < 300) return default;
                 throw new ApiException(ApiFailure.BadResponse, $"서버 응답이 비었습니다(HTTP {res.Status}).", res.Status);
             }
-
-            JObject root;
-            try { root = JObject.Parse(res.Body); }
-            catch (JsonException)
+            try
             {
+                return ParseEnvelope<T>(res);
+            }
+            catch (ApiException) { throw; }
+            catch (Exception e) when (e is JsonException || e is InvalidOperationException || e is ArgumentException || e is InvalidCastException)
+            {
+                // JSON이 아니거나 우리 껍데기 모양이 아님(서버 앞단의 502 HTML, {"error":"Bad Gateway"} 등)
                 throw new ApiException(ApiFailure.BadResponse, $"서버 응답을 읽지 못했습니다(HTTP {res.Status}).", res.Status);
             }
+        }
 
+        static T ParseEnvelope<T>(HttpResponse res)
+        {
+            var root = JObject.Parse(res.Body);
             var requestId = (string)root["meta"]?["requestId"];
             if ((string)root["resultType"] == "SUCCESS" && res.Status >= 200 && res.Status < 300)
             {
                 var data = root["success"]?["data"];
-                try { return data == null || data.Type == JTokenType.Null ? default : data.ToObject<T>(Json); }
-                catch (JsonException e)
-                {
-                    throw new ApiException(ApiFailure.BadResponse, "서버 응답 모양이 앱과 다릅니다: " + e.Message, res.Status, null, requestId);
-                }
+                return data == null || data.Type == JTokenType.Null ? default : data.ToObject<T>(Json);
             }
 
-            var err = root["error"];
-            var code = (string)err?["code"];
-            var message = (string)err?["message"] ?? $"요청이 실패했습니다(HTTP {res.Status}).";
-            var details = err?["details"];
+            var err = root["error"] as JObject
+                      ?? throw new ApiException(ApiFailure.BadResponse, $"서버 응답을 읽지 못했습니다(HTTP {res.Status}).", res.Status, null, requestId);
+            var code = (string)err["code"];
+            var message = (string)err["message"] ?? $"요청이 실패했습니다(HTTP {res.Status}).";
+            var details = err["details"];
             // 로그인 자체가 없거나 끝난 경우만 NotLoggedIn(카카오 토큰 거절 INVALID_KAKAO_TOKEN도 401이지만 그건 Server)
             var failure = res.Status == 401 && (code == "UNAUTHORIZED" || code == "TOKEN_EXPIRED")
                 ? ApiFailure.NotLoggedIn : ApiFailure.Server;
