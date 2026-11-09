@@ -1,0 +1,53 @@
+# 팀 공용 개발 서버(계획 0019). 서버의 이 폴더에서:
+#   cp .env.server.example .env   # 값 채우기(git에 안 올림)
+#   docker compose -f docker-compose.server.yml up -d --build
+# 밖으로는 Caddy의 80·443만 열린다. DB는 컨테이너끼리만.
+name: scrun
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: scrun
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD를 .env에}
+      POSTGRES_DB: scrun
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scrun"]
+      interval: 3s
+      retries: 30
+
+  api:
+    build: ..
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://scrun:${DB_PASSWORD}@db:5432/scrun
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET을 .env에}
+      KAKAO_MODE: ${KAKAO_MODE:-real}
+      KAKAO_APP_ID: ${KAKAO_APP_ID:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?SITE_ADDRESS를 .env에}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  caddydata:
+  caddyconfig:
