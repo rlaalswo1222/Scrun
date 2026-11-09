@@ -133,6 +133,20 @@
   ```
 - **에디터에서는 가짜**: 메뉴 Scrun → Fake Native 창. Play 전엔 처음 상태와 "팝업에서 허용/거부"·누르는 시간을 정하고(이 컴퓨터에 저장), Play 중엔 지금 상태를 바꾸면 설정 앱에서 바꾸고 돌아온 것·에어팟을 끼고 뺀 것처럼 `Changed`가 온다. Play를 시작할 때마다 처음 상태로 돌아감
 - 아이폰 진짜 구현(Swift 브리지 `scrun_call` + 콜백)은 계획 0018의 5번에서 붙인다. 그 전의 빌드(아이폰·안드로이드)에서는 `Native`를 부르면 바로 예외가 난다(가짜가 몰래 "허용"을 주지 않게). 기기에서 가짜로 화면만 보려면 Player Settings → Scripting Define Symbols에 `SCRUN_FAKE_NATIVE`. 화면 코드는 진짜가 붙어도 안 바뀜
+- **서버는 `Api`로만 부른다**(11/09, 계획 0018의 2번, `App/Api/`):
+  ```csharp
+  var r = await Api.Auth.KakaoLoginAsync(kakaoToken);     // 처음이면 r.IsNewUser → Api.Session.IsSigningUp
+  var list = await Api.Auth.AgreementsAsync();
+  var n = await Api.Users.CheckNicknameAsync(text);        // n.Nickname = 서버가 정규화한 값(화면에 이걸 보여 줌)
+  await Api.Auth.SignupAsync(new SignupRequest { AgreedIds = {...}, Nickname = n.Nickname, HeightCm = 175, WeightKg = 70 });
+  Api.Session.Expired += GoToLogin;                        // 재발급이 거절돼 다시 로그인해야 할 때
+  ```
+  - 실패는 전부 `ApiException`: `Failure`(Server = 서버가 거절, `Code`로 문구 / Network = 연결 안 됨·시간 초과 / BadResponse = 응답을 못 읽음 / NotLoggedIn = 로그인 화면으로), `Status`, `RequestId`(오류 화면에 작게)
+  - 토큰은 `ApiClient`가 붙이고, 401 `TOKEN_EXPIRED`면 재발급을 **한 번만** 보내고(동시에 여러 요청이 만료돼도) 원래 요청을 한 번 다시 보낸다. 재발급 중 네트워크가 끊기면 토큰은 그대로(서버 30초 유예), 거절되면 로그인을 지우고 `Session.Expired`. 로그아웃은 서버에 못 알려도 이 기기 토큰을 지움
+  - 토큰 저장: `Native.SecureStore`(아이폰 키체인은 5번, 에디터는 가짜 PlayerPrefs). 가입용 토큰은 저장 안 함
+  - 서버 주소 `ApiConfig.BaseUrl`: 에디터 기본 로컬 `http://localhost:8000`(가짜 카카오 `k_123`), 빌드는 공용 개발 서버(HTTPS). 에디터에서는 메뉴 **Scrun → API 서버** 창(주소 바꾸기, 저장된 로그인 지우기)
+  - 확인: 메뉴 **Scrun → 개발 → 서버 로그인 흐름 확인**(Play 중, 로컬 서버) = 약관 → 새 사람 로그인 → 닉네임 확인 → 가입 → 다시 로그인 → 로그아웃을 실제 서버로. 11/09 로컬 서버로 성공, DB에 사용자·약관 동의 2개 확인
+  - 서버 모양을 바꾸면 `App/Api/Dtos.cs`도 같이. 아이폰 빌드에서 DTO가 지워지지 않게 `App/link.xml`
 - 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
 
 ## 남은 큰 것 (11/06 기준)
