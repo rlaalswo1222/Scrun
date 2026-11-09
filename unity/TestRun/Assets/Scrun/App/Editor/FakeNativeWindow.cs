@@ -112,6 +112,20 @@ namespace Scrun.App.Editor
                 cfg.headphoneName = EditorGUILayout.TextField("이름", cfg.headphoneName);
             }
 
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("카카오 로그인", EditorStyles.boldLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                cfg.kakaoToken = EditorGUILayout.TextField("토큰", cfg.kakaoToken);
+                if (GUILayout.Button("새 사람", GUILayout.Width(60)))
+                {
+                    cfg.kakaoToken = "k_" + UnityEngine.Random.Range(100000, 999999999);
+                    GUI.changed = true;
+                }
+            }
+            cfg.kakaoCancels = EditorGUILayout.Toggle("취소한 것처럼", cfg.kakaoCancels);
+            EditorGUILayout.HelpBox("로컬 서버(가짜 카카오)에서 k_ 뒤 숫자가 카카오 회원번호. 처음 보는 숫자면 가입 화면으로 갑니다.", MessageType.None);
+
             if (EditorGUI.EndChangeCheck())
             {
                 SaveConfig();

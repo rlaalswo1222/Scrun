@@ -57,13 +57,33 @@ namespace Scrun.App
             Nav.Changed += OnScreenChanged;
             orientationApplied = false;
             lastPanelSize = default;
-            Nav.ShowTabs(AppTab.Home); // 로그인 화면은 계획 0018의 4번에서 이 앞에 붙임
+            Feedback.Attach(root);
+            Feedback.OnNotLoggedIn = GoToLogin;
+            Api.Session.Expired += OnSessionExpired;
+
+            // 저장된 로그인이 있으면 바로 홈, 없으면 로그인부터(토큰이 실제로 살아 있는지는 첫 서버 호출 때 재발급으로 확인)
+            if (Api.Session.IsLoggedIn) Nav.ShowTabs(AppTab.Home);
+            else Nav.StartFlow(new LoginScreen());
         }
 
         void OnDisable()
         {
+            if (started) Api.Session.Expired -= OnSessionExpired;
+            Feedback.OnNotLoggedIn = null;
+            Feedback.Detach();
             Nav?.Dispose(); // 화면마다 OnHide·OnDestroy(구독 해제)가 불리게
             Nav = null;
+        }
+
+        void OnSessionExpired() => GoToLogin("다시 로그인해 주세요.");
+
+        // 로그인이 끝났을 때(재발급 거절·가입용 토큰 만료): 지금 화면을 모두 정리하고 로그인부터
+        static void GoToLogin(string notice)
+        {
+            if (Nav == null) return;
+            Feedback.HideError();
+            if (!Nav.InTabs && Nav.Current is LoginScreen) return;
+            Nav.StartFlow(new LoginScreen(notice));
         }
 
         void OnDestroy()

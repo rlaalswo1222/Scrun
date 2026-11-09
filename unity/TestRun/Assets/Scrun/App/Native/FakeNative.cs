@@ -7,7 +7,7 @@ namespace Scrun.App
     // 에디터에서 쓰는 가짜 권한·이어폰(빌드에서는 쓰지 않음, Native.cs).
     // 처음 상태와 "팝업에서 무엇을 누를지"는 메뉴 Scrun → Fake Native 창에서 정하고,
     // Play 중에 그 창에서 상태를 바꾸면 Changed 이벤트가 진짜처럼 온다.
-    public sealed class FakeNative : IPermissions, IHeadphones
+    public sealed class FakeNative : IPermissions, IHeadphones, IKakaoLogin
     {
         static int KindCount => FakeNativeConfig.KindCount;
 
@@ -131,6 +131,16 @@ namespace Scrun.App
             foreach (var w in done) w.SetResult(status[i]);
         }
 
+        // ---- IKakaoLogin ----
+
+        // 카카오 화면을 누르는 시간만큼 기다렸다가 창에 적힌 토큰(로컬 서버 가짜 카카오: k_숫자 = 회원번호)을 준다. 취소 흉내면 null
+        public async Awaitable<string> LoginAsync()
+        {
+            float end = Time.realtimeSinceStartup + Cfg.requestDelaySec;
+            while (Time.realtimeSinceStartup < end) await Awaitable.NextFrameAsync();
+            return Cfg.kakaoCancels ? null : Cfg.kakaoToken;
+        }
+
         public void OpenSettings() =>
             Debug.Log("[FakeNative] 설정 앱 열기(가짜). Fake Native 창에서 상태를 바꿔 '설정 앱에서 바꾸고 돌아옴'을 흉내 내세요.");
 
@@ -169,6 +179,8 @@ namespace Scrun.App
         public float requestDelaySec = 0.6f; // 사용자가 팝업을 누르기까지 걸리는 시간 흉내
         public HeadphoneStatus headphones = HeadphoneStatus.Connected;
         public string headphoneName = "AirPods Pro";
+        public string kakaoToken = "k_123"; // 로컬 서버 가짜 카카오: k_ 뒤 숫자가 카카오 회원번호(새 사람이면 다른 숫자)
+        public bool kakaoCancels;           // 카카오 로그인 화면에서 사용자가 취소한 것처럼
 
         static bool[] AllTrue(int n)
         {
@@ -189,6 +201,7 @@ namespace Scrun.App
             }
             if (requestDelaySec < 0f) requestDelaySec = 0f;
             if (string.IsNullOrEmpty(headphoneName)) headphoneName = "AirPods Pro";
+            if (string.IsNullOrEmpty(kakaoToken)) kakaoToken = "k_123";
         }
     }
 }

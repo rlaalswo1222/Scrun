@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- A-05 로그인. 모양은 임시(상준 UI Kit·Figma로 다듬음) -->
+    <ui:VisualElement class="screen login">
+        <ui:VisualElement class="login-hero">
+            <ui:Label text="SCRUN" class="login-logo" />
+            <ui:Label text="러닝머신 위에서, 가상 섬을 같이 달려요" class="login-lead" />
+        </ui:VisualElement>
+        <ui:Label name="notice" class="notice-text" />
+        <ui:Button name="kakao" text="카카오 로그인" class="btn btn-kakao" />
+    </ui:VisualElement>
+</ui:UXML>

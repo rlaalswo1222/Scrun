@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- A-06 약관 동의. 목록은 서버 약관(GET /v1/agreements)으로 채움 -->
+    <ui:VisualElement class="screen">
+        <ui:VisualElement class="top-bar">
+            <ui:Button name="back" text="‹" class="back-button" />
+        </ui:VisualElement>
+        <ui:Label text="약관에 동의해 주세요" class="screen-title" />
+        <ui:Toggle name="all" text="모두 동의" class="terms-all" />
+        <ui:ScrollView class="screen-body">
+            <ui:VisualElement name="list" />
+        </ui:ScrollView>
+        <ui:Button name="next" text="다음" class="btn btn-primary" />
+    </ui:VisualElement>
+</ui:UXML>
