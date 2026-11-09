@@ -2,7 +2,14 @@
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`, `docs/plans/`)에 있고, 11/07까지의 전체본은 `docs/log/HANDOFF_minjae_20261107.md`(그 전은 `_20261106.md`).
 
-## 지금 (11/08, S1 시작일)
+## 지금 (11/09, S1 2일째)
+- **계획 0018(S1 앱 뼈대) 승인·구현 중**: 결정 1–4 추천안(브리지 = `scrun_call` 하나 + 번호표 콜백·Objective-C 틀, Newtonsoft, 카카오 SDK는 빌드 후처리로 SPM 자동 추가(카카오는 2.23.0부터 SPM만), 새 앱 코드는 asmdef `Scrun.App`). 설명 자료 `docs/plans/0018-decisions.html`
+  - **1번 끝(PR `feat/native-shape-fake`)**: `Native.Permissions`·`Native.Headphones` 모양 + 에디터 가짜 `FakeNative` + Scrun → Fake Native 창, EditMode 테스트 7개 통과, Play 모드에서 동시 요청·되돌림 확인. 빌드에선 진짜 구현 전까지 `Native`가 예외. **지환에게 "권한·에어팟 화면 시작해도 됨" 알릴 것**(사용법 `docs/unity/unity_map.md` "앱 코드 묶음")
+  - 다음: 계획 0019 서버 → 2번 ApiClient → 3번 탭 틀 → 4번 로그인 화면 → 맥(5·6번)
+- **계획 0019(공용 개발 서버) 승인**: 오라클 서버(`161.118.211.155`, 싱가포르 ARM 2코어·11GiB, `https://161-118-211-155.sslip.io`, SSH 키 `~/.ssh/oracle_key`, 사용자 `ubuntu`)에 Scrun을 올리고 아이폰은 처음부터 HTTPS로. Bandly(EnsembleSync)는 민재 확인으로 멈춤 예정: **백업 끝**(`Desktop/Bandly_backup_20261109/`, DB 덤프 + uploads·.env·router.sh), 아직 서버는 안 바꿈. 멈출 때 cron `router.sh` 줄도 끄기, 볼륨은 안 지움
+- PR #17·#18은 11/08에 합쳐짐
+
+## 11/08 기록
 - **BL-44 1단계 끝, develop에 합침(11/08, PR #15·#16)**: 진짜 서버 뼈대 + 로그인 5개 + 닉네임 확인(계획 0016, 리뷰 10건 + 2차 리뷰 7건 반영, 테스트 165개). 민재 결정(11/08): refresh 재사용은 30초 유예 + 그 로그인(family)만 폐기, 재로그인은 deviceId로 같은 기기 폐기 + 사용자당 5개, 닉네임은 한글 완성형·영문·숫자·`_`만(NFKC)
   - 바뀐 것: 설정 검사(`JWT_SECRET` 필수·32자 이상·공개값 금지, `KAKAO_MODE` 기본 real, real이면 `KAKAO_APP_ID` 필수), 카카오는 `access_token_info`로 app_id 확인, 가입 동시 충돌 처리, `core/sessions.py`(refresh 수명), 닉네임 규칙·확인 API 진짜(이유 `INVALID` 추가), 마이그레이션 `3f1c9a7e52d4`(refresh_tokens 칸 4개), alembic이 로그 설정을 안 건드림, `scripts/purge_refresh_tokens.py`
   - 이 노트북: `backend/.env` 만듦(서명 키는 무작위, `KAKAO_MODE=fake`), 개발 DB `3f1c9a7e52d4`까지 올림. 팀원은 합친 뒤 각자 `.env` + `alembic upgrade head`

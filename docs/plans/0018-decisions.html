@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S1 결정 5개</title>
+<style>
+:root{--bg:#fbfaf7;--fg:#1f2328;--muted:#5d6670;--card:#ffffff;--line:#d9dde3;--accent:#2f6fde;--accent-bg:#e8f0fd;--good:#1f8a4c;--good-bg:#e6f4ec;--warn:#b25e00;--warn-bg:#fdf1e2;--swift:#e8590c;--cs:#7048e8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181c;--fg:#e6e8eb;--muted:#9aa3ad;--card:#1d2126;--line:#353b43;--accent:#7aa7ff;--accent-bg:#1f2a3d;--good:#5cc98a;--good-bg:#1b2e24;--warn:#f0a14a;--warn-bg:#33281a;--swift:#ff8a4c;--cs:#a48bff}}
+:root[data-theme="dark"]{--bg:#15181c;--fg:#e6e8eb;--muted:#9aa3ad;--card:#1d2126;--line:#353b43;--accent:#7aa7ff;--accent-bg:#1f2a3d;--good:#5cc98a;--good-bg:#1b2e24;--warn:#f0a14a;--warn-bg:#33281a;--swift:#ff8a4c;--cs:#a48bff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+main{max-width:860px;margin:0 auto;padding:32px 16px 80px}
+h1{font-size:26px;margin:0 0 6px}
+h2{font-size:21px;margin:48px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+h3{font-size:16px;margin:20px 0 6px}
+p,li{color:var(--fg)}
+.lead{color:var(--muted);margin:0 0 20px}
+.num{display:inline-block;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;text-align:center;line-height:28px;font-size:15px;margin-right:8px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}
+.rec{background:var(--good-bg);border-color:transparent}
+.rec b:first-child{color:var(--good)}
+.note{background:var(--warn-bg);border-color:transparent}
+table{border-collapse:collapse;width:100%;font-size:15px;margin:10px 0}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--accent-bg)}
+code{font-family:ui-monospace,Consolas,monospace;font-size:14px;background:var(--accent-bg);padding:1px 5px;border-radius:4px}
+svg{width:100%;height:auto;display:block;margin:12px 0}
+svg text{font-family:inherit;fill:var(--fg)}
+.s-line{stroke:var(--muted);stroke-width:2;fill:none}
+.s-box{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+.s-cs{fill:var(--card);stroke:var(--cs);stroke-width:2}
+.s-sw{fill:var(--card);stroke:var(--swift);stroke-width:2}
+.s-ok{fill:var(--good-bg);stroke:var(--good);stroke-width:2}
+.s-bad{fill:var(--warn-bg);stroke:var(--warn);stroke-width:2}
+.small{font-size:13px;fill:var(--muted)}
+.links a{color:var(--accent)}
+.toc a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<main>
+<h1>계획 0018 정해야 할 것 5개</h1>
+<p class="lead">S1 앱 뼈대를 만들기 전에 정할 기술 선택 5개입니다. 항목마다 "무슨 문제인지 → 선택지 → 추천"을 적었습니다. 모두 앱 사용자에게는 보이지 않는 내부 구조이고, 나중에 바꾸면 고칠 코드가 많아지는 것들입니다.</p>
+<div class="box toc">
+<a href="#q1">1. 브리지: Unity(C#)가 아이폰 기능(Swift)을 부르는 통로</a><br>
+<a href="#q2">2. JSON 라이브러리: 서버 응답 글자를 C# 데이터로 바꾸는 도구</a><br>
+<a href="#q3">3. 카카오 SDK 넣는 방법</a><br>
+<a href="#q4">4. asmdef: 코드를 묶음으로 나누기</a><br>
+<a href="#q5">5. 노트북 서버로 http 허용</a>
+</div>
+
+<!-- 1 -->
+<h2 id="q1"><span class="num">1</span>브리지: Unity가 아이폰 기능을 부르는 통로</h2>
+<h3>무슨 문제인가</h3>
+<p>우리 앱 화면과 로직은 Unity의 <b>C#</b>으로 짭니다. 그런데 권한 팝업, 에어팟 연결 감지, 카카오톡 로그인, 키체인(토큰을 안전하게 보관하는 곳) 같은 아이폰 기능은 애플 언어인 <b>Swift</b>로만 부를 수 있습니다. 두 언어는 서로를 직접 부르지 못하므로 그 사이에 <b>통역 창구</b>가 필요합니다. 이 창구를 "브리지"라고 부릅니다.</p>
+
+<svg viewBox="0 0 820 250" role="img" aria-label="C#과 Swift 사이 브리지 흐름">
+  <rect class="s-cs" x="10" y="20" width="250" height="200" rx="10"/>
+  <text x="135" y="48" text-anchor="middle" font-weight="700">Unity (C#)</text>
+  <text x="135" y="78" text-anchor="middle" class="small">권한 안내 화면</text>
+  <text x="135" y="100" text-anchor="middle">Native.Permissions</text>
+  <text x="135" y="122" text-anchor="middle">.Request(카메라)</text>
+  <text x="135" y="190" text-anchor="middle" class="small">결과를 받아 화면을 바꿈</text>
+
+  <rect class="s-sw" x="560" y="20" width="250" height="200" rx="10"/>
+  <text x="685" y="48" text-anchor="middle" font-weight="700">iOS (Swift)</text>
+  <text x="685" y="90" text-anchor="middle">카메라 권한 팝업 띄움</text>
+  <text x="685" y="114" text-anchor="middle" class="small">사용자가 "허용"을 누를 때까지</text>
+  <text x="685" y="134" text-anchor="middle" class="small">몇 초가 걸릴 수 있음</text>
+
+  <path class="s-line" d="M260 95 H555" marker-end="url(#a1)"/>
+  <text x="408" y="78" text-anchor="middle" font-size="14">① scrun_call(7번, "permissions.request", {"kind":"camera"})</text>
+  <path class="s-line" d="M555 175 H265" marker-end="url(#a1)"/>
+  <text x="408" y="165" text-anchor="middle" font-size="14">② 콜백(7번, {"status":"granted"})</text>
+  <text x="408" y="200" text-anchor="middle" class="small">7번 = 번호표. 여러 요청이 동시에 가도 답이 어느 요청 것인지 앎</text>
+  <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor" style="fill:var(--muted)"/></marker></defs>
+</svg>
+
+<h3>추천 설계의 3가지 요점</h3>
+<ol>
+<li><b>창구는 하나</b>: C#이 부르는 함수는 <code>scrun_call(번호표, 기능 이름, 내용)</code> 하나뿐이고, 내용은 JSON 글자로 보냅니다. 기능마다 함수를 따로 만들면(권한 요청, 권한 상태, 에어팟, 카카오 로그인, 키체인 저장·읽기… 금방 20개) C#과 Swift 양쪽에 똑같은 선언을 맞춰 적어야 하고, 하나만 틀려도 아이폰에서 앱이 죽습니다. 창구가 하나면 새 기능을 추가할 때 이름만 늘리면 됩니다.</li>
+<li><b>답은 번호표로 나중에</b>: 권한 팝업처럼 사용자가 누를 때까지 기다려야 하는 일은 바로 답이 오지 않습니다. 그래서 번호표를 붙여 보내고, Swift가 끝나면 "7번 요청 결과는 허용"이라고 C#에 알려 줍니다(콜백). Unity 화면은 메인 스레드(Unity가 화면을 그리는 줄)에서만 고칠 수 있으므로, 받은 답은 큐에 넣어 두었다가 다음 프레임에 꺼냅니다.</li>
+<li><b>에디터에서는 가짜</b>: 같은 C# 모양(<code>Native.Permissions</code>)에 진짜(아이폰)와 가짜(<code>FakeNative</code>, 에디터) 두 구현을 둡니다. 지환님은 맥이나 아이폰 없이 에디터에서 "허용", "거부", "에어팟 끊김"을 눌러 화면을 만들 수 있습니다.</li>
+</ol>
+<p>속도 센서는 이 창구를 쓰지 않습니다. 센서는 1초에 수십 번 값이 오는데, 창구를 그렇게 자주 오가면 느려집니다(Unity 문서도 매 프레임 여러 번 네이티브를 부르지 말라고 함). 그래서 Swift가 속도까지 계산해 두고, Unity는 매 프레임 숫자 하나만 읽습니다(S2).</p>
+
+<h3>다른 선택지</h3>
+<table>
+<tr><th>방식</th><th>장점</th><th>단점</th></tr>
+<tr><td><b>창구 하나 + 번호표 콜백</b> (추천)</td><td>기능을 늘리기 쉬움, 답이 바로 옴, 에디터 가짜와 모양이 같음</td><td>처음에 큐·번호표 코드가 조금 필요(한 번만 만듦)</td></tr>
+<tr><td>기능마다 함수 따로</td><td>함수 하나하나는 단순</td><td>양쪽 선언을 계속 맞춰야 하고 틀리면 아이폰에서만 죽음</td></tr>
+<tr><td><code>UnitySendMessage</code> (Unity 문서의 쉬운 방법)</td><td>코드가 제일 짧음</td><td>게임 오브젝트 이름으로 문자열만 보냄, 한 프레임 늦음, 이름이 겹치면 엉뚱한 곳으로 감</td></tr>
+</table>
+
+<h3>Xcode 프로젝트 종류는 뭔가</h3>
+<p>Unity로 iOS 빌드를 하면 Unity가 <b>Xcode 프로젝트</b>(아이폰 앱을 만드는 애플 도구용 폴더)를 만들어 주고, 맥의 Xcode가 그걸로 앱을 만듭니다. 이때 앱의 바깥 틀을 무슨 언어로 만들지 고를 수 있습니다.</p>
+<table>
+<tr><th></th><th>Objective-C 틀 (추천, Unity 기본)</th><th>Swift 틀</th></tr>
+<tr><td>상태</td><td>오랫동안 써 온 기본값</td><td>Unity 6.5에 생긴 <b>실험 기능</b></td></tr>
+<tr><td>최소 iOS</td><td>우리 설정 그대로(15.0)</td><td><b>iOS 16으로 강제</b></td></tr>
+<tr><td>우리 Swift 파일</td><td>그대로 들어감(<code>Assets/Plugins/iOS/</code>에 두면 Unity가 복사)</td><td>그대로 들어감</td></tr>
+</table>
+<p>앱 바깥 틀이 Objective-C여도 <b>우리가 짜는 코드는 전부 Swift</b>입니다. 사용자에게 보이는 차이도 없습니다. 실험 기능에 앱을 걸 이유가 없으니 기본 틀을 추천합니다.</p>
+<div class="box rec"><b>추천</b>: 창구 하나 + 번호표 콜백, Objective-C 틀(Unity 기본). 정하면 ADR-0009에 적습니다.</div>
+<div class="links">배울 자료: <a href="https://docs.unity3d.com/6000.5/Documentation/Manual/ios-native-plugin-create.html">Unity: iOS 네이티브 플러그인 만들기(Swift는 @_cdecl)</a> · <a href="https://docs.unity3d.com/Manual/PluginsForIOS.html">Unity: iOS 플러그인(DllImport, 콜백 두 방법)</a> · <a href="https://docs.unity3d.com/Manual/ios-swift-xcode-project-type.html">Unity: Swift Xcode 프로젝트 종류</a></div>
+
+<!-- 2 -->
+<h2 id="q2"><span class="num">2</span>JSON 라이브러리</h2>
+<h3>무슨 문제인가</h3>
+<p>서버와 앱은 <b>JSON이라는 글자</b>로 주고받습니다. 앱이 이걸 쓰려면 C# 데이터(객체)로 바꿔야 하고, 보낼 때는 반대로 바꿔야 합니다. 이 변환을 해 주는 도구가 JSON 라이브러리입니다.</p>
+<div class="box"><code>{"resultType":"FAIL", "success":null, "error":{"code":"NICKNAME_DUPLICATED", "details":null}, ...}</code><br>
+<span style="color:var(--muted)">→ C#에서 <code>res.error.code == "NICKNAME_DUPLICATED"</code>로 쓰고 싶음</span></div>
+<h3>Unity 기본 도구(JsonUtility)로는 왜 안 되나</h3>
+<p>Unity에 들어 있는 <code>JsonUtility</code>는 빠르지만, 게임 저장 파일용이라 할 줄 아는 게 적습니다. 우리 서버 응답에는 이런 것들이 계속 나옵니다.</p>
+<ul>
+<li><b>비어 있을 수 있는 값</b>: <code>"success": null</code>, 키를 안 적은 사용자의 <code>"heightCm": null</code> → JsonUtility는 "없음"(null)과 0을 구분하지 못합니다. 키 0cm로 읽힐 수 있습니다.</li>
+<li><b>모양이 정해지지 않은 칸</b>: 오류의 <code>details</code>(틀린 칸 이름 → 이유) → JsonUtility는 딕셔너리를 못 읽습니다.</li>
+<li><b>목록이 바로 오는 응답</b>: 맨 바깥이 <code>[...]</code>인 JSON을 못 읽습니다.</li>
+</ul>
+<table>
+<tr><th>선택지</th><th>장점</th><th>단점</th></tr>
+<tr><td><b>Newtonsoft(Json.NET)</b> (추천)</td><td>C# 세계의 사실상 표준. Unity가 공식 패키지(<code>com.unity.nuget.newtonsoft-json</code>)로 배포. 위 문제를 다 처리</td><td>JsonUtility보다 느리고 앱이 조금 커짐 → 우리 응답은 작아서 체감 없음(가설, 아이폰에서 확인)</td></tr>
+<tr><td>JsonUtility + 우회</td><td>추가 설치 없음</td><td>null 칸마다 "있음/없음" 표시를 따로 달아야 함. 화면마다 실수가 생김</td></tr>
+<tr><td>직접 만든 파서</td><td>마음대로 고침</td><td>만들고 테스트할 시간 낭비</td></tr>
+</table>
+<div class="box rec"><b>추천</b>: Unity 공식 Newtonsoft 패키지. 패키지 매니저에서 이름으로 하나 추가하면 끝입니다.</div>
+<div class="links">배울 자료: <a href="https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.2/manual/index.html">Unity: Newtonsoft Json 패키지</a> · <a href="https://www.newtonsoft.com/json/help/html/Introduction.htm">Json.NET 공식 문서</a></div>
+
+<!-- 3 -->
+<h2 id="q3"><span class="num">3</span>카카오 SDK 넣는 방법</h2>
+<h3>무슨 문제인가</h3>
+<p>카카오 로그인을 하려면 카카오가 만든 라이브러리(<b>SDK</b>)를 앱에 넣어야 합니다. 카카오는 이 SDK를 <b>Swift Package Manager(SPM)</b>, 즉 애플 공식 라이브러리 설치 방식으로만 배포합니다. 2.23.0부터 다른 방식(CocoaPods)은 지원을 끊었습니다.</p>
+<p>문제는 <b>Unity가 iOS 빌드를 할 때마다 Xcode 프로젝트를 새로 만든다</b>는 점입니다. Xcode에서 손으로 "카카오 SDK 추가"를 해 두어도 다음 빌드 때 지워질 수 있습니다. 팀원 3명이 각자 빌드하면 각자 매번 손으로 해야 하고, 한 명만 빠뜨려도 "내 맥에선 되는데"가 생깁니다.</p>
+<svg viewBox="0 0 820 200" role="img" aria-label="빌드 후처리로 카카오 SDK 자동 추가">
+  <rect class="s-box" x="10" y="60" width="160" height="70" rx="10"/>
+  <text x="90" y="92" text-anchor="middle">Unity iOS 빌드</text>
+  <text x="90" y="114" text-anchor="middle" class="small">Xcode 프로젝트 새로 만듦</text>
+  <path class="s-line" d="M170 95 H230" marker-end="url(#a3)"/>
+  <rect class="s-ok" x="235" y="45" width="300" height="100" rx="10"/>
+  <text x="385" y="75" text-anchor="middle" font-weight="700">빌드 후처리 스크립트 (C#, 자동)</text>
+  <text x="385" y="100" text-anchor="middle" font-size="14">① 카카오 SDK 패키지 주소 추가</text>
+  <text x="385" y="120" text-anchor="middle" font-size="14">② 카카오톡에서 돌아올 주소(URL 스킴)·앱 키 넣기</text>
+  <path class="s-line" d="M535 95 H595" marker-end="url(#a3)"/>
+  <rect class="s-box" x="600" y="60" width="210" height="70" rx="10"/>
+  <text x="705" y="92" text-anchor="middle">Xcode가 SDK 받아 빌드</text>
+  <text x="705" y="114" text-anchor="middle" class="small">누가 빌드해도 같음</text>
+  <text x="385" y="180" text-anchor="middle" class="small">앱 키는 git에 안 올린 로컬 파일에서 읽음(공개 저장소라서)</text>
+  <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker></defs>
+</svg>
+<p><b>빌드 후처리</b>는 Unity가 Xcode 프로젝트를 만든 직후에 자동으로 도는 C# 스크립트입니다. Unity 6에는 이 스크립트에서 SPM 패키지를 추가하는 함수(<code>PBXProject.AddRemotePackageReferenceAtVersion</code>)가 문서에 있습니다. 그래서 빌드 버튼만 누르면 누구 맥에서든 카카오 SDK가 들어갑니다.</p>
+<p>같이 넣는 것이 하나 더 있습니다. 카카오톡 앱으로 로그인하면 카카오톡이 열렸다가 <b>우리 앱으로 돌아와야</b> 하는데, 이때 쓰는 주소(URL 스킴, <code>kakao앱키://</code>)와 "카카오톡이 깔려 있는지 확인해도 된다"는 허락 목록을 앱 설정(Info.plist)에 넣어야 합니다.</p>
+<table>
+<tr><th>선택지</th><th>장점</th><th>단점</th></tr>
+<tr><td><b>빌드 후처리로 자동 추가</b> (추천)</td><td>누가 빌드해도 같음, 빠뜨릴 일 없음</td><td>Unity 6.6 + 카카오 SDK 조합에서 실제로 되는지 아직 안 해 봄(가설) → 5번 단계에서 첫 빌드로 확인</td></tr>
+<tr><td>Xcode에서 손으로 추가</td><td>바로 됨</td><td>빌드할 때마다, 사람마다 반복. 대신 Unity의 "덧붙이기(Append)" 빌드를 쓰면 손댄 게 남음 → 자동이 막혔을 때의 대안</td></tr>
+</table>
+<div class="box rec"><b>추천</b>: 빌드 후처리로 자동 추가. 막히면 손으로 추가 + Append 빌드로 임시 진행합니다.</div>
+<div class="links">배울 자료: <a href="https://developers.kakao.com/docs/latest/ko/ios/getting-started">카카오: iOS SDK 시작하기(SPM 설치, 2.23.0부터 CocoaPods 중단)</a> · <a href="https://docs.unity3d.com/ScriptReference/iOS.Xcode.PBXProject.AddRemotePackageReferenceAtVersion.html">Unity: PBXProject.AddRemotePackageReferenceAtVersion</a></div>
+
+<!-- 4 -->
+<h2 id="q4"><span class="num">4</span>asmdef: 코드를 묶음으로 나누기</h2>
+<h3>무슨 문제인가</h3>
+<p>Unity는 <code>Assets</code> 안의 C# 파일을 기본적으로 <b>전부 한 덩어리</b>(이름 <code>Assembly-CSharp</code>)로 컴파일합니다. 폴더에 <b>asmdef 파일</b>(Assembly Definition)을 하나 두면, 그 폴더 코드는 따로 떨어진 묶음이 됩니다.</p>
+<svg viewBox="0 0 820 230" role="img" aria-label="asmdef 묶음 구조">
+  <rect class="s-box" x="10" y="20" width="250" height="190" rx="10"/>
+  <text x="135" y="48" text-anchor="middle" font-weight="700">기본 덩어리</text>
+  <text x="135" y="68" text-anchor="middle" class="small">Assembly-CSharp</text>
+  <text x="135" y="105" text-anchor="middle">기존 섬 맵·달리기 스크립트</text>
+  <text x="135" y="128" text-anchor="middle" class="small">RunnerController, ISpeedSource …</text>
+  <text x="135" y="180" text-anchor="middle" class="small">S2에 속도 플러그인 붙일 때 묶음으로 옮김</text>
+
+  <rect class="s-ok" x="300" y="20" width="250" height="190" rx="10"/>
+  <text x="425" y="48" text-anchor="middle" font-weight="700">Scrun.App (새 묶음)</text>
+  <text x="425" y="90" text-anchor="middle">ApiClient · Native(브리지)</text>
+  <text x="425" y="114" text-anchor="middle">화면 틀 · 로그인 화면</text>
+  <text x="425" y="138" text-anchor="middle">지환님 권한·에어팟·코스 화면</text>
+
+  <rect class="s-ok" x="590" y="70" width="220" height="90" rx="10"/>
+  <text x="700" y="102" text-anchor="middle" font-weight="700">Scrun.App.Tests</text>
+  <text x="700" y="126" text-anchor="middle" class="small">자동 테스트(에디터에서 실행)</text>
+  <path class="s-line" d="M590 115 H555" marker-end="url(#a4)"/>
+  <text x="572" y="105" text-anchor="middle" class="small">씀</text>
+  <defs><marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker></defs>
+</svg>
+<h3>왜 나누나</h3>
+<ol>
+<li><b>자동 테스트 때문(제일 큰 이유)</b>: "토큰이 만료된 요청 3개가 동시에 와도 재발급은 1번"처럼 손으로 확인하기 어려운 건 테스트 코드로 확인합니다. Unity 테스트 코드는 asmdef 묶음이어야 하고, 묶음은 기본 덩어리 코드를 쓸 수 없습니다. 그래서 테스트할 ApiClient도 묶음 안에 있어야 합니다.</li>
+<li><b>경계가 생김</b>: 앱 화면 코드가 섬 맵 내부 코드를 함부로 건드리지 못합니다. 쓰려면 명시적으로 연결해야 해서, 나중에 맵을 새로 바꿔도(11/24 이후 새 맵) 앱 화면이 덜 깨집니다.</li>
+<li><b>컴파일이 빨라짐</b>: 고친 묶음만 다시 컴파일합니다.</li>
+</ol>
+<h3>단점과 대처</h3>
+<p>묶음 안의 새 코드는 기본 덩어리의 기존 스크립트(<code>ISpeedSource</code> 등)를 쓸 수 없습니다. S1 앱 화면은 아직 그걸 쓰지 않으니 문제가 없고, S2에서 속도를 아바타에 연결할 때 기존 달리기 스크립트도 묶음(예: <code>Scrun.Runtime</code>)으로 옮깁니다. 지환님 화면 코드도 <code>Scrun.App</code> 폴더에 넣으면 됩니다. 이 규칙은 PR에 같이 적습니다.</p>
+<div class="box rec"><b>추천</b>: 새 앱 코드는 <code>Scrun.App</code>, 테스트는 <code>Scrun.App.Tests</code>. 기존 스크립트는 S2에 옮김.</div>
+<div class="links">배울 자료: <a href="https://docs.unity3d.com/Manual/assembly-definition-files.html">Unity: Assembly definitions</a> · <a href="https://docs.unity3d.com/Packages/com.unity.test-framework@1.4/manual/index.html">Unity Test Framework</a></div>
+
+<!-- 5 -->
+<h2 id="q5"><span class="num">5</span>노트북 서버로 http 허용</h2>
+<h3>무슨 문제인가</h3>
+<p>지금 서버는 노트북에서 <code>http://192.168.x.x:8000</code>처럼 <b>암호화 없는 http</b>로 돌아갑니다. 그런데 아이폰(애플의 ATS 규칙)과 Unity(설정 "Allow downloads over HTTP", 기본값 막음)는 둘 다 암호화 안 된 http 접속을 <b>기본으로 막습니다</b>. 같은 와이파이에서 민재님 노트북 서버에 붙으려면 이걸 풀어야 합니다. 에디터에서 같은 PC의 <code>localhost</code>로 접속하는 건 Unity가 항상 허용하므로 문제가 없습니다.</p>
+<svg viewBox="0 0 820 190" role="img" aria-label="개발 빌드와 출시 빌드의 http 허용 차이">
+  <rect class="s-ok" x="10" y="20" width="390" height="150" rx="10"/>
+  <text x="205" y="50" text-anchor="middle" font-weight="700">개발 빌드 (우리끼리 테스트)</text>
+  <text x="205" y="85" text-anchor="middle">아이폰 → http://노트북IP:8000</text>
+  <text x="205" y="110" text-anchor="middle" class="small">허용. 같은 와이파이 안에서만</text>
+  <text x="205" y="140" text-anchor="middle" class="small">비밀번호 없는 개발 DB, 가짜 데이터</text>
+  <rect class="s-bad" x="420" y="20" width="390" height="150" rx="10"/>
+  <text x="615" y="50" text-anchor="middle" font-weight="700">출시 빌드 (스토어)</text>
+  <text x="615" y="85" text-anchor="middle">아이폰 → https://운영 서버</text>
+  <text x="615" y="110" text-anchor="middle" class="small">http는 막힘. 토큰이 평문으로 새지 않음</text>
+  <text x="615" y="140" text-anchor="middle" class="small">운영 서버 준비는 BL-51(11/24 이후)</text>
+</svg>
+<table>
+<tr><th>선택지</th><th>장점</th><th>단점</th></tr>
+<tr><td><b>개발 빌드에서만 허용</b> (추천, Unity 설정 "Allowed in Development Builds")</td><td>설정 한 번, 출시 빌드는 자동으로 막힘</td><td>개발 빌드 체크를 켜고 빌드해야 함(평소에 켜 둠)</td></tr>
+<tr><td>항상 허용</td><td>신경 쓸 게 없음</td><td>출시 앱도 http가 열려 로그인 토큰이 암호화 없이 오갈 수 있음. 애플 심사에서 이유를 물을 수 있음</td></tr>
+<tr><td>노트북에 https 인증서</td><td>출시와 같은 조건</td><td>노트북 IP가 바뀔 때마다 인증서를 다시 만들고 아이폰마다 인증서를 설치해야 함</td></tr>
+</table>
+<div class="box note"><b>11/09 아이폰에서 확인할 것(가설)</b>: ① Unity 설정이 아이폰 쪽 ATS 예외까지 같이 넣어 주는지 ② 같은 와이파이 기기에 접속할 때 iOS 14부터 뜨는 "로컬 네트워크 접근 허용" 팝업 → 앱 설정에 이유 문구(<code>NSLocalNetworkUsageDescription</code>)가 필요한지.</div>
+<div class="box rec"><b>추천</b>: 개발 빌드에서만 http 허용, 출시 빌드는 https만.</div>
+<div class="links">배울 자료: <a href="https://docs.unity3d.com/ScriptReference/InsecureHttpOption.DevelopmentOnly.html">Unity: InsecureHttpOption.DevelopmentOnly</a> · <a href="https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity">Apple: App Transport Security</a> · <a href="https://developer.apple.com/documentation/bundleresources/information-property-list/nslocalnetworkusagedescription">Apple: NSLocalNetworkUsageDescription</a></div>
+
+<h2>한 줄 요약</h2>
+<table>
+<tr><th>#</th><th>질문</th><th>추천</th></tr>
+<tr><td>1</td><td>C#이 Swift를 어떻게 부르나</td><td>창구 하나 + 번호표 콜백, Unity 기본 Objective-C 틀</td></tr>
+<tr><td>2</td><td>서버 JSON을 무엇으로 읽나</td><td>Unity 공식 Newtonsoft</td></tr>
+<tr><td>3</td><td>카카오 SDK를 어떻게 넣나</td><td>빌드 후처리로 자동(SPM)</td></tr>
+<tr><td>4</td><td>코드를 묶음으로 나누나</td><td>새 앱 코드만 Scrun.App + 테스트 묶음</td></tr>
+<tr><td>5</td><td>노트북 서버 http를 열까</td><td>개발 빌드에서만</td></tr>
+</table>
+</main>
+</body>
+</html>
