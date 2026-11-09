@@ -122,6 +122,19 @@
 - 확인 흐름: 평소엔 UI Builder(UXML·USS 편집) + Device Simulator(아이폰 기종·노치·안전 영역·회전) + Play 모드(Live Reload, `FakeSpeedSource`·FakeApi), 화면 묶음 하나가 끝날 때 아이폰 빌드로 손맛·한글 입력·센서·성능 확인. 컴퓨터에서 못 보는 것: 손가락 스크롤 관성, 실제 iOS 키보드, 센서·에어팟, 프레임·발열, 손에 든 글자 크기
 - 남은 위험(가설): 아이폰에서 한글 입력·스크롤 감 → 화면 틀 첫 화면을 닉네임 입력 + 긴 목록으로 골라 확인. 입력이 어색하면 입력 칸만 iOS 네이티브 입력 플러그인(ADR-0001 11/06 보충)
 
+## 앱 코드 묶음 `Scrun.App` (11/09, 계획 0018)
+- 새 앱 코드(서버 연결·네이티브·화면)는 `Assets/Scrun/App/` 아래에 둔다. 이 폴더는 asmdef로 따로 묶인 덩어리(`Scrun.App`)라서 기존 `Assets/Scrun/Scripts/`(섬 맵·달리기, 기본 덩어리)를 쓸 수 없다. S2에 속도를 붙일 때 기존 스크립트도 묶음으로 옮긴다
+  - `App/Editor/` = 에디터 전용(`Scrun.App.Editor`), `App/Tests/` = 자동 테스트(`Scrun.App.Tests`, Window → General → Test Runner → EditMode)
+- **아이폰 기능은 `Native`로만 부른다**: `Native.Permissions`(권한 4종: 모션·피트니스, 카메라, 헤드폰 모션, 알림 / 상태 읽기·`RequestAsync`·`OpenSettings`·`Changed`), `Native.Headphones`(`Status` 없음/모션 없는 이어폰/에어팟, `DeviceName`, `Changed`)
+  ```csharp
+  var s = await Native.Permissions.RequestAsync(PermissionKind.Camera); // 팝업을 누를 때까지 기다림
+  if (s == PermissionStatus.Denied) Native.Permissions.OpenSettings();
+  Native.Headphones.Changed += st => Refresh(st);
+  ```
+- **에디터에서는 가짜**: 메뉴 Scrun → Fake Native 창. Play 전엔 처음 상태와 "팝업에서 허용/거부"·누르는 시간을 정하고(이 컴퓨터에 저장), Play 중엔 지금 상태를 바꾸면 설정 앱에서 바꾸고 돌아온 것·에어팟을 끼고 뺀 것처럼 `Changed`가 온다. Play를 시작할 때마다 처음 상태로 돌아감
+- 아이폰 진짜 구현(Swift 브리지 `scrun_call` + 콜백)은 계획 0018의 5번에서 붙이고, 그 전엔 모든 플랫폼이 가짜를 쓴다. 화면 코드는 안 바뀜
+- 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
+
 ## 남은 큰 것 (11/06 기준)
 - 손그림 텍스처 에셋(땅·바위·건물), 실제 캐릭터(자주 뛰면 탄탄·안 뛰면 둥근 체형 변화가 가능해야 함, 지금은 Mixamo Y Bot 임시), 0에서 3 km/h·20 km/h 발 미끄러짐, 디버그 HUD 교체, 60fps·발열 측정, 앱 화면 흐름(UI Toolkit), 빌드 대상 iOS로 전환(ADR-0007)
 - 맵: 11/05엔 크게 다시 만들기로 했으나, 11/07 민재 결정으로 새 블록아웃은 하지 않고 기존 섬 맵(Island01, 도로망·코스 4개)을 그대로 쓴다. 이건 임시이고, 맵·아바타 컨셉아트가 정해지면 에셋을 만들어(또는 구매) 새 맵(BL-43 3km 루프)·새 아바타(BL-42)를 새로 만든다(11/07 민재, 노션 기능 "새 맵·아바타")
