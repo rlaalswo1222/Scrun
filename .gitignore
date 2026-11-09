@@ -53,3 +53,4 @@ backend/build/
 
 # 서버 접속 정보·키(예시는 backend/.env.example)
 backend/.env
+backend/deploy/.env

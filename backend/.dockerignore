@@ -1,0 +1,6 @@
+.env
+deploy/
+tests/
+build/
+**/__pycache__/
+.pytest_cache/
