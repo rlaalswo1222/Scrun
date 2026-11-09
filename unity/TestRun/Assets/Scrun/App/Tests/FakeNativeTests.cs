@@ -57,6 +57,25 @@ namespace Scrun.App.Tests
         }
 
         [Test]
+        public void 팝업을_기다리는_중에_상태가_정해지면_기다리던_요청이_모두_그_답을_받는다()
+        {
+            var c = Cfg();
+            c.requestDelaySec = 60f; // 타이머는 안 끝남
+            var f = new FakeNative(c);
+            var a = f.RequestAsync(PermissionKind.Camera).GetAwaiter();
+            var b = f.RequestAsync(PermissionKind.Camera).GetAwaiter();
+            Assert.IsFalse(a.IsCompleted);
+
+            f.SimulateStatus(PermissionKind.Camera, PermissionStatus.NotDetermined); // 그대로 → 계속 기다림
+            Assert.IsFalse(a.IsCompleted);
+
+            f.SimulateStatus(PermissionKind.Camera, PermissionStatus.Denied);
+            Assert.IsTrue(a.IsCompleted && b.IsCompleted);
+            Assert.AreEqual(PermissionStatus.Denied, a.GetResult());
+            Assert.AreEqual(PermissionStatus.Denied, b.GetResult());
+        }
+
+        [Test]
         public void 설정_앱에서_바꾼_흉내는_다를_때만_이벤트가_온다()
         {
             var f = new FakeNative(Cfg(PermissionStatus.Denied));

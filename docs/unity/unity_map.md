@@ -132,7 +132,7 @@
   Native.Headphones.Changed += st => Refresh(st);
   ```
 - **에디터에서는 가짜**: 메뉴 Scrun → Fake Native 창. Play 전엔 처음 상태와 "팝업에서 허용/거부"·누르는 시간을 정하고(이 컴퓨터에 저장), Play 중엔 지금 상태를 바꾸면 설정 앱에서 바꾸고 돌아온 것·에어팟을 끼고 뺀 것처럼 `Changed`가 온다. Play를 시작할 때마다 처음 상태로 돌아감
-- 아이폰 진짜 구현(Swift 브리지 `scrun_call` + 콜백)은 계획 0018의 5번에서 붙이고, 그 전엔 모든 플랫폼이 가짜를 쓴다. 화면 코드는 안 바뀜
+- 아이폰 진짜 구현(Swift 브리지 `scrun_call` + 콜백)은 계획 0018의 5번에서 붙인다. 그 전의 빌드(아이폰·안드로이드)에서는 `Native`를 부르면 바로 예외가 난다(가짜가 몰래 "허용"을 주지 않게). 기기에서 가짜로 화면만 보려면 Player Settings → Scripting Define Symbols에 `SCRUN_FAKE_NATIVE`. 화면 코드는 진짜가 붙어도 안 바뀜
 - 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
 
 ## 남은 큰 것 (11/06 기준)
