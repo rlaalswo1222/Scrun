@@ -4,6 +4,7 @@
   - **1번 완료(11/09)**: `Assets/Scrun/App/`(asmdef `Scrun.App`)에 `Native.Permissions`·`Native.Headphones` 모양, 에디터 가짜 `FakeNative` + 메뉴 Scrun → Fake Native 창, EditMode 테스트 7개. 빌드에서는 진짜 구현(5번) 전까지 `Native`가 바로 예외(가짜가 몰래 "허용"을 주지 않게, 기기에서 가짜로 보려면 `SCRUN_FAKE_NATIVE`). 사용법은 `docs/unity/unity_map.md` "앱 코드 묶음"
   - **2번 완료(11/09)**: `Api.Auth`(카카오 로그인·약관·가입·로그아웃)·`Api.Users`(닉네임 확인), `ApiClient`(응답 껍데기·`ApiException`·재발급 한 번만·재시도 한 번), `Session`(토큰은 `Native.SecureStore`). 테스트 18개(가짜 HTTP: 동시 만료 3개 → 재발급 1번, 재발급 중 로그아웃해도 옛 토큰이 안 살아남, 다른 카카오 계정이 새로 오면 예전 로그인 지움 등), 메뉴 Scrun → 개발 → 서버 로그인 흐름 확인으로 로컬 서버 실제 가입 성공. 에디터 서버 주소는 Scrun → API 서버 창. 로딩·오류 화면(I-07–I-09)은 3·4번 화면과 같이
   - **3번 완료(11/09)**: 앱 씬 + `AppRoot`·`Navigator`(탭 4개, 탭마다 쌓기, 흐름 모드)·`AppScreen`·안전 영역·세로 고정/가로 전환, Pretendard 글꼴, 메뉴 Scrun → Build App Scene. 테스트 8개 추가(전체 33개), 프로젝트 화면 방향 설정(세로가 막혀 있던 것)도 바로잡음. 노치 여백은 Device Simulator·아이폰에서 확인 남음
+  - **4번 완료(11/09, 진짜 카카오만 6번)**: 로그인(A-05)·약관(A-06)·프로필 화면, `Native.Kakao`(에디터 가짜), 로딩·오류 공통 처리 `Feedback`(I-07–I-09). 테스트 4개 추가(전체 37개), 로컬 서버로 화면을 눌러 가입까지 확인. 화면을 직접 눌러 보다가 오류창 "다시 시도"가 아무것도 안 하던 버그를 찾아 고침
 - 담당: 민재. 기간 S1(11/08–11/09). 근거: 계획 0017(스프린트·11/08 재분배), ADR-0001(Unity 하나), ADR-0007(아이폰 우선), [API 공통 규칙](../api/README.md)
 - 노션 작업 표 S1 민재 6줄: 브리지(BL-6), 카카오 iOS SDK(BL-1), 권한 Swift(BL-2), API 연결 코드(BL-38), 앱 기본 틀(BL-41), 로그인·약관·프로필 화면(BL-1). 서버 쪽 약관·닉네임 확인 API는 끝남(PR #16)
 

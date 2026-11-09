@@ -92,3 +92,231 @@
     color: var(--color-primary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
+
+/* ---- 공통 부품(임시 모양, 상준 UI Kit으로 바꿈) ---- */
+.btn {
+    height: 52px;
+    margin: var(--space-4) 0 var(--space-4) 0;
+    border-width: 0;
+    border-radius: 12px;
+    font-size: 17px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: #FFFFFF;
+}
+
+.btn-secondary {
+    background-color: var(--color-line);
+    color: var(--color-text);
+}
+
+/* 카카오 로그인 버튼: 카카오 디자인 가이드 색(배경 #FEE500, 글자 검정 85%) */
+.btn-kakao {
+    background-color: #FEE500;
+    color: rgba(0, 0, 0, 0.85);
+}
+
+.btn:disabled {
+    opacity: 0.4;
+}
+
+.top-bar {
+    flex-direction: row;
+    height: 44px;
+    margin-top: -16px;
+    margin-left: -8px;
+}
+
+.back-button {
+    width: 44px;
+    height: 44px;
+    font-size: 28px;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    color: var(--color-text);
+}
+
+.field-label {
+    font-size: 15px;
+    color: var(--color-text);
+    margin-top: var(--space-4);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.hint-text {
+    font-size: 13px;
+    color: var(--color-muted);
+    white-space: normal;
+    margin-top: 2px;
+}
+
+.status-text {
+    font-size: 13px;
+    color: var(--color-primary);
+    white-space: normal;
+    min-height: 18px;
+    margin-top: 4px;
+}
+
+.error-text {
+    color: #D93025;
+}
+
+.notice-text {
+    font-size: 14px;
+    color: #D93025;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.input {
+    margin: var(--space-2) 0 0 0;
+}
+
+.input > .unity-text-field__input {
+    height: 48px;
+    font-size: 17px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border-color: var(--color-line);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+}
+
+.field-row {
+    flex-direction: row;
+}
+
+.field-col {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-right: var(--space-2);
+}
+
+.field-col:last-child {
+    margin-right: 0;
+}
+
+/* 로그인 */
+.login {
+    justify-content: flex-end;
+    padding-bottom: var(--space-6);
+}
+
+.login-hero {
+    flex-grow: 1;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-logo {
+    font-size: 44px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.login-lead {
+    font-size: 16px;
+    color: var(--color-muted);
+    margin-top: var(--space-2);
+}
+
+/* 약관 */
+.terms-all {
+    padding: var(--space-4) 0;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--color-line);
+    font-size: 17px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.terms-row {
+    flex-direction: row;
+    align-items: center;
+    min-height: 48px;
+}
+
+.terms-toggle {
+    flex-grow: 1;
+    font-size: 15px;
+}
+
+.link-button {
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    color: var(--color-muted);
+    font-size: 14px;
+}
+
+.empty-state {
+    align-items: center;
+    padding: var(--space-6) 0;
+}
+
+/* 로딩·오류 덮개 */
+.overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.35);
+    justify-content: center;
+    align-items: center;
+    display: none;
+}
+
+.overlay-loading {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.loading-text {
+    font-size: 16px;
+    color: var(--color-text);
+    padding: 12px 20px;
+    border-radius: 12px;
+    background-color: var(--color-surface);
+}
+
+.dialog {
+    width: 86%;
+    padding: var(--space-6) var(--space-4) var(--space-2) var(--space-4);
+    border-radius: 16px;
+    background-color: var(--color-surface);
+}
+
+.dialog-title {
+    font-size: 19px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.dialog-body {
+    font-size: 15px;
+    color: var(--color-text);
+    white-space: normal;
+    margin-top: var(--space-2);
+}
+
+.dialog-id {
+    font-size: 11px;
+    color: var(--color-muted);
+    margin-top: var(--space-2);
+}
+
+.dialog-buttons {
+    flex-direction: row;
+}
+
+.dialog-buttons > .btn {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-right: var(--space-2);
+}
+
+.dialog-buttons > .btn:last-child {
+    margin-right: 0;
+}

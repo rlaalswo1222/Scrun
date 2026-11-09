@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- 앱 전체 틀: 화면 자리(screen-host) + 아래 탭 4개. AppRoot가 띄우고 Navigator가 화면을 바꾼다 -->
+    <!-- 앱 전체 틀: 화면 자리(screen-host) + 아래 탭 4개 + 로딩·오류 덮개(Feedback). AppRoot가 띄우고 Navigator가 화면을 바꾼다 -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/App.uss" />
     <ui:VisualElement name="app-root" class="app-root">
         <ui:VisualElement name="safe-area" class="safe-area">
@@ -9,6 +9,24 @@
                 <ui:Button name="tab-records" class="tab" text="기록" />
                 <ui:Button name="tab-friends" class="tab" text="친구" />
                 <ui:Button name="tab-me" class="tab" text="내 정보" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- I-07 로딩: 서버를 기다리는 동안 화면을 덮어 두 번 누르기를 막음 -->
+        <ui:VisualElement name="loading" class="overlay overlay-loading">
+            <ui:Label text="잠시만요" class="loading-text" />
+        </ui:VisualElement>
+
+        <!-- I-08·I-09 오류·네트워크 -->
+        <ui:VisualElement name="error" class="overlay">
+            <ui:VisualElement class="dialog">
+                <ui:Label name="error-title" class="dialog-title" />
+                <ui:Label name="error-body" class="dialog-body" />
+                <ui:Label name="error-id" class="dialog-id" />
+                <ui:VisualElement class="dialog-buttons">
+                    <ui:Button name="error-close" text="닫기" class="btn btn-secondary" />
+                    <ui:Button name="error-retry" text="다시 시도" class="btn btn-primary" />
+                </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

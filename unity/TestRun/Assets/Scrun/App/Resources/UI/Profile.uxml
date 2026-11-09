@@ -1,0 +1,30 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- A-06 다음 프로필: 닉네임·키·몸무게 → 가입 -->
+    <ui:VisualElement class="screen">
+        <ui:VisualElement class="top-bar">
+            <ui:Button name="back" text="‹" class="back-button" />
+        </ui:VisualElement>
+        <ui:Label text="프로필" class="screen-title" />
+        <ui:ScrollView class="screen-body">
+            <ui:Label text="닉네임" class="field-label" />
+            <ui:Label text="같이 달리는 사람들의 이름표에 보여요" class="hint-text" />
+            <ui:TextField name="nickname" class="input" />
+            <ui:Label name="nickname-status" class="status-text" />
+
+            <ui:VisualElement class="field-row">
+                <ui:VisualElement class="field-col">
+                    <ui:Label text="키(cm)" class="field-label" />
+                    <ui:TextField name="height" class="input" />
+                </ui:VisualElement>
+                <ui:VisualElement class="field-col">
+                    <ui:Label text="몸무게(kg)" class="field-label" />
+                    <ui:TextField name="weight" class="input" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <!-- 몸무게를 어디에 쓰는지는 아직 미정(서버: 속도 추정엔 안 씀, 용도는 개인정보처리방침에 적음) → 상준 문구 확정 때 안내 추가 -->
+            <ui:Label text="키는 아바타 크기에 써요" class="hint-text" />
+            <ui:Label name="body-status" class="status-text error-text" />
+        </ui:ScrollView>
+        <ui:Button name="submit" text="시작하기" class="btn btn-primary" />
+    </ui:VisualElement>
+</ui:UXML>
