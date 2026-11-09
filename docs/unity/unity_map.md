@@ -147,6 +147,20 @@
   - 서버 주소 `ApiConfig.BaseUrl`: 에디터 기본 로컬 `http://localhost:8000`(가짜 카카오 `k_123`), 빌드는 공용 개발 서버(HTTPS). 에디터에서는 메뉴 **Scrun → API 서버** 창(주소 바꾸기, 저장된 로그인 지우기)
   - 확인: 메뉴 **Scrun → 개발 → 서버 로그인 흐름 확인**(Play 중, 로컬 서버) = 약관 → 새 사람 로그인 → 닉네임 확인 → 가입 → 다시 로그인 → 로그아웃을 실제 서버로. 11/09 로컬 서버로 성공, DB에 사용자·약관 동의 2개 확인
   - 서버 모양을 바꾸면 `App/Api/Dtos.cs`도 같이. 아이폰 빌드에서 DTO가 지워지지 않게 `App/link.xml`
+- **화면 틀**(11/09, 계획 0018의 3번, `App/UI/`, UXML·USS는 `App/Resources/UI/`):
+  - 앱 씬 `Assets/Scrun/Scenes/App/App.unity`(빌드 씬 맨 앞). 메뉴 **Scrun → Build App Scene**이 글꼴 에셋·테마·패널 설정·씬을 코드로 다시 만든다(손 설정 없음)
+  - 새 화면 만들기: `AppScreen`을 상속하고 `Uxml`(Resources 기준 경로)만 정하면 됨. 버튼 연결은 `OnCreate`, 보일 때마다 `OnShow`, 없어질 때 `OnDestroy`
+    ```csharp
+    public sealed class CourseListScreen : AppScreen {
+        protected override string Uxml => "UI/CourseList";   // App/Resources/UI/CourseList.uxml
+        protected override void OnCreate() => Q<Button>("enter").clicked += () => Nav.Push(new CourseDetailScreen());
+    }
+    ```
+  - 화면 전환은 `AppRoot.Nav`: `Push`/`Pop`(에디터 Esc = 뒤로), 탭(홈·기록·친구·내 정보)은 탭마다 따로 쌓이고 지금 탭을 다시 누르면 첫 화면으로. 로그인·온보딩·달리기처럼 아래 탭 없는 흐름은 `StartFlow`, 끝나면 `ShowTabs`. 상세 화면에서 탭을 숨기려면 `HidesTabBar`, 가로 화면은 `Landscape`(나머지는 세로 고정)
+  - 크기: 패널 기준 390×844(세로, 폭 맞춤), 가로 화면이면 뒤집음. 노치·홈 바는 `Screen.safeArea`만큼 안쪽 여백(배경은 끝까지)
+  - 색·글자 크기는 `App/Resources/UI/App.uss`의 변수(임시값) → 상준 UI Kit이 오면 변수만 바꿈. 글꼴 Pretendard(OFL, `App/UI/Fonts/`, 라이선스 파일 같이) Regular·SemiBold·Bold. 기본 글꼴은 테마(`AppTheme.tss`)에서 Regular
+  - 글꼴 에셋은 쓰는 글자만 그때 그리는 동적 에셋이라 Play가 끝나면 비운다(`AppFontReset`, git 변경이 안 생기게). 빌드 때도 비움
+  - 확인(11/09): 한글 표시, 탭 전환·화면 쌓기, 아이폰 크기(1170×2532)로 그린 세로 배치. 아직 못 본 것: 노치 여백(Device Simulator·아이폰), 실제 아이폰의 한글 입력·스크롤 손맛(4번 닉네임 입력 때)
 - 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
 
 ## 남은 큰 것 (11/06 기준)

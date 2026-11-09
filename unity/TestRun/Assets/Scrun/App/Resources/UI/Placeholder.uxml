@@ -1,0 +1,8 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement class="screen">
+        <ui:Label name="title" class="screen-title" />
+        <ui:ScrollView class="screen-body">
+            <ui:Label name="body" class="body-text" />
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>
