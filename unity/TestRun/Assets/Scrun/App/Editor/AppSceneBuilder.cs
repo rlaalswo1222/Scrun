@@ -25,14 +25,20 @@ namespace Scrun.App.Editor
         const string ScenePath = SceneDir + "/App.unity";
         static readonly string[] Weights = { "Regular", "SemiBold", "Bold" };
 
+        // 글꼴 에셋 경로(AppFontReset도 이 목록을 씀)
+        public static readonly string[] FontAssetPaths = System.Array.ConvertAll(Weights, w => $"{FontDir}/Pretendard-{w}.asset");
+
         [MenuItem("Scrun/Build App Scene")]
         public static void Build()
         {
-            if (SceneManager.GetActiveScene().isDirty)
+            // 새 씬을 열면 열려 있는 씬이 모두 닫힌다 → 저장 안 한 씬이 하나라도 있으면 멈춤
+            for (int i = 0; i < SceneManager.sceneCount; i++)
             {
-                Debug.LogWarning("[AppScene] 지금 씬에 저장 안 한 변경이 있어 멈춤. 저장하거나 되돌린 뒤 다시 실행하세요.");
+                if (!SceneManager.GetSceneAt(i).isDirty) continue;
+                Debug.LogWarning($"[AppScene] '{SceneManager.GetSceneAt(i).name}'에 저장 안 한 변경이 있어 멈춤. 저장하거나 되돌린 뒤 다시 실행하세요.");
                 return;
             }
+            EnsureOrientationSettings();
             foreach (var w in Weights) EnsureFontAsset(w);
             var theme = EnsureTheme();
             EnsurePanelSettings(theme);
@@ -68,6 +74,25 @@ namespace Scrun.App.Editor
             AssetDatabase.ImportAsset(assetPath);
         }
 
+        // 앱은 세로 고정 + 달리기 화면만 가로. 아이폰은 Info.plist에 적힌 방향으로만 돌 수 있으므로
+        // 세로·가로(왼쪽·오른쪽)를 모두 허용해 두고, 실제 고정은 AppRoot가 화면마다 한다(거꾸로 세로는 막음)
+        static void EnsureOrientationSettings()
+        {
+            if (PlayerSettings.defaultInterfaceOrientation == UIOrientation.AutoRotation
+                && PlayerSettings.allowedAutorotateToPortrait && !PlayerSettings.allowedAutorotateToPortraitUpsideDown
+                && PlayerSettings.allowedAutorotateToLandscapeLeft && PlayerSettings.allowedAutorotateToLandscapeRight)
+                return;
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;
+            PlayerSettings.allowedAutorotateToPortrait = true;
+            PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
+            PlayerSettings.allowedAutorotateToLandscapeLeft = true;
+            PlayerSettings.allowedAutorotateToLandscapeRight = true;
+            // 프로젝트 설정 파일만 저장(전체 저장은 다른 에셋까지 다시 쓸 수 있음)
+            foreach (var o in AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset"))
+                AssetDatabase.SaveAssetIfDirty(o);
+            Debug.Log("[AppScene] 화면 방향 설정: 세로·가로 허용(거꾸로 세로 제외), 실제 고정은 AppRoot");
+        }
+
         static ThemeStyleSheet EnsureTheme()
         {
             const string tss =
@@ -95,7 +120,7 @@ namespace Scrun.App.Editor
             }
             ps.themeStyleSheet = theme;
             ps.scaleMode = PanelScaleMode.ScaleWithScreenSize;
-            ps.referenceResolution = new Vector2Int(390, 844); // 세로 기준, 가로 화면에선 AppRoot가 뒤집음
+            ps.referenceResolution = AppRoot.PortraitReference; // 세로 기준, 가로 화면에선 AppRoot가 뒤집음
             ps.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
             ps.match = 0f; // 세로 화면은 폭 기준(기종이 달라도 좌우 배치가 같게)
             EditorUtility.SetDirty(ps);

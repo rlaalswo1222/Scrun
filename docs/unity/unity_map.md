@@ -159,7 +159,9 @@
   - 화면 전환은 `AppRoot.Nav`: `Push`/`Pop`(에디터 Esc = 뒤로), 탭(홈·기록·친구·내 정보)은 탭마다 따로 쌓이고 지금 탭을 다시 누르면 첫 화면으로. 로그인·온보딩·달리기처럼 아래 탭 없는 흐름은 `StartFlow`, 끝나면 `ShowTabs`. 상세 화면에서 탭을 숨기려면 `HidesTabBar`, 가로 화면은 `Landscape`(나머지는 세로 고정)
   - 크기: 패널 기준 390×844(세로, 폭 맞춤), 가로 화면이면 뒤집음. 노치·홈 바는 `Screen.safeArea`만큼 안쪽 여백(배경은 끝까지)
   - 색·글자 크기는 `App/Resources/UI/App.uss`의 변수(임시값) → 상준 UI Kit이 오면 변수만 바꿈. 글꼴 Pretendard(OFL, `App/UI/Fonts/`, 라이선스 파일 같이) Regular·SemiBold·Bold. 기본 글꼴은 테마(`AppTheme.tss`)에서 Regular
-  - 글꼴 에셋은 쓰는 글자만 그때 그리는 동적 에셋이라 Play가 끝나면 비운다(`AppFontReset`, git 변경이 안 생기게). 빌드 때도 비움
+  - 글꼴 에셋은 쓰는 글자만 그때 그리는 동적 에셋이라 화면을 그릴 때마다 글자가 쌓인다 → **저장 직전에 비운다**(`AppFontReset`, 파일은 늘 빈 상태라 git 변경이 안 생김). 빌드 때도 비움
+  - 화면 방향: 프로젝트 설정은 세로·가로(왼쪽·오른쪽) 허용 + 자동 회전(아이폰은 Info.plist에 적힌 방향으로만 돌 수 있음), 실제 고정은 `AppRoot`가 화면마다(세로 고정, `Landscape` 화면만 가로). Build App Scene이 이 설정도 맞춤. SpeedLab 빌드는 끝나면 원래대로 되돌림
+  - 빌드 씬 맨 앞은 앱 씬. 섬 씬 빌더(`ScrunEditorUtil.AddToBuildSettings`)는 이제 뒤에 붙인다
   - 확인(11/09): 한글 표시, 탭 전환·화면 쌓기, 아이폰 크기(1170×2532)로 그린 세로 배치. 아직 못 본 것: 노치 여백(Device Simulator·아이폰), 실제 아이폰의 한글 입력·스크롤 손맛(4번 닉네임 입력 때)
 - 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
 

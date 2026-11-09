@@ -8,21 +8,25 @@ namespace Scrun.App
     // 세로 고정·가로 전환, 노치·홈 바 영역(안전 영역) 띄우기, 뒤로 가기(에디터 Esc)를 맞춘다.
     // 다른 코드에서는 AppRoot.Nav로 화면을 바꾼다.
     [RequireComponent(typeof(UIDocument))]
-    [DefaultExecutionOrder(-1000)] // UIDocument가 패널을 만들기 전에 패널 설정 복사본을 끼움
+    [DefaultExecutionOrder(-1000)] // Awake에서 UIDocument가 패널을 만들기 전에 패널 설정 복사본을 끼움
     public sealed class AppRoot : MonoBehaviour
     {
-        // 세로 기준 크기(아이폰 14·15 = 390×844pt, Figma 프레임과 같은 크기라고 가정)
-        static readonly Vector2Int PortraitReference = new Vector2Int(390, 844);
+        // 세로 기준 크기(아이폰 14·15 = 390×844pt, Figma 프레임과 같은 크기라고 가정). 패널 설정 에셋도 이 값으로 만든다
+        public static readonly Vector2Int PortraitReference = new Vector2Int(390, 844);
 
         public static Navigator Nav { get; private set; }
 
         UIDocument doc;
         PanelSettings panel; // 실행 중에만 쓰는 복사본(원본 에셋을 바꾸지 않게)
         VisualElement safeArea;
-        Rect lastSafe;
-        Vector2Int lastScreen;
+        bool started;
+        bool pendingInit;
         bool landscape;
         bool orientationApplied;
+        // 안전 영역을 마지막으로 맞춘 조건(화면 크기·안전 영역·패널 크기 중 하나라도 바뀌면 다시)
+        Rect lastSafe;
+        Vector2Int lastScreen;
+        Vector2 lastPanelSize;
 
         void Awake()
         {
@@ -32,18 +36,33 @@ namespace Scrun.App
             doc.panelSettings = panel;
         }
 
+        // 화면 틀은 UIDocument가 UXML을 펼친 뒤(Start)에 잡는다. 껐다 켜면(OnEnable) UIDocument가 틀을 다시 만들므로 다시 잡는다
+        void Start()
+        {
+            started = true;
+            Init();
+        }
+
         void OnEnable()
+        {
+            // 다시 켤 때는 UIDocument가 이 뒤에 틀을 다시 펼치므로 다음 프레임에 잡는다(이 스크립트가 먼저 불림)
+            if (started) pendingInit = true;
+        }
+
+        void Init()
         {
             var root = doc.rootVisualElement;
             safeArea = root.Q("safe-area");
             Nav = new Navigator(root.Q("screen-host"), root.Q("tab-bar"), TabRoot);
             Nav.Changed += OnScreenChanged;
+            orientationApplied = false;
+            lastPanelSize = default;
             Nav.ShowTabs(AppTab.Home); // 로그인 화면은 계획 0018의 4번에서 이 앞에 붙임
         }
 
         void OnDisable()
         {
-            if (Nav != null) Nav.Changed -= OnScreenChanged;
+            Nav?.Dispose(); // 화면마다 OnHide·OnDestroy(구독 해제)가 불리게
             Nav = null;
         }
 
@@ -73,14 +92,26 @@ namespace Scrun.App
 
         void Update()
         {
-            // 안전 영역은 회전·기기(시뮬레이터)마다 바뀌므로 바뀌었을 때만 다시 맞춘다
-            var screen = new Vector2Int(Screen.width, Screen.height);
-            if (Screen.safeArea != lastSafe || screen != lastScreen)
+            if (pendingInit)
             {
-                if (SafeArea.Apply(safeArea))
+                pendingInit = false;
+                Init();
+            }
+
+            // 회전하면 화면 크기가 먼저 바뀌고 패널 크기 맞춤은 한 프레임 뒤에 따라온다 → 패널 크기도 같이 보고,
+            // 셋 중 하나라도 바뀌면 다시 맞춘다
+            if (safeArea?.panel != null)
+            {
+                var screen = new Vector2Int(Screen.width, Screen.height);
+                var panelSize = safeArea.panel.visualTree.layout.size;
+                if (Screen.safeArea != lastSafe || screen != lastScreen || panelSize != lastPanelSize)
                 {
-                    lastSafe = Screen.safeArea;
-                    lastScreen = screen;
+                    if (SafeArea.Apply(safeArea))
+                    {
+                        lastSafe = Screen.safeArea;
+                        lastScreen = screen;
+                        lastPanelSize = panelSize;
+                    }
                 }
             }
 

@@ -21,6 +21,11 @@ namespace Scrun.App.Tests
             protected internal override void OnDestroy() => Log.Add(Name + ":destroy");
         }
 
+        sealed class Broken : AppScreen
+        {
+            protected override string Uxml => "UI/없는화면";
+        }
+
         List<string> log;
         VisualElement host, tabBar;
         Navigator nav;
@@ -73,7 +78,7 @@ namespace Scrun.App.Tests
             CollectionAssert.AreEqual(new[]
             {
                 "Home:create", "Home:show",
-                "Home:hide", "상세:create", "상세:show",
+                "상세:create", "Home:hide", "상세:show", // 새 화면을 먼저 만들어 본 뒤에 바꿈
                 "상세:hide", "상세:destroy", "Home:show",
             }, log);
             Assert.AreEqual(1, host.childCount, "없어진 화면은 트리에서도 빠짐");
@@ -115,5 +120,32 @@ namespace Scrun.App.Tests
             CollectionAssert.Contains(log, "Home:destroy");
             Assert.AreEqual(1, host.childCount);
         }
+        [Test]
+        public void 새_화면을_못_만들면_지금_화면이_그대로_남는다()
+        {
+            nav.ShowTabs(AppTab.Home);
+            Assert.Throws<System.InvalidOperationException>(() => nav.Push(new Broken()));
+            Assert.AreEqual("Home", Top);
+            Assert.IsTrue(Visible(nav.Current.Root));
+
+            nav.Push(new Probe("상세", log));
+            Assert.Throws<System.InvalidOperationException>(() => nav.StartFlow(new Broken()));
+            Assert.IsTrue(nav.InTabs, "흐름으로 넘어가지 않음");
+            Assert.AreEqual("상세", Top);
+            Assert.IsTrue(Visible(nav.Current.Root));
+        }
+
+        [Test]
+        public void 첫_화면으로_돌아갈_때_중간_화면은_다시_보이지_않는다()
+        {
+            nav.ShowTabs(AppTab.Home);
+            nav.Push(new Probe("A", log));
+            nav.Push(new Probe("B", log));
+            log.Clear();
+            nav.SelectTab(AppTab.Home);
+            CollectionAssert.DoesNotContain(log, "A:show");
+            CollectionAssert.AreEqual(new[] { "B:hide", "B:destroy", "A:destroy", "Home:show" }, log);
+        }
     }
 }
+
