@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- 개발 빌드 전용: 아이폰 기능(권한·이어폰·키체인)을 눌러 보는 점검 화면. 출시 빌드에는 들어가는 버튼이 없다 -->
+    <ui:VisualElement class="screen">
+        <ui:VisualElement class="top-bar">
+            <ui:Button name="back" text="‹" class="back-button" />
+        </ui:VisualElement>
+        <ui:Label text="네이티브 점검" class="screen-title" />
+        <ui:ScrollView class="screen-body">
+            <ui:VisualElement name="perms" />
+            <ui:Button name="settings" text="설정 앱 열기" class="btn btn-secondary" />
+            <ui:Label name="headphones" class="body-text" />
+            <ui:Button name="keychain" text="키체인 저장·읽기·지우기" class="btn btn-secondary" />
+            <ui:Label name="log" class="hint-text" />
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>
