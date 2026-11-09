@@ -1,51 +1,37 @@
-# 민재 인수인계 (2026-11-09)
+# 민재 인수인계 (2026-11-09 밤)
 
-민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`, `docs/plans/`)에 있고, 11/07까지의 전체본은 `docs/log/HANDOFF_minjae_20261107.md`(그 전은 `_20261106.md`).
+민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`, `docs/plans/`)에 있고, 11/09까지의 전체본은 `docs/log/HANDOFF_minjae_20261109.md`(그 전은 `_20261107.md`, `_20261106.md`).
 
-## 지금 (11/09, S1 2일째)
-- **계획 0018(S1 앱 뼈대) 승인·구현 중**: 결정 1–4 추천안(브리지 = `scrun_call` 하나 + 번호표 콜백·Objective-C 틀, Newtonsoft, 카카오 SDK는 빌드 후처리로 SPM 자동 추가(카카오는 2.23.0부터 SPM만), 새 앱 코드는 asmdef `Scrun.App`). 설명 자료 `docs/plans/0018-decisions.html`
-  - **1번 끝(PR `feat/native-shape-fake`)**: `Native.Permissions`·`Native.Headphones` 모양 + 에디터 가짜 `FakeNative` + Scrun → Fake Native 창, EditMode 테스트 7개 통과, Play 모드에서 동시 요청·되돌림 확인. 빌드에선 진짜 구현 전까지 `Native`가 예외. **지환에게 "권한·에어팟 화면 시작해도 됨" 알릴 것**(사용법 `docs/unity/unity_map.md` "앱 코드 묶음")
-  - PR #19·#20 합침(11/09), 공용 서버는 `update.sh develop`로 develop 기준
-  - **2번 끝(PR `feat/api-client`)**: `Api.Auth`·`Api.Users`·`ApiClient`·`Session`, 테스트 18개(Scrun.App 전체 25개 통과), 메뉴 Scrun → 개발 → 서버 로그인 흐름 확인으로 로컬 서버 실제 가입 성공. 에디터 서버 주소는 Scrun → API 서버 창
-  - 이 노트북: 8000 포트는 예전 속도 실험 `server.py`(pid 29012)가 씀 → 로컬 Scrun 서버는 8001에 띄워 확인함(에디터 API 서버 창에서 `http://localhost:8001`). `server.py`를 끄면 8000으로
-  - PR #21 합침. 노션 기능 보드 "보정·달리기 준비" 카드를 "보정"(BL-4, 민재·지환 S2)과 "센서 준비·카운트다운"(BL-10·11, 지환 S3)으로 나눔. 지환과 정한 코스·맵 인원 규칙은 PR #22(`docs/api/README.md`)
-  - **3번 끝(PR `feat/app-shell`)**: 앱 씬·화면 틀·Pretendard·메뉴 Scrun → Build App Scene, 테스트 33개. 프로젝트 설정에서 세로 자동 회전이 꺼져 있던 것(`allowedAutorotateToPortrait: 0`)을 켬. `Lm_LampGlass.mat`은 여전히 안 건드림(SaveAssets 뒤에도 원래 변경 한 줄 그대로)
-  - PR #22·#23 합침. **4번 끝(PR `feat/login-screens`)**: 로그인·약관·프로필 화면 + `Native.Kakao`(가짜) + `Feedback`(로딩·오류), 테스트 37개, 로컬 서버로 화면을 눌러 가입까지
-  - PR #24 합침(11/09 저녁). **다음은 맥에서**(이 Windows 노트북 Claude는 맥을 못 다룸):
-    - 맥 준비: Xcode(한 번 열어 구성요소 설치, Settings → Accounts에 Apple ID), Unity Hub 6000.6.7f1 + **iOS Build Support**, `gh repo clone rlaalswo1222/Scrun` → `develop` pull, Claude Code, 아이폰 연결·신뢰·개발자 모드, 카카오 네이티브 앱 키(카카오 개발자 → SCRUN → 앱 키, 저장소에 안 올림)
-    - 맥 Claude 첫 말: "handoff 로드해와 → 계획 0018의 5번부터"
-    - 5번: 빌드 대상 iOS 전환(Bundle ID `com.scrun.app`, 최소 iOS 15.0, Objective-C Xcode 틀), `Assets/Plugins/iOS/`에 Swift 브리지(`scrun_call(reqId, name, json)` + `scrun_query` + 등록 콜백 → C# 메인 스레드 큐), `IosNative`로 `Native.Permissions`(모션·카메라·헤드폰 모션·알림)·`Headphones`·`SecureStore`(키체인)·`Kakao` 진짜 구현(지금 `Native.cs`의 `#else`가 예외 던지는 자리). 결정 내용은 ADR-0009로
-    - 6번: 카카오 SDK를 빌드 후처리로 SPM 추가(`PBXProject.AddRemotePackageReferenceAtVersion`, `kakao-ios-sdk`), URL 스킴 `kakao{앱키}`·`LSApplicationQueriesSchemes`, 앱 키는 git 밖 로컬 파일에서 주입. 안 되면 Append 빌드로 손 추가
-    - 아이폰 확인: 노치 여백(Device Simulator로도), 한글 입력·키보드 가림, 공용 서버(`https://161-118-211-155.sslip.io`, 진짜 카카오)로 실제 가입, 권한 팝업, 에어팟 끼고 빼기, 키체인 토큰이 앱 재실행 뒤에도 남는지
-    - 맥에서 주의: `unity/tools/*.sh`에 이 노트북 경로(`/c/Users/rlaal/...`)가 박혀 있음 → 맥 경로로 고치거나 MCP 도구 직접 사용. Unity에서 Window → MCP for Unity → Start Server. 처음 열면 가져오기가 오래 걸림
-    - 에디터 Game 창이 가로(Free Aspect)면 세로 앱이 크게 잘려 보임 → Device Simulator(Apple iPhone 15)나 1170×2532 고정 해상도로
-- **계획 0019 완료: 팀 공용 개발 서버** `https://161-118-211-155.sslip.io`(오라클 싱가포르 ARM, SSH `ubuntu@161.118.211.155` 키 `~/.ssh/oracle_key`). 진짜 카카오만, 아이폰용(에디터는 localhost 가짜). 다시 올리기 `~/scrun/backend/deploy/update.sh [브랜치]`, 지금 서버는 `feat/shared-dev-server` 브랜치 → **PR #19·#20 합친 뒤 서버에서 `update.sh develop`**. 원격에 옛 브랜치 `feat/dev-server`가 남아 있음(rebase 뒤 강제 push가 막혀 이름을 바꿈) → PR 화면에서 지우기. 비밀값은 서버 `backend/deploy/.env`에만. 매일 KST 4:30 백업(`~/scrun-backups`). Bandly는 멈춤(볼륨 유지, cron 주석, 백업 `Desktop/Bandly_backup_20261109/`, 되살리기: cron 주석 풀고 `~/server`에서 `docker compose -f docker-compose.oracle.yml up -d`, 단 80·443을 Scrun Caddy가 씀)
-  - 남은 것: 로그인 시도 제한(429), 서버 밖 백업, 진짜 도메인(BL-51). 오라클 계정이 유휴 회수 대상인지 콘솔 확인
-- PR #17·#18은 11/08에 합쳐짐
+## 지금: 계획 0018(S1 앱 뼈대) 5번부터, **맥에서**
+- **1–4번 끝, develop에 합침(PR #19–#24)**. 무엇이 있는지는 `docs/unity/unity_map.md` "앱 코드 묶음 Scrun.App", 계획 0018
+  - 1 `Native`(권한·헤드폰·보안 저장소·카카오) 모양 + 에디터 가짜 `FakeNative`(메뉴 Scrun → Fake Native), 2 `ApiClient`·`Session`·`Api.Auth/Users`(메뉴 Scrun → API 서버), 3 앱 씬·화면 틀·탭(메뉴 Scrun → Build App Scene), 4 로그인·약관·프로필 화면 + `Feedback`(로딩·오류). EditMode 테스트 37개 통과, 로컬 서버로 화면을 눌러 가입까지 확인
+  - 빌드(에디터 밖)에선 `Native.cs`의 `#else`가 예외를 던짐 → 5번에서 진짜 구현으로 채움
+- **맥 준비 상태(11/09 밤)**: macOS 업데이트 후 Xcode 설치 끝(App Store Xcode가 macOS 26.6 이상 요구). 민재는 **맥에서도 VS Code + Claude Code 확장**으로 작업
+  - 남은 준비: Xcode 한 번 열어 iOS 구성요소 설치·Settings → Accounts에 Apple ID, Unity Hub 6000.6.7f1 + **iOS Build Support**, `git clone https://github.com/rlaalswo1222/Scrun.git` → `develop`, `git config user.name minjae`(이 handoff를 찾는 이름), VS Code(응용 프로그램 폴더로 옮김) + Claude Code 확장(+ 선택 C# Dev Kit·Swift), 아이폰 연결·신뢰·개발자 모드, 카카오 네이티브 앱 키(아래 "카카오 개발자 앱", 저장소에 안 올림). 푸시하려면 `gh` 로그인
+  - 맥 Claude 첫 말: "handoff 로드해와 → 계획 0018의 5번부터"
+- **5번**: 빌드 대상 iOS 전환(Bundle ID `com.scrun.app`, 최소 iOS 15.0, Objective-C Xcode 틀), `Assets/Plugins/iOS/`에 Swift 브리지(`scrun_call(reqId, name, json)` + `scrun_query` + 등록 콜백 → C# 메인 스레드 큐), `IosNative`로 `Native.Permissions`(모션·카메라·헤드폰 모션·알림)·`Headphones`·`SecureStore`(키체인)·`Kakao` 진짜 구현. 결정 내용은 ADR-0009로. 센서는 이 통로를 안 씀(Swift가 속도까지 계산, Unity는 매 프레임 결과만 읽음)
+- **6번**: 카카오 SDK를 빌드 후처리로 SPM 추가(`PBXProject.AddRemotePackageReferenceAtVersion`, `kakao-ios-sdk`), URL 스킴 `kakao{앱키}`·`LSApplicationQueriesSchemes`, 앱 키는 git 밖 로컬 파일에서 주입. 안 되면 Append 빌드로 손 추가
+- **아이폰 확인**: 노치 여백(Device Simulator로도), 한글 입력·키보드 가림, 공용 서버(`https://161-118-211-155.sslip.io`, 진짜 카카오)로 실제 가입, 권한 팝업, 에어팟 끼고 빼기, 키체인 토큰이 앱 재실행 뒤에도 남는지
+- 맥에서 주의: `unity/tools/*.sh`에 이 Windows 노트북 경로(`/c/Users/rlaal/...`)가 박혀 있음 → 맥 경로로 고치거나 MCP 도구 직접 사용(Window → MCP for Unity → Start Server). 처음 열면 가져오기가 오래 걸림. Game 창이 가로(Free Aspect)면 세로 앱이 크게 잘림 → Device Simulator(Apple iPhone 15)나 1170×2532
+- **그다음 S2(11/10–11)**: 실시간 방식 설명 자료(WebSocket vs Photon, BL-25) → 민재 선택 → ADR, 센서 준비·걸음 감지 C# 모양 + 가짜(지환 S3 센서 준비·카운트다운 화면이 기다림, 지금 `ISpeedSource`는 `SpeedKmh` 하나뿐), S2 계획(속도 플러그인·보정 계산·보정 화면). 맥 업데이트를 기다리는 동안 Windows에서 하려던 것(11/09 밤 제안, 아직 시작 안 함)
 
-## 11/08 기록
-- **BL-44 1단계 끝, develop에 합침(11/08, PR #15·#16)**: 진짜 서버 뼈대 + 로그인 5개 + 닉네임 확인(계획 0016, 리뷰 10건 + 2차 리뷰 7건 반영, 테스트 165개). 민재 결정(11/08): refresh 재사용은 30초 유예 + 그 로그인(family)만 폐기, 재로그인은 deviceId로 같은 기기 폐기 + 사용자당 5개, 닉네임은 한글 완성형·영문·숫자·`_`만(NFKC)
-  - 바뀐 것: 설정 검사(`JWT_SECRET` 필수·32자 이상·공개값 금지, `KAKAO_MODE` 기본 real, real이면 `KAKAO_APP_ID` 필수), 카카오는 `access_token_info`로 app_id 확인, 가입 동시 충돌 처리, `core/sessions.py`(refresh 수명), 닉네임 규칙·확인 API 진짜(이유 `INVALID` 추가), 마이그레이션 `3f1c9a7e52d4`(refresh_tokens 칸 4개), alembic이 로그 설정을 안 건드림, `scripts/purge_refresh_tokens.py`
-  - 이 노트북: `backend/.env` 만듦(서명 키는 무작위, `KAKAO_MODE=fake`), 개발 DB `3f1c9a7e52d4`까지 올림. 팀원은 합친 뒤 각자 `.env` + `alembic upgrade head`
-  - 노션 API 명세 7쪽(공통 규칙·카카오·가입·재발급·로그아웃·닉네임 확인·내 정보 수정) 덮어씀, 닉네임 확인 줄은 "완료"
-  - 후속 PR(`docs/nickname-check-auth`): 닉네임 확인 예시 헤더를 `accessToken 또는 signupToken`으로, `docs/api/README.md`의 "(지금은 스텁)"·`NICKNAME_NOT_ALLOWED` 뜻 바로잡기
-  - S1 ApiClient에 넣을 것: 재발급은 한 번에 하나만(single-flight), 로그인·가입에 `deviceId`(identifierForVendor), 닉네임 확인 응답의 정규화된 `nickname` 보여 주기
-  - 공통 규칙 "미정"에 "OCR 서버/앱 미정"이 남아 있음(11/06 서버 처리로 확정) → OCR API 진짜로 만들 때 같이 고침
-- **스프린트 재분배(11/08, PR #18, 노션 작업 표 15줄 반영)**: 지환에게 권한 안내·에어팟 화면(S1), 내 정보·설정·보정값 API·임시 아바타 애니메이션(S2), 센서 준비·카운트다운 화면(S3). 페이스 봇 S3로, 멈춤·측정 예외 S4로, 계기판 촬영 화면 S4로, 기종 조사는 공통(담당 없음), 상준 S3 새 화면 모양 2개. 계획 0017 "11/08 재분배"
-  - **11/13 시연 범위 확정**: 로그인 → 권한·에어팟 → 코스 → 러닝 설정·거치 → 보정 → 센서 준비·카운트다운 → 다른 러너·페이스 봇과 실시간 달리기. 결과·OCR·인증 제외
-  - **민재 S1 남은 것(6)**: 브리지(**첫 단계로 C# `Native.Permissions`·`Native.Headphones` 모양 + `FakeNative`를 올려야 지환이 안 막힘**), 카카오 iOS SDK, 권한 Swift, ApiClient, 탭 틀, 로그인·약관·프로필 화면. 구현 전에 계획 0018(S1) 1쪽
-  - **다음 세션 바로 할 일**: 계획 0018(S1) 1쪽 쓰기(번호는 develop pull 뒤 확인, 지금 마지막 0017) → 민재 승인 → 브리지 C# 모양·가짜 상태부터. 0018에 넣을 것: 작업 순서(에디터 먼저: 내 정보 API는 지환으로 감 → ApiClient → 탭 틀 → 로그인 화면, 맥: 브리지 → 카카오 SDK → 권한 Swift), 브리지 설계와 Xcode 프로젝트 종류 결정(ADR-0009), 시뮬레이터/아이폰 확인 구분, 완료 확인(노션 작업 표 "완료 확인" 칸)
-  - 11/08에 본 Unity 현황: UI Toolkit 파일(UXML·USS·PanelSettings)과 asmdef 아직 없음(앱 화면 처음부터), `ISpeedSource`는 `SpeedKmh` 하나뿐(S2에 걸음 감지·센서 준비 상태 추가), iOS 최소 버전 15.0, 기본 화면 방향 4(자동 회전) → 세로 고정 + 달리기만 가로로 바꿔야 함, 빌드 대상은 아직 Android
-  - 브리지 설계(11/08 설명, 민재 아직 확정 전): C#→Swift는 `DllImport("__Internal")` + `@_cdecl` 함수 하나(`scrun_call`, 기능 이름 + JSON), Swift→C#은 등록한 콜백(요청 번호 + 결과 JSON) → 메인 스레드 큐. 센서는 이 통로 안 씀(Swift가 속도까지 계산, Unity는 매 프레임 결과만 읽음). Xcode 프로젝트 종류는 기존(Objective-C) 추천(Swift 방식은 iOS 16 최소·회전 처리 다름). 정하면 ADR-0009
-  - 맥북은 있음, 아이폰은 11/09부터 → 11/08은 시뮬레이터(Simulator SDK)로 브리지·카카오(웹 로그인)·권한 팝업 확인, 센서·에어팟·카메라·카카오톡 앱 로그인은 11/09 아이폰
-  - 지환에게 알릴 것: 재분배·이음매(민재가 C# 모양을 먼저 올림). **안내문은 11/08 채팅에 써 둠, 민재가 보낼 차례**
-  - **합치기 전 PR**: #17(닉네임 확인 헤더·공통 규칙 바로잡기 + 이 인수인계 + 11/08 회고), #18(계획 0017 재분배). 둘 다 문서만
-- **커밋 안 한 것**: `Lm_LampGlass.mat`(11/07 Unity 설정 저장 때 Unity가 다시 써서 `_EMISSION` 키워드 한 줄 빠짐, 의도 아님 → 되돌릴지 확인), 지환 실명 파일 2개(아래), 와이어프레임 초안, 중간발표 자료, `.claude/settings.json`
+## 공용 개발 서버 (계획 0019 완료, ADR-0008)
+- `https://161-118-211-155.sslip.io`(오라클 싱가포르 ARM, SSH `ubuntu@161.118.211.155` 키 `~/.ssh/oracle_key` — Windows 노트북에만 있음). 진짜 카카오만, 아이폰용(에디터는 localhost 가짜 `k_123`). develop 기준으로 올라가 있음, 다시 올리기 `~/scrun/backend/deploy/update.sh [브랜치]`. 비밀값은 서버 `backend/deploy/.env`에만. 매일 KST 4:30 백업(`~/scrun-backups`)
+- Bandly는 멈춤(볼륨 유지, cron 주석, 백업 `Desktop/Bandly_backup_20261109/`, 되살리기: cron 주석 풀고 `~/server`에서 `docker compose -f docker-compose.oracle.yml up -d`, 단 80·443을 Scrun Caddy가 씀)
+- 남은 것: 로그인 시도 제한(429), 서버 밖 백업, 진짜 도메인(BL-51), 오라클 계정이 유휴 회수 대상인지 콘솔 확인
+- Windows 노트북: 8000 포트는 예전 속도 실험 `server.py`가 씀 → 로컬 Scrun 서버는 8001(에디터 API 서버 창에 `http://localhost:8001`). `backend/.env`(서명 키 무작위, `KAKAO_MODE=fake`), 개발 DB는 마이그레이션 `3f1c9a7e52d4`까지. 팀원은 각자 `.env` + `alembic upgrade head`
+- 서버 정해진 것(11/08, 계획 0016·`docs/api/README.md`): refresh 재사용 30초 유예 + 그 로그인만 폐기, 재로그인은 deviceId로 같은 기기 폐기 + 사용자당 5개, 닉네임은 한글 완성형·영문·숫자·`_`(NFKC). 공통 규칙 "미정"에 "OCR 서버/앱 미정"이 남아 있음(11/06 서버 처리로 확정) → OCR API 만들 때 같이 고침
+
+## 민재가 직접 할 것
+- **지환에게**: 11/09 답장(수정본: 샘플 주기·thumbnailUrl·20명 임시 방식) + "FakeNative·앱 틀·로그인 화면 develop에 있음, 권한·에어팟 화면 시작해도 됨(사용법 `docs/unity/unity_map.md` "앱 코드 묶음")". 보냈으면 이 줄 지우기
+- 원격 옛 브랜치 `feat/dev-server` 지우기(PR 화면)
+- `Lm_LampGlass.mat`: 11/07 Unity 설정 저장 때 Unity가 다시 써서 `_EMISSION` 키워드 한 줄 빠짐(의도 아님) → 되돌릴지 결정. 커밋 안 한 것: 이 파일, 지환 실명 파일 2개(아래), 와이어프레임 초안, 중간발표 자료, `.claude/settings.json`
+- 스프린트 재분배(11/08)·11/13 시연 범위는 계획 0017 "11/08 재분배"·"11/13 시연"
 
 ## 개발 계획 (계획 0017, 노션 SCRUN > [개발 계획](https://app.notion.com/p/4114ae82f1de81a9bec2db16a9bfe635))
 - 기능 보드(카드 21개, 보드·타임라인) + 작업 표(약 86줄, 줄마다 **할 일·완료 확인**, "스프린트별 할 일" 보기). 할 일은 백로그 인수 조건 + 저장소 상황 + 구현 단계, 완료 확인은 대부분 Claude 제안. 구분은 FE·BE·3D·디자인·공통(Swift 코드는 FE 안에서 이름에 `[FE·Swift]`, Xcode·실기기 필요)
 - 원칙: PRD 핵심 루프(백로그 우선순위 1)를 앱 흐름 순서(로그인 → 권한·에어팟 → 보정 → 코스 → 달리기 → 인증 → 기록)로 S5(11/17)까지, 2순위는 S6부터. 기능 단위로 끝까지(민재·지환이 화면·API까지), 상준은 UI Kit·공통 USS·컨셉아트. 2일 스프린트 S1(11/08–09)에서 S8(11/22–23)
-- **민재 S1**: Swift 브리지, 카카오 iOS SDK, ApiClient(서버 호출 한 파일) + 약관·닉네임 확인·내 정보 API, 로그인·약관·프로필 화면, 첫 화면 틀(탭 4개), 권한·에어팟 화면. **맥 없이 되는 것**: API, ApiClient, 로그인 화면(에디터 가짜 로그인 `k_123`), 탭 틀, 권한·에어팟 화면(가짜 상태). `[FE·Swift]` 3줄은 맥·아이폰 필요. 구현 전에 계획 0018(S1) 1쪽
+- **민재 S1**: Swift 브리지, 카카오 iOS SDK, ApiClient(서버 호출 한 파일) + 약관·닉네임 확인·내 정보 API, 로그인·약관·프로필 화면, 첫 화면 틀(탭 4개), 권한·에어팟 화면. **맥 없이 되는 것**: API, ApiClient, 로그인 화면(에디터 가짜 로그인 `k_123`), 탭 틀, 권한·에어팟 화면(가짜 상태). `[FE·Swift]` 3줄은 맥·아이폰 필요. → 계획 0018(위 "지금")
 - **11/13 시연**: 로그인 → 권한·에어팟 → 보정 → 코스 → 달리기 + 실시간 같이 뛰기 기본(두 사람이 같은 맵에서 보임). 서버는 같은 와이파이 노트북, 기기 2대(없으면 아이폰 + 에디터). 실시간 방식은 S2에 반나절(WebSocket vs Photon 설명 자료 → 민재 선택 → ADR)
 - iOS 빌드 환경은 각자(스프린트 밖, 무료 Apple ID는 7일마다 재설치). FakeApi는 안 함(11/06, 스텁 서버로 충분). BL-44 판단(11/07): "진행 중"(카카오 확인·제공자별 연결 됨, 저장·조회 API는 로그인 5개만, 개발·테스트 DB 분리까지, 운영은 BL-51, 실시간 연동은 BL-25 뒤). 맵은 임시로 기존 섬 맵(Island01, 블록아웃 안 함), 컨셉아트가 정해지면 새 맵(BL-43 3km 루프, 기존 코스는 6.7–10.9km)·새 아바타(컨셉아트 S5 상준, 에셋 결정 S6 지환, 제작은 11/24 이후 — 시점은 제안)
 - OCR은 서버 처리로 확정(BL-17, 11/06). 옛 메모의 "OCR 위치 미정"은 지난 정보
@@ -94,7 +80,7 @@
 
 ## 작업 요령
 - walking skeleton(끝에서 끝까지 얇게 먼저 잇고 살 붙이기)
-- Unity: `docs/unity/unity_map.md`, `unity/tools/README.md`. 빌드 대상은 아직 Android(iOS로 바꿀 차례). MCP for Unity 사용자 범위 등록. `ucs.sh`로 설정 바꿀 땐 `AssetDatabase.SaveAssets()`가 다른 에셋도 다시 쓸 수 있음(11/07 머티리얼 1개)
+- Unity: `docs/unity/unity_map.md`, `unity/tools/README.md`. 빌드 대상은 아직 Android(0018 5번에서 iOS로). MCP for Unity 사용자 범위 등록. `ucs.sh`로 설정 바꿀 땐 `AssetDatabase.SaveAssets()`가 다른 에셋도 다시 쓸 수 있음(11/07 머티리얼 1개)
 - 보류: 실사 영상 가림 처리 등(메모리 sfm-followups)
 - 화면 흐름 `scrun_userflow_v2.html`(사용자 브라우저에선 claude.ai 링크가 안 열림 → 로컬 HTML)
 - 다음 후보(선택 대기): 이슈 보드 / 반복 작업 스킬 / SoundTrackDB 몸무게·헬스장·피로 분석
