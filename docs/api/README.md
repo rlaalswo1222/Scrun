@@ -34,6 +34,13 @@
 3. 금칙어: 대소문자·`_` 무시 → 400 `NICKNAME_NOT_ALLOWED` / `NOT_ALLOWED`
 4. 중복: 대소문자 무시 → 409 `NICKNAME_DUPLICATED` / `DUPLICATED`. 로그인한 사람의 지금 닉네임은 사용 가능
 
+## 코스와 맵 인원 (11/09 민재·지환)
+- **코스 하나 = 맵 하나**. 가득 차면 입장 불가 → 다른 코스를 고른다(백로그 BL-7 ⑤). 같은 코스에 맵을 여러 개 열지 않음
+- 최대 인원 **20명은 기획 목표**(BL-7 ⑦, BL-21 ②)이고 실측 근거는 아직 없음 → BL-25 실험(아이폰에서 아바타 수별 프레임, 실시간 메시지 양)으로 확정(BL-25 ⑥)
+- 입장 API는 인원을 셀 때 그 코스를 잠가서, 동시에 들어와도 최대 인원을 넘지 않는다
+- "지금 달리는 사람 수"(`runnersNow`)를 세는 기준은 S2에 실시간 방식을 정할 때 같이 정한다(WebSocket이면 실시간 접속, Photon이면 `runs` + 샘플 올릴 때 `runs.updated_at` 갱신). 그 전엔 `runs.status = ACTIVE` + 최근 10분(임시)
+- `mapInstanceId`(입장 응답·러닝 시작 요청)는 실시간 서버의 방 ID로 쓴다
+
 ## 응답 껍데기
 성공:
 ```json
@@ -94,7 +101,7 @@
 | `NICKNAME_DUPLICATED` | 409 | 닉네임 중복 | A-06, H-01 | |
 | `NICKNAME_NOT_ALLOWED` | 400 | 금칙어(형식·길이는 `VALIDATION_ERROR`) | A-06, H-01 | |
 | `CALIBRATION_REQUIRED` | 409 | 보정 없이 맵 입장 | A-11 | |
-| `COURSE_FULL` | 409 | 맵 인스턴스가 모두 가득 참(20명) | I-11 | |
+| `COURSE_FULL` | 409 | 그 코스의 맵이 가득 참(최대 인원). 앱은 다른 코스를 고르게 함 | I-11 | |
 | `RUN_ALREADY_FINISHED` | 409 | 이미 끝난 러닝에 종료·시계열 올리기 | | |
 | `VERIFICATION_CLOSED` | 409 | 인증 가능 시간이 지남(운동 직후만) | E-10 | |
 | `SELF_FRIEND_CODE` | 400 | 내 코드를 입력 | G-08 | |
