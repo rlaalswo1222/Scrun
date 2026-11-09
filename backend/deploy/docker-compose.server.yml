@@ -1,6 +1,6 @@
 # 팀 공용 개발 서버(계획 0019). 서버의 이 폴더에서:
 #   cp .env.server.example .env   # 값 채우기(git에 안 올림)
-#   docker compose -f docker-compose.server.yml up -d --build
+#   ./update.sh develop           # 빌드 → 마이그레이션 → 실행
 # 밖으로는 Caddy의 80·443만 열린다. DB는 컨테이너끼리만.
 name: scrun
 
@@ -25,11 +25,17 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://scrun:${DB_PASSWORD}@db:5432/scrun
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET을 .env에}
-      KAKAO_MODE: ${KAKAO_MODE:-real}
-      KAKAO_APP_ID: ${KAKAO_APP_ID:-}
+      KAKAO_MODE: real # 공개 서버라 고정. fake면 아무나 아무 계정으로 로그인됨
+      KAKAO_APP_ID: ${KAKAO_APP_ID:?KAKAO_APP_ID를 .env에}
     depends_on:
       db:
         condition: service_healthy
+    healthcheck: # DB까지 거치는 약관 API로 확인
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/v1/agreements', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   caddy:
     image: caddy:2-alpine
@@ -45,7 +51,8 @@ services:
       - caddydata:/data
       - caddyconfig:/config
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   pgdata:

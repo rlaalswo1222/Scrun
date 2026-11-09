@@ -16,5 +16,6 @@ COPY scripts scripts
 RUN useradd --uid 1000 --create-home app
 USER app
 
-# 뜰 때마다 마이그레이션을 끝까지 올린 뒤 API를 연다. Caddy 뒤에 있으므로 프록시 헤더를 믿는다.
-CMD ["sh", "-c", "python -m alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'"]
+# 마이그레이션은 여기서 하지 않는다(재시작만으로 검토 안 된 마이그레이션이 돌지 않게). deploy/update.sh가 따로 돌림.
+# Caddy 뒤에 있으므로 프록시 헤더를 믿는다.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*"]
