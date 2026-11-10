@@ -19,6 +19,9 @@ final class ScrunHeadphones: NSObject, CMHeadphoneMotionManagerDelegate {
     private var updating = false
     private var updatingWithHandler = false
     private var speedHandler: (queue: OperationQueue, handler: CMHeadphoneMotionManager.DeviceMotionHandler)?
+    // 핸들러 방식을 바꾸느라 껐다 켠 직후: 끌 때의 끊김 알림이 늦게(메인 async) 와서 연결 상태를 덮지 않게 이 시각까지 무시
+    private var switchingUntil = 0.0
+    static let switchQuietS = 1.0
     private var watching = false
     private var requesting = false
     private var started = false
@@ -92,8 +95,8 @@ final class ScrunHeadphones: NSObject, CMHeadphoneMotionManagerDelegate {
     }
 
     // 모션 업데이트는 ((지켜보는 중 || 속도 센서) && 허용) 또는 권한을 묻는 중일 때만 켠다.
-    // 속도 센서가 켜져 있고 허용이면 핸들러 있는 업데이트. 방식이 바뀌면 껐다 바로 켠다(연결 상태는 그대로 둠.
-    // 이때 iOS가 끊김·연결 알림을 다시 보내는지는 가설, 아이폰에서 확인)
+    // 속도 센서가 켜져 있고 허용이면 핸들러 있는 업데이트. 방식이 바뀌면 껐다 바로 켠다(연결 상태는 그대로 두고,
+    // 그 뒤 switchQuietS 동안 온 끊김 알림은 무시한 뒤 오디오 출력으로 다시 확인, PR #36 리뷰)
     private func syncUpdates() {
         let usable = Self.authorized && motion.isDeviceMotionAvailable
         let withHandler = speedHandler != nil && usable
@@ -101,6 +104,7 @@ final class ScrunHeadphones: NSObject, CMHeadphoneMotionManagerDelegate {
         if want && updating && withHandler != updatingWithHandler {
             motion.stopDeviceMotionUpdates()
             updating = false
+            switchingUntil = ProcessInfo.processInfo.systemUptime + Self.switchQuietS
         }
         if want && !updating {
             if withHandler, let h = speedHandler {
@@ -137,8 +141,22 @@ final class ScrunHeadphones: NSObject, CMHeadphoneMotionManagerDelegate {
 
     func headphoneMotionManagerDidDisconnect(_ manager: CMHeadphoneMotionManager) {
         DispatchQueue.main.async {
+            let quiet = self.switchingUntil - ProcessInfo.processInfo.systemUptime
+            if quiet > 0 && self.updating {
+                // 방식 바꾸기로 껐다 켠 탓일 수 있음 → 조용한 시간이 끝난 뒤 이어폰이 오디오 출력에 없을 때만 끊김으로
+                DispatchQueue.main.asyncAfter(deadline: .now() + quiet) {
+                    if self.hasHeadphonePort { return }
+                    self.motionConnected = false
+                    self.emitIfChanged()
+                }
+                return
+            }
             self.motionConnected = false
             self.emitIfChanged()
         }
+    }
+
+    private var hasHeadphonePort: Bool {
+        AVAudioSession.sharedInstance().currentRoute.outputs.contains { Self.headphonePorts.contains($0.portType) }
     }
 }

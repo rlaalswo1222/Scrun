@@ -5,8 +5,8 @@ import UIKit
 // 러닝머신 속도 센서(계획 0024). 폰 가속도 100 Hz + 에어팟 헤드폰 모션을 직렬 큐에서 SpeedEstimator에 넣고,
 // 최신 결과를 잠금으로 보호한 칸 하나에 둔다. C#(IosSpeedSensor)은 매 프레임 scrun_speed_read로 그 칸만 읽는다.
 // ScrunBridge(JSON 통로)는 쓰지 않는다(ADR-0009). C 함수 이름·칸 순서는 C# IosSpeedSensor와 짝이다. 바꾸면 양쪽을 같이.
-// 모든 C 함수는 메인 스레드에서 불린다. 추정기는 모션 큐에서만 만지고, 메인은 필요하면 큐에 sync한다
-// (큐는 메인을 기다리지 않으므로 서로 막히지 않는다).
+// 모든 C 함수는 메인 스레드에서 불린다. 추정기는 모션 큐(OperationQueue, 한 번에 하나)에서만 만지고, 메인은 필요하면
+// 그 큐에 작업을 넣고 끝날 때까지 기다린다(onQueue: 앞에 쌓인 샘플 뒤에 돈다. 큐는 메인을 기다리지 않으므로 서로 막히지 않음).
 final class ScrunSpeed {
     static let shared = ScrunSpeed()
 
@@ -28,6 +28,9 @@ final class ScrunSpeed {
 
     // ---- 모션 큐에서만 ----
     private var est = SpeedEstimator()
+    // 에어팟 시각 고정 차이: 첫 샘플에서 한 번 정함(일부 iOS는 헤드폰 모션 시각이 폰 시계와 크게 다름 → 받은 시각에 맞춤).
+    // 샘플마다 바꾸면 차이가 2초 근처에서 흔들릴 때 시각 순서가 섞여 slice·count(정렬 가정)가 틀린다(PR #36 리뷰)
+    private var airOffset: Double?
 
     // ---- 잠금으로 보호(큐가 쓰고 메인이 읽음) ----
     private let lock = NSLock()
@@ -63,9 +66,10 @@ final class ScrunSpeed {
         openStage = nil
         background = UIApplication.shared.applicationState == .background
         let saved = points
-        dq.sync {
-            est = SpeedEstimator()
-            est.load(saved)
+        onQueue {
+            self.est = SpeedEstimator()
+            self.est.load(saved)
+            self.airOffset = nil
         }
         lock.lock()
         snap = nil
@@ -84,10 +88,11 @@ final class ScrunSpeed {
         }
         ScrunHeadphones.shared.setSpeedHandler(queue) { [weak self] m, _ in
             guard let self, let m else { return }
-            var t = m.timestamp
-            // 에어팟 시각이 폰 시계와 크게 다르면(일부 iOS) 받은 시각을 쓴다(SpeedRecorder와 같음)
-            let now = Self.uptime
-            if abs(t - now) > 2 { t = now }
+            if self.airOffset == nil {
+                let d = Self.uptime - m.timestamp
+                self.airOffset = abs(d) > 2 ? d : 0
+            }
+            let t = m.timestamp + (self.airOffset ?? 0)
             let g = SpeedEstimator.g, a = m.userAcceleration, gr = m.gravity
             self.est.addAirPods(t, (a.x + gr.x) * g, (a.y + gr.y) * g, (a.z + gr.z) * g)
             self.lock.lock()
@@ -114,7 +119,10 @@ final class ScrunSpeed {
         ScrunHeadphones.shared.setSpeedHandler(nil, nil)
         observers.forEach(NotificationCenter.default.removeObserver)
         observers = []
-        dq.sync {} // 이미 큐에 들어간 샘플까지 끝낸 뒤 비운다
+        // 아직 안 돈 샘플 작업은 버리고, 돌고 있는 것은 끝날 때까지 기다린 뒤 비운다
+        // (그냥 두면 멈춘 뒤에 돌아 값을 되살리거나, 바로 다시 켜면 새 계산에 섞임, PR #36 리뷰)
+        queue.cancelAllOperations()
+        queue.waitUntilAllOperationsAreFinished()
         lock.lock()
         snap = nil
         steps = 0
@@ -145,6 +153,15 @@ final class ScrunSpeed {
         lock.unlock()
     }
 
+    // 메인에서: 모션 큐에 작업을 넣고(앞에 쌓인 샘플 뒤) 끝날 때까지 기다림
+    @discardableResult
+    private func onQueue<T>(_ work: @escaping () -> T) -> T {
+        var result: T?
+        let op = BlockOperation { result = work() }
+        queue.addOperations([op], waitUntilFinished: true)
+        return result!
+    }
+
     private static func push(_ times: inout [Double], _ t: Double) {
         times.append(t)
         if times.count > 400, let k = times.firstIndex(where: { $0 >= t - 2 }), k > 0 { times.removeFirst(k) }
@@ -152,10 +169,13 @@ final class ScrunSpeed {
 
     // MARK: 읽기(메인, 매 프레임)
 
+    // 매 프레임 불리므로 배열을 만들지 않고 out에 바로 쓴다(앞 k칸만, 나머지 칸은 건드리지 않음)
     func read(_ out: UnsafeMutablePointer<Double>, _ n: Int) -> Int {
-        var v = [Double](repeating: 0, count: Self.slotCount)
-        v[0] = Self.slotVersion
-        v[2] = .nan
+        let k = max(0, min(n, Self.slotCount))
+        func put(_ i: Int, _ x: Double) { if i < k { out[i] = x } }
+        for i in 0..<k { out[i] = 0 }
+        put(0, Self.slotVersion)
+        put(2, .nan)
         if running {
             let now = Self.uptime
             lock.lock()
@@ -174,21 +194,19 @@ final class ScrunSpeed {
                 airFlow = .off // 연결·허용이 없으면 실패가 아니라 "이어폰 없이"
             }
 
-            v[1] = now - t0
+            put(1, now - t0)
             if let s, s.state != 0 {
-                v[2] = s.kmh ?? .nan
-                v[3] = Double(s.state)
-                v[4] = s.cad ?? 0
+                put(2, s.kmh ?? .nan)
+                put(3, Double(s.state))
+                put(4, s.cad ?? 0)
             }
-            v[5] = Double(st)
-            v[6] = (s?.byAirPods ?? false) ? 1 : 0
-            v[7] = phoneFlow.rawValue
-            v[8] = airFlow.rawValue
-            v[9] = Double(phoneN)
-            v[10] = Double(airN)
+            put(5, Double(st))
+            put(6, (s?.byAirPods ?? false) ? 1 : 0)
+            put(7, phoneFlow.rawValue)
+            put(8, airFlow.rawValue)
+            put(9, Double(phoneN))
+            put(10, Double(airN))
         }
-        let k = max(0, min(n, Self.slotCount))
-        for i in 0..<k { out[i] = v[i] }
         return k
     }
 
@@ -221,7 +239,7 @@ final class ScrunSpeed {
         openStage = nil
         if stageBroken { return ["result": "SensorLost", "point": NSNull()] }
         let end = Self.uptime
-        let (res, p) = dq.sync { est.measureStage(b.v, begin: b.t, end: end) }
+        let (res, p) = onQueue { self.est.measureStage(b.v, begin: b.t, end: end) }
         guard res == .ok, let p else {
             // 왜 실패했는지 콘솔에(아이폰 확인용). SensorLost면 샘플 공백(앞·뒤 끝 포함 2초 넘게 빔)
             print(String(format: "[ScrunSpeed] 단계 %@: %.0f km/h, 잰 시간 %.1f초(앞 %.0f초 버림)",
@@ -245,7 +263,7 @@ final class ScrunSpeed {
             pts = m.points
         }
         points = pts
-        if running { dq.sync { est.load(pts) } }
+        if running { onQueue { self.est.load(pts) } }
         return true
     }
 }
