@@ -150,8 +150,11 @@ class CourseEntry(Base):
     """맵 입장 = 자리 잡기(사람당 한 줄, 다른 코스에 들어가면 옮겨짐). 실시간 서버 전까지 인원은 이것 + 달리는 중 기록으로 센다."""
     __tablename__ = "course_entries"
     user_id: Mapped[str] = mapped_column(Text, ForeignKey("users.id", ondelete=CASCADE), primary_key=True)
-    course_id: Mapped[str] = mapped_column(Text, ForeignKey("courses.id"), index=True)
+    course_id: Mapped[str] = mapped_column(Text, ForeignKey("courses.id"))
     entered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # 인원 세기(core/occupancy): 코스별 최근 입장
+    __table_args__ = (Index("ix_course_entries_course_id_entered_at", "course_id", "entered_at"),)
 
 
 # ---------- 러닝·인증 ----------
@@ -179,7 +182,11 @@ class Run(_Created, Base):
     shared: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    __table_args__ = (UniqueConstraint("user_id", "client_run_id"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "client_run_id"),
+        # 인원 세기(core/occupancy): 코스별 달리는 중·최근 갱신
+        Index("ix_runs_course_id_status_updated_at", "course_id", "status", "updated_at"),
+    )
 
 
 class RunSample(Base):

@@ -1,7 +1,7 @@
 """코스 목록·상세·맵 입장(BL-7). 계획 0021.
 
 코스 하나 = 맵 하나(docs/api/README.md "코스와 맵 인원"). 인원은 core/occupancy.count_present 한 곳에서 센다.
-입장은 코스 줄을 잠그고(SELECT FOR UPDATE) 세서, 동시에 들어와도 최대 인원을 넘지 않는다.
+입장은 코스 줄을 잠그고(SELECT FOR NO KEY UPDATE) 세서, 동시에 들어와도 최대 인원을 넘지 않는다.
 입장 위치는 러너 위치를 모르므로 코스 위 랜덤, 실시간 접속 정보는 null. 실시간 서버(BL-25) 뒤에 바꾼다.
 """
 import random
@@ -39,7 +39,8 @@ def _summary(course: CourseRow, present: int) -> dict:
 
 def _active_course(db: Session, course_id: str, lock: bool = False) -> CourseRow:
     q = select(CourseRow).where(CourseRow.id == course_id, CourseRow.active)
-    course = db.scalar(q.with_for_update() if lock else q)
+    # FOR NO KEY UPDATE: 입장끼리만 줄 세움(이 코스를 가리키는 runs·course_entries 삽입의 외래 키 확인은 막지 않음)
+    course = db.scalar(q.with_for_update(key_share=True) if lock else q)
     if course is None:
         raise ApiError(E.COURSE_NOT_FOUND)
     return course
