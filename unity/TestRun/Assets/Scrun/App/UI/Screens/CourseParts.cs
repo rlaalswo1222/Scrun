@@ -29,15 +29,8 @@ namespace Scrun.App
             var dot = new VisualElement { pickingMode = PickingMode.Ignore };
             dot.AddToClassList("live-dot");
             chip.Add(dot);
-            chip.Add(Text(CourseText.RunningNow(runners), "live-text"));
+            chip.Add(UiExtensions.Text(CourseText.RunningNow(runners), "live-text"));
             return chip;
-        }
-
-        public static Label Text(string text, string cls)
-        {
-            var l = new Label(text) { pickingMode = PickingMode.Ignore };
-            l.AddToClassList(cls);
-            return l;
         }
     }
 }
