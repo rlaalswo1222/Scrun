@@ -133,6 +133,18 @@
   ```
 - **에디터에서는 가짜**: 메뉴 Scrun → Fake Native 창. Play 전엔 처음 상태와 "팝업에서 허용/거부"·누르는 시간을 정하고(이 컴퓨터에 저장), Play 중엔 지금 상태를 바꾸면 설정 앱에서 바꾸고 돌아온 것·에어팟을 끼고 뺀 것처럼 `Changed`가 온다. Play를 시작할 때마다 처음 상태로 돌아감
 - 아이폰 진짜 구현(Swift 브리지 `scrun_call` + 콜백)은 계획 0018의 5번에서 붙인다. 그 전의 빌드(아이폰·안드로이드)에서는 `Native`를 부르면 바로 예외가 난다(가짜가 몰래 "허용"을 주지 않게). 기기에서 가짜로 화면만 보려면 Player Settings → Scripting Define Symbols에 `SCRUN_FAKE_NATIVE`. 화면 코드는 진짜가 붙어도 안 바뀜
+- **속도 센서는 `Native.Speed`**(11/10, 계획 0020, `App/Native/SpeedSensor.cs`): 센서 준비(D-07)·대기·카운트다운(D-08·09)·보정·달리기 화면이 쓴다. Swift가 속도까지 계산하고 C#은 **한 프레임에 한 번** 읽는다(다른 Update보다 먼저 갱신돼 같은 프레임엔 모든 화면이 같은 값)
+  ```csharp
+  Native.Speed.Start();                                   // 센서 준비 화면에 들어올 때. 끝·취소 때 Stop(이벤트 없이 꺼짐). 센서는 하나라 켠 쪽이 끈다
+  Native.Speed.FlowChanged += Refresh;                    // Phone·AirPods: 꺼짐/기다림/정상/끊김(2초 넘게 안 옴)
+  Native.Speed.GaitChanged += g => { if (g != Gait.None) StartCountdown(); else BackToWaiting(); };
+  var r = Native.Speed.Current;                           // r.HasSpeed, r.SpeedKmh, r.Gait, r.Steps(감지 지연 없이 바로 늘어남), r.UsingAirPods
+  if (!Native.Speed.HasCalibration) Nav.Push(new CalibrationScreen());
+  ```
+  - 판정(계획 0020, 숫자는 가설 → 아이폰에서 잼): 폰은 1초에 80개 이상이면 정상, 에어팟은 연결 + 헤드폰 모션 허용 + 1초에 20개 이상(아니면 꺼짐 = "이어폰 없이 진행", 실패 아님). `Gait`는 걸음 상태가 2.5초 유지되면 바뀜. 네트워크는 여기 없음(S3 실시간)
+  - **에디터 가짜**: Fake Native 창 "속도 센서" 칸. 폰·에어팟 데이터 들어옴(끄면 2초 뒤 끊김, Play 중에도 바로), 보정값 있음, 켜고 들어오기까지·걸음 감지 지연. Play 중엔 사람 속도 슬라이더·"서 있음/걷기 4/달리기 8"·시나리오(3초 뒤 걷기 → 10초 뒤 달리기)와 화면이 읽는 값이 보이고, 키보드 ↑/↓(±0.5)·Space(정지). 7 km/h 미만은 걷기(흉내 경계). 에어팟은 위 이어폰·헤드폰 모션 권한을 따름
+  - 섬 씬 아바타에 꽂기: `Scripts/NativeSpeedSource`(`ISpeedSource`)를 `RunnerController`의 속도 소스로(그 씬의 `FakeSpeedSource`는 빼기: 키가 둘 다 먹음). 센서가 꺼져 있으면 켜고, 자기가 켠 경우에만 끔
+  - 아이폰 진짜 구현은 S2 Swift 속도 플러그인(BL-5). 그 전 빌드에서는 다른 `Native`처럼 예외
 - **서버는 `Api`로만 부른다**(11/09, 계획 0018의 2번, `App/Api/`):
   ```csharp
   var r = await Api.Auth.KakaoLoginAsync(kakaoToken);     // 처음이면 r.IsNewUser → Api.Session.IsSigningUp
