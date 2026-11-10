@@ -77,7 +77,7 @@ namespace Scrun.App
                 // 아직 기기 기능(키체인 등)이 없는 빌드: 빈 화면 대신 로그인 화면을 띄우고, 누르면 안내가 뜬다
                 Debug.LogError("[App] " + e.Message);
             }
-            if (loggedIn) Nav.ShowTabs(AppTab.Home);
+            if (loggedIn) Onboarding.Begin(Nav); // 모션 권한을 아직 안 물어봤으면 권한 안내부터(계획 0023)
             else Nav.StartFlow(new LoginScreen());
         }
 

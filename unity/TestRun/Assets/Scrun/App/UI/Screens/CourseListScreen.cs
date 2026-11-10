@@ -81,10 +81,10 @@ namespace Scrun.App
             card.Add(thumb);
             var info = new VisualElement { pickingMode = PickingMode.Ignore };
             info.AddToClassList("course-card-info");
-            info.Add(CourseParts.Text(c.Name, "course-name"));
+            info.Add(UiExtensions.Text(c.Name, "course-name"));
             var row = new VisualElement { pickingMode = PickingMode.Ignore };
             row.AddToClassList("course-meta-row");
-            row.Add(CourseParts.Text(CourseText.Lap(c.LengthM), "course-meta"));
+            row.Add(UiExtensions.Text(CourseText.Lap(c.LengthM), "course-meta"));
             row.Add(CourseParts.LiveChip(c.RunnersNow));
             info.Add(row);
             card.Add(info);

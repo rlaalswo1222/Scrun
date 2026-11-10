@@ -12,7 +12,7 @@ namespace Scrun.App
         Label title, description, runners, length, loadFailedText;
         Button enter, reload;
         VisualElement hero, content, loadFailed;
-        bool loading, skipReload, notFound;
+        bool loading, skipReload, notFound, gating;
 
         public CourseDetailScreen(string courseId) => this.courseId = courseId;
 
@@ -92,10 +92,42 @@ namespace Scrun.App
             loadFailed.SetVisible(true);
         }
 
-        void Enter()
+        // 맵 입장 전 모션 권한 확인(계획 0023): 아직 안 물어봤으면 팝업, 거부·제한이면 I-05
+        async void Enter()
         {
-            if (course == null || Nav.Current != this) return; // 두 번 눌러 맵이 둘 쌓이지 않게
-            Nav.Push(new MapScreen(course, ReturnFromMap));
+            if (course == null || gating || Nav.Current != this) return; // 두 번 눌러 맵이 둘 쌓이지 않게
+            var motion = Onboarding.MotionStatus();
+            if (Onboarding.BeforeMap(motion) == MotionGate.Ask)
+            {
+                gating = true;
+                try { motion = await Native.Permissions.RequestAsync(PermissionKind.Motion); }
+                finally { gating = false; }
+                if (Root.panel == null || Nav.Current != this) return;
+            }
+            if (Onboarding.BeforeMap(motion) == MotionGate.Go)
+                PushMap();
+            else
+                Nav.Push(new MotionDeniedScreen(onGranted: AfterMotionGranted, onLater: CloseMotionDenied));
+        }
+
+        // I-05에서 설정을 켜고 돌아왔을 때: I-05를 내리고 바로 맵으로
+        void AfterMotionGranted()
+        {
+            CloseMotionDenied();
+            PushMap();
+        }
+
+        // I-05를 내린다. 이 화면은 다시 불러오지 않음(방금 본 값 그대로, 로딩 덮개가 맵 로딩에 겹치지 않게)
+        void CloseMotionDenied()
+        {
+            skipReload = true;
+            try { Nav.Pop(); }
+            finally { skipReload = false; }
+        }
+
+        void PushMap()
+        {
+            if (Nav.Current == this) Nav.Push(new MapScreen(course, ReturnFromMap));
         }
 
         // 맵 화면이 입장하지 못하고 돌려보낼 때. 맵을 내리면 이 화면이 다시 보이지만 곧 안내·목록으로 가므로 다시 불러오지 않는다
