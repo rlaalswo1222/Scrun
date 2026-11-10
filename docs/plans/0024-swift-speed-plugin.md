@@ -11,6 +11,7 @@
     - **문제 A(Windows 1번 보강, 그 뒤 맥이 Swift)**: 폰을 가만히 둬도 실시간 걸음 상태가 Running·Walking, **222 spm**(찾는 범위 끝), "Walking 12.82 km/h"까지 나옴. 1번에서 찾은 벨트 모터 진동과 같은 모양인데 `STILL_ENV`·`CAD_EDGE`가 단계 판정에만 있고 실시간(`update`)에는 없음 → 러닝머신 옆 발판에 서 있어도 카운트다운이 시작될 것(가설). 할 일: `update`의 걸음 후보에도 같은 두 규칙(6초 창 `env_level < STILL_ENV` 또는 `cad >= CAD_EDGE`면 0), 10/29 M·B 재생으로 걷기·달리기 구간 판정이 그대로인지 확인, `speedlab/golden` 다시 만들기 → 맥이 Swift를 맞추고 재생 비교 → 아이폰에서 가만히 둔 폰이 None인지
     - **문제 B(맥)**: 가만히 둔 폰의 단계 재기가 NoSteps가 아니라 SensorLost(흐름은 내내 Ok 100/초). 원인 모름(가설: 단계 중 앱 비활성). Swift가 실패 이유를 콘솔에 남기게 함 → 다음 아이폰 확인에서 다시
     - 남은 책상 확인: 가만히 둔 단계 재기 NoSteps, 모션 권한 거부 뒤 가속도, 10분 CPU·발열
+  - 맥(11/11): Swift에 걷기 절편 켬(`walkOwn`, 4 km/h 이상 점) 옮김. 재생 도구 `--model`(보정 JSON으로 시작)로 `replay_20261029-040156.csv`·`_walkcal.csv` 둘 다 모든 열 차 0(걷기 119칸 중 절편으로 속도가 바뀌는 117칸 포함)
 - 담당: 민재. 기간 S2 뒤쪽(11/11)에서 S3 앞(11/12), 11/13 시연에 들어감. Python·C# 일부는 Windows, Swift·아이폰은 맥
 - 근거: 계획 0020(`ISpeedSensor` 모양 + 가짜, 진짜는 이 계획), 계획 0023 6번(단계 재기·걷기 절편·실패 판정을 Swift에), ADR-0009(센서는 JSON 통로를 쓰지 않음), 계획 0010·[live_iphone.md](../speed/live_iphone.md)(SpeedRecorder 안 실시간 추정, 달리기 5구간 0.16 km/h, 1명·같은 날 보정이라 낙관적)
 - 먼저 있어야 하는 것: PR #33(보정 메서드가 들어간 `ISpeedSensor`)이 develop에 합쳐질 것. 구현 브랜치는 그 뒤 develop에서 `feat/speed-plugin`
