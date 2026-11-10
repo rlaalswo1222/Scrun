@@ -1,11 +1,14 @@
 import Foundation
 
 /// 실시간 속도: 계기판 아이폰(충격·걸음 수) + 에어팟(머리 흔들림) (계획 0010)
-/// speedlab/fusion_live.py를 그대로 옮긴 것. 숫자·규칙을 바꾸면 둘 다 고친다.
+/// speedlab/fusion_live.py를 그대로 옮긴 것(맞는지는 ios/SpeedReplay로 speedlab/golden과 비교). 숫자·규칙을 바꾸면 둘 다 고친다.
 /// 1. 걷기·달리기: 에어팟 "0.5 g 아래 시간"(걷기는 공중이 없어 거의 0), 에어팟이 끊기면 폰 걸음 수. holdS 동안 이어져야 바꿈
 /// 2. 달리기: 에어팟 있으면 a + b·ln(충격) + airD·흔들림 폭, 끊기면 a' + b'·ln(충격). a·b는 이 기록의 보정 구간(달리기만)
-/// 3. 걷기: 공통 걸음 수 공식
-/// Recorder의 모션 큐(직렬)에서만 부른다.
+/// 3. 걷기: 걸음 수 공식. 기울기는 공통, 절편은 이 사람의 걷기 보정점이 있으면 그걸로(walkOwn), 없으면 공통
+/// 4. 보정 단계 하나 판정(계획 0023·0024): measureStage. 점은 쌓지 않고 돌려준다(Unity 앱은 C#이 모아 확정한 뒤 load)
+/// 5. 누적 걸음: 포락선 봉우리를 그때그때 셈(다리 애니메이션용, 감지 지연 없이). 문턱은 0.5초마다 최근 3초로 다시 정함
+/// 쓰는 곳: Unity 앱(ScrunSpeed.swift), 실험 앱 SpeedRecorder(ios/SpeedRecorder, 이 파일을 복사하지 않고 참조),
+/// 재생 도구(ios/SpeedReplay). 한 객체는 한 직렬 큐에서만 부른다.
 final class SpeedEstimator {
     struct Snapshot {
         var t: Double
@@ -20,6 +23,7 @@ final class SpeedEstimator {
         var lowgMs: Double?
         var nPoints: Int
         var nRunPoints: Int
+        var steps: Int          // 누적 걸음
     }
 
     struct Point: Codable {
@@ -37,6 +41,25 @@ final class SpeedEstimator {
     static let bFull = 4.828, bPhone = 6.396   // 보정점이 하나뿐일 때 빌리는 ln(충격) 기울기 (B)
     static let walkA = -3.45, walkB = 0.0732   // 걷기 v = a + b·spm
     static let g = 9.80665
+    // 이 사람 걷기 절편(계획 0023 설계, 11/10 민재 결정으로 켬, fusion_live.py WALK_OWN·WALK_MIN_KMH).
+    // 절편은 walkMinKmh 이상 걷기 점으로(2 km/h는 오를 때·내릴 때 걸음 수 차이가 가장 큼), 그런 점이 없으면 걷기 점 전부
+    static let walkOwn = true
+    static let walkMinKmh = 4.0
+    // 보정 단계 판정(계획 0024). 숫자는 가설, fusion_live.py와 같음(근거는 그 파일과 speedlab/exp/live_stage_check.py)
+    static let stageMinS = 3.0      // 앞을 버린 뒤 잴 시간이 이보다 짧으면 TooShort
+    static let lostGapS = 2.0       // 폰 샘플이 이만큼 끊기면 SensorLost
+    static let stillEnv = 0.12      // 포락선 75% 값이 이보다 작으면 걸음 없음(NoSteps). 아이폰 세기는 책상 확인 때 다시
+    static let cadEdge = 215.0      // 걸음 수가 찾는 범위 끝(220)에 붙으면 벨트 모터 진동 → NoSteps
+    static let walkOnlyKmh = 4.0    // 이 속도 이하에서 달리기로 나오면 걸음 수를 두 배로 잡은 것 → Irregular
+    // 누적 걸음(봉우리 세기)
+    static let stepHalf = 12        // 봉우리: 앞뒤 0.12초 안 최댓값(impact와 같음)
+    static let stepGapS = 60.0 / 220 // 220 spm보다 빠른 봉우리는 같은 걸음
+    static let stepRel = 0.5        // 문턱 = 최근 3초 포락선 90% 값 × 이 비율(아래는 stillEnv)
+
+    /// 보정 단계 하나를 잰 결과. 이름은 C# CalStageResult와 같다(NotFaster는 앞 점과 비교라 C#이 판정)
+    enum StageResult: String {
+        case ok = "Ok", noSteps = "NoSteps", irregular = "Irregular", sensorLost = "SensorLost", tooShort = "TooShort"
+    }
     // scipy butter(4, 8, 'high', fs=100) / butter(4, 5, 'low', fs=100), sos = [b0, b1, b2, a0, a1, a2]
     static let hpSos: [[Double]] = [[0.514246848996, -1.02849369799, 0.514246848996, 1.0, -1.21281209262, 0.384004162287],
                                     [1.0, -2.0, 1.0, 1.0, -1.4797988944, 0.688676953054]]
@@ -72,7 +95,11 @@ final class SpeedEstimator {
     private(set) var newPoints = 0          // 이번 기록에서 새로 생긴 보정점 수 (있으면 끝날 때 저장)
     private var full: (a: Double, b: Double)?
     private var phone: (a: Double, b: Double)?
+    private var walkA: Double?          // 이 사람의 걷기 절편(걷기 보정점이 있을 때)
     private var lastUpdate = -1e9
+    private(set) var steps = 0          // 누적 걸음
+    private var stepThr: Double?        // 봉우리 문턱(0.5초마다)
+    private var lastStepT = -1e9
 
     // MARK: 입력
 
@@ -82,6 +109,7 @@ final class SpeedEstimator {
         envT.append(t)
         envV.append(lp.step((a * a + b * b + c * c).squareRoot()))
         trim(&envT, &envV, t)
+        countStep()
         guard t - lastUpdate >= Self.updateS else { return nil }
         lastUpdate = t
         return update(t)
@@ -102,6 +130,23 @@ final class SpeedEstimator {
         stage = (set, speed, t)
     }
 
+    /// stepHalf 샘플 전 값이 앞뒤 stepHalf 안 최댓값(같으면 앞이 이김)이고 문턱을 넘으면 한 걸음(0.12초 늦게 셈)
+    private func countStep() {
+        let n = envV.count
+        guard let thr = stepThr, n >= 2 * Self.stepHalf + 1 else { return }
+        let c = n - 1 - Self.stepHalf
+        let tc = envT[c], vc = envV[c]
+        guard vc >= thr, tc - lastStepT >= Self.stepGapS else { return }
+        for i in (c - Self.stepHalf)..<n where envV[i] > vc || (envV[i] == vc && i < c) { return }
+        steps += 1
+        lastStepT = tc
+    }
+
+    private func updateStepThr(_ t1: Double) {
+        let s = Array(slice(envT, envV, t1 - 3.0, .infinity).v)
+        if Double(s.count) >= Self.fs { stepThr = max(Self.stillEnv, Self.stepRel * Self.percentile(s, 90)) }
+    }
+
     private func trim(_ ts: inout [Double], _ vs: inout [Double], _ t: Double) {
         if ts.count > 4000, let k = ts.firstIndex(where: { $0 >= t - 30 }), k > 0 {
             ts.removeFirst(k)
@@ -116,11 +161,11 @@ final class SpeedEstimator {
         return a < b ? (ts[a..<b], vs[a..<b]) : ([], [])
     }
 
-    private func phoneFeats(_ t0: Double, _ t1: Double) -> (cad: Double, q: Double, imp: Double)? {
+    private func phoneFeats(_ t0: Double, _ t1: Double) -> (cad: Double, q: Double, imp: Double, level: Double)? {
         let s = Array(slice(envT, envV, t0, t1).v)
         guard Double(s.count) >= Self.fs * 3 else { return nil }
         let (cad, q) = Self.cadence(s)
-        return (cad, q, Self.impact(s))
+        return (cad, q, Self.impact(s), Self.envLevel(s))
     }
 
     private func airFeats(_ t0: Double, _ t1: Double, cad: Double?) -> (amp: Double, lowgMs: Double, cover: Double, last: Double)? {
@@ -134,14 +179,53 @@ final class SpeedEstimator {
 
     // MARK: 보정
 
+    /// SpeedRecorder 구간 방식(beginStage): 끝난 보정 구간에서 점 하나
     private func addPoint(_ v: Double, _ t0: Double, _ t1: Double) {
-        guard let pf = phoneFeats(t0, t1), pf.q >= Self.qMin, pf.imp > 0 else { return }
-        let af = airFeats(t0, t1, cad: pf.cad)
-        let airOK = (af?.cover ?? 0) >= Self.airMinCover
-        let running = airOK ? af!.lowgMs >= Self.runLowgMs : pf.cad >= Self.runCad
-        points.append(Point(v: v, limp: log(pf.imp), cad: pf.cad, amp: airOK ? af!.amp : nil, running: running))
+        guard case (.ok, let p?) = stagePoint(v, t0, t1) else { return }
+        points.append(p)
         newPoints += 1
         refit()
+    }
+
+    /// 앱 보정 단계 하나(계획 0024). begin에 단계 시작(속도 안내), 앞 calSkipS 버리고 end까지
+    func measureStage(_ v: Double, begin: Double, end: Double) -> (StageResult, Point?) {
+        let t0 = begin + Self.calSkipS
+        guard end - t0 >= Self.stageMinS else { return (.tooShort, nil) }
+        let ts = slice(envT, envV, t0, end).t
+        guard let first = ts.first, let last = ts.last, first - t0 <= Self.lostGapS, end - last <= Self.lostGapS
+        else { return (.sensorLost, nil) }
+        var prev = first
+        for t in ts {
+            if t - prev > Self.lostGapS { return (.sensorLost, nil) }
+            prev = t
+        }
+        return stagePoint(v, t0, end)
+    }
+
+    /// [t0, t1](이미 앞을 버린 창)의 보정점 판정
+    private func stagePoint(_ v: Double, _ t0: Double, _ t1: Double) -> (StageResult, Point?) {
+        let s = Array(slice(envT, envV, t0, t1).v)
+        guard Double(s.count) >= Self.fs * Self.stageMinS else { return (.tooShort, nil) }
+        let (cad, q) = Self.cadence(s)
+        if !Self.stepsLike(level: Self.envLevel(s), cad: cad) { return (.noSteps, nil) }
+        let imp = Self.impact(s)
+        if q < Self.qMin || imp <= 0 { return (.irregular, nil) }
+        let af = airFeats(t0, t1, cad: cad)
+        let airOK = (af?.cover ?? 0) >= Self.airMinCover
+        let running = airOK ? af!.lowgMs >= Self.runLowgMs : cad >= Self.runCad
+        if running && v <= Self.walkOnlyKmh { return (.irregular, nil) }
+        return (.ok, Point(v: v, limp: log(imp), cad: cad, amp: airOK ? af!.amp : nil, running: running))
+    }
+
+    /// 사람 걸음으로 볼 수 있나: 세기가 서 있을 때보다 크고, 걸음 수가 찾는 범위 끝(벨트 모터 진동)에 붙지 않음.
+    /// 실시간 걸음 상태(update)와 보정 단계 판정(stagePoint)이 같이 쓴다(11/11 아이폰: 가만히 둔 폰이 222 spm으로 걸음이 됨)
+    static func stepsLike(level: Double, cad: Double) -> Bool {
+        level >= stillEnv && cad < cadEdge
+    }
+
+    /// 걸음 없음 판정에 쓰는 포락선 세기: 75% 값(impact의 봉우리 문턱과 같은 자리)
+    static func envLevel(_ s: [Double]) -> Double {
+        s.sorted()[Int(0.75 * Double(s.count - 1))]
     }
 
     /// 저장해 둔 보정점으로 시작 (보정 없이 바로 달릴 때)
@@ -154,6 +238,10 @@ final class SpeedEstimator {
         let run = points.filter { $0.running }
         phone = Self.fit(run.map { ($0.limp, $0.v) }, bDefault: Self.bPhone)
         full = Self.fit(run.compactMap { p in p.amp.map { (p.limp, p.v - Self.airD * $0) } }, bDefault: Self.bFull)
+        let allWalk = points.filter { !$0.running }
+        let fast = allWalk.filter { $0.v >= Self.walkMinKmh }
+        let walk = fast.isEmpty ? allWalk : fast
+        walkA = walk.isEmpty ? nil : walk.map { $0.v - Self.walkB * $0.cad }.reduce(0, +) / Double(walk.count)
     }
 
     /// y = a + b·x. 점 2개 이상이면 둘 다, 하나면 b를 빌림
@@ -175,12 +263,13 @@ final class SpeedEstimator {
 
     private func update(_ t1: Double) -> Snapshot {
         let t0 = t1 - Self.winS
+        updateStepThr(t1)
         let pf = phoneFeats(t0, t1)
         let af = airFeats(t0, t1, cad: pf?.cad)
         let airOK = af != nil && af!.cover >= Self.airMinCover && t1 - af!.last <= Self.airMaxAge
         var c = 0
         var byAir = false
-        if let pf, pf.q >= Self.qMin {
+        if let pf, pf.q >= Self.qMin, Self.stepsLike(level: pf.level, cad: pf.cad) {
             if airOK {
                 c = af!.lowgMs >= Self.runLowgMs ? 2 : 1
                 byAir = true
@@ -198,7 +287,7 @@ final class SpeedEstimator {
             if let p = phone { kmhPhone = p.a + p.b * li }
             if airOK, let f = full { kmh = f.a + f.b * li + Self.airD * af!.amp } else { kmh = kmhPhone }
         } else if state == 1, let pf {
-            kmh = Self.walkA + Self.walkB * pf.cad
+            kmh = (Self.walkOwn ? walkA ?? Self.walkA : Self.walkA) + Self.walkB * pf.cad
         } else if state == 0 {
             kmh = 0
         }
@@ -207,7 +296,7 @@ final class SpeedEstimator {
         let shown = kmh == nil ? nil : Self.median(hist.map { $0.1 })
         return Snapshot(t: t1, kmh: shown, kmhPhone: kmhPhone, state: state, byAirPods: byAir, airOK: airOK,
                         cad: pf?.cad, imp: pf?.imp, amp: af?.amp, lowgMs: af?.lowgMs,
-                        nPoints: points.count, nRunPoints: points.filter { $0.running }.count)
+                        nPoints: points.count, nRunPoints: points.filter { $0.running }.count, steps: steps)
     }
 
     // MARK: StepSpeed.cs 계산 (speedlab/exp/soundtrackdb.py와 같음, 포락선 100 Hz)
@@ -289,33 +378,4 @@ private func upperBound(_ a: [Double], _ x: Double) -> Int {
     var lo = 0, hi = a.count
     while lo < hi { let m = (lo + hi) / 2; if a[m] <= x { lo = m + 1 } else { hi = m } }
     return lo
-}
-
-/// 폰에 저장한 마지막 보정 (문서 폴더 calibration.json). 다른 날 보정 없이 달려 볼 때 쓴다 (계획 0010)
-struct SavedCalibration: Codable {
-    var saved: Double            // 저장 시각 (epoch 초)
-    var runId: String            // 보정한 기록
-    var points: [SpeedEstimator.Point]
-
-    static var url: URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("calibration.json")
-    }
-
-    static func load() -> SavedCalibration? {
-        guard let d = try? Data(contentsOf: url) else { return nil }
-        return try? JSONDecoder().decode(SavedCalibration.self, from: d)
-    }
-
-    /// 문서 폴더에 저장하고, 기록 폴더에도 사본
-    func save(copyTo extra: URL? = nil) {
-        guard let d = try? JSONEncoder().encode(self) else { return }
-        try? d.write(to: SavedCalibration.url)
-        if let extra { try? d.write(to: extra) }
-    }
-
-    var label: String {
-        let f = DateFormatter()
-        f.dateFormat = "M/d HH:mm"
-        return "\(f.string(from: Date(timeIntervalSince1970: saved))) 보정 · 달리기 점 \(points.filter { $0.running }.count)개"
-    }
 }

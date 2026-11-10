@@ -161,7 +161,11 @@
   - 판정(계획 0020, 숫자는 가설 → 아이폰에서 잼): 폰은 1초에 80개 이상이면 정상, 에어팟은 연결 + 헤드폰 모션 허용 + 1초에 20개 이상(아니면 꺼짐 = "이어폰 없이 진행", 실패 아님). `Gait`는 걸음 상태가 2.5초 유지되면 바뀜. 네트워크는 여기 없음(S3 실시간)
   - **에디터 가짜**: Fake Native 창 "속도 센서" 칸. 폰·에어팟 데이터 들어옴(끄면 2초 뒤 끊김, Play 중에도 바로), 보정값 있음, 켜고 들어오기까지·걸음 감지 지연. Play 중엔 사람 속도 슬라이더·"서 있음/걷기 4/달리기 8"·시나리오(3초 뒤 걷기 → 10초 뒤 달리기)와 화면이 읽는 값이 보이고, 키보드 ↑/↓(±0.5)·Space(정지). 7 km/h 미만은 걷기(흉내 경계). 에어팟은 위 이어폰·헤드폰 모션 권한을 따름
   - 섬 씬 아바타에 꽂기: `Scripts/NativeSpeedSource`(`ISpeedSource`)를 `RunnerController`의 속도 소스로(그 씬의 `FakeSpeedSource`는 빼기: 키가 둘 다 먹음). 센서가 꺼져 있으면 켜고, 자기가 켠 경우에만 끔
-  - 아이폰 진짜 구현은 S2 Swift 속도 플러그인(BL-5). 그 전 아이폰 빌드에서 `Native.Speed`는 예외(`NativeSpeedSource`는 한 번 알리고 속도 0)
+  - **아이폰 진짜**(11/11, 계획 0024): Swift `Plugins/iOS/Scrun/ScrunSpeed.swift`(CoreMotion 100 Hz + 에어팟 헤드폰 모션, `ScrunHeadphones`와 같은 manager) → `SpeedEstimator.swift`(Python `speedlab/fusion_live.py`와 한 쌍, 바꾸면 둘 다) → C 함수 7개·숫자 칸 11개(약속 표는 계획 0024) → C# `App/Native/IosSpeedSensor.cs`. 숫자 칸·함수 이름을 바꾸면 Swift·C# 둘 다
+  - 걸음 없음 판정(세기 0.12·걸음 수 215 이상은 벨트 진동)은 실시간 걸음 상태와 보정 단계가 같이 씀. 가만히 둔 폰·벨트만 도는 러닝머신은 None. 숫자는 S22 기록에서 정한 가설(`docs/speed/README.md` 11/10 줄)
+  - **Swift = Python 확인**: 맥 `ios/SpeedReplay/run.sh`로 `speedlab/golden/`의 정답 CSV 세 개와 비교(모든 열 차 0이어야). 정답은 Windows `speedlab/exp/replay_live.py`가 만든다. 계산을 고치면 Python → 정답 다시 → Swift 순서
+  - **아이폰 점검**: 개발 빌드의 마이 탭(또는 로그인 화면) 네이티브 점검 → "속도 센서" 칸(흐름·초당 샘플·걸음 상태·속도·누적 걸음, 걸음이 잡히기까지 초, 단계 하나 재기). 센서가 켜져 있으면 10초마다 콘솔에 상태 줄, 단계 실패 이유도 콘솔에
+  - 보정은 맵 입장 때 센서에 없으면 서버에서 불러오고(`CalibrationStore.EnsureLoadedAsync`), 로그아웃하면 센서에서도 지움
 - **아이폰 빌드**(11/10, 맥): 메뉴 **Scrun → iOS → Xcode 만들기**(아이폰 개발 / 시뮬레이터 개발 / 아이폰 출시) → `unity/Builds/iOS-*`. 빌드 대상이 iOS가 아니면 먼저 전환(끝나면 메뉴 한 번 더)
   - 빌드 직후 `IosPostprocess`가 Info.plist 권한 문구(모션·카메라)·`CFBundleDevelopmentRegion ko`·암호화 신고 면제, UnityFramework에 Swift 5·CoreMotion 등 프레임워크, 서명 팀을 채운다
   - 사람마다 다른 값은 git 밖 `unity/TestRun/ScrunLocal.json`(예시 `ScrunLocal.example.json`, 메뉴 Scrun → iOS → 로컬 설정 파일 열기): `appleTeamId`(비우면 Xcode Signing에서 고름), `kakaoNativeAppKey`(6번)

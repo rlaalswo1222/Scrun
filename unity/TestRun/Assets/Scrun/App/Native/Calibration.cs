@@ -34,9 +34,11 @@ namespace Scrun.App
         [JsonProperty("amp")] public double? AirAmp;   // 에어팟 흔들림 폭(g), 에어팟을 못 썼으면 null
         [JsonProperty("running")] public bool Running; // 이 점에서 달렸는지(걷기·달리기는 센서가 판정)
 
-        // 저장·불러오기에 쓸 수 있는 점(속도·걸음 수가 양수, ln(충격)이 숫자)
+        // 저장·불러오기에 쓸 수 있는 점(속도·걸음 수가 양수, ln(충격)·흔들림 폭이 숫자)
         [JsonIgnore]
-        public bool IsValid => V > 0 && Cadence > 0 && !double.IsNaN(LnImpact) && !double.IsInfinity(LnImpact);
+        public bool IsValid => V > 0 && Cadence > 0 && Finite(LnImpact) && (AirAmp == null || Finite(AirAmp.Value));
+
+        static bool Finite(double x) => !double.IsNaN(x) && !double.IsInfinity(x); // Swift JSONDecoder는 NaN·Infinity를 못 읽음
     }
 
     // 서버 calibration.model 칸에 그대로 들어가는 보정(서버는 해석 안 함, docs/api/data_model.md).

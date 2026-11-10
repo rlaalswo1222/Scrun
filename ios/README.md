@@ -18,6 +18,7 @@
 ### 2. 파일 바꿔 넣기
 1. 왼쪽 목록에서 자동으로 생긴 `ContentView.swift`, `SpeedRecorderApp.swift` 우클릭 → Delete → **Move to Trash**
 2. 이 폴더 `SpeedRecorder/`의 `.swift` 파일 6개를 왼쪽 목록의 노란 `SpeedRecorder` 폴더로 끌어다 놓기 → **Copy items if needed** 체크 → Finish
+3. 속도 계산 `unity/TestRun/Assets/Plugins/iOS/Scrun/SpeedEstimator.swift`도 같은 곳에 끌어다 놓되 **Copy items if needed는 끄기**(Unity 앱과 같은 파일 하나를 참조, 계획 0024 결정 1)
 
 ### 3. 설정
 왼쪽 맨 위 파란 **SpeedRecorder** 아이콘 → 가운데 TARGETS의 **SpeedRecorder**
@@ -89,5 +90,17 @@
 | `ContentView.swift` | 준비 화면, 기록 중 화면(진행 + 실시간 분석), 끝난 뒤 분석 화면 |
 | `TestPlan.swift` | 구간 목록, 진행·음성 안내, 구간이 바뀔 때 노트북에 알림 |
 | `Recorder.swift` | 아이폰·에어팟 센서, 0.5초마다 보내기, 폰에 CSV 백업 (파일 앱 → 나의 iPhone → SpeedRecorder) |
-| `SpeedEstimator.swift` | 폰 안 실시간 속도(걷기·달리기 판단, 충격 + 에어팟). `speedlab/fusion_live.py`를 옮긴 것 — 둘 다 같이 고친다 |
+| `../../unity/TestRun/Assets/Plugins/iOS/Scrun/SpeedEstimator.swift` | 폰 안 실시간 속도(걷기·달리기 판단, 충격 + 에어팟, 보정 단계 판정, 누적 걸음). `speedlab/fusion_live.py`를 옮긴 것 — 둘 다 같이 고친다. Unity 앱과 같은 파일 |
+| `SavedCalibration.swift` | 폰에 저장한 마지막 보정(문서 폴더 `calibration.json`) |
 | `ServerClient.swift` | 노트북 시계 맞추기, 보내기 |
+
+## 속도 계산 재생 (맥, 계획 0024)
+
+`SpeedEstimator.swift`를 고치면 기록으로 Python 기준 구현과 같은지 본다. Xcode 명령줄 도구(`swiftc`)만 있으면 된다.
+
+```sh
+ios/SpeedReplay/run.sh data/runs/20261029-040156/phone --compare --golden speedlab/golden/replay_20261029-040156.csv
+ios/SpeedReplay/run.sh <폴더> --stages <v,t_begin,t_end CSV> --expect <Python 결과 CSV>   # 단계 판정만
+```
+- `--compare`: 그날 폰이 낸 `estimate.csv`와, `--golden`: `speedlab/exp/replay_live.py`가 낸 정답과 0.5초 칸마다 비교
+- 기준(계획 0024 2번): 속도 차 0.01 km/h 이하, 걸음 상태·누적 걸음·단계 판정 같음
