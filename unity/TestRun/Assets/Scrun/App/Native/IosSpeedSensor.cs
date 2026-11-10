@@ -20,7 +20,7 @@ namespace Scrun.App
 
     // 아이폰 진짜 속도 센서(계획 0024). 계산은 Swift가 하고 여기선 한 프레임에 한 번 숫자 칸을 읽는다(ADR-0009).
     // 켜기·끄기·이벤트·보정 순서는 SpeedSensorBase가 하고, 이 클래스는 칸을 SpeedReading으로 옮기기와 단계 결과 읽기만.
-    public sealed class IosSpeedSensor : SpeedSensorBase
+    public sealed class IosSpeedSensor : SpeedSensorBase, ISpeedSensorDiagnostics
     {
         // scrun_speed_read 칸(순서 고정, Swift ScrunSpeed.swift와 짝)
         public const int SlotVersion = 1;
@@ -34,7 +34,7 @@ namespace Scrun.App
 
         public IosSpeedSensor(ISpeedNativeApi api) => this.api = api ?? throw new ArgumentNullException(nameof(api));
 
-        // 점검 화면용: 지난 1초에 들어온 샘플 수
+        // 점검 화면용(ISpeedSensorDiagnostics, 칸 9·10): 지난 1초에 들어온 샘플 수
         public int PhoneSamplesPerSec { get; private set; }
         public int AirPodsSamplesPerSec { get; private set; }
 
