@@ -7,6 +7,7 @@ Swift 재생 도구(맥)가 같은 기록으로 낸 값과 비교하는 정답 �
 입력 열: phone/iphone_acc.csv(t,x,y,z m/s², 중력 포함), phone/airpods_acc.csv + airpods_grav.csv(더하면 전체 가속도),
         phone/stage.csv(구간: set 1 = 보정, SpeedRecorder와 같음)
 """
+import json
 import sys
 from pathlib import Path
 
@@ -21,7 +22,9 @@ SET_NAME = {0: 'sync', 1: 'calib', 2: 'test', 3: 'free', 4: 'hop', 5: 'warmup', 
 COLS = ['t', 'kmh', 'kmh_phone', 'state', 'by_airpods', 'air_ok', 'cad', 'imp', 'amp', 'lowg_ms', 'n_run_points', 'steps']
 
 
-def replay(run: Path) -> pd.DataFrame:
+def replay(run: Path, model: Path = None) -> pd.DataFrame:
+    """model(보정 JSON, C# CalibrationModel 모양)을 주면 그 보정으로 시작하고 기록의 보정 구간은 쓰지 않는다
+    (앱이 서버에서 보정을 불러온 뒤 달리는 경우)"""
     ph = run / 'phone'
     acc = pd.read_csv(ph / 'iphone_acc.csv')
     events = [(r.t, 0, (r.x, r.y, r.z)) for r in acc.itertuples()]
@@ -29,12 +32,14 @@ def replay(run: Path) -> pd.DataFrame:
         a, g = pd.read_csv(ph / 'airpods_acc.csv'), pd.read_csv(ph / 'airpods_grav.csv')
         m = a.merge(g, on='t', suffixes=('', '_g'))
         events += [(r.t, 1, (r.x + r.x_g, r.y + r.y_g, r.z + r.z_g)) for r in m.itertuples()]
-    if (ph / 'stage.csv').exists():
-        events += [(r.t, 2, (SET_NAME.get(int(r.set), '?'), None if r.speed < 0 else float(r.speed)))
+    if (ph / 'stage.csv').exists() and model is None:
+        events +=[(r.t, 2, (SET_NAME.get(int(r.set), '?'), None if r.speed < 0 else float(r.speed)))
                    for r in pd.read_csv(ph / 'stage.csv').itertuples()]
     events.sort(key=lambda e: (e[0], e[1]))
 
     est, rows = fl.SpeedEstimator(), []
+    if model is not None:
+        est.load(json.loads(model.read_text(encoding='utf-8'))['points'])
     for t, kind, v in events:
         if kind == 0:
             before = est.snap
@@ -69,13 +74,21 @@ def compare(d: pd.DataFrame, phone_csv: Path):
 
 
 def main():
+    """인자 없이 돌리면 Swift 비교용 정답 파일 두 개를 만든다:
+    replay_20261029-040156.csv(기록의 보정 구간으로, 그날 폰 값과도 비교)
+    replay_20261029-040156_walkcal.csv(model_walk_20261029.json 보정으로 시작: 걷기 절편까지 비교)"""
+    golden = ROOT / 'speedlab/golden'
     run = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'data/runs/20261029-040156'
-    out = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / 'speedlab/golden' / f'replay_{run.name}.csv'
-    d = replay(run)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    d.to_csv(out, index=False, float_format='%.5f', lineterminator='\n')
-    print(f'{out.relative_to(ROOT)}: {len(d)}줄, 마지막 누적 걸음 {int(d.steps.iloc[-1])}')
-    compare(d, run / 'phone/estimate.csv')
+    jobs = [(None, Path(sys.argv[2]) if len(sys.argv) > 2 else golden / f'replay_{run.name}.csv')]
+    if len(sys.argv) <= 1:
+        jobs.append((golden / 'model_walk_20261029.json', golden / f'replay_{run.name}_walkcal.csv'))
+    for model, out in jobs:
+        d = replay(run, model)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        d.to_csv(out, index=False, float_format='%.5f', lineterminator='\n')
+        print(f'{out.relative_to(ROOT)}: {len(d)}줄, 마지막 누적 걸음 {int(d.steps.iloc[-1])}')
+        if model is None:
+            compare(d, run / 'phone/estimate.csv')
 
 
 if __name__ == '__main__':
