@@ -1,0 +1,476 @@
+/* 코스 목록(C-01)·상세(C-02)·맵(D-10 윗줄, I-10 로딩, I-11 입장 실패) 모양.
+   Figma "SCRUN" > 스크런 와이어 프레임 기준(11/10). 색·글자 크기는 App.uss 변수.
+   USS에 없는 것: 그림자(카드·버튼), 배경 흐림(I-10·I-11), 줄 높이 → 빠짐 */
+
+.course .unity-label {
+    margin: 0;
+    padding: 0;
+}
+
+/* ---- 칩 ---- */
+.chip {
+    margin: 0 var(--space-2) 0 0;
+    padding: 5px 12px;
+    border-width: 0;
+    border-radius: 14px;
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-size: var(--font-size-caption);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.chip:hover,
+.chip:active {
+    background-color: var(--color-primary-soft);
+}
+
+.chip--active,
+.chip--active:hover,
+.chip--active:active {
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+}
+
+/* Chip/Live: 지금 달리는 중 */
+.live-chip {
+    flex-direction: row;
+    align-items: center;
+    align-self: flex-start;
+    padding: 5px 12px;
+    border-radius: 14px;
+    background-color: var(--color-lime);
+}
+
+.live-dot {
+    width: 7px;
+    height: 7px;
+    margin-right: 6px;
+    border-radius: 3.5px;
+    background-color: var(--color-text);
+}
+
+.course .live-text {
+    font-size: var(--font-size-caption);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+/* 아무도 안 달릴 때는 Chip/Gray */
+.live-chip--idle {
+    background-color: var(--color-surface-2);
+}
+
+.live-chip--idle .live-dot {
+    display: none;
+}
+
+.course .live-chip--idle .live-text {
+    color: var(--color-body);
+}
+
+/* ---- 코스 그림(썸네일이 없으면 기본 그림: 하늘색 칸 + 코스 이름 첫 글자) ---- */
+.course-thumb {
+    height: 150px;
+    background-color: var(--color-primary-soft);
+    align-items: center;
+    justify-content: center;
+}
+
+.course .course-thumb-mark {
+    font-size: 48px;
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+/* ---- C-01 코스 목록 ---- */
+.course-list {
+    flex-grow: 1;
+}
+
+.course-list-page {
+    padding: 8px var(--space-5) var(--space-4) var(--space-5);
+}
+
+.course .page-title {
+    font-size: var(--font-size-title);
+    letter-spacing: -0.56px;
+    color: var(--color-text);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course .page-lead {
+    margin-top: var(--space-3);
+    font-size: var(--font-size-body);
+    letter-spacing: -0.16px;
+    color: var(--color-body);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.chip-row {
+    flex-direction: row;
+    margin-top: var(--space-3);
+}
+
+/* Course Card */
+.course-card {
+    flex-direction: column;
+    align-items: stretch;
+    margin: var(--space-3) 0 0 0;
+    padding: 0;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 22px;
+    background-color: var(--color-surface);
+    overflow: hidden;
+    -unity-text-align: upper-left;
+}
+
+.course-card:hover,
+.course-card:active {
+    border-color: var(--color-line);
+    background-color: var(--color-surface);
+}
+
+.course-card-info {
+    padding: 14px var(--space-4) var(--space-4) var(--space-4);
+}
+
+.course .course-name {
+    font-size: var(--font-size-sub);
+    letter-spacing: -0.27px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course-meta-row {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: var(--space-2);
+}
+
+.course .course-meta {
+    margin-right: 10px;
+    font-size: var(--font-size-body-sm);
+    letter-spacing: -0.07px;
+    color: var(--color-body);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.course .list-empty {
+    margin-top: var(--space-6);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-muted);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+/* ---- C-02 코스 상세 ---- */
+.detail {
+    flex-grow: 1;
+    padding-bottom: var(--space-4);
+}
+
+.detail-scroll {
+    flex-grow: 1;
+}
+
+.detail-hero {
+    height: 250px;
+    overflow: hidden;
+}
+
+.detail-hero > .course-thumb {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    height: auto;
+}
+
+.course .detail-hero .course-thumb-mark {
+    font-size: 72px;
+}
+
+.detail-hero > .live-chip {
+    position: absolute;
+    left: var(--space-5);
+    bottom: var(--space-6);
+}
+
+/* 사진 위 동그란 뒤로 가기(스크롤해도 제자리) */
+.round-back {
+    position: absolute;
+    left: var(--space-5);
+    top: 14px;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    border-radius: 20px;
+    background-color: rgba(255, 255, 255, 0.9);
+    align-items: center;
+    justify-content: center;
+}
+
+.round-back:hover,
+.round-back:active {
+    background-color: rgba(255, 255, 255, 0.9);
+}
+
+.round-back-icon {
+    width: 22px;
+    height: 22px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/icon-back.svg");
+}
+
+.detail-body {
+    margin-top: var(--space-3);
+    padding: 0 var(--space-5);
+}
+
+.course .detail-title {
+    font-size: var(--font-size-title);
+    letter-spacing: -0.56px;
+    color: var(--color-text);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course .detail-desc {
+    margin-top: var(--space-3);
+    font-size: var(--font-size-body);
+    letter-spacing: -0.16px;
+    color: var(--color-body);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.stat-row {
+    flex-direction: row;
+    margin-top: var(--space-3);
+}
+
+.stat {
+    flex-grow: 1;
+    flex-basis: 0;
+    padding: var(--space-3) 14px;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 16px;
+    background-color: var(--color-surface);
+}
+
+/* USS에 :last-child가 없어 두 번째 칸부터 왼쪽 간격 */
+.stat--next {
+    margin-left: 10px;
+}
+
+.course .stat-label {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.course .stat-value {
+    margin-top: 2px;
+    font-size: var(--font-size-sub);
+    letter-spacing: -0.27px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+/* 입장 전 안내. Figma는 메모(점선) 모양이라 점선·아이콘을 뺀 바탕색만 */
+.course .info-note {
+    margin-top: var(--space-3);
+    padding: 10px var(--space-3);
+    border-radius: 12px;
+    background-color: var(--color-primary-tint);
+    font-size: var(--font-size-caption);
+    color: var(--color-primary);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.detail-footer {
+    padding: 0 var(--space-5);
+}
+
+.detail-footer > .btn {
+    margin: var(--space-3) 0 0 0;
+}
+
+/* ---- 맵(가로) ---- */
+.map-screen {
+    flex-grow: 1;
+}
+
+/* D-10 윗줄: 왼쪽 코스 이름, 오른쪽 동그란 버튼 */
+.map-top {
+    position: absolute;
+    left: var(--space-6);
+    top: var(--space-3);
+    right: var(--space-6);
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.course .map-course-label {
+    font-size: var(--font-size-caption);
+    color: var(--color-surface);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.map-round-btn {
+    width: 44px;
+    height: 44px;
+    margin: 4px 0 0 0;
+    padding: 0;
+    border-width: 0;
+    border-radius: 22px;
+    background-color: rgba(255, 255, 255, 0.92);
+    align-items: center;
+    justify-content: center;
+}
+
+.map-round-btn:hover,
+.map-round-btn:active {
+    background-color: rgba(255, 255, 255, 0.92);
+}
+
+/* 나가기 X: D-10 멈춤 버튼과 같은 굵기의 막대 둘 */
+.map-x-bar {
+    position: absolute;
+    width: 3px;
+    height: 18px;
+    border-radius: 1.5px;
+    background-color: var(--color-text);
+    rotate: 45deg;
+}
+
+.map-x-bar--2 {
+    rotate: -45deg;
+}
+
+/* I-10 맵 로딩 */
+.map-loading {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 60px;
+    background-color: var(--color-night);
+}
+
+.course .map-loading-title {
+    font-size: var(--font-size-title);
+    letter-spacing: -0.56px;
+    color: var(--color-surface);
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course .map-loading-lead {
+    margin-top: 14px;
+    font-size: var(--font-size-body);
+    letter-spacing: -0.16px;
+    color: rgba(255, 255, 255, 0.81);
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.map-progress {
+    width: 320px;
+    height: 8px;
+    margin-top: 30px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.25);
+    overflow: hidden;
+}
+
+.map-progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: 4px;
+    background-color: var(--color-lime);
+}
+
+/* I-11 입장 실패: 어둡게 덮고 가운데 카드 */
+.map-dim {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-night-dim);
+}
+
+.map-card {
+    width: 440px;
+    padding: var(--space-6);
+    border-radius: var(--space-6);
+    background-color: rgba(255, 255, 255, 0.95);
+    align-items: center;
+}
+
+.map-card-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 26px;
+    background-color: var(--color-muted);
+    align-items: center;
+    justify-content: center;
+}
+
+.map-card-icon-img {
+    width: 26px;
+    height: 26px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/icon-map.svg");
+}
+
+.course .map-card-title {
+    margin-top: 10px;
+    font-size: var(--font-size-heading);
+    letter-spacing: -0.44px;
+    color: var(--color-text);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course .map-card-body {
+    margin-top: 10px;
+    font-size: var(--font-size-body-sm);
+    letter-spacing: -0.07px;
+    color: var(--color-body);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.map-card-buttons {
+    flex-direction: row;
+    align-self: stretch;
+    margin-top: 10px;
+}
+
+.map-card-buttons > .btn {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: 0;
+}
+
+/* "다시 입장하기"(없는 코스면 숨김) 앞 간격 */
+.map-card-buttons > .btn-primary {
+    margin-left: 10px;
+}

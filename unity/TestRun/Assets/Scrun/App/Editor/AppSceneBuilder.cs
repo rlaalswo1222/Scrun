@@ -11,7 +11,7 @@ using UnityEngine.UIElements;
 namespace Scrun.App.Editor
 {
     // 메뉴 Scrun → Build App Scene: 앱 화면에 필요한 에셋과 앱 씬을 코드로 다시 만든다(손으로 만든 설정이 없게).
-    //  - Pretendard 글꼴 3종 → UI Toolkit 글꼴 에셋(동적: 쓰는 글자만 그때그때 그림, 한글 11,172자를 미리 굽지 않음)
+    //  - Pretendard 글꼴 4종(Medium은 Figma UI Kit 본문) → UI Toolkit 글꼴 에셋(동적: 쓰는 글자만 그때그때 그림, 한글 11,172자를 미리 굽지 않음)
     //  - 테마(AppTheme.tss: 기본 테마 + 기본 글꼴 Pretendard), 패널 설정(390×844 기준 크기 맞춤)
     //  - 씬 Assets/Scrun/Scenes/App/App.unity(UIDocument + AppRoot), 빌드 씬 목록 맨 앞
     public static class AppSceneBuilder
@@ -23,7 +23,7 @@ namespace Scrun.App.Editor
         const string ShellPath = "Assets/Scrun/App/Resources/UI/AppShell.uxml";
         const string SceneDir = "Assets/Scrun/Scenes/App";
         const string ScenePath = SceneDir + "/App.unity";
-        static readonly string[] Weights = { "Regular", "SemiBold", "Bold" };
+        static readonly string[] Weights = { "Regular", "Medium", "SemiBold", "Bold" };
 
         // 글꼴 에셋 경로(AppFontReset도 이 목록을 씀)
         public static readonly string[] FontAssetPaths = System.Array.ConvertAll(Weights, w => $"{FontDir}/Pretendard-{w}.asset");

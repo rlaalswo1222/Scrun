@@ -8,6 +8,9 @@ namespace Scrun
     // 이름표(머리 위) + 오른쪽 "근처 러너" 목록. 모바일에서도 가볍게 OnGUI 한 번에 그림
     public class RunnerLabels : MonoBehaviour
     {
+        // 오른쪽 "근처 러너" 목록. 앱에서 들어온 맵(D-10)에서는 끈다(MapLaunchApplier) — 앱 나가기 버튼과 겹치고 Figma에 없음
+        public bool showNearbyList = true;
+
         GUIStyle tag, list;
         Texture2D white;
         Camera cam;
@@ -52,6 +55,8 @@ namespace Scrun
                 GUI.color = Color.white;
                 GUI.Label(r, t.displayName, tag);
             }
+
+            if (!showNearbyList) return;
 
             // 근처 러너 목록(앞선 사람이 위)
             rows.Sort((a, b) => b.gap.CompareTo(a.gap));

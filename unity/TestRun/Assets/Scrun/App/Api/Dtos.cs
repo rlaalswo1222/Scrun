@@ -46,4 +46,37 @@ namespace Scrun.App
         public bool Available { get; set; }
         public string Reason { get; set; }   // INVALID(형식) / NOT_ALLOWED(금칙어) / DUPLICATED(중복) / null
     }
+
+    // 코스(GET /v1/courses·/{courseId}, 계획 0021·PR #30). 코스 하나 = 맵 하나
+    public class Course
+    {
+        public string CourseId { get; set; }     // crs_lake_loop 등. 섬 도로망 코스 ID는 앞의 crs_를 뗀 것(MapLaunch.RouteIdOf)
+        public string Name { get; set; }
+        public string Type { get; set; }         // LOOP_3D(실사 영상 VIDEO는 자리만)
+        public int LengthM { get; set; }         // 한 바퀴 m
+        public int RunnersNow { get; set; }      // 그 맵에 지금 있는 사람 수
+        public string ThumbnailUrl { get; set; } // 없으면 null → 기본 그림
+    }
+
+    public sealed class CourseDetail : Course
+    {
+        public string Description { get; set; }
+        public string Mood { get; set; }
+        public int MaxRunnersPerMap { get; set; }
+    }
+
+    // 맵 입장(POST /v1/courses/{courseId}/entries) 응답
+    public sealed class MapEntry
+    {
+        public string MapInstanceId { get; set; }  // 실시간 서버 방 ID로 씀(지금은 map_<courseId>)
+        public string CourseId { get; set; }
+        public float EntryPositionM { get; set; }  // 코스 시작점부터 m
+        public RealtimeAccess Realtime { get; set; } // 실시간 서버(BL-25) 전에는 null
+    }
+
+    public sealed class RealtimeAccess
+    {
+        public string Url { get; set; }
+        public string Token { get; set; }
+    }
 }

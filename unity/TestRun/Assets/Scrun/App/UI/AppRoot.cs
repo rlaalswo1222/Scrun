@@ -20,6 +20,7 @@ namespace Scrun.App
         UIDocument doc;
         PanelSettings panel; // 실행 중에만 쓰는 복사본(원본 에셋을 바꾸지 않게)
         VisualElement safeArea;
+        VisualElement appRoot;
         bool started;
         bool pendingInit;
         bool subscribed;
@@ -55,6 +56,7 @@ namespace Scrun.App
         {
             var root = doc.rootVisualElement;
             safeArea = root.Q("safe-area");
+            appRoot = root.Q("app-root");
             Nav = new Navigator(root.Q("screen-host"), root.Q("tab-bar"), TabRoot);
             Nav.Changed += OnScreenChanged;
             orientationApplied = false;
@@ -108,7 +110,7 @@ namespace Scrun.App
 
         static AppScreen TabRoot(AppTab tab) => tab switch
         {
-            AppTab.Home => new PlaceholderScreen("홈", "달리기 시작, 이번 주 목표, 최근 기록이 들어갈 자리"),
+            AppTab.Home => new HomeScreen(),
             AppTab.Records => new PlaceholderScreen("기록", "달린 기록 목록이 들어갈 자리"),
             AppTab.Friends => new PlaceholderScreen("친구", "친구 목록·지금 달리는 친구가 들어갈 자리"),
             _ => new PlaceholderScreen("내 정보", "인증 마크·연속 일수·설정이 들어갈 자리"),
@@ -117,6 +119,7 @@ namespace Scrun.App
         void OnScreenChanged(AppScreen screen)
         {
             Feedback.HideError(); // 오류창은 그 화면 것 → 화면이 바뀌면 닫음(다시 시도가 사라진 화면을 부르지 않게)
+            appRoot?.EnableInClassList("app-root--world", screen.ShowsWorld); // 맵: 앱 배경을 투명하게
             if (orientationApplied && screen.Landscape == landscape) return;
             orientationApplied = true;
             landscape = screen.Landscape;
