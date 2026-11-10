@@ -1,6 +1,9 @@
 # 계획 0024: Swift 속도 플러그인 — `Native.Speed` 진짜 구현 (민재 S2 뒤쪽, BL-5)
 
-- 상태: **승인** (11/10 민재, 결정 1–4 추천안 그대로)
+- 상태: **승인 · 구현 중** (11/10 민재, 결정 1–4 추천안 그대로. 11/10 밤 맥·Windows 동시 진행 시작, 아래 "Swift ↔ C# 약속")
+- 진행
+  - Windows: 1번(Python), 4번(C# `IosSpeedSensor`) 진행 중
+  - 맥: 2번 앞부분(파일 옮기기·Swift 재생 도구로 그날 `estimate.csv` 다시 만들기), 3번(`ScrunSpeed.swift`·C 함수·헤드폰 manager), 5번 점검 화면 칸, 아이폰 책상 확인 시작 전
 - 담당: 민재. 기간 S2 뒤쪽(11/11)에서 S3 앞(11/12), 11/13 시연에 들어감. Python·C# 일부는 Windows, Swift·아이폰은 맥
 - 근거: 계획 0020(`ISpeedSensor` 모양 + 가짜, 진짜는 이 계획), 계획 0023 6번(단계 재기·걷기 절편·실패 판정을 Swift에), ADR-0009(센서는 JSON 통로를 쓰지 않음), 계획 0010·[live_iphone.md](../speed/live_iphone.md)(SpeedRecorder 안 실시간 추정, 달리기 5구간 0.16 km/h, 1명·같은 날 보정이라 낙관적)
 - 먼저 있어야 하는 것: PR #33(보정 메서드가 들어간 `ISpeedSensor`)이 develop에 합쳐질 것. 구현 브랜치는 그 뒤 develop에서 `feat/speed-plugin`
@@ -21,6 +24,36 @@ CMHeadphoneMotion 50 Hz ─┼─ 직렬 큐 ─ SpeedEstimator ─┤
 - **C# `IosSpeedSensor : SpeedSensorBase`**: `Sample()`은 `scrun_speed_read` 한 번, `OnBeginStage`·`OnEndStage`·`OnCancelStage`·`OnCalibrationApplied` 네 개는 위 함수. `Native.cs`의 iOS 줄을 이것으로. C 함수 호출은 작은 인터페이스 뒤에 두어 에디터 테스트에서 가짜로 바꾼다(`IosChannel` 방식)
 - **헤드폰 모션 manager 하나**: 지금 `ScrunHeadphones`는 이어폰 연결을 보려고 핸들러 없이 업데이트를 켠다. 속도 센서가 켜져 있으면 같은 manager를 **핸들러 있는 업데이트**로 다시 켜고, 끌 때 원래대로 돌린다(manager를 둘 만들지 않음, ScrunHeadphones 머리 주석에 이미 적어 둔 방향). 연결 알림은 그대로 ScrunHeadphones가 보낸다
 - **시계**: 폰·에어팟 모두 기기 부팅 뒤 초(`CMDeviceMotion.timestamp`) 그대로. 에어팟 시각이 2초 넘게 어긋나면 받은 시각을 쓰는 SpeedRecorder 처리는 가져온다. 노트북 시계 맞추기(SpeedRecorder `ServerClient`)는 안 가져온다
+
+## Swift ↔ C# 약속 (11/10 확정, 맥·Windows가 동시에 만들기 위해 먼저 정함. 바꾸면 두 쪽을 같이)
+C 함수(Swift `@_cdecl`, C# `[DllImport("__Internal")]`). 모두 **메인 스레드에서** 부른다. Swift는 필요하면 모션 큐로 `sync`해서 처리한다.
+| 함수 | 하는 일 |
+|---|---|
+| `void scrun_speed_start(void)` | 폰 가속도 100 Hz + (연결·허용이면) 헤드폰 모션 켜기. 이미 켜져 있으면 아무것도 안 함. 시각 0을 여기로 |
+| `void scrun_speed_stop(void)` | 끄기. 헤드폰 모션은 `ScrunHeadphones`가 지켜보는 중이면 원래 방식(핸들러 없음)으로 돌림. 열린 단계는 취소 |
+| `int scrun_speed_read(double* out, int n)` | 아래 칸을 `out[0..]`에 채우고 채운 칸 수를 돌려줌(`min(n, 11)`). 꺼져 있으면 시각 0·흐름 Off |
+| `void scrun_speed_stage_begin(double kmh)` | 지금부터 단계 기록(앞 5초는 버림) |
+| `char* scrun_speed_stage_end(void)` | 단계를 끝내고 판정 JSON(받은 쪽이 `scrun_free`): `{"result":"Ok","point":{"v":8,"limp":2.41,"cad":158.2,"amp":0.62,"running":true}}`. 실패면 `{"result":"Irregular","point":null}`. `result`는 `Ok`·`NoSteps`·`Irregular`·`SensorLost`·`TooShort`(C# `CalStageResult` 이름 그대로). `amp`는 에어팟을 못 썼으면 `null` |
+| `void scrun_speed_stage_cancel(void)` | 열린 단계 버림 |
+| `int scrun_speed_load(const char* modelJson)` | 보정 모델(`{"version":1,"points":[...]}`, C# `CalibrationModel`) 불러와 맞춤. 성공 1, 모양이 틀리면 0(지금 보정 그대로). `null`·빈 문자열이면 보정 지움 + 1 |
+
+`scrun_speed_read` 칸(`double`, 순서 고정):
+| # | 값 | 비고 |
+|---|---|---|
+| 0 | 칸 버전 = 1 | C#이 다르면 예외 한 번 |
+| 1 | 시각(초, start 뒤) | |
+| 2 | 속도 km/h | 없으면 NaN(→ `HasSpeed=false`) |
+| 3 | 걸음 상태 0·1·2 | `Gait` None·Walking·Running |
+| 4 | 걸음 수 spm | 없으면 0 |
+| 5 | 누적 걸음 | start 뒤, 감지 지연 없이 |
+| 6 | 에어팟 섞음 0·1 | |
+| 7 | 폰 흐름 0·1·2·3 | `SensorFlow` Off·Waiting·Ok·Lost |
+| 8 | 에어팟 흐름 0·1·2·3 | 연결·허용 없으면 0 |
+| 9 | 지난 1초 폰 샘플 수 | 점검 화면용 |
+| 10 | 지난 1초 에어팟 샘플 수 | 점검 화면용 |
+
+- 걷기 절편·단계 판정의 숫자·누적 걸음 방식은 1번(Python)에서 정해지면 Swift를 맞춘다. 그 전까지 Swift는 지금 `SpeedEstimator` 그대로 + 단계 판정은 아래 "판정 기준"의 규칙(NoSteps 문턱은 임시값), 누적 걸음은 임시로 케이던스 × 시간
+- 맥·Windows가 같은 브랜치 `feat/speed-plugin`에 올린다. 파일이 갈림: 맥은 `Assets/Plugins/iOS/Scrun/*.swift`·`ios/SpeedRecorder`·Swift 재생 도구, Windows는 `speedlab/`·C# `App/Native/IosSpeed*.cs`·테스트. 올리기 전 `git pull --rebase`. 진행 기록은 이 계획의 "진행"에 줄을 나눠(맥 / Windows) 적고, `handoff/minjae.md`는 Windows 쪽만 고친다(같은 사람 파일이라 겹침)
 
 ## 판정 기준 (계획 0020에서 정한 것, 숫자는 가설이고 아이폰에서 고침)
 - **폰 흐름**: 지난 1초 샘플 80개 이상이면 Ok, 2초 동안 안 오면 Lost. **에어팟**: 헤드폰 모션이 연결돼 있고 지난 1초 20개 이상이면 Ok, 연결이 없으면 Off(실패 아님)
