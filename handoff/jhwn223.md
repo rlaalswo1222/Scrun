@@ -1,24 +1,22 @@
-# jhwn223 인수인계 (2026-11-10)
+# jhwn223 인수인계 (2026-11-10 밤)
 
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
-## 지금 (11/10)
-- **코스 API 3개 구현 완료, 커밋 전**: 브랜치 `feat/course-api`(develop fbb0247 위). 계획 [0021](../docs/plans/0021-course-api.md)(0019는 민재가 먼저 써서 번호 바꿈). 테스트 170개 통과, `/code-review` 반영, 11/10 민재 답변 반영
-  - 코스 4개 시드(`crs_lake_loop` 6671 m, `crs_coast_run` 8776, `crs_forest_run` 9695, `crs_island_tour` 10884). 길이는 Unity `RoadNetwork.BuildRoute`를 파이썬으로 옮겨 잼(스크립트는 저장소 밖, 새 맵 나오면 다시 만들기)
-  - 새 테이블 `course_entries`(입장 = 자리 잡기) + 입장 때 코스 줄 잠금 → 19명일 때 동시 3명 → 1명만(테스트, 잠금 끄면 실패 확인). 인원 세기는 `app/core/occupancy.count_present` 한 곳(실시간 서버 생기면 연결 수로)
-  - `thumbnailUrl` null, 스텁 예시 `crs_island_loop`·`map_01` → 실제 값, `real_key` 고침, export_openapi CRLF, 테스트 도우미 `tests/helpers.py`(test_auth도 씀)
-  - **커밋 나누기(요청 시)**: ① `Feat:` 코스 API(서버·마이그레이션·테스트·docs/api·계획 0021) ② `Fix:` export_openapi CRLF ③ `Docs:` backend/README 맥 brew PostgreSQL 안내. 이 브랜치엔 무관한 unity/tools·githooks·`.gitignore`(iOS·Mac 줄) 수정도 있음 → 따로
-  - 남은 것: 러닝 종료 API(민재)에서 `course_entries` 지우기 제안(계획 0021 "남은 것"), 노션 API 명세 다시 생성
-- 이 맥 환경: Homebrew PostgreSQL 16(`brew services`, Docker 대신, 계정·주소 Docker와 같음), `backend/.env`(KAKAO_MODE=fake), 개발·테스트 DB `090d14ed6534`까지
-- 민재 11/10 답변: `FakeNative` PR 올라옴(사용법 `docs/unity/unity_map.md` "앱 코드 묶음", 화면 코드는 `Assets/Scrun/App/` 아래). 노션 기능 보드 "보정"(민재 S2)·"센서 준비·카운트다운"(지환 S3)으로 나눔. 실시간은 FastAPI WebSocket(ADR-0010)
+## 지금 (11/10 밤)
+- **코스 화면 끝, PR 준비**: 브랜치 `feat/course-screens`, 계획 [0022](../docs/plans/0022-course-screens.md). Figma C-01·C-02·I-10·I-11·D-10 + 아래 탭 바를 Figma대로, `/code-review` 두 번 반영, EditMode 58/58, 에디터 Play로 코스 4개 입장·재입장·연결 끊김·없는 코스 확인. 무엇이 바뀌었는지는 계획 0022 "진행 상황", `docs/unity/unity_map.md` "코스 화면·맵 입장"
+  - Figma: "SCRUN"(키 `w5YpqhN1yyWXf03z23eTKK`) > 페이지 "스크런 와이어 프레임"(585:18179). claude.ai Figma 연결로 읽음(`get_design_context`)
+  - **PR #30(코스 API, `feat/course-api`)이 먼저 머지돼야 함**(민재 리뷰 대기). 이 handoff 파일은 두 브랜치에 다 있음 → 합칠 때 이 브랜치 쪽(나중 내용)을 고른다
+  - 민재에게 알릴 것: 흐름 변경(입장은 가로 맵 화면이 I-10 아래에서), App.uss UI Kit 값(로그인·약관·프로필 색·제목 28), 아래 탭 바 Figma대로 바꿈(앱 틀), App.uss `:last-child` 두 곳이 USS에서 안 먹음, 나가도 서버 자리 10분 남음(러닝 종료 API BL-14에서 `course_entries` 지우기)
+- 코스 API(계획 0021) 상세는 PR #30. 남은 것: 러닝 종료 API(민재)에서 `course_entries` 지우기 제안, 노션 API 명세 다시 생성
+- 이 맥 환경: Homebrew PostgreSQL 16(`brew services`), `backend/.env`(KAKAO_MODE=fake). 로컬 서버는 `feat/course-api` 작업 폴더(다른 세션 scratchpad의 `course-api` worktree)의 `backend`에서 `../.venv` 대신 `/Users/jihwankim/Desktop/Projects/Scrun/.venv/bin/python -m uvicorn app.main:app --port 8000`(PR #30이 develop에 들어가면 저장소 `backend`에서)
+- Unity(맥): MCP for Unity 켜고 `unity/tools/*.sh` 앞에 `PATH=/usr/bin:/bin:/opt/homebrew/bin`(옛 인텔 파이썬이 "Bad CPU type"). Game 창은 세로 고정이라 가로는 Game 창 크기를 852×393 비율로. Play 중 UXML·USS를 고치면 Live Reload로 홈으로. MCP로 버튼을 누를 때 Game 창에 포커스를 주지 말 것(앞서 누른 버튼이 다시 눌림)
 - **develop에 커밋 금지**: `feat/...`·`docs/...` 브랜치를 따서 나눠 올린다
 
 ## 다음 할 일
-1. 코스 API 커밋·PR(사용자 요청 시) → 민재 리뷰
-2. [FE] 코스 목록·상세·맵 입장 화면(C-01, C-02, I-10, I-11), `Assets/Scrun/App/` 아래, ApiClient 사용. 보정값 없으면(409 `CALIBRATION_REQUIRED`) 보정 화면(민재 S2), 가득 참(409 `COURSE_FULL`)·네트워크 없음 안내, 썸네일 null이면 기본 그림
-3. [3D] 고른 코스로 Island01 열기(RoadNetwork 코스 설정, `crs_` 뒤가 routes id), 가로 화면, 입장 위치(m)에 아바타
-4. [FE] 권한 안내·에어팟 화면: `FakeNative` PR 합쳐지면
-5. S2: 러닝 설정·거치 안내, 내 정보·설정·보정값 API, Y Bot 애니메이션 속도
+1. 코스 화면: develop 받아 합치기 → 커밋·PR(사용자 요청 시) → 민재 리뷰. 아이폰에서 가로 배치·노치 여백, 상준에게 Figma와 나란히 확인 요청
+2. **[FE] 권한 안내·에어팟 화면(S1 남은 것)**: Figma A-07(권한 안내)·A-09·A-10(이어폰 연결), `FakeNative`(develop에 있음)로. 계획 문서부터(develop pull 뒤 마지막 번호 + 1)
+3. S2: 러닝 설정·거치 안내(D-01·D-05, 상세 → 맵 사이), 내 정보·설정·보정값 API, Y Bot 애니메이션 속도
+4. S3: 센서 준비·카운트다운(D-07·D-09), 맵 HUD(D-10 진행 막대·멈춤 D-17), MapScreen 쪼개기
 
 ## 맡은 영역 (계획 0017, 노션 [개발 계획](https://tough-wednesday-fe0.notion.site/11-08-11-23-4114ae82f1de81a9bec2db16a9bfe635) 작업 표 지환 36줄)
 기능 단위로 화면(UXML·동작)·서버 API(DB 연결·pytest)·연결까지 끝까지. 예외: 권한·에어팟·센서 준비·카운트다운은 화면만(밑의 Swift는 민재). 상준은 UI Kit·USS와 화면 모양 다듬기, PR 리뷰는 민재.

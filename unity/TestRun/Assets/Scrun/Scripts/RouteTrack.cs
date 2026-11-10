@@ -13,6 +13,8 @@ namespace Scrun
         Polyline line;
 
         public string RouteId => routeId;
+        // 이 도로망에 그 코스가 있는지(앱에서 받은 코스 ID 확인, MapLaunchApplier)
+        public bool HasRoute(string id) => network && network.FindRoute(id) != null;
         public string RouteName => network ? network.FindRoute(routeId)?.name : null;
 
         public void Init(RoadNetwork net, string route)
