@@ -1,6 +1,11 @@
 # 계획 0024: Swift 속도 플러그인 — `Native.Speed` 진짜 구현 (민재 S2 뒤쪽, BL-5)
 
 - 상태: **승인 · 구현 중** (11/10 민재, 결정 1–4 추천안 그대로. 11/10 밤 맥·Windows 동시 진행 시작, 아래 "Swift ↔ C# 약속")
+- **맥 할 일**(Windows가 적고 맥이 읽음. 맥은 `git pull --rebase` 뒤 위에서부터 하고, 끝낸 줄은 지우고 결과는 아래 "진행"의 맥 줄에. 사용자는 맥에 "0024 맥 할 일 해 줘"만 침)
+  1. 문제 A Swift: `fusion_live.py`의 `steps_like(level, cad)`(세기 ≥ `STILL_ENV` 이고 걸음 수 < `CAD_EDGE`)를 `SpeedEstimator.swift`에 옮겨 `update`의 걸음 후보(q 확인과 같은 자리, `phoneFeats`에 `level` 추가)와 `stagePoint`가 같이 쓰게
+  2. `ios/SpeedReplay`로 정답 세 개 비교: `speedlab/golden/replay_20261029-040156.csv`, `..._walkcal.csv`(`--model speedlab/golden/model_walk_20261029.json`), 새 `replay_beltonly_20261029-014932.csv`(기록 폴더 `speedlab/golden/beltonly_20261029-014932`, 에어팟·구간 파일 없음). 모든 열 차를 "진행"에
+  3. 아이폰: 가만히 둔 폰이 걸음 상태 None인지, 문제 B(가만히 둔 단계 재기가 SensorLost) 원인 → 고치기
+  4. 책상 확인 나머지: 모션 권한 거부 뒤 가속도가 오는지(오면 지환에게 권한 필수 목록 조정), 10분 켜 둔 CPU·발열
 - 진행
   - Windows 1번 끝(11/10 밤): `fusion_live.py`에 `measure_stage`(TooShort·SensorLost·NoSteps·Irregular·Ok), 누적 걸음(봉우리), 걷기 절편(`WALK_OWN` 켬, 4 km/h 이상 걷기 점, 11/10 민재 결정). 숫자: 걸음 없음 문턱 0.12, 걸음 수 215 이상은 벨트 진동, 4 km/h 이하 달리기 판정은 다시 잼(근거·수치 `docs/speed/README.md` 11/10 줄). **맥은 Swift를 이 파일에 맞춘 뒤** `speedlab/golden/replay_20261029-040156.csv`(기록의 보정 구간으로)와 `..._walkcal.csv`(`model_walk_20261029.json` 보정을 불러와 시작, 걷기 절편까지)를 Swift 재생과 비교(열에 `steps` 추가)
   - Windows 4번 끝(11/10 밤): C# `IosSpeedSensor`(칸 → SpeedReading, 단계 JSON, 보정 넘기기) + `IosSpeedNative`(DllImport) + `Native.cs` iOS 줄 + 테스트 `IosSpeedSensorTests`, EditMode 131개 통과. 아이폰 빌드는 Swift `ScrunSpeed.swift`가 들어와야 링크됨(맥)
