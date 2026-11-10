@@ -58,8 +58,12 @@ def replay(session):
     k, rows, steps_at = 0, [], {}
     starts = sorted((s['t_begin'] + fl.CAL_SKIP_S, i) for i, s in enumerate(segs))
     j = 0
+    snaps, last = [], None
     for i in range(len(t)):
         est.add_phone(t[i], x[i], y[i], z[i])
+        if est.snap is not last:
+            last = est.snap
+            snaps.append((last['t'], last['state']))
         while j < len(starts) and t[i] >= starts[j][0]:
             steps_at[starts[j][1]] = est.steps
             j += 1
@@ -69,7 +73,8 @@ def replay(session):
             w = np.array([e for tt, e in est.env if s['t_begin'] + fl.CAL_SKIP_S <= tt <= s['t_end']])
             cad, q = fl.sdb.cadence(w) if len(w) > fl.FS else (0, 0)
             dur = s['t_end'] - s['t_begin'] - fl.CAL_SKIP_S
-            rows.append(dict(**s, result=res, level=fl.env_level(w) if len(w) else 0, q=q, cad=cad,
+            st = [v for tt, v in snaps if s['t_begin'] + fl.CAL_SKIP_S <= tt <= s['t_end']]
+            rows.append(dict(**s, result=res, live=float(np.mean([v != 0 for v in st])) if st else 0.0, level=fl.env_level(w) if len(w) else 0, q=q, cad=cad,
                              running=p['running'] if p else None, limp=p['limp'] if p else None,
                              steps=est.steps - steps_at.get(segs.index(s), est.steps), expect=cad * dur / 60))
             k += 1
@@ -110,7 +115,7 @@ def main():
         d['who'] = who
         allr.append(d)
         print(f'\n=== {who} {session} ===')
-        print(d[['kind', 'v', 'result', 'level', 'q', 'cad', 'running', 'steps', 'expect']]
+        print(d[['kind', 'v', 'result', 'live', 'level', 'q', 'cad', 'running', 'steps', 'expect']]
               .round(3).to_string(index=False))
     d = pd.concat(allr)
 
@@ -124,6 +129,13 @@ def main():
     print(f'\n[걷기 절편] 오름 2·4·6 km/h 보정, 절편은 {fl.WALK_MIN_KMH:g} km/h 이상 점으로 → 나머지 걷기 구간(같은 날, 2명)')
     for who, other in (('M', 'B'), ('B', 'M')):
         walk_check(d[d.who == who], d[d.who == other], who)
+
+    print('\n[실시간 걸음 상태] 구간(앞 5초 뺌) 중 걸음으로 잡힌 0.5초 칸 비율(1 = 내내 걷기·달리기)')
+    for name, sel in (('벨트만', d.kind == 'still'), ('걷기 1', (d.kind == 'walk') & (d.v == 1)),
+                      ('걷기 2', (d.kind == 'walk') & (d.v == 2)), ('걷기 3 이상', (d.kind == 'walk') & (d.v >= 3)),
+                      ('달리기', d.kind == 'run')):
+        lv = d[sel].live
+        print(f'  {name:8s} n {len(lv):2d}  평균 {lv.mean():.3f}  최소 {lv.min():.3f}')
 
     ok = d[(d.result == 'Ok') & (d.expect > 0)]
     r = ok.steps / ok.expect

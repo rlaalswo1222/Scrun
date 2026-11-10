@@ -80,6 +80,12 @@ def env_level(s):
     return float(np.sort(s)[int(0.75 * (len(s) - 1))])
 
 
+def steps_like(level, cad):
+    """사람 걸음으로 볼 수 있나: 세기가 서 있을 때보다 크고, 걸음 수가 찾는 범위 끝(벨트 모터 진동)에 붙지 않음.
+    실시간 걸음 상태(update)와 보정 단계 판정(stage_point)이 같이 쓴다(11/11 맥 아이폰 확인: 가만히 둔 폰이 222 spm으로 걸음이 됨)"""
+    return level >= STILL_ENV and cad < CAD_EDGE
+
+
 class SpeedEstimator:
     def __init__(self):
         self.hp = [Sos(HP) for _ in range(3)]
@@ -147,7 +153,7 @@ class SpeedEstimator:
         if len(s) < FS * 3:
             return None
         cad, q = sdb.cadence(s)
-        return dict(cad=cad, q=q, imp=sdb.impact(s))
+        return dict(cad=cad, q=q, imp=sdb.impact(s), level=env_level(s))
 
     def air_feats(self, t0, t1, cad):
         w = [(tt, m) for tt, m in self.air if t0 <= tt <= t1]
@@ -176,12 +182,10 @@ class SpeedEstimator:
         s = np.array([e for tt, e in self.env if t0 <= tt <= t1])
         if len(s) < FS * STAGE_MIN_S:
             return 'TooShort', None
-        if env_level(s) < STILL_ENV:
-            return 'NoSteps', None
         cad, q = sdb.cadence(s)
-        imp = sdb.impact(s)
-        if cad >= CAD_EDGE:
+        if not steps_like(env_level(s), cad):
             return 'NoSteps', None
+        imp = sdb.impact(s)
         if q < Q_MIN or imp <= 0:
             return 'Irregular', None
         af = self.air_feats(t0, t1, cad)
@@ -234,7 +238,7 @@ class SpeedEstimator:
         pf = self.phone_feats(t0, t1)
         af = self.air_feats(t0, t1, pf['cad'] if pf else None)
         air_ok = bool(af and af['cover'] >= AIR_MIN_COVER and t1 - af['last'] <= AIR_MAX_AGE)
-        if not pf or pf['q'] < Q_MIN:
+        if not pf or pf['q'] < Q_MIN or not steps_like(pf['level'], pf['cad']):
             cand, by = 0, 'phone'
         elif air_ok:
             cand, by = (2 if af['lowg_ms'] >= RUN_LOWG_MS else 1), 'airpods'
