@@ -9,12 +9,6 @@ namespace Scrun.App.Tests
     // 코스 화면(계획 0022): 서버 응답 읽기, 코스 ID → 섬 도로망 코스 ID, 문구
     public class CourseTests
     {
-        sealed class FakeHttp : IHttpTransport
-        {
-            public readonly List<HttpRequest> Sent = new List<HttpRequest>();
-            public Func<HttpRequest, HttpResponse> Handler;
-            public Task<HttpResponse> SendAsync(HttpRequest r) { Sent.Add(r); return Task.FromResult(Handler(r)); }
-        }
 
         SynchronizationContext savedContext;
         FakeHttp http;
