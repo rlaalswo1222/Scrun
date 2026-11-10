@@ -21,9 +21,9 @@ namespace Scrun.App
         public static IHeadphones Headphones => IosChannel.Instance;
         public static ISecureStore SecureStore => IosChannel.Instance;
         public static IKakaoLogin Kakao => IosChannel.Instance;
-        // Swift 속도 플러그인은 S2(BL-5, 계획 0020). 그 전엔 NativeSpeedSource가 예외를 한 번 알리고 속도 0
-        public static ISpeedSensor Speed => throw new PlatformNotSupportedException(
-            "아이폰 속도 플러그인(Swift)이 아직 없습니다(S2, 계획 0020). 가짜로 보려면 SCRUN_FAKE_NATIVE를 켜세요.");
+        // Swift 속도 플러그인(ScrunSpeed.swift, 계획 0024). 계산은 Swift, C#은 프레임마다 숫자 칸을 읽음
+        public static ISpeedSensor Speed => speed ??= new IosSpeedSensor(new IosSpeedNative());
+        static IosSpeedSensor speed;
 #else
         // 출시 대상은 아이폰뿐(ADR-0007). 다른 플랫폼 빌드에서 가짜가 몰래 "허용"을 주면
         // 권한 없이 달리기까지 가 버리므로, 바로 멈추게 한다.
