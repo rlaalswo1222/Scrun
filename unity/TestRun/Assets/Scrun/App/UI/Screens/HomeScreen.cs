@@ -8,6 +8,6 @@ namespace Scrun.App
         protected override string Uxml => "UI/Home";
 
         protected override void OnCreate() =>
-            Q<Button>("choose-course").clicked += () => Nav.Push(new CourseListScreen());
+            Q<Button>("choose-course").clicked += () => { if (Nav.Current == this) Nav.Push(new CourseListScreen()); }; // 두 번 눌러도 하나만
     }
 }

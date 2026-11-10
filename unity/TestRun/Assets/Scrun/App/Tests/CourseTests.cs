@@ -146,7 +146,15 @@ namespace Scrun.App.Tests
         [TestCase(6671, "6.7km")]
         [TestCase(10884, "10.9km")]
         [TestCase(3000, "3.0km")]
+        [TestCase(1050, "1.1km")] // 0.05는 올림(float 나눗셈이면 1.0)
+        [TestCase(1049, "1.0km")]
         public void KmHasOneDecimal(int m, string text) => Assert.AreEqual(text, CourseText.Km(m));
+
+        [TestCase("노을 호수 한 바퀴", "노")]
+        [TestCase("🏝️ 섬 일주", "🏝️")] // 이모지(서로게이트 쌍 + 변형 선택자)를 반쪽만 자르지 않음
+        [TestCase("", "")]
+        [TestCase(null, "")]
+        public void InitialIsOneTextElement(string name, string expected) => Assert.AreEqual(expected, CourseText.Initial(name));
 
         [Test]
         public void RunnersText()

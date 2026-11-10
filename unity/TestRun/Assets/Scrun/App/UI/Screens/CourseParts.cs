@@ -12,7 +12,7 @@ namespace Scrun.App
             thumb.AddToClassList("course-thumb");
             if (string.IsNullOrEmpty(c.ThumbnailUrl))
             {
-                var mark = new Label(string.IsNullOrEmpty(c.Name) ? "" : c.Name.Substring(0, 1));
+                var mark = new Label(CourseText.Initial(c.Name));
                 mark.AddToClassList("course-thumb-mark");
                 thumb.Add(mark);
             }

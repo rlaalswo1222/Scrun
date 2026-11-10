@@ -42,9 +42,8 @@ namespace Scrun.App
         bool sceneLoading;
         Camera appCamera;
         Color appCameraColor;
-        int appFrameRate;
-        bool frameRateSaved;
-        bool busy, leaving;
+        string appCameraTag;
+        bool busy, leaving, started;
 
         public MapScreen(CourseDetail course, Action<MapExit, ApiException> onExit)
         {
@@ -72,9 +71,12 @@ namespace Scrun.App
             unavailable.SetVisible(false);
         }
 
+        // 처음 보일 때만 입장한다. 위에 다른 화면이 올라갔다 내려와도 저절로 다시 요청하지 않음(다시 하려면 I-11 "다시 입장하기")
         protected internal override void OnShow()
         {
-            if (!island.IsValid() && !busy) Begin();
+            if (started) return;
+            started = true;
+            Begin();
         }
 
         protected internal override void OnDestroy()
@@ -130,8 +132,8 @@ namespace Scrun.App
             if (leaving) return;
             islandHeld = new TaskCompletionSource<bool>();
             islandFree = islandHeld.Task;
-            // 섬 씬의 품질 설정(ScrunQuality)이 프레임 목표를 전역으로 바꾼다 → 나갈 때 앱 값으로 되돌리게 기억
-            if (!frameRateSaved) { appFrameRate = Application.targetFrameRate; frameRateSaved = true; }
+            // 섬 씬이 깨어나는 동안 Camera.main이 섬 카메라를 가리키게(ScrunQuality·이름표가 앱 카메라를 잡지 않게) 미리 비켜 둔다
+            YieldAppCamera();
             MapLaunch.Store(entry);
 
             sceneLoading = true;
@@ -216,11 +218,11 @@ namespace Scrun.App
             return null;
         }
 
-        // 섬 씬을 내리고 앱 카메라·프레임 목표를 되돌린다. 불러오는 중이면 불러오기가 끝난 뒤 EnterAndLoad가 다시 부른다
+        // 섬 씬을 내리고 앱 카메라를 되돌린다(섬이 바꾼 전역 설정은 섬의 ScrunQuality가 내려갈 때 되돌림).
+        // 불러오는 중이면 불러오기가 끝난 뒤 EnterAndLoad가 다시 부른다
         void ReleaseIsland()
         {
             SetAppCamera(true);
-            if (frameRateSaved) Application.targetFrameRate = appFrameRate;
             if (sceneLoading) return;
             var held = islandHeld;
             islandHeld = null;
@@ -240,12 +242,25 @@ namespace Scrun.App
             held?.TrySetResult(true);
         }
 
+        // 섬 씬을 부르기 전: MainCamera 태그와 소리 듣는 곳을 섬 카메라에 넘긴다. 앱 카메라는 섬이 다 열릴 때까지 화면을 칠함(켜 둠)
+        void YieldAppCamera()
+        {
+            if (appCamera == null) return;
+            if (appCameraTag == null) appCameraTag = appCamera.tag;
+            appCamera.tag = "Untagged";
+            var listener = appCamera.GetComponent<AudioListener>();
+            if (listener != null) listener.enabled = false;
+        }
+
+        // 섬이 열리면 끄고(false), 섬을 내리면 태그·소리까지 되돌린다(true)
         void SetAppCamera(bool on)
         {
             if (appCamera == null) return;
             appCamera.enabled = on;
+            if (!on) return;
+            if (appCameraTag != null) appCamera.tag = appCameraTag;
             var listener = appCamera.GetComponent<AudioListener>();
-            if (listener != null) listener.enabled = on;
+            if (listener != null) listener.enabled = true;
         }
 
         void SetProgress(float p) => progress.style.width = Length.Percent(Mathf.Clamp01(p) * 100f);
