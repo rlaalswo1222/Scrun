@@ -1,25 +1,19 @@
-# jhwn223 인수인계 (2026-11-10 밤)
+# jhwn223 인수인계 (2026-11-10 밤, #34 리뷰 반영 뒤)
 
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
 ## 지금 (11/10 밤)
-- **코스 화면 PR #32 올림**: 브랜치 `feat/course-screens`, 계획 [0022](../docs/plans/0022-course-screens.md). Figma C-01·C-02·I-10·I-11·D-10 + 아래 탭 바를 Figma대로, `/code-review` 두 번 반영, EditMode 58/58, 에디터 Play로 코스 4개 입장·재입장·연결 끊김·없는 코스 확인. 무엇이 바뀌었는지는 계획 0022 "진행 상황", `docs/unity/unity_map.md` "코스 화면·맵 입장"
-  - Figma: "SCRUN"(키 `w5YpqhN1yyWXf03z23eTKK`) > 페이지 "스크런 와이어 프레임"(585:18179). claude.ai Figma 연결로 읽음(`get_design_context`)
-  - **PR #30(코스 API, `feat/course-api`)이 먼저 머지돼야 함**(민재 리뷰 대기). 이 handoff 파일은 두 브랜치에 다 있음 → 합칠 때 이 브랜치 쪽(나중 내용)을 고른다
-  - 민재에게 알릴 것: 흐름 변경(입장은 가로 맵 화면이 I-10 아래에서), App.uss UI Kit 값(로그인·약관·프로필 색·제목 28), 아래 탭 바 Figma대로 바꿈(앱 틀), App.uss `:last-child` 두 곳이 USS에서 안 먹음, 나가도 서버 자리 10분 남음(러닝 종료 API BL-14에서 `course_entries` 지우기)
-- 코스 API(계획 0021) 상세는 PR #30. 남은 것: 러닝 종료 API(민재)에서 `course_entries` 지우기 제안, 노션 API 명세 다시 생성
-- 이 맥 환경: Homebrew PostgreSQL 16(`brew services`), `backend/.env`(KAKAO_MODE=fake). 로컬 서버는 `feat/course-api` 작업 폴더(다른 세션 scratchpad의 `course-api` worktree)의 `backend`에서 `../.venv` 대신 `/Users/jihwankim/Desktop/Projects/Scrun/.venv/bin/python -m uvicorn app.main:app --port 8000`(PR #30이 develop에 들어가면 저장소 `backend`에서)
-- Unity(맥): MCP for Unity 켜고 `unity/tools/*.sh` 앞에 `PATH=/usr/bin:/bin:/opt/homebrew/bin`(옛 인텔 파이썬이 "Bad CPU type"). Game 창은 세로 고정이라 가로는 Game 창 크기를 852×393 비율로. Play 중 UXML·USS를 고치면 Live Reload로 홈으로. MCP로 버튼을 누를 때 Game 창에 포커스를 주지 말 것(앞서 누른 버튼이 다시 눌림)
+- **PR #30(코스 API + 보정값 API)·#32(코스 화면) 머지됨**(민재). 리뷰 반영 내용은 계획 0021·0022
+- **PR #34(권한 안내·이어폰, 계획 [0025](../docs/plans/0025-permission-earphone-screens.md), base develop)**: 민재 리뷰 반영 끝 → 다시 리뷰 대기. 계획 번호를 0023 → 0025로 바꿈(민재 보정 계획과 겹침)
+  - 민재에게 부탁할 것: `Navigator.Replace`(형이 넣어 주겠다고 함), 코스 상세 "맵 입장" 순서는 모션 확인(#34) → 보정(#33) → 입장으로 형이 #33에서 맞춤
+- 노션 작업 표는 민재 워크스페이스라 내 노션 연결(jhwn223@cau.ac.kr, 개인 워크스페이스)로는 못 고침 → 민재가 워크스페이스에 초대 + claude.ai Notion 연결을 그 워크스페이스로 다시 하면 Claude가 상태를 바꿀 수 있음. 지금 바꿀 줄: [FE] 권한 안내·요청 화면, [FE] 에어팟 연결 확인 화면 → 진행 중(#34 머지 뒤 완료), [BE] 코스 API·보정값 API·[FE] 코스 화면·[3D] 섬 맵 입장 → 완료(#30·#32 머지)
+- 이 맥 환경: Homebrew PostgreSQL 16, 로컬 서버는 develop의 `backend`에서 `/Users/jihwankim/Desktop/Projects/Scrun/.venv/bin/python -m uvicorn app.main:app --port 8000`(#30 머지됨). Unity MCP는 다시 켜면 `rm /tmp/umcp.sid` 뒤 연결. 긴 명령은 끊기니 짧게 나눠서. `unity/tools`는 develop의 맥 대응판을 씀(내 옛 수정은 버림)
 - **develop에 커밋 금지**: `feat/...`·`docs/...` 브랜치를 따서 나눠 올린다
 
-- **권한 안내·이어폰 화면(S1 남은 것) 구현 끝, 커밋 전**: 브랜치 `feat/permission-screens`(**`feat/course-screens` 위에 쌓음**, PR base도 `feat/course-screens` → #32 머지되면 develop으로). 계획 [0023](../docs/plans/0023-permission-earphone-screens.md), EditMode 93/93, 에디터 Play + Fake Native로 허용·거부·이어서 하기·맵 입장 전 확인, `/code-review` 반영
-  - 정한 것(지환): 권한 4개는 Figma대로 한 번에, A-09 문구 Figma 그대로(실측은 아직 안 받쳐 줌, 계획 0023에 기록), 모션 없으면 맵 입장 전에 막음
-
 ## 다음 할 일
-1. 코스 화면 PR #32(이미 올림) → 민재 리뷰. 아이폰에서 가로 배치·노치 여백, 상준에게 Figma와 나란히 확인 요청
-2. 권한·이어폰 PR(base `feat/course-screens`) → 민재 리뷰. A-09 문구 상준 확인. 아이폰 팝업·설정 앱 왕복·에어팟은 PR #28 뒤
-3. S2: 러닝 설정·거치 안내(D-01·D-05, 상세 → 맵 사이), 내 정보·설정·보정값 API, Y Bot 애니메이션 속도
-4. S3: 센서 준비·카운트다운(D-07·D-09), 맵 HUD(D-10 진행 막대·멈춤 D-17), MapScreen 쪼개기
+1. #34 재리뷰·머지 → 노션 상태 완료. 아이폰(PR #28 뒤): 권한 팝업·설정 앱 왕복 때 앱이 꺼지는지(꺼지면 입장하려던 코스·온보딩 단계 저장해 이어 가기, 계획 0025), 에어팟, 가로 맵·노치
+2. **S2**: [FE] 러닝 설정(목표, BL-8, D-01), [FE] 거치 안내·달리는 매뉴얼(BL-9, D-05·D-06), [BE] 설정 API(BL-36), [BE] 내 정보 조회·수정 API(BL-36), [3D] 임시 아바타 달리기 애니메이션 속도 맞춤(BL-42). 계획 문서부터(develop pull 뒤 마지막 번호 + 1)
+3. S3: 센서 준비·카운트다운(D-07·D-09), 맵 HUD(D-10 진행 막대·멈춤 D-17), MapScreen 쪼개기
 
 ## 맡은 영역 (계획 0017, 노션 [개발 계획](https://tough-wednesday-fe0.notion.site/11-08-11-23-4114ae82f1de81a9bec2db16a9bfe635) 작업 표 지환 36줄)
 기능 단위로 화면(UXML·동작)·서버 API(DB 연결·pytest)·연결까지 끝까지. 예외: 권한·에어팟·센서 준비·카운트다운은 화면만(밑의 Swift는 민재). 상준은 UI Kit·USS와 화면 모양 다듬기, PR 리뷰는 민재.
