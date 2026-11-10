@@ -128,7 +128,10 @@ final class ScrunSpeed {
     // 화면이 꺼지거나 다른 앱으로 가면 가속도가 멈춘다 → 바로 끊김으로 보이고, 재는 단계는 실패(SensorLost)
     private func setBackground(_ on: Bool) {
         background = on
-        if on && openStage != nil { stageBroken = true }
+        if on && openStage != nil {
+            stageBroken = true
+            print("[ScrunSpeed] 단계 재는 중 앱이 비활성이 됨(제어 센터·알림·잠금·시스템 팝업) → 이 단계는 SensorLost")
+        }
     }
 
     // MARK: 모션 큐
@@ -219,7 +222,12 @@ final class ScrunSpeed {
         if stageBroken { return ["result": "SensorLost", "point": NSNull()] }
         let end = Self.uptime
         let (res, p) = dq.sync { est.measureStage(b.v, begin: b.t, end: end) }
-        guard res == .ok, let p else { return ["result": res.rawValue, "point": NSNull()] }
+        guard res == .ok, let p else {
+            // 왜 실패했는지 콘솔에(아이폰 확인용). SensorLost면 샘플 공백(앞·뒤 끝 포함 2초 넘게 빔)
+            print(String(format: "[ScrunSpeed] 단계 %@: %.0f km/h, 잰 시간 %.1f초(앞 %.0f초 버림)",
+                         res.rawValue, b.v, end - b.t, SpeedEstimator.calSkipS))
+            return ["result": res.rawValue, "point": NSNull()]
+        }
         return ["result": res.rawValue, "point": [
             "v": p.v, "limp": p.limp, "cad": p.cad, "amp": p.amp as Any? ?? NSNull(), "running": p.running,
         ] as [String: Any]]
