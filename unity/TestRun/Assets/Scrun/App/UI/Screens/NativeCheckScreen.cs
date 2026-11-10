@@ -25,7 +25,13 @@ namespace Scrun.App
         bool ownCalibration;        // 단계 재기를 위해 이 화면이 연 보정(끝나면 버림, 지금 보정은 그대로)
         IVisualElementScheduledItem stageTimer;
         int lastSteps;
-        double firstStepAt = -1;    // 걸음 없음 상태에서 누적 걸음이 처음 늘어난 시각 → 걸음 상태가 바뀌면 걸린 초를 남김
+        // 걸음이 잡히기까지 걸린 초: 2초 넘게 걸음이 없다가 다시 늘기 시작한 시각부터, 걸음 상태가 None이 아니게 될 때까지
+        // (걸음 상태가 None으로 바뀌어도 걸음이 계속 늘던 중이면 다시 재지 않음, 11/11 아이폰에서 0.2초 같은 값이 나와 고침)
+        const double QuietSec = 2;
+        double firstStepAt = -1;
+        double lastStepAt = -1;
+        double lastStatusLog = -1;   // 켜져 있는 동안 10초마다 상태 줄을 콘솔에만 남김(맥에서 devicectl --console로 읽음)
+        const double StatusLogSec = 10;
         const float StageKmh = 8f;  // 책상 확인용 가정 속도(4 km/h 이하면 달리기 판정이 Irregular가 되므로 달리기 속도)
         const long StageMs = 15000; // CalibrationLadder.StageSec과 같음
 
@@ -157,7 +163,7 @@ namespace Scrun.App
                 s.Start();
                 sensor = s;
                 lastSteps = 0;
-                firstStepAt = -1;
+                firstStepAt = lastStepAt = lastStatusLog = -1;
                 Log("속도 센서 켬");
             }
             catch (Exception e)
@@ -183,11 +189,13 @@ namespace Scrun.App
 
         void OnGait(Gait g)
         {
-            string took = g != Gait.None && firstStepAt >= 0
-                ? $" (첫 걸음 뒤 {Time.realtimeSinceStartupAsDouble - firstStepAt:F1}초)"
-                : "";
+            string took = "";
+            if (g != Gait.None && firstStepAt >= 0)
+            {
+                took = $" (걸음 시작 뒤 {Time.realtimeSinceStartupAsDouble - firstStepAt:F1}초)";
+                firstStepAt = -1; // 이번 걸음 묶음은 쟀음
+            }
             Log($"이벤트 걸음 상태 → {g}{took}");
-            firstStepAt = -1;
         }
 
         void OnFlow() => Log($"이벤트 흐름 폰 {sensor?.Phone} · 에어팟 {sensor?.AirPods}");
@@ -254,16 +262,27 @@ namespace Scrun.App
                 return;
             }
             var r = sensor.Current;
-            if (r.Gait == Gait.None && r.Steps > lastSteps && firstStepAt < 0) firstStepAt = Time.realtimeSinceStartupAsDouble;
+            double now = Time.realtimeSinceStartupAsDouble;
+            if (r.Steps > lastSteps)
+            {
+                if (r.Gait == Gait.None && (lastStepAt < 0 || now - lastStepAt > QuietSec)) firstStepAt = now;
+                lastStepAt = now;
+            }
             lastSteps = r.Steps;
             var diag = sensor as ISpeedSensorDiagnostics;
             string phoneRate = diag != null ? $" {diag.PhoneSamplesPerSec}/초" : "";
             string airRate = diag != null ? $" {diag.AirPodsSamplesPerSec}/초" : "";
-            speed.text =
+            string status =
                 $"폰 {sensor.Phone}{phoneRate} · 에어팟 {sensor.AirPods}{airRate}\n" +
                 $"걸음 {r.Gait} · {(r.HasSpeed ? r.SpeedKmh.ToString("F2") + " km/h" : "속도 없음")} · {r.CadenceSpm:F0} spm · 누적 {r.Steps}걸음" +
                 (r.UsingAirPods ? " · 에어팟 섞음" : "") + "\n" +
                 $"{r.Time:F1}초 · 보정 {(sensor.HasCalibration ? "있음" : "없음")}" + (sensor.StageOpen ? " · 단계 재는 중" : "");
+            speed.text = status;
+            if (lastStatusLog < 0 || now - lastStatusLog >= StatusLogSec)
+            {
+                lastStatusLog = now;
+                Debug.Log("[NativeCheck] 상태 " + status.Replace("\n", " / "));
+            }
         }
 
         void Log(string line)
