@@ -34,6 +34,13 @@ namespace Scrun.App
             if (Onboarding.MotionStatus() == PermissionStatus.Granted) Leave(onGranted);
         }
 
+        // Esc(안드로이드 뒤로 키)도 화면의 뒤로 버튼과 같은 길로(코스 상세에서는 다시 불러오지 않는 "나중에"와 같게)
+        protected internal override bool OnBack()
+        {
+            Leave(onBack);
+            return true;
+        }
+
         protected internal override void OnHide() => Subscribe(false);
         protected internal override void OnDestroy() => Subscribe(false);
 
