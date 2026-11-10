@@ -37,7 +37,8 @@ def _fix_meta(body: dict) -> dict:
 
 def _write(path: Path, data) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # 줄바꿈은 어느 OS에서 만들어도 CRLF(저장소에 처음 올라간 Windows 출력과 같게, 맥에서 다시 만들어도 전 파일이 바뀌지 않게)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\r\n")
 
 
 def main() -> None:
