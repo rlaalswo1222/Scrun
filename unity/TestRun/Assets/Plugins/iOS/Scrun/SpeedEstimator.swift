@@ -161,11 +161,11 @@ final class SpeedEstimator {
         return a < b ? (ts[a..<b], vs[a..<b]) : ([], [])
     }
 
-    private func phoneFeats(_ t0: Double, _ t1: Double) -> (cad: Double, q: Double, imp: Double)? {
+    private func phoneFeats(_ t0: Double, _ t1: Double) -> (cad: Double, q: Double, imp: Double, level: Double)? {
         let s = Array(slice(envT, envV, t0, t1).v)
         guard Double(s.count) >= Self.fs * 3 else { return nil }
         let (cad, q) = Self.cadence(s)
-        return (cad, q, Self.impact(s))
+        return (cad, q, Self.impact(s), Self.envLevel(s))
     }
 
     private func airFeats(_ t0: Double, _ t1: Double, cad: Double?) -> (amp: Double, lowgMs: Double, cover: Double, last: Double)? {
@@ -206,16 +206,21 @@ final class SpeedEstimator {
     private func stagePoint(_ v: Double, _ t0: Double, _ t1: Double) -> (StageResult, Point?) {
         let s = Array(slice(envT, envV, t0, t1).v)
         guard Double(s.count) >= Self.fs * Self.stageMinS else { return (.tooShort, nil) }
-        if Self.envLevel(s) < Self.stillEnv { return (.noSteps, nil) }
         let (cad, q) = Self.cadence(s)
+        if !Self.stepsLike(level: Self.envLevel(s), cad: cad) { return (.noSteps, nil) }
         let imp = Self.impact(s)
-        if cad >= Self.cadEdge { return (.noSteps, nil) }
         if q < Self.qMin || imp <= 0 { return (.irregular, nil) }
         let af = airFeats(t0, t1, cad: cad)
         let airOK = (af?.cover ?? 0) >= Self.airMinCover
         let running = airOK ? af!.lowgMs >= Self.runLowgMs : cad >= Self.runCad
         if running && v <= Self.walkOnlyKmh { return (.irregular, nil) }
         return (.ok, Point(v: v, limp: log(imp), cad: cad, amp: airOK ? af!.amp : nil, running: running))
+    }
+
+    /// 사람 걸음으로 볼 수 있나: 세기가 서 있을 때보다 크고, 걸음 수가 찾는 범위 끝(벨트 모터 진동)에 붙지 않음.
+    /// 실시간 걸음 상태(update)와 보정 단계 판정(stagePoint)이 같이 쓴다(11/11 아이폰: 가만히 둔 폰이 222 spm으로 걸음이 됨)
+    static func stepsLike(level: Double, cad: Double) -> Bool {
+        level >= stillEnv && cad < cadEdge
     }
 
     /// 걸음 없음 판정에 쓰는 포락선 세기: 75% 값(impact의 봉우리 문턱과 같은 자리)
@@ -264,7 +269,7 @@ final class SpeedEstimator {
         let airOK = af != nil && af!.cover >= Self.airMinCover && t1 - af!.last <= Self.airMaxAge
         var c = 0
         var byAir = false
-        if let pf, pf.q >= Self.qMin {
+        if let pf, pf.q >= Self.qMin, Self.stepsLike(level: pf.level, cad: pf.cad) {
             if airOK {
                 c = af!.lowgMs >= Self.runLowgMs ? 2 : 1
                 byAir = true
