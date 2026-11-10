@@ -1,8 +1,16 @@
-# 민재 인수인계 (2026-11-10 새벽 3시, 맥)
+# 민재 인수인계 (2026-11-10 밤, Windows)
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`, `docs/plans/`)에 있고, 11/09까지의 전체본은 `docs/log/HANDOFF_minjae_20261109.md`(그 전은 `_20261107.md`, `_20261106.md`).
 
-## 진행 중(11/10 밤): 6번·아이폰 확인 끝, PR #31(`feat/kakao-ios` → `feat/ios-bridge`, #28 먼저 합치기)
+## 지금(11/10 밤, Windows): S2 처음 보정 PR #33(`feat/calibration`), 계획 0023
+- **정한 것(ADR-0005 추가 결정)**: 모두에게 같은 사다리 2·4·6·8·10·12·14 km/h 오름만(평소 속도 안 물음), 단계 15초(속도 바꾸는 5초 버림 + 10초 잼, 약 1분 50초), 실패한 단계는 건너뛰지 않고 될 때까지(7점 다 모여야 저장), 계산은 Swift(진짜·가짜는 단계 하나 재기만, 점 목록·"속도 안 올림" 비교·확정은 C#), 소리는 녹음 음성. 근거 `speedlab/exp/calib_fixed.py`(보정점 사이는 간격 넓어도 오차 거의 그대로, 바깥은 멀수록 커짐)
+- **된 것**: 1 센서 보정 메서드 + 가짜, 2 `CalibrationFlow`(멈추면 실패로 안 세고 기다렸다 이어서), 3 화면 A-11–A-15 + 다시·도움·멈춤 카드, `CalibrationStore`(PUT, 실패면 폰에 남김). EditMode 79개 통과. 에디터 메뉴 Scrun → 개발 → 보정 화면 열기로 7단계 끝까지 확인(2분 10초, 한 번 다시 포함)
+- **다음**: ① #30 → #32 → #33 순서로 합치기(#30·#32 리뷰 코멘트 11/10 올림: #30은 보정 API가 스텁이라 개발 서버 입장이 항상 409 → 지환이 보정 API DB 연결, #32는 섬 전역 설정 안 되돌림·카메라 둘·두 번 누르기) ② #32 `CourseDetailScreen` TODO에 `Nav.Push(new CalibrationIntroScreen(onDone: Enter))` ③ 4번: 로그인 뒤 GET으로 보정 불러오기·못 올린 보정 다시 올리기(계정 바뀌면 지우기) ④ 맥: Swift 속도 플러그인 + 단계 재기 4개 + 걷기 절편(`fusion_live.py`와 같이) ⑤ S3 실시간 방 서버 계획(아래 S2 줄의 "넣을 것")
+- **상준에게**: Figma A-11·A-13 "6·8·10 km/h, 1분" → "2–14 km/h 7단계, 15초", A-12 "거치대" → "계기판 위에", 다시·도움·멈춤 카드 추가, 문구는 `CalibrationCopy.cs`, 녹음 문구 목록은 `CalibrationVoice` 주석
+- 확인 못 한 것: 처음 Play 때 안내 → 보정 화면이 버튼을 안 눌렀는데 넘어간 적 한 번(재현 안 됨, Submit 입력 의심 가설). 가로 모양은 Device Simulator·아이폰에서
+- 헬스장 실험에 넣을 것: 1–15 km/h를 1 간격으로 여러 명, 단계 20초 이상 기록(10초 vs 15초 다시 비교), 2 km/h 걸음 감지율(낮으면 사다리 바닥 3으로), "속도 안 올림" 기준(ln 충격 0.05·걸음 수 3 spm)
+
+## 11/10 밤(맥): 0018 5·6번·아이폰 확인 끝, PR #28·#31 develop에 합침
 - **아이폰 실기기(11/10 밤, 지환 아이폰 15 Pro Max·iOS 26.5, 무료 개인 팀)**: 권한 4종·에어팟 끼기/빼기/케이스·키체인·카카오톡 앱 로그인 모두 됨. 설치 순서는 `docs/unity/unity_map.md` "아이폰에 설치". 팀 ID는 `ScrunLocal.json`에 넣음(다음 빌드부터 자동 서명). 결과 로그는 `unity/Builds/device-console.log`(git 밖, 카카오 토큰이 찍혀 있으니 공유 금지)
 - 아이폰에서 고친 것(11/10 밤): 탭 바 밑 빈 띠(홈 바 여백을 탭 바 안쪽으로), 탭 높이 56 → 49, 터치 뒤 남는 회색(`:hover` → `:active`). 노치 가림 없음, 재설치 뒤 로그인 유지 확인. Claude가 `xcrun devicectl device capture screenshot`으로 아이폰 화면을 직접 캡처해 확인함
 - URP DOF·Panini 셰이더가 빌드에서 빠짐(할 일). **상준에게**: 탭 아이콘 4개(홈·기록·친구·내 정보) UI Kit에
@@ -15,8 +23,8 @@
 - 5번 Swift 브리지·iOS 빌드 메뉴·네이티브 점검 화면은 PR #28(`feat/ios-bridge` → develop). ADR-0009, `docs/unity/unity_map.md` "아이폰 진짜 구현"·"아이폰 빌드"
 - **아이폰 확인**: 11/10 밤 끝(위 "진행 중"). 남은 2개(한글 입력, 거부 → 설정 앱에서 허용)는 아래 "민재가 직접 할 것"
 - **11/10 계획 0020 구현 끝(PR #29, develop에 합침)**: `Native.Speed`(`ISpeedSensor`) + 에디터 가짜 `FakeSpeedSensor`(Fake Native 창 "속도 센서" 칸, 시나리오 버튼) + `Scripts/NativeSpeedSource` 어댑터. EditMode 49개 통과, Play에서 시나리오 확인. 사용법 `docs/unity/unity_map.md` "앱 코드 묶음". 리뷰 반영: 끌 때 이벤트 없음, 켠 쪽이 끔, 일시정지 시계
-- **다음 세션 바로 할 일**: (Windows) PR 합친 뒤 지환에게 알림(아래 "민재가 직접 할 것") → **S2 보정 계획(0021) 쓰기**: 보정 계산(걷기 1 + 달리기 3 × 20초, 계획 0013) + 보정 화면, 가짜 센서·지환 보정값 API 스텁으로 에디터에서 → 그다음 S3 실시간 방 서버 계획. (맥) 아래 0018 5번 + Swift 속도 플러그인(`Native.Speed` 진짜: `SpeedSensorBase.Sample`만 구현). 아이폰에서: `CMMotionManager`에 모션 권한이 필요한지(Apple 포럼은 불필요 → 필요 없으면 권한 필수 목록 조정), 걸음 감지까지 걸리는 시간
-- **S2(11/10–11)**: **실시간 방식 결정 끝(11/10): FastAPI WebSocket**(ADR-0010, 설명 자료 `docs/research/realtime_options.html`, 오라클 싱가포르 지연 중앙값 222ms 실측). 센서 준비·걸음 감지 C# 모양 + 가짜는 끝(계획 0020, PR #29). 남은 S2: 보정 계획 0021(보정 계산·보정 화면), Swift 속도 플러그인(맥). 노션 작업 표·기능 보드 민재 상태는 11/10 정리함(진행 중·완료). S3 "실시간 방 서버 기본" 계획에 넣을 것: 메시지 모양(입장·상태·들어옴/나감·봇), 입장 응답 `realtime.url`·`token` 확정, 재접속, 앱 연결 인터페이스(나중에 바꿀 수 있게), 아이폰 2대로 지연 실측
+- **맥에서 할 것**: Swift 속도 플러그인(`Native.Speed` 진짜: `SpeedSensorBase.Sample` + 보정 단계 재기 4개, 계획 0023 6번). 아이폰에서: `CMMotionManager`에 모션 권한이 필요한지(Apple 포럼은 불필요 → 필요 없으면 권한 필수 목록 조정), 걸음 감지까지 걸리는 시간
+- **S2(11/10–11)**: **실시간 방식 결정 끝(11/10): FastAPI WebSocket**(ADR-0010, 설명 자료 `docs/research/realtime_options.html`, 오라클 싱가포르 지연 중앙값 222ms 실측). 센서 준비·걸음 감지 C# 모양 + 가짜는 끝(계획 0020, PR #29). 보정은 PR #33(위 "지금"). 남은 S2: Swift 속도 플러그인(맥). 노션 작업 표·기능 보드 민재 상태는 11/10 정리함(진행 중·완료). S3 "실시간 방 서버 기본" 계획에 넣을 것: 메시지 모양(입장·상태·들어옴/나감·봇), 입장 응답 `realtime.url`·`token` 확정, 재접속, 앱 연결 인터페이스(나중에 바꿀 수 있게), 아이폰 2대로 지연 실측
 - **맥 상태(11/10)**: Xcode 27.2, Unity 6000.6.7f1 + iOS 모듈, 빌드 대상 iOS로 전환됨, MCP for Unity 서버 켜짐(`unity/tools/*.sh`가 이제 맥에서도 됨). uv·Python 3.12는 `~/.local/bin`(셸 PATH엔 아직 없음: 필요하면 `~/.local/bin/uv python update-shell`). `gh`는 `~/.local/bin`에 설치·로그인됨(Homebrew는 없음). 시뮬레이터 앱이 없고 Xcode 27의 DeviceHub가 시뮬레이터 화면을 보여 주는 듯(가설)
 - **맥 주의(Unity가 바꾼 파일, 커밋 금지)**: Mixamo 파일(`Characters/YBot/*.fbx`)이 이 맥에 없어 Unity가 그 `.meta` 7개를 지움 → mixamo.com에서 받기 전엔 커밋 때 빼고, 받은 뒤 `git checkout -- unity/TestRun/Assets/Scrun/Characters/YBot`. Poly Haven은 받았지만 iOS로 전환하며 Unity가 `.meta`에 iOS 칸·`materialImportMode`를 고쳐 씀(빼고 커밋). 맥 기본 화면 배치에 열려 있던 "Unity Version Control" 창이 버전 관리 모드를 계속 "Unity Version Control"로 바꿔서 창을 닫고 "Visible Meta Files"로 되돌림(그 창을 다시 열지 않기). URP 전역 설정·ProjectSettings(시뮬레이터 SDK 값)도 Unity가 다시 썼던 것 되돌림
 - 빌드(에디터 밖) 안드로이드에선 `Native`가 예외(아이폰만). Island01은 Mixamo가 없어 캐릭터가 빠진 채 빌드됨
@@ -33,7 +41,6 @@
 - **아이폰 확인 2개(나중에, 맥 + 아이폰, 각 5분)**: 설치는 `docs/unity/unity_map.md` "아이폰에 설치"
   1. 한글 입력: 가입 화면 닉네임 칸에 한글(받침·쌍자음 포함)이 바로 쳐지고, 지우기·커서 이동이 되는지. 이미 가입돼 있으니 앱을 지우고 다시 설치하면 처음부터 가입(키체인은 새 설치 때 지워짐). 어색하면 ADR-0001 11/06 보충대로 입력 칸만 iOS 네이티브 입력
   2. 권한 거부 → 허용: 앱을 지우고 다시 설치 → 점검 화면에서 모션 요청 → "허용 안 함" → 설정 앱 열기 → 동작 및 피트니스 켜기 → 앱으로 돌아오면 점검 화면 기록에 `Motion → Granted` 이벤트가 오는지(iOS는 허용 → 거부로 바꾸면 앱을 끄므로 그 방향은 이벤트 없음)
-- **지환에게**: 11/09 답장(수정본: 샘플 주기·thumbnailUrl·20명 임시 방식) + "FakeNative·앱 틀·로그인 화면 develop에 있음, 권한·에어팟 화면 시작해도 됨(사용법 `docs/unity/unity_map.md` "앱 코드 묶음")". 추가로 알릴 것: 실시간은 WebSocket으로 결정 → "지금 달리는 사람 수"는 연결 수로 세니 샘플 주기·`updated_at` 갱신은 신경 안 써도 됨. **+ 속도 센서 가짜(`Native.Speed`, 계획 0020)로 센서 준비·카운트다운 화면 시작 가능**. 보냈으면 이 줄 지우기
 - 원격 옛 브랜치 `feat/dev-server` 지우기(PR 화면)
 - `Lm_LampGlass.mat`: 11/07 Unity 설정 저장 때 Unity가 다시 써서 `_EMISSION` 키워드 한 줄 빠짐(의도 아님) → 되돌릴지 결정. 커밋 안 한 것: 이 파일, 지환 실명 파일 2개(아래), 와이어프레임 초안, 중간발표 자료, `.claude/settings.json`
 - 스프린트 재분배(11/08)·11/13 시연 범위는 계획 0017 "11/08 재분배"·"11/13 시연"
@@ -63,7 +70,7 @@
 - **지환 동의 대기**: `data/runs/20261029-004604/note.md`·`docs/speed/airpods_flight.md`의 "김지환" 실명(커밋 안 함). 동의 없으면 "팀원 J"
 - **Git 남은 것**: 원격 `feat/airpods-treadmill`·`docs/handoff-1106` 삭제(PR 화면 버튼), 지환 브랜치 `feat/airpods-flight`·`feat/airpods-flight-analysis`는 다 합쳐짐 → 지워도 되는지 지환에게
 - **PRD v0.5·유스케이스 v0.2·백로그 v0.2 검토(11/06)** → `docs/product/prd_v05_review.md`, **상준에게 전달 대기**. 결정: 실사 영상 최하위, 몸무게 필드 둠, 오프라인 달리기 미정
-- **노션 기타**: SCRUN > 문서 > 기획 문서(열린 질문 Q-01에서 Q-32 등). Front-End의 "API를 Query hook으로 연동하기"는 다른 프로젝트(displayu, React) 템플릿 → 상준에게. 개발이 답할 열린 질문: Q-07·08·09(걷기 1 + 달리기 3 × 20초)·10(calibration.json)·11(5에서 10초)·12·13(ADR-0001·0007)·29(카카오)
+- **노션 기타**: SCRUN > 문서 > 기획 문서(열린 질문 Q-01에서 Q-32 등). Front-End의 "API를 Query hook으로 연동하기"는 다른 프로젝트(displayu, React) 템플릿 → 상준에게. 개발이 답할 열린 질문: Q-07·08·09(11/10 결정: 2–14 km/h 7단계 × 15초, ADR-0005 추가 결정)·10(재보정 기준 미정, 보정은 서버 calibration)·11(5에서 10초)·12·13(ADR-0001·0007)·29(카카오)
 - **와이어프레임 v1 초안** `docs/product/scrun_wireframe_v1.html`(커밋 안 함). 앱 기획 미정 항목은 `docs/product/scrun_usecases_v1.md` 끝 "기획 결정·미정 기록"
 - **문서 형식 논의(11/02, 상준과 이견)**: `docs/log/team_discussions.md`. 상준 3종 문서 방향 답 확인
 - **중간발표 자료**(10/30) `docs/meeting/midterm/`: README(슬라이드 구성·수치 출처·부록 A 속도·B SfM·C 놓친 기술 문제), 그림 `img/`(`figs.py`·`render.sh`), 대본 `대본_13장부터.md`, `질문대비.md` 52개. 커밋 안 함(남의 유튜브 캡처 → 올릴 땐 빼기). 10/12 블라인드는 같은 날 13분 뒤 → 예전 보고서 표현 확인
@@ -83,14 +90,19 @@
 ## 속도 추정 다음 실험 (결론은 `docs/speed/README.md`)
 - **다음 헬스장**: 저장된 보정으로 보정 없이 달려 다른 날 오차, 10에서 11 km/h 1에서 2분 → 7로 내려 1분(S22에서 틀렸던 상황), 범위 밖(11 이상, 6 이하). 에어팟 공중 시간(계획 0012)·흔들림 폭을 **바꾸지 않고** 비교한 뒤 앱 반영. 기준은 "걸음 수가 같은데 속도가 다를 때 가르는지"
 - 그 전에: 맥에서 SpeedRecorder 빌드 + `data/runs/20261029-040156/calibration.json`을 앱 Documents에(계획 0010 5번)
-- 보정 설계(계획 0013, `docs/speed/calibration_design.md`): 다른 날 기록에서 같은 비교 → 앱 보정 순서(ADR-0005 아직 안 바꿈). `speedlab/exp/calib_design.py`(캐시 `data/external/soundtrackdb/calib_T.csv`)
+- 보정 설계(계획 0013, `docs/speed/calibration_design.md`): 앱 보정 순서는 11/10 정함(ADR-0005 추가 결정, 계획 0023), 다른 날·여러 명 기록으로 다시 확인. `speedlab/exp/calib_design.py`(캐시 `data/external/soundtrackdb/calib_T.csv`)
 - 에어팟 끊김은 5에서 20초 덩어리(헬스장 혼잡·몸 가림 가설) → 끊기면 폰만으로. 헬스장에선 아이폰 핫스팟
 - Nijs 2021 기준값이 에어팟에도 맞는지는 가설. 발표·보고서엔 "공개 데이터 재분석"
 - 계기판 OCR(`docs/product/console_ocr.md`): 다음은 S22 밝기 낮춘 사진(다른 숫자 화면 포함) 비교. 앱 카메라 ISO 최저·셔터 1/60초 이상·브래킷. 사진은 유리에 사람이 비쳐 저장소에 안 올림
 
 ## 작업 요령
 - walking skeleton(끝에서 끝까지 얇게 먼저 잇고 살 붙이기)
-- Unity: `docs/unity/unity_map.md`, `unity/tools/README.md`. 빌드 대상은 아직 Android(0018 5번에서 iOS로). MCP for Unity 사용자 범위 등록. `ucs.sh`로 설정 바꿀 땐 `AssetDatabase.SaveAssets()`가 다른 에셋도 다시 쓸 수 있음(11/07 머티리얼 1개)
+- Unity: `docs/unity/unity_map.md`, `unity/tools/README.md`. 빌드 대상은 iOS(맥 11/10), Windows 노트북은 Android 그대로. MCP for Unity 사용자 범위 등록. `ucs.sh`로 설정 바꿀 땐 `AssetDatabase.SaveAssets()`가 다른 에셋도 다시 쓸 수 있음(11/07 머티리얼 1개)
 - 보류: 실사 영상 가림 처리 등(메모리 sfm-followups)
 - 화면 흐름 `scrun_userflow_v2.html`(사용자 브라우저에선 claude.ai 링크가 안 열림 → 로컬 HTML)
 - 다음 후보(선택 대기): 이슈 보드 / 반복 작업 스킬 / SoundTrackDB 몸무게·헬스장·피로 분석
+- 유사 서비스 조사(11/10, 곁가지): MyWhoosh 6.2.3 → `docs/research/mywhoosh_benchmark.md`(UE5, Photon+Unreal서버 2단, 고스트 파일, Vivox, 코스=스플라인). FitShow 5.5.9 → `docs/research/competitor_comparison.md`에 정리(Flutter, FTMS+GPS, Mapbox 실지도, 풍경=실사영상, 멀티 없음). 세 앱(+Zwift) 비교·적용목록은 `competitor_comparison.md`. 전부 문자열 기반 관찰, APK·문서 커밋 안 함(남의 앱). REA Windows Ghidra는 arm64 .so 거부라 네이티브 디컴파일은 못 함(JDK25·Ghidra12.1.4·adb 경로는 `.claude.json` REA env). 더 하려면 실행 중 통신 실측 or 데스크톱 Ghidra 직접
+- **결론(세 앱 공통)**: 셋 다 속도를 기구/GPS에서 받고 추정 안 함 → 폰+이어폰 추정이 우리 차별점(보고서용)
+- **나중에 할 일(11/10 보류, 당장 안 함)**: 비교에서 나온 적용 4개 — ①`ISpeedSource` 추상화(센서추정 기본, FTMS·GPS 나중에) ②끊김 타임아웃(마지막 센서 후 N초→정지/폰단독, ADR-0006에 추가 후보) ③코스=스플라인(현 Island01 방식 확인 필요) ④고스트 파일 기반(업로드→다운로드→재생). 근거·상세 `competitor_comparison.md` 2절
+- **검토 중(민재, 후순위)**: BLE FTMS 지원 러닝머신이면 선택적으로 FTMS 우선 권장할지. 기본은 센서 추정 유지(ADR-0004/0006), `ISpeedSource` 뒤에 `FtmsSpeedSource` 더하는 식. 결정 시 별도 ADR. `competitor_comparison.md` 4절
+- **커밋 대기**: 위 연구 문서 3개(`mywhoosh_benchmark.md`·`competitor_comparison.md`, Zwift는 이미 커밋됨) 저장소에 넣을지 민재 결정. 넣기로 하면 텍스트만(APK·덤프 금지). APK는 `C:\Users\rlaal\tools\rea-targets\`에만
