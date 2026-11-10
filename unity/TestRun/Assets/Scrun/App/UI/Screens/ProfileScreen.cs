@@ -125,7 +125,7 @@ namespace Scrun.App
             submitting = false;
             if (Root.panel == null) return; // 그사이 로그인 화면 등으로
             Refresh();
-            if (ok) Nav.ShowTabs(); // 권한·에어팟 화면(지환)이 생기면 이 사이에 넣음
+            if (ok) Onboarding.Begin(Nav); // 권한 안내 → 이어폰 → 홈(계획 0025). 모션 권한을 이미 정했으면 바로 홈
         }
     }
 

@@ -218,6 +218,9 @@
   - 앱 → 섬 씬은 `MapLaunch.Store`(앱이 남김) → `MapLaunchApplier`(섬 씬이 읽어 `RouteTrack.HasRoute` 확인 뒤 코스·입장 위치 적용). 섬 씬을 혼자 Play하면 기본 코스. 앱에서 들어오면 섬 개발 도구(속도판·순간이동·폰 테스트 버튼·근처 러너 목록)는 끄고 머리 위 이름표는 남김(`RunnerLabels.showNearbyList`)
   - 확인(11/10, 로컬 서버, 에디터 Play·Game 창 390×844와 852×393): 위 흐름, 코스 4개 각각 그 도로망 코스·서버 입장 위치, 불러오는 도중 나갔다 재입장, 서버 연결 끊김 → 복구 뒤 다시 입장하기, 없는 코스 상세. 가득 참·보정 없음은 실패를 직접 넣어 확인. Figma에서 뺀 것: 코스 사진(서버 썸네일이 아직 null → 하늘색 칸 + 첫 글자), "친구가 있는 코스" 칩·"친구" 칸(친구 API 전), [모션] 3D 프리뷰·로딩 아바타(에셋 필요), 배경 흐림
   - 에디터에서 MCP로 버튼을 누를 때(`NavigationSubmitEvent`) Game 창에 포커스를 주면 앞서 누른 버튼이 다시 눌리는 일이 있었다(가설: 포커스 받은 버튼에 제출이 다시 들어감). 자동 확인 때는 포커스를 주지 않는다
+- **권한 안내·이어폰 연결**(11/10, 계획 0025, Figma A-07·A-09·A-10·I-05): 가입 끝·로그인된 채 앱 시작 → `Onboarding.Begin(Nav)`: 모션 권한을 아직 안 물어봤으면 `PermissionsScreen`(A-07, "권한 설정하기" = 모션 → 헤드폰 모션 → 카메라 → 알림 팝업 차례로) → 모션 거부면 `MotionDeniedScreen`(I-05, 설정 앱에서 켜고 오면 저절로 다음) → `EarphoneScreen`(A-09 미연결·A-10 연결됨, 끼고 빼면 저절로 바뀜, 연결됐는데 헤드폰 모션을 안 물어봤으면 여기서 물음) → 홈. 이어폰 화면까지 끝냈는지는 이 기기에 저장(`PlayerPrefs` `scrun.onboarding.done`), 끝내기 전에 앱을 꺼도 A-07부터 이어지고 끝낸 뒤엔 권한을 미뤘어도 다시 안 보여 줌. 가입 끝·로그인된 채 시작·기존 회원 로그인 모두 `Onboarding.Begin`. 권한 요청은 `Onboarding.Ask`(10초 안에 답이 없으면 지금 상태로 진행, 버튼이 잠기지 않게). 헤드폰 모션은 A-10 "다음"을 누를 때만 물음
+  - 맵 입장 전 모션 확인: `Onboarding.BeforeMap` → 허용이면 맵, 안 물어봤으면 팝업, 거부·제한이면 I-05. 아이폰 구현 전 빌드에서는 `Native` 예외를 그대로 둔다(허용으로 보지 않음)
+  - 모양은 `Onboarding.uss`(UI Kit Nav Bar: 뒤로 가기 28·가운데 제목·오른쪽 글자 버튼, 정보 줄: 아이콘 칸 44 + 글 + 칩). 에디터 확인은 Fake Native 창의 처음 상태·팝업 답, Play 중엔 `FakeNative.Instance.SimulateStatus`·`SimulateHeadphones`
 - **아래 탭 바**(11/10, UI Kit Tab Bar): 아이콘 24 + 글자 12, 홈·친구·기록·마이 순서, 고른 탭은 파란 아이콘(`tab-*-on.svg`)·굵은 글자. 탭 버튼 이름(`tab-home` 등)은 그대로라 `Navigator`는 안 바뀜
 - 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
 

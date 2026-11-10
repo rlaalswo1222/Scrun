@@ -65,7 +65,7 @@ namespace Scrun.App
                 return;
             if (Root.panel == null) return; // 그사이 다른 화면으로
             if (result.IsNewUser) Nav.Push(new TermsScreen());
-            else Nav.ShowTabs();
+            else Onboarding.Begin(Nav); // 기존 회원(재설치·새 폰): 이 기기에서 권한 안내를 안 끝냈으면 거기부터(계획 0025)
         }
 
         async System.Threading.Tasks.Task Retry(string token)
