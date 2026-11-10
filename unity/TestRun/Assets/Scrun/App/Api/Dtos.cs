@@ -103,4 +103,20 @@ namespace Scrun.App
         public string Url { get; set; }
         public string Token { get; set; }
     }
+
+    // 주간 목표 진행(GET /v1/users/me/weekly-goal). 1회 = 인증 완료 + 5분 이상(서버 집계)
+    public sealed class WeeklyGoal
+    {
+        public int? TargetCount { get; set; }     // 목표를 안 정했으면 null
+        public int DoneCount { get; set; }
+        public int? DaysLeft { get; set; }
+        public int? NextTargetCount { get; set; } // 변경 예약값(다음 주기부터)
+    }
+
+    // 러닝 목표(POST /v1/runs의 goal). RunGoal.ToRequest()로 만든다
+    public sealed class RunGoalBody
+    {
+        public string Type { get; set; }  // DISTANCE / TIME / NONE
+        public int? Value { get; set; }   // DISTANCE면 m, TIME이면 초
+    }
 }

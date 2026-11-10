@@ -145,7 +145,7 @@ namespace Scrun.App
             return new StageMeasurement { Result = CalStageResult.Ok, Point = PointFor(speedKmh, actual, air) };
         }
 
-        protected override void OnCalibrationApplied(CalibrationModel m) { } // 가짜 속도는 사람 속도 그대로라 쓸 데가 없음
+        protected override bool OnCalibrationApplied(CalibrationModel m) => true; // 가짜 속도는 사람 속도 그대로라 쓸 데가 없음
 
         // ---- 창·키보드에서 부르는 흉내 ----
 

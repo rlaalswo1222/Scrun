@@ -1,0 +1,262 @@
+/* 권한 안내(A-07)·이어폰 연결(A-09·A-10)·모션 권한 거부(I-05) 모양.
+   Figma "SCRUN" > 스크런 와이어 프레임 기준(11/10). 색·글자 크기는 App.uss 변수. 그림자는 USS에 없어 빠짐 */
+
+.onb {
+    flex-grow: 1;
+    padding: 8px var(--space-5) var(--space-4) var(--space-5);
+}
+
+.onb .unity-label {
+    margin: 0;
+    padding: 0;
+}
+
+/* ---- Nav Bar(UI Kit): 왼쪽 뒤로 가기 28, 가운데 제목, 오른쪽 글자 버튼 ---- */
+.nav-bar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+    padding: 0 var(--space-2);
+}
+
+.nav-side {
+    flex-direction: row;
+    align-items: center;
+    width: 84px;
+    height: 48px;
+}
+
+.nav-side--right {
+    justify-content: flex-end;
+    padding-right: var(--space-2);
+}
+
+.nav-back {
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/nav-back.svg");
+}
+
+.nav-back:hover,
+.nav-back:active {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.onb .nav-title {
+    font-size: var(--font-size-sub);
+    letter-spacing: -0.27px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.nav-action {
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.nav-action:hover,
+.nav-action:active {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/* ---- 공통 글 ---- */
+.onb-scroll {
+    flex-grow: 1;
+}
+
+.onb .onb-title {
+    margin-top: 14px;
+    font-size: var(--font-size-title);
+    letter-spacing: -0.56px;
+    color: var(--color-text);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.onb .onb-lead {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-body);
+    letter-spacing: -0.16px;
+    color: var(--color-body);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* 아래 버튼 두 개(간격 14) */
+.onb .btn {
+    margin: 14px 0 0 0;
+}
+
+/* ---- 줄(권한·이어폰): 아이콘 칸 44 + 글 + 칩 ---- */
+.info-row {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 14px;
+    padding: 14px;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+}
+
+.info-row--tall {
+    padding: var(--space-4);
+}
+
+.info-icon-box {
+    width: 44px;
+    height: 44px;
+    margin-right: var(--space-3);
+    border-radius: 22px;
+    background-color: var(--color-primary-soft);
+    align-items: center;
+    justify-content: center;
+}
+
+.info-icon-box--off {
+    background-color: var(--color-surface-2);
+}
+
+.info-icon {
+    width: 22px;
+    height: 22px;
+}
+
+.icon-motion { background-image: url("project://database/Assets/Scrun/App/UI/Icons/perm-motion.svg"); }
+.icon-headphone { background-image: url("project://database/Assets/Scrun/App/UI/Icons/perm-headphone.svg"); }
+.icon-camera { background-image: url("project://database/Assets/Scrun/App/UI/Icons/perm-camera.svg"); }
+.icon-bell { background-image: url("project://database/Assets/Scrun/App/UI/Icons/perm-bell.svg"); }
+.icon-earphone-off { background-image: url("project://database/Assets/Scrun/App/UI/Icons/earphone-off.svg"); }
+.icon-earphone-on { background-image: url("project://database/Assets/Scrun/App/UI/Icons/earphone-on.svg"); }
+
+.info-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: var(--space-3);
+}
+
+.onb .info-name {
+    font-size: var(--font-size-body);
+    letter-spacing: -0.16px;
+    color: var(--color-text);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.onb .info-desc {
+    margin-top: 2px;
+    font-size: var(--font-size-body-sm);
+    letter-spacing: -0.07px;
+    color: var(--color-body);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* 칩(누르지 않는 것): Chip/Default·Gray·Success */
+.onb .tag {
+    padding: 5px 12px;
+    border-radius: 14px;
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-size: var(--font-size-caption);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.onb .tag--gray {
+    background-color: var(--color-surface-2);
+    color: var(--color-body);
+}
+
+.onb .tag--success {
+    background-color: var(--color-success-soft);
+    color: var(--color-success);
+}
+
+/* ---- I-05 모션 권한 거부 ---- */
+.denied-head {
+    align-items: center;
+    padding-top: 40px;
+}
+
+.denied-icon-box {
+    width: 72px;
+    height: 72px;
+    border-radius: 36px;
+    background-color: var(--color-warn);
+    align-items: center;
+    justify-content: center;
+}
+
+.denied-icon {
+    width: 36px;
+    height: 36px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/motion-alert.svg");
+}
+
+.onb .denied-title {
+    margin-top: 10px;
+    font-size: var(--font-size-title);
+    letter-spacing: -0.56px;
+    color: var(--color-text);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.onb .denied-lead {
+    margin-top: 10px;
+    font-size: var(--font-size-body);
+    letter-spacing: -0.16px;
+    color: var(--color-body);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.steps {
+    margin-top: var(--space-3);
+    padding: 14px var(--space-4);
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 18px;
+    background-color: var(--color-surface);
+}
+
+.step {
+    flex-direction: row;
+    align-items: center;
+}
+
+/* USS에 :first-child가 없어 둘째 줄부터 위 간격 */
+.step--next {
+    margin-top: var(--space-2);
+}
+
+.onb .step-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+    font-size: var(--font-size-caption);
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.onb .step-text {
+    margin-left: 10px;
+    font-size: var(--font-size-body-sm);
+    letter-spacing: -0.07px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}

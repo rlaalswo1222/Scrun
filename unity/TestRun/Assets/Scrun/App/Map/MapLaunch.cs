@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Scrun.App
@@ -26,10 +27,15 @@ namespace Scrun.App
         }
 
         static Request pending;
+        static TaskCompletionSource<bool> applied;
 
         // 이 프로젝트는 Play 때 도메인 리로드를 꺼 둠 → 지난 Play에 남긴 것이 섬 씬 단독 Play에 적용되지 않게
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetOnPlay() => pending = null;
+        static void ResetOnPlay()
+        {
+            pending = null;
+            applied = null;
+        }
 
         // 서버 코스 ID(crs_lake_loop) → 섬 도로망 코스 ID(lake_loop). 서버 코스는 IslandLayout.json routes에서 만들었다(마이그레이션 seed_courses)
         public static string RouteIdOf(string courseId)
@@ -45,7 +51,14 @@ namespace Scrun.App
         {
             if (entry == null) throw new ArgumentNullException(nameof(entry));
             pending = new Request(entry.CourseId, entry.EntryPositionM);
+            applied = new TaskCompletionSource<bool>();
         }
+
+        // 섬 씬이 코스·입장 위치를 다 적용했을 때(실패해서 기본 코스로 둔 때도) 끝난다. 맵 화면은 이걸 기다린 뒤 흐린 배경을 찍는다
+        public static Task Applied => applied?.Task ?? Task.CompletedTask;
+
+        // 섬 쪽 MapLaunchApplier가 적용을 끝내고 부른다
+        public static void MarkApplied() => applied?.TrySetResult(true);
 
         // 섬 씬이 한 번 가져간다(두 번 적용되지 않게). 남긴 것이 없으면 null
         public static Request Take()
@@ -58,6 +71,10 @@ namespace Scrun.App
         public static bool HasPending => pending != null;
 
         // 씬을 못 불렀거나 화면을 떠날 때
-        public static void Clear() => pending = null;
+        public static void Clear()
+        {
+            pending = null;
+            applied?.TrySetResult(false); // 기다리던 쪽이 멈춰 있지 않게
+        }
     }
 }

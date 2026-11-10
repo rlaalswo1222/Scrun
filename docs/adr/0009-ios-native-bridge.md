@@ -22,7 +22,7 @@ A + Unity 기본(Objective-C 틀) Xcode 프로젝트.
 - 답 모양: `{"ok": true, "value": ...}` / `{"ok": false, "error": "..."}` → C#에서 `NativeException`
 - 콜백은 큐에 넣기만 하고 Unity PlayerLoop(PreUpdate)에서 꺼내 메인 스레드에서 `Awaitable`을 끝낸다
 - 문자열은 UTF-8 바이트로 직접 넘긴다(IL2CPP 기본 문자열 변환에 기대지 않음)
-- **센서·속도는 이 통로를 쓰지 않는다**: Swift가 100 Hz 센서를 읽어 속도까지 계산하고, Unity는 매 프레임 결과 숫자만 읽는다(S2 따로)
+- **센서·속도는 이 통로를 쓰지 않는다**: Swift가 100 Hz 센서를 읽어 속도까지 계산하고, Unity는 매 프레임 결과 숫자만 읽는다. 11/11 구현(계획 0024): 속도 전용 C 함수 7개(`scrun_speed_*`), 매 프레임은 `double` 칸 11개 배열, 드문 보정 단계 결과만 작은 JSON(`scrun_free`)
 
 ## 이유
 - 권한 4종·이어폰·키체인·카카오가 같은 C 함수 3개로 들어갔다(11/10). 카카오(계획 0018의 6번)도 Swift `case` 하나만 더함

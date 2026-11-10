@@ -120,6 +120,10 @@ namespace Scrun.App
 
         public Task<CalibrationRecord> PutCalibrationAsync(CalibrationUpload body) =>
             c.SendAsync<CalibrationRecord>("PUT", "/v1/users/me/calibration", body, AuthMode.User);
+
+        // 주간 목표 진행(D-01 "이번 주 목표까지 N회", 홈 B-01). 목표를 안 정했으면 TargetCount = null. DB 연결은 S6 BL-30
+        public Task<WeeklyGoal> GetWeeklyGoalAsync() =>
+            c.GetAsync<WeeklyGoal>("/v1/users/me/weekly-goal", AuthMode.User);
     }
 
     // 코스 목록·상세·맵 입장(계획 0021·PR #30). 셋 다 로그인 필요

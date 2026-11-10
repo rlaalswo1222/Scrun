@@ -80,7 +80,7 @@ namespace Scrun.App
                 // 기기 기능이 없는 빌드(PlatformNotSupportedException)·네이티브 초기화 실패: 빈 화면 대신 로그인 화면을 띄우고, 누르면 안내가 뜬다
                 Debug.LogException(e);
             }
-            if (loggedIn) Nav.ShowTabs(AppTab.Home);
+            if (loggedIn) Onboarding.Begin(Nav); // 모션 권한을 아직 안 물어봤으면 권한 안내부터(계획 0025)
             else Nav.StartFlow(new LoginScreen());
         }
 
@@ -116,7 +116,7 @@ namespace Scrun.App
             AppTab.Home => new HomeScreen(),
             AppTab.Records => new PlaceholderScreen("기록", "달린 기록 목록이 들어갈 자리"),
             AppTab.Friends => new PlaceholderScreen("친구", "친구 목록·지금 달리는 친구가 들어갈 자리"),
-            _ => new PlaceholderScreen("마이", "인증 마크·연속 일수·설정이 들어갈 자리"),
+            _ => new PlaceholderScreen("마이", "인증 마크·연속 일수·설정이 들어갈 자리", devTools: true),
         };
 
         void OnScreenChanged(AppScreen screen)

@@ -18,11 +18,14 @@ namespace Scrun.App
     // 서버 호출을 Feedback.Run으로 감싸지 않는 예외: 로딩은 I-10이, 실패 안내는 I-11 카드가 맡는다(로그인 만료만 공통 처리).
     // 섬 씬(Island01)은 앱 위에 겹쳐 불러오고(additive: 앱 화면·로그인은 그대로), 이 화면을 떠나면 내린다.
     // 고른 코스·입장 위치는 MapLaunch로 넘기고 섬 쪽 MapLaunchApplier가 적용한다. 앱 배경은 투명(ShowsWorld).
-    // S2에 러닝 설정·거치 안내가 상세와 이 화면 사이에, S3에 센서 준비·카운트다운·HUD·멈춤이 이 화면 위에 들어간다.
+    // 섬이 열리면 흐린 맵 위에 러닝 설정 → 거치 안내 → 달리는 매뉴얼(RunSetupView, 계획 0026)을 띄우고, 끝나면 맵을 보여 준다.
+    // S3에 센서 준비·카운트다운·HUD·멈춤이 이 화면 위에 들어간다(고른 목표는 Setup).
     public sealed class MapScreen : AppScreen
     {
         const float EntryShare = 0.15f; // 진행 막대에서 입장 요청 몫(나머지는 씬 불러오기)
-        static readonly Color Night = new Color32(0x0F, 0x1B, 0x3D, 0xFF); // App.uss --color-night(USS 변수는 C#에서 못 읽음)
+        const int AppliedTimeoutMs = 2000; // 섬 쪽 입장 위치 적용(MapLaunch.Applied)을 기다리는 최대 시간
+        const int AfterAppliedFrames = 2;  // 적용 뒤 식생·LOD(카메라 위치로 매 프레임 갱신)가 새 자리로 한 번 바뀌도록
+        internal static readonly Color Night = new Color32(0x0F, 0x1B, 0x3D, 0xFF); // App.uss --color-night(USS 변수는 C#에서 못 읽음)
 
         // 섬 씬은 한 번에 한 화면만 잡는다. 앞 맵 화면이 섬 씬을 불러오기 시작해서 다 내릴 때까지 끝나지 않음 →
         // 불러오는 도중에 나갔다가 바로 다시 들어와도 섬 씬이 둘 겹치거나 입장 정보(MapLaunch)를 앞 씬이 가져가지 않는다
@@ -44,6 +47,12 @@ namespace Scrun.App
         Color appCameraColor;
         string appCameraTag;
         bool busy, leaving, started;
+        VisualElement mapTop;
+        RunSetupView setupView;
+        MapBackdrop backdrop;
+
+        // 러닝 설정에서 고른 것(안내를 끝내기 전에는 null). S3 센서 준비·카운트다운이 쓴다
+        public RunSetup Setup { get; private set; }
 
         public MapScreen(CourseDetail course, Action<MapExit, ApiException> onExit)
         {
@@ -59,6 +68,7 @@ namespace Scrun.App
         protected override void OnCreate()
         {
             Q<Button>("leave").clicked += () => Nav.Pop();
+            mapTop = Q<VisualElement>("map-top");
             Q<Label>("course-label").text = CourseText.MapLabel(course.LengthM, course.Name);
             loadingView = Q<VisualElement>("map-loading");
             progress = Q<VisualElement>("progress");
@@ -79,10 +89,19 @@ namespace Scrun.App
             Begin();
         }
 
+        // 안내가 떠 있으면 한 단계 앞으로(D-01에서는 맵 나가기). 맵만 보이면 그냥 닫힘
+        protected internal override bool OnBack()
+        {
+            if (setupView == null || !setupView.Visible) return false;
+            setupView.Back();
+            return true;
+        }
+
         protected internal override void OnDestroy()
         {
             leaving = true;
             MapLaunch.Clear();
+            CloseSetup();
             ReleaseIsland();
             if (appCamera != null) appCamera.backgroundColor = appCameraColor;
         }
@@ -104,12 +123,27 @@ namespace Scrun.App
                 // 씬을 못 불렀거나(빌드 씬 목록) 앱 쪽 버그. 불러온 씬은 내리고, 멈춘 것처럼 보이지 않게 카드로 알리고 기록은 남긴다
                 Debug.LogException(e);
                 MapLaunch.Clear();
+                CloseSetup();
                 ReleaseIsland();
                 if (!leaving) ShowUnavailable("맵을 열지 못했어요", "잠시 후 다시 시도해 주세요.", canRetry: true);
             }
             finally
             {
                 busy = false;
+            }
+        }
+
+        // 입장이 됐다 = 서버에 보정이 있음. 센서에 아직 없으면(앱을 다시 켬) 불러온다(계획 0023 4번).
+        // 실패해도 입장은 계속(속도가 안 나오면 다음 입장 때 다시 불러옴), 기록만 남김
+        static async Task LoadCalibrationQuietly()
+        {
+            try
+            {
+                await CalibrationStore.EnsureLoadedAsync(Native.Speed);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[보정] 서버 보정을 못 불러옴(다음 입장 때 다시): " + e.Message);
             }
         }
 
@@ -126,6 +160,7 @@ namespace Scrun.App
                 return;
             }
             if (leaving) return;
+            _ = LoadCalibrationQuietly(); // 섬 불러오기와 같이(달리기 시작은 카운트다운 뒤라 그 전에 끝남)
             SetProgress(EntryShare);
 
             await islandFree;
@@ -161,7 +196,65 @@ namespace Scrun.App
             SceneManager.SetActiveScene(island);
             SetAppCamera(false);
             SetProgress(1f);
+
+            // 섬 쪽이 입장 위치로 옮기고 카메라를 맞춘 뒤에 흐린 배경을 찍는다(그동안 I-10이 덮고 있음)
+            var applied = MapLaunch.Applied;
+            if (await Task.WhenAny(applied, Task.Delay(AppliedTimeoutMs)) != applied)
+                Debug.LogWarning("[MapLaunch] 섬 쪽 입장 위치 적용 알림이 없음 → 지금 자리로 흐린 배경을 찍음");
+            if (leaving) return;
+            int settled = Time.frameCount + AfterAppliedFrames;
+            while (Time.frameCount < settled)
+            {
+                await Task.Yield();
+                if (leaving) return;
+            }
+            StartSetup();
             loadingView.SetVisible(false);
+        }
+
+        // 중간에 예외가 나면(UXML 이름이 바뀌는 등) 흐린 배경·숨긴 윗줄을 되돌리고 던진다 → Begin의 catch가 I-11 카드로
+        void StartSetup()
+        {
+            try
+            {
+                if (setupView == null)
+                {
+                    var view = new RunSetupView(Root, course, RunSetupPrefs.Device()); // 다 만든 뒤에야 Root에 붙음
+                    view.Done += OnSetupDone;
+                    view.Exit += () => Nav.Pop();
+                    setupView = view;
+                }
+                backdrop?.Dispose();
+                backdrop = null;
+                // 앱 카메라는 태그를 비켜 둬서 Camera.main = 섬 카메라. 화면이 패널에서 떨어졌으면(await 사이) 흐림 없이 안내만
+                var panel = Root.panel;
+                if (panel != null) backdrop = MapBackdrop.Show(panel.visualTree, Camera.main);
+                mapTop.SetVisible(false);
+                Setup = null;
+                setupView.Start();
+            }
+            catch
+            {
+                CloseSetup();
+                mapTop.SetVisible(true);
+                throw;
+            }
+        }
+
+        void OnSetupDone(RunSetup setup)
+        {
+            Setup = setup;
+            backdrop?.Dispose(); // 섬 카메라 다시 켬
+            backdrop = null;
+            mapTop.SetVisible(true);
+        }
+
+        // 섬 씬을 내리기 전에: 흐린 배경이 끈 섬 카메라·바꾼 그리기 간격을 먼저 되돌린다
+        void CloseSetup()
+        {
+            setupView?.Hide();
+            backdrop?.Dispose();
+            backdrop = null;
         }
 
         void OnEnterFailed(ApiException e)

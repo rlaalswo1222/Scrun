@@ -1,25 +1,26 @@
-# 민재 인수인계 (2026-11-10 밤, Windows)
+# 민재 인수인계 (2026-11-11 새벽, Windows)
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만 하고 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/api/README.md`, `docs/adr/`, `docs/plans/`)에 있다. 옛 전체본: `docs/log/HANDOFF_minjae_20261110.md`(11/10 정리 전), `_20261109.md`, `_20261107.md`, `_20261106.md`
 
-## 지금
-- **계획 0024 Swift 속도 플러그인 승인**(11/10, `docs/plans/0024-swift-speed-plugin.md`). 결정 4개 추천안 그대로: 계산 파일을 플러그인 폴더 하나로, 매 프레임 숫자 칸 배열, 누적 걸음 수는 봉우리 세기, Python(걷기 절편·단계 판정·누적 걸음·재생) 먼저 Windows에서. 1번(Python)은 #33과 상관없어 바로 시작 가능, Swift·C#은 PR #33이 합쳐진 뒤 develop에서 `feat/speed-plugin`
-- **S2 처음 보정 PR #33**(`feat/calibration`, 계획 0023): 1–3번 끝(보정 메서드·가짜, `CalibrationFlow`, 화면 A-11–A-15 + 다시·도움·멈춤 카드, `CalibrationStore`). EditMode 79개 통과, 에디터에서 7단계 끝까지 확인. 정한 것은 ADR-0005 "추가 결정(11/10)"과 0023 본문
-
-- **PR 정리(11/10 밤)**: 지환이 리뷰를 반영해 #30(보정 API DB 연결 포함)·#32를 다시 올림 → 확인 코멘트 달고 develop에 합침. #32는 develop과 충돌(아래 탭 UI Kit 아이콘 vs 아이폰 높이 49·홈 바 여백)을 민재가 풀어 `feat/course-screens`에 merge 커밋(지환에게 pull 부탁). #34(지환 권한·이어폰 화면) 리뷰 올림: 고칠 것 4개(나중에 하기 → 매번 A-07, 로그인 경로 온보딩 빠짐, 이어폰 화면이 그리기만 해도 팝업, 요청이 안 끝나면 버튼 잠김) + 계획 번호 0023 겹침 → 지환 쪽을 0025로. base는 develop으로 바꿈
-- **#33**: develop 합침 + 코스 상세 409 → 보정 안내 → 끝나면 바로 다시 입장. `/code-review` 10건 반영(저장 실패 시 보정 되풀이 → 남긴 보정을 입장 때 다시 올림, 남긴 보정은 로그인이 끝나면 지움, 속도 안 올림이면 앞 단계부터 다시, 센서 안 옴 카드, 그만두기 확인 등, 상세는 계획 0023). EditMode 112개, 에디터 Play로 두 흐름(새 계정 → 409 → 보정 7단계 → 입장 / 남긴 보정 → 409 → 다시 올림 → 입장) 확인. 로컬 서버 8001·개발 DB `5b7e2d9c4a13`, 에디터 API 주소를 8001로(EditorPrefs)
+## 지금 (11/11 새벽 기준 develop에 다 들어감)
+- **develop에 합친 것(11/10–11)**: #30 코스·보정 API, #32 코스 화면, #33 처음 보정(계획 0023, 409 → 보정 → 다시 입장, 리뷰 10건), #34 권한·이어폰(지환 0025), #36 Swift 속도 플러그인(계획 0024, 맥·Windows 동시, 리뷰 C# 5·Swift 4), #35 러닝 설정·거치 안내(지환 0026), #37 문서. develop 기준 흐름: 로그인 → 권한·이어폰 → 홈 → 코스 → (보정 없으면 보정) → 맵 입장 → 러닝 설정·거치 안내, 아이폰 빌드에서 진짜 속도 센서
+- 계획 0024 결과: Python 기준 구현에 단계 판정·누적 걸음·걸음 없음 규칙(실시간도)·걷기 절편(켬, 4 km/h 이상 걷기 점), Swift = Python 정답 CSV 셋 차 0(`speedlab/golden/`), 아이폰 책상 확인(폰 100/초·에어팟 49/초, 가만히 둔 폰 걸음 없음). 맵 입장 때 센서에 보정이 없으면 서버에서 불러오고 로그아웃하면 지움(0023 4번). 수치 `docs/speed/README.md` 11/10 줄
+- 맥에 일 넘기기: 계획 문서 맨 위 "맥 할 일"에 적고 푸시 → 맥에 "NNNN 맥 할 일 해 줘" 한 줄(맥은 이 파일 안 고침, 결과는 계획 "진행"의 맥 줄)
+- **노션 개발 계획 11/11 최신화**: 작업 표 11줄(민재 보정 계산·보정 화면·속도 플러그인 완료, 지환 에어팟·권한 화면·보정값 API·거치 안내·러닝 설정 완료, 메모에 11/11 덧붙임), 기능 보드 3장(코스 선택·맵 입장, 보정 완료 / 러닝 설정·거치 안내 진행 중: 센서 준비로 넘어가기는 S3). S1 진행 중 2줄은 아이폰 확인만 남음(아래 "민재가 직접 할 것"). 상준 UI Kit 줄은 "시작 전"인데 지환이 Figma UI Kit 값을 이미 `App.uss`에 옮김 → 상준에게 상태 물어보기
+- PR 합치기: 남의 PR·리뷰 없는 문서 PR은 자동 권한 검사가 막음 → 민재가 "ㄱ"으로 허락
 
 ## 다음
-1. #34는 지환 수정 뒤 합치기 → "맵 입장" 자리를 모션 권한(#34) → 보정(#33) → 입장 순서로 맞춤
-2. 0023 4번 남은 것: 로그인 뒤 GET으로 보정 불러와 `LoadCalibration`(앱을 다시 켜면 센서 보정이 비어 있음). Swift 속도 플러그인과 같이 해도 됨
-3. 0024 1번(Python)은 Windows, 2–6번은 맥 + 아이폰
-4. S3 실시간 방 서버 계획(ADR-0010 다음). 넣을 것: 메시지 모양(입장·상태·들어옴/나감·봇), 입장 응답 `realtime.url`·`token` 확정, 재접속, 앱 연결 인터페이스(나중에 바꿀 수 있게), 아이폰 2대로 지연 실측
+1. **아바타를 진짜 속도 센서에** (S3, 11/13 시연 필수): 섬 아바타가 아직 키보드 가짜(`FakeSpeedSource`, `RunnerRigBuilder`가 만듦)라 아이폰에서 안 움직임 → `NativeSpeedSource`로. 지환 BL-42(Y Bot 애니메이션 속도 맞춤, `RunnerAnimator`)와 겹치지 않게 속도 소스만
+2. **S3 실시간 방 서버 계획 0027**(ADR-0010 다음): 메시지 모양(입장·상태·들어옴/나감·봇), 입장 응답 `realtime.url`·`token`, 재접속, 앱 연결 인터페이스(나중에 바꿀 수 있게), 아이폰 2대로 지연 실측, 지금 인원("지금 N명"을 실시간 인원으로, 지환 제안 (나)·민재 추천)
+3. 계획 0024 6번 러닝머신 확인(헬스장 날짜 정하기) + 미룬 책상 확인 2개(권한 거부 뒤 가속도, 10분 발열). 헬스장에서: 걷기 절편 "2 포함 대 4 이상"·키로 조정 비교(키가 다른 사람), 걸음 없음 문턱 0.12(S22 값) 아이폰으로 다시
+- 시연 흐름(에디터)은 민재가 직접 돌려 봄(Claude가 제안하지 않음)
+- **S3 메모(11/11 지환)**: 카운트다운·달리기 목표는 `MapScreen.Setup.Goal`, `POST /runs` goal에 `Setup.Goal.ToRequest()`(m·초). D-06 "시작할게요" 뒤엔 지금 맵만 → S3에서 D-07 센서 준비. 섬 `MapLaunchApplier`가 입장 위치 적용 뒤 `MapLaunch.MarkApplied()`(맵 화면이 기다렸다 흐린 배경, 고칠 때 이 줄 남기기), `RunnerLabels`는 카메라가 꺼져 있으면 안 그림, 러닝 설정 중엔 섬 카메라 꺼짐·그리기 3프레임에 한 번
 - 확인 못 한 것: 처음 Play 때 안내 → 보정 화면이 버튼을 안 눌렀는데 넘어간 적 한 번(재현 안 됨, Submit 입력 의심 가설). 보정 화면 가로 모양은 Device Simulator·아이폰에서
 - 헬스장 실험에 넣을 것: 0023 "데이터가 없는 곳"(1–15 km/h 1 간격 여러 명, 단계 20초 이상, 2 km/h 걸음 감지율, "속도 안 올림" 기준)과 아래 "속도 추정 다음 실험"
 
 ## 팀원에게 전할 것
 - **상준**: Figma 보정 화면 고칠 곳은 0023 "Figma와 다른 점"(문구는 `CalibrationCopy.cs`, 녹음 문구 목록은 `CalibrationVoice` 주석). 탭 아이콘 4개(홈·기록·친구·내 정보)를 UI Kit에. PRD v0.5·유스케이스 v0.2·백로그 v0.2 검토 `docs/product/prd_v05_review.md` 전달(결정: 실사 영상 최하위, 몸무게 필드 둠, 오프라인 달리기 미정). 노션 Front-End의 "API를 Query hook으로 연동하기"는 다른 프로젝트(displayu, React) 템플릿. 문서 형식 논의(11/02, `docs/log/team_discussions.md`)의 3종 문서 방향 답 확인
-- **지환**: 보정 API DB 연결이 급함(#30 입장 409). 보정 `model` 형식은 0023 "서버에 무엇을 저장하나". `data/runs/20261029-004604/note.md`·`docs/speed/airpods_flight.md`의 실명 동의(없으면 "팀원 J", 그 전엔 커밋 안 함). 브랜치 `feat/airpods-flight`·`feat/airpods-flight-analysis`를 지워도 되는지
+- **지환**: (보정 API·#34·#35는 11/11 develop에 합침) "지금 N명"은 (나) S3 실시간 인원으로 하자는 답장(민재가 카톡으로). BL-42 끝나면 알려 달라고. `data/runs/20261029-004604/note.md`·`docs/speed/airpods_flight.md`의 실명 동의(없으면 "팀원 J", 그 전엔 커밋 안 함). 브랜치 `feat/airpods-flight`·`feat/airpods-flight-analysis`를 지워도 되는지
 - **둘 다**: 아이폰 유무(시연 2대), 각자 iOS 빌드 환경(맥·Xcode·Unity iOS 모듈), Apple Developer 계정 공유 방식, `shape-0218`이 상준인지
 - **팀 공유(민재가 직접)**: 노션 개발 계획 공유(워크스페이스 멤버가 민재뿐 → 초대나 공유 링크), 바뀐 역할. 공유되면 CLAUDE.md "역할"과 ADR-0007의 "팀 공유 필요"를 지움
 
@@ -41,7 +42,7 @@
 
 ## 환경 메모 (영역 문서에 없는 것만)
 - **공용 개발 서버**(0019, ADR-0008, 주소·배포는 `docs/api/README.md`·`backend/README.md`): SSH `ubuntu@161.118.211.155` 키 `~/.ssh/oracle_key`는 Windows 노트북에만. 매일 KST 4:30 DB 백업(`~/scrun-backups`). 남은 것은 0019(429·서버 밖 백업·진짜 도메인 BL-51·유휴 회수 확인). BL-44 판단(11/07)은 "진행 중"(저장·조회 API는 로그인 5개뿐, 개발·테스트 DB 분리까지, 운영은 BL-51, 실시간 연동은 BL-25 뒤). 공통 규칙 "미정"에 "OCR 서버/앱 미정"이 남아 있음(11/06 서버 처리로 확정, BL-17) → OCR API 만들 때 고침
-- **Windows 노트북**: 로컬 Scrun 서버는 8001(`unity_map.md`), `backend/.env`(`KAKAO_MODE=fake`), 개발 DB는 `alembic upgrade head`. 노트북 `server.py`(8000, 옛 속도 실험)가 켜져 있을 수 있음
+- **Windows 노트북**: 로컬 Scrun 서버는 8001(`unity_map.md`, 에디터 API 주소도 EditorPrefs `Scrun.ApiBaseUrl` = 8001로 맞춰 둠, 기본값 8000은 옛 실험 서버), 개발 DB는 11/11 `5b7e2d9c4a13`까지 올림, 에디터 가짜 로그인은 로그아웃 상태(다음 Play 때 로그인), `backend/.env`(`KAKAO_MODE=fake`), 개발 DB는 `alembic upgrade head`. 노트북 `server.py`(8000, 옛 속도 실험)가 켜져 있을 수 있음
 - **맥**: `uv`·Python 3.12·`gh`는 `~/.local/bin`(셸 PATH엔 없음, 필요하면 `~/.local/bin/uv python update-shell`). Homebrew 없음. 시뮬레이터 키보드는 Mac 입력기를 영어로 바꿔야 영어가 쳐짐. Claude in Chrome 연결: VS Code에 전체 디스크 접근 권한 → 확장 안 CLI(`~/.vscode/extensions/anthropic.claude-code-*/resources/native-binary/claude --chrome`)를 한 번 실행 → `/chrome`에서 Enabled by default → 새 대화
 - **맥에서 커밋하지 말 것**: Mixamo 파일이 없어 Unity가 지운 `Characters/YBot` `.meta` 7개(받은 뒤 `git checkout -- unity/TestRun/Assets/Scrun/Characters/YBot`), iOS 전환 때 Unity가 Poly Haven `.meta`에 쓴 iOS 칸·`materialImportMode`, URP 전역 설정·ProjectSettings(시뮬레이터 SDK 값). 그 밖은 `unity_map.md` 171–172줄
 - `unity/Builds/device-console.log`(git 밖)에 카카오 토큰이 찍혀 있음 → 공유 금지
