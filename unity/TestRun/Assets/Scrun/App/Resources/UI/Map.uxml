@@ -1,6 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <!-- 맵(가로). 뒤에 섬 씬이 보이고, 위에 코스 이름·나가기(D-10 윗줄 자리).
-         들어가는 동안 I-10 로딩, 입장이 안 되면 I-11 카드. 진행 막대·HUD·멈춤(D-17)은 S3 -->
+         들어가는 동안 I-10 로딩, 입장이 안 되면 I-11 카드. 섬이 열리면 위에 러닝 설정·거치 안내(RunSetup.uxml, 계획 0026).
+         진행 막대·HUD·멈춤(D-17)은 S3 -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
     <ui:VisualElement class="course map-screen" picking-mode="Ignore">
         <!-- I-10 맵 로딩 -->
@@ -27,7 +28,7 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
-        <ui:VisualElement class="map-top" picking-mode="Ignore">
+        <ui:VisualElement name="map-top" class="map-top" picking-mode="Ignore">
             <ui:Label name="course-label" class="map-course-label" picking-mode="Ignore" />
             <!-- 나가기. S3에 멈춤 버튼(D-10)으로 바뀌고 나가기는 멈춤 화면(D-17·D-18)으로 -->
             <ui:Button name="leave" class="map-round-btn">

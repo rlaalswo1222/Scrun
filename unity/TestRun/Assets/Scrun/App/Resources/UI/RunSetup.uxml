@@ -1,0 +1,126 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- 맵 입장 뒤 흐린 맵 위 안내(가로, 계획 0026): D-01 러닝 설정 → D-05 거치 안내 → D-06 달리는 매뉴얼.
+         Figma "SCRUN" 와이어프레임 602:601·602:775·602:803. 고스트러너 카드(D-01 오른쪽)는 S7 BL-24에 넣는다 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/RunSetup.uss" />
+    <ui:VisualElement name="run-setup" class="course run-setup">
+
+        <!-- D-01 러닝 설정 -->
+        <ui:VisualElement name="goal-step" class="setup-step">
+            <ui:VisualElement class="setup-head">
+                <ui:VisualElement>
+                    <ui:Label text="러닝 설정" class="setup-title" />
+                    <ui:VisualElement class="chip-row setup-chip-row">
+                        <ui:Label name="course-chip" class="chip" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <!-- 맵 나가기(코스 상세로) -->
+                <ui:Button name="close" class="map-round-btn">
+                    <ui:VisualElement class="map-x-bar" picking-mode="Ignore" />
+                    <ui:VisualElement class="map-x-bar map-x-bar--2" picking-mode="Ignore" />
+                </ui:Button>
+            </ui:VisualElement>
+
+            <ui:VisualElement class="setup-middle">
+                <ui:VisualElement class="setup-card goal-card">
+                    <ui:Label text="목표" class="goal-label" />
+                    <ui:VisualElement class="segment">
+                        <ui:Button name="kind-distance" text="거리" class="segment-item" />
+                        <ui:Button name="kind-time" text="시간" class="segment-item" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="stepper">
+                        <ui:Button name="minus" class="stepper-btn">
+                            <ui:VisualElement class="stepper-bar" picking-mode="Ignore" />
+                        </ui:Button>
+                        <ui:VisualElement class="goal-value-row">
+                            <ui:Label name="goal-value" class="goal-value" />
+                            <ui:Label name="goal-unit" class="goal-unit" />
+                        </ui:VisualElement>
+                        <ui:Button name="plus" class="stepper-btn">
+                            <ui:VisualElement class="stepper-bar" picking-mode="Ignore" />
+                            <ui:VisualElement class="stepper-bar stepper-bar--v" picking-mode="Ignore" />
+                        </ui:Button>
+                    </ui:VisualElement>
+                    <!-- 퀵 칩(종류마다 다름)과 "직접 입력"은 코드가 채움 -->
+                    <ui:VisualElement name="quick" class="chip-row quick-row" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement class="setup-foot">
+                <ui:Label name="weekly-left" class="setup-foot-note" />
+                <ui:Button name="goal-next" text="다음" class="btn btn-primary setup-next" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- D-05 거치 안내 -->
+        <ui:VisualElement name="mount-step" class="setup-step mount-step">
+            <ui:VisualElement class="mount-text">
+                <ui:Button name="mount-back" class="setup-back">
+                    <ui:VisualElement class="round-back-icon" picking-mode="Ignore" />
+                </ui:Button>
+                <ui:Label text="폰을 러닝머신에&#10;거치해 주세요" class="setup-title mount-title" />
+                <ui:Label text="화면이 정면으로 보이도록&#10;가로로 세워 주세요" class="mount-lead" />
+                <ui:VisualElement class="chip-row mount-chip-row">
+                    <ui:Label text="AirPods 착용 권장 (선택)" class="chip" />
+                </ui:VisualElement>
+                <ui:Button name="mount-next" text="거치했어요" class="btn btn-primary mount-next" />
+            </ui:VisualElement>
+            <ui:VisualElement class="mount-art-card">
+                <!-- 계기판에 폰을 가로로 올린 그림. 출처 확인 뒤 넣음(계획 0026 정한 것 2), 그전엔 같은 크기 빈 칸 -->
+                <ui:VisualElement name="mount-art" class="art-slot mount-art" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- D-06 달리는 매뉴얼 -->
+        <ui:VisualElement name="manual-step" class="setup-step">
+            <ui:VisualElement class="setup-head setup-head--back">
+                <ui:Button name="manual-back" class="setup-back">
+                    <ui:VisualElement class="round-back-icon" picking-mode="Ignore" />
+                </ui:Button>
+                <ui:Label text="이렇게 달려요" class="setup-title" />
+            </ui:VisualElement>
+            <ui:VisualElement class="manual-cards">
+                <ui:VisualElement class="manual-card">
+                    <ui:Label text="1" class="manual-num" />
+                    <ui:VisualElement class="art-slot manual-art" />
+                    <ui:Label text="러닝머신을 켜고&#10;걷기 시작해요" class="manual-text" />
+                </ui:VisualElement>
+                <ui:VisualElement class="manual-card">
+                    <ui:Label text="2" class="manual-num" />
+                    <ui:VisualElement class="art-slot manual-art" />
+                    <ui:Label text="달리기 시작하면&#10;자동으로 인식해요" class="manual-text" />
+                </ui:VisualElement>
+                <ui:VisualElement class="manual-card">
+                    <ui:Label text="3" class="manual-num" />
+                    <ui:VisualElement class="art-slot manual-art" />
+                    <ui:Label text="멈추면 아바타도&#10;함께 멈춰요" class="manual-text" />
+                </ui:VisualElement>
+                <ui:VisualElement class="manual-card manual-card--last">
+                    <ui:Label text="4" class="manual-num" />
+                    <ui:VisualElement class="art-slot manual-art" />
+                    <ui:Label text="끝나면 종료하고&#10;계기판을 촬영해요" class="manual-text" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="setup-foot">
+                <ui:Toggle name="skip-manual" text="다시 보지 않기" class="skip-toggle" />
+                <ui:Button name="manual-next" text="시작할게요" class="btn btn-primary setup-next" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- 목표 직접 입력. 키보드가 아래 절반을 덮으므로 위쪽에 -->
+        <ui:VisualElement name="goal-input" class="map-dim goal-input">
+            <ui:VisualElement class="map-card input-card">
+                <ui:Label name="input-title" class="map-card-title" />
+                <ui:VisualElement class="input-row">
+                    <ui:TextField name="input-field" class="input input-field" />
+                    <ui:Label name="input-unit" class="input-unit" />
+                </ui:VisualElement>
+                <ui:Label name="input-error" class="error-text input-error" />
+                <ui:VisualElement class="map-card-buttons">
+                    <ui:Button name="input-cancel" text="취소" class="btn btn-ghost" />
+                    <ui:Button name="input-ok" text="확인" class="btn btn-primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

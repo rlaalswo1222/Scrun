@@ -9,6 +9,9 @@ namespace Scrun.App
         public static void SetVisible(this VisualElement e, bool on) =>
             e.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
 
+        // SetVisible로 숨기지 않았는지
+        public static bool IsVisible(this VisualElement e) => e.style.display != DisplayStyle.None;
+
         // 누르지 않는 글자 하나(클래스 붙여서). 카드·줄을 코드로 만들 때
         public static Label Text(string text, string cls)
         {

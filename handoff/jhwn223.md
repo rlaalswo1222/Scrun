@@ -1,18 +1,27 @@
-# jhwn223 인수인계 (2026-11-10 밤, #34 리뷰 반영 뒤)
+# jhwn223 인수인계 (2026-11-11, S2 러닝 설정·거치 안내)
 
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
-## 지금 (11/10 밤)
+## 지금 (11/11)
+- **러닝 설정·거치 안내 PR #35**(민재 리뷰·상준 Figma 대조 대기): 브랜치 `feat/run-setup`(develop 681f47a에서), 계획 [0026](../docs/plans/0026-run-setup-mount-guide.md). Figma D-01·D-05·D-06을 맵 화면 위 층(`RunSetupView`)으로, 흐린 배경은 `MapBackdrop`(섬 카메라 한 장 찍어 줄이기, 안내 중 섬 카메라 끔). `/code-review` 반영, EditMode 145/145, 에디터 Play로 흐름 확인. 바뀐 동작은 `docs/unity/unity_map.md` "러닝 설정·거치 안내"
+  - 커밋할 것: `App/Run/`, `App/Map/MapBackdrop.cs`, `RunSetupView.cs`, `RunSetup.uxml`·`.uss`, `RunSetupTests.cs`(+ 새 `.meta`), `MapScreen.cs`, `Map.uxml`, `Api.cs`, `Dtos.cs`, `UiExtensions.cs`, 섬 `Scripts/RunnerLabels.cs`, 계획 0026, `unity_map.md`, 이 파일. **넣지 말 것**: Y Bot·PolyHaven `.meta`, `.gitignore`(따로)
+  - 이 handoff 파일은 #34 브랜치에도 있음 → 합칠 때 이 브랜치 쪽(나중 내용)을 고른다
+  - 상준 답(11/11): 그림은 라이선스 미확인이라 빈 칸 유지(캐릭터는 상준이 Blender로, 계기판은 새로), 시간 퀵·범위 확정, "다시 보지 않기"·뒤로 가기·X·고스트 숨김 OK(상준이 Figma·노션 반영), BL-9 ③ 안내는 BL-45 조사 뒤 D-08 쪽으로. PR 올리면 링크 보내기
+  - 민재에게: D-01 "지금 N명"을 입장 응답에서 받을지, `MapScreen.Setup`(고른 목표)을 S3 카운트다운이 `POST /runs`에 씀
+- 로컬 변경 보관: `git stash` "11/11 맥 Mixamo 재임포트·씬 재저장"(Unity가 다시 만드는 meta·씬·라이팅. 버려도 되는지 확인 뒤 지움). Unity가 켜져 있으면 Y Bot·PolyHaven meta는 다시 생김 → 커밋에서 빼기
+- Unity MCP: `unity/tools/ucs.sh`는 bash에서 옛 인텔 python3를 잡아 "Bad CPU type" → zsh의 python3로 JSON을 만들어 `umcp.sh`에 넘기면 됨. 버튼은 `NavigationSubmitEvent`, 화면은 `ScreenCapture.CaptureScreenshot`(UI 포함)
+
+## 그전 (11/10 밤)
 - **PR #30(코스 API + 보정값 API)·#32(코스 화면) 머지됨**(민재). 리뷰 반영 내용은 계획 0021·0022
-- **PR #34(권한 안내·이어폰, 계획 [0025](../docs/plans/0025-permission-earphone-screens.md), base develop)**: 민재 리뷰 반영 끝 → 다시 리뷰 대기. 계획 번호를 0023 → 0025로 바꿈(민재 보정 계획과 겹침)
+- **PR #34(권한 안내·이어폰, 계획 [0025](../docs/plans/0025-permission-earphone-screens.md)) 머지됨**(11/11). 계획 번호를 0023 → 0025로 바꿈(민재 보정 계획과 겹침)
   - 민재에게 부탁할 것: `Navigator.Replace`(형이 넣어 주겠다고 함), 코스 상세 "맵 입장" 순서는 모션 확인(#34) → 보정(#33) → 입장으로 형이 #33에서 맞춤
 - 노션 작업 표는 민재 워크스페이스라 내 노션 연결(jhwn223@cau.ac.kr, 개인 워크스페이스)로는 못 고침 → 민재가 워크스페이스에 초대 + claude.ai Notion 연결을 그 워크스페이스로 다시 하면 Claude가 상태를 바꿀 수 있음. 지금 바꿀 줄: [FE] 권한 안내·요청 화면, [FE] 에어팟 연결 확인 화면 → 진행 중(#34 머지 뒤 완료), [BE] 코스 API·보정값 API·[FE] 코스 화면·[3D] 섬 맵 입장 → 완료(#30·#32 머지)
 - 이 맥 환경: Homebrew PostgreSQL 16, 로컬 서버는 develop의 `backend`에서 `/Users/jihwankim/Desktop/Projects/Scrun/.venv/bin/python -m uvicorn app.main:app --port 8000`(#30 머지됨). Unity MCP는 다시 켜면 `rm /tmp/umcp.sid` 뒤 연결. 긴 명령은 끊기니 짧게 나눠서. `unity/tools`는 develop의 맥 대응판을 씀(내 옛 수정은 버림)
 - **develop에 커밋 금지**: `feat/...`·`docs/...` 브랜치를 따서 나눠 올린다
 
 ## 다음 할 일
-1. #34 재리뷰·머지 → 노션 상태 완료. 아이폰(PR #28 뒤): 권한 팝업·설정 앱 왕복 때 앱이 꺼지는지(꺼지면 입장하려던 코스·온보딩 단계 저장해 이어 가기, 계획 0025), 에어팟, 가로 맵·노치
-2. **S2**: [FE] 러닝 설정(목표, BL-8, D-01), [FE] 거치 안내·달리는 매뉴얼(BL-9, D-05·D-06), [BE] 설정 API(BL-36), [BE] 내 정보 조회·수정 API(BL-36), [3D] 임시 아바타 달리기 애니메이션 속도 맞춤(BL-42). 계획 문서부터(develop pull 뒤 마지막 번호 + 1)
+1. #34 머지됨 → 노션 상태 완료. 아이폰(PR #28 뒤): 권한 팝업·설정 앱 왕복 때 앱이 꺼지는지(꺼지면 입장하려던 코스·온보딩 단계 저장해 이어 가기, 계획 0025), 에어팟, 가로 맵·노치
+2. **S2 남은 것**: #35 리뷰 반영 → [3D] 임시 아바타 달리기 애니메이션 속도 맞춤(BL-42, 민재 S3가 씀, 계획 0027) → [BE] 내 정보 `GET·PATCH /users/me`·설정 `GET·PATCH /users/me/settings`(BL-36, 계획 0028). 보정값 API(BL-4)는 #30에서 끝남 → 노션 완료 표시만
 3. S3: 센서 준비·카운트다운(D-07·D-09), 맵 HUD(D-10 진행 막대·멈춤 D-17), MapScreen 쪼개기
 
 ## 맡은 영역 (계획 0017, 노션 [개발 계획](https://tough-wednesday-fe0.notion.site/11-08-11-23-4114ae82f1de81a9bec2db16a9bfe635) 작업 표 지환 36줄)
