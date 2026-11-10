@@ -74,7 +74,8 @@ namespace Scrun.App
         Button Card(Course c)
         {
             var id = c.CourseId;
-            var card = new Button(() => Nav.Push(new CourseDetailScreen(id))) { name = "course-" + id };
+            // 두 번 눌러 상세가 둘 쌓이지 않게(맨 위일 때만)
+            var card = new Button(() => { if (Nav.Current == this) Nav.Push(new CourseDetailScreen(id)); }) { name = "course-" + id };
             card.AddToClassList("course-card");
             var thumb = CourseParts.Thumb(c);
             thumb.pickingMode = PickingMode.Ignore;

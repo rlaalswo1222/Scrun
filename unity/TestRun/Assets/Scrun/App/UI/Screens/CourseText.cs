@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 
 namespace Scrun.App
@@ -13,9 +14,13 @@ namespace Scrun.App
         // 실사 영상 코스(자리만, 아직 달릴 수 없음) → 목록에서 뺀다
         public const string VideoType = "VIDEO";
 
-        // 6671 → "6.7km"
+        // 6671 → "6.7km", 1050 → "1.1km"(0.05는 올림. float로 나누면 1.0499…가 돼 내려가던 것)
         public static string Km(int meters) =>
-            (meters / 1000f).ToString("0.0", CultureInfo.InvariantCulture) + "km";
+            (Math.Round(meters / 100.0, MidpointRounding.AwayFromZero) / 10).ToString("0.0", CultureInfo.InvariantCulture) + "km";
+
+        // 기본 그림의 첫 글자. 이모지·조합 문자도 한 글자로(Substring(0, 1)은 반쪽만 잘라 깨짐)
+        public static string Initial(string name) =>
+            string.IsNullOrEmpty(name) ? "" : StringInfo.GetNextTextElement(name);
 
         // 코스 카드·맵 윗줄: "한 바퀴 6.7km"
         public static string Lap(int meters) => "한 바퀴 " + Km(meters);
