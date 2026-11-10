@@ -92,7 +92,7 @@ namespace Scrun.App
             loadFailed.SetVisible(true);
         }
 
-        // 맵 입장 전 모션 권한 확인(계획 0023): 아직 안 물어봤으면 팝업, 거부·제한이면 I-05
+        // 맵 입장 전 모션 권한 확인(계획 0025): 아직 안 물어봤으면 팝업, 거부·제한이면 I-05
         async void Enter()
         {
             if (course == null || gating || Nav.Current != this) return; // 두 번 눌러 맵이 둘 쌓이지 않게
@@ -100,14 +100,20 @@ namespace Scrun.App
             if (Onboarding.BeforeMap(motion) == MotionGate.Ask)
             {
                 gating = true;
-                try { motion = await Native.Permissions.RequestAsync(PermissionKind.Motion); }
+                try { motion = await Onboarding.Ask(PermissionKind.Motion); } // 답이 안 오면 시간 제한 뒤 지금 상태로(입장 버튼이 잠기지 않게)
                 finally { gating = false; }
                 if (Root.panel == null || Nav.Current != this) return;
             }
-            if (Onboarding.BeforeMap(motion) == MotionGate.Go)
-                PushMap();
-            else
-                Nav.Push(new MotionDeniedScreen(onGranted: AfterMotionGranted, onLater: CloseMotionDenied));
+            switch (Onboarding.BeforeMap(motion))
+            {
+                case MotionGate.Go:
+                    PushMap();
+                    break;
+                case MotionGate.Blocked:
+                    Nav.Push(new MotionDeniedScreen(onGranted: AfterMotionGranted, onLater: CloseMotionDenied));
+                    break;
+                // Ask: 시간 제한 안에 답이 없었음(거부한 게 아님) → 아무것도 안 띄우고 다시 누를 수 있게만
+            }
         }
 
         // I-05에서 설정을 켜고 돌아왔을 때: I-05를 내리고 바로 맵으로

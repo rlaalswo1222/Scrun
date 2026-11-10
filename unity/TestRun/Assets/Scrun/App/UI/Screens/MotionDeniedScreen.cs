@@ -3,17 +3,18 @@ using UnityEngine.UIElements;
 
 namespace Scrun.App
 {
-    // I-05 모션 및 피트니스 권한 거부(계획 0023). 권한 안내 뒤, 그리고 맵 입장 전(코스 상세)에 쓴다.
-    // "설정 열기" → 설정 앱. 거기서 켜고 돌아오면(Permissions.Changed) 저절로 onGranted. "나중에" → onLater, 뒤로 → 앞 화면
+    // I-05 모션 및 피트니스 권한 거부(계획 0025). 권한 안내 뒤, 그리고 맵 입장 전(코스 상세)에 쓴다.
+    // "설정 열기" → 설정 앱. 거기서 켜고 돌아오면(Permissions.Changed) 저절로 onGranted. "나중에" → onLater, 뒤로 → onBack(없으면 onLater)
     public sealed class MotionDeniedScreen : AppScreen
     {
-        readonly Action onGranted, onLater;
+        readonly Action onGranted, onLater, onBack;
         bool subscribed, done;
 
-        public MotionDeniedScreen(Action onGranted, Action onLater)
+        public MotionDeniedScreen(Action onGranted, Action onLater, Action onBack = null)
         {
             this.onGranted = onGranted;
             this.onLater = onLater;
+            this.onBack = onBack ?? onLater; // 코스 상세에서는 뒤로도 "나중에"와 같게(상세를 다시 불러오지 않음)
         }
 
         protected override string Uxml => "UI/MotionDenied";
@@ -21,7 +22,7 @@ namespace Scrun.App
 
         protected override void OnCreate()
         {
-            Q<Button>("back").clicked += () => Leave(() => Nav.Pop());
+            Q<Button>("back").clicked += () => Leave(onBack);
             Q<Button>("later").clicked += Later;
             Q<Button>("settings").clicked += () => Native.Permissions.OpenSettings();
         }

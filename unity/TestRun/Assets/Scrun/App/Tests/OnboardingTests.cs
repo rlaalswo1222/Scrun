@@ -2,18 +2,14 @@ using NUnit.Framework;
 
 namespace Scrun.App.Tests
 {
-    // 권한 안내·이어폰 흐름 판단(계획 0023)
+    // 권한 안내·이어폰 흐름 판단(계획 0025)
     public class OnboardingTests
     {
-        // 이어폰 화면까지 끝냈는지(done) + 모션 상태 → 권한 안내부터 보여 줄지
-        [TestCase(false, PermissionStatus.NotDetermined, true)]
-        [TestCase(false, PermissionStatus.Granted, true)]   // A-07 뒤 이어폰 화면 전에 앱을 끔 → 다시 이어짐
-        [TestCase(false, PermissionStatus.Denied, true)]
-        [TestCase(true, PermissionStatus.Granted, false)]
-        [TestCase(true, PermissionStatus.Denied, false)]    // 끝까지 갔으면 거부여도 홈(맵 입장 때 막음)
-        [TestCase(true, PermissionStatus.NotDetermined, true)] // 다시 깔아 권한이 초기화됨
-        public void 온보딩을_보여_줄지(bool done, PermissionStatus motion, bool expected) =>
-            Assert.AreEqual(expected, Onboarding.NeedsOnboarding(done, motion));
+        // 이어폰 화면까지 끝냈는지(done)만 본다. "나중에"로 모션을 미뤘어도 끝냈으면 다시 안 보여 줌(맵 입장 때 BeforeMap이 잡음)
+        [TestCase(false, true)]
+        [TestCase(true, false)]
+        public void 온보딩을_보여_줄지(bool done, bool expected) =>
+            Assert.AreEqual(expected, Onboarding.NeedsOnboarding(done));
 
         [TestCase(PermissionStatus.Granted, AfterAsking.Earphone)]
         [TestCase(PermissionStatus.NotDetermined, AfterAsking.Earphone)]
@@ -73,6 +69,14 @@ namespace Scrun.App.Tests
             var noMotion = OnboardingText.Earphone(HeadphoneStatus.ConnectedNoMotion, null, PermissionStatus.Granted);
             Assert.AreEqual("이어폰", noMotion.name);
             Assert.AreEqual("헤드폰 모션 없음", noMotion.detail);
+        }
+
+        [Test]
+        public void 헤드폰_모션을_아직_안_물어봤으면_다음에_묻는다고_알린다()
+        {
+            var t = OnboardingText.Earphone(HeadphoneStatus.Connected, "AirPods Pro", PermissionStatus.NotDetermined);
+            StringAssert.DoesNotContain("사용 가능", t.detail);
+            StringAssert.Contains("다음을 누르면", t.lead);
         }
 
         [Test]

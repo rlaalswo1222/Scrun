@@ -125,7 +125,7 @@ namespace Scrun.App
             submitting = false;
             if (Root.panel == null) return; // 그사이 로그인 화면 등으로
             Refresh();
-            if (ok) Onboarding.Begin(Nav); // 권한 안내 → 이어폰 → 홈(계획 0023). 모션 권한을 이미 정했으면 바로 홈
+            if (ok) Onboarding.Begin(Nav); // 권한 안내 → 이어폰 → 홈(계획 0025). 모션 권한을 이미 정했으면 바로 홈
         }
     }
 

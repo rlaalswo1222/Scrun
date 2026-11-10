@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 
 namespace Scrun.App
 {
-    // A-07 권한 안내(계획 0023). 가입 뒤·앱 시작 때 흐름의 첫 화면(Onboarding.Begin).
+    // A-07 권한 안내(계획 0025). 가입 뒤·앱 시작 때 흐름의 첫 화면(Onboarding.Begin).
     // "권한 설정하기" → 시스템 팝업 4개를 차례로(A-08, 이미 정한 것은 팝업 없이 지나감) → 모션을 못 받았으면 I-05, 아니면 이어폰 화면.
     // "나중에 하기" → 이어폰 화면(모션 없이 맵에 들어가려 하면 그때 다시 막는다).
     public sealed class PermissionsScreen : AppScreen
@@ -45,7 +45,7 @@ namespace Scrun.App
             {
                 foreach (var kind in Onboarding.AskOrder)
                 {
-                    await Native.Permissions.RequestAsync(kind);
+                    await Onboarding.Ask(kind); // 답이 안 오면 시간 제한 뒤 넘어감(버튼이 잠긴 채 남지 않게)
                     if (Root.panel == null) return; // 기다리는 사이 화면을 떠남
                 }
             }
@@ -57,7 +57,7 @@ namespace Scrun.App
             }
             if (Nav.Current != this) return;
             if (Onboarding.Next(Onboarding.MotionStatus()) == AfterAsking.MotionDenied)
-                Nav.Push(new MotionDeniedScreen(ReplaceWithEarphone, ReplaceWithEarphone));
+                Nav.Push(new MotionDeniedScreen(ReplaceWithEarphone, ReplaceWithEarphone, onBack: () => Nav.Pop()));
             else
                 Nav.Push(new EarphoneScreen());
         }

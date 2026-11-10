@@ -2,8 +2,9 @@ using UnityEngine.UIElements;
 
 namespace Scrun.App
 {
-    // A-09 이어폰 미연결·A-10 연결됨(계획 0023). 끼고 빼면(Headphones.Changed) 저절로 바뀐다.
-    // 움직임 센서가 있는 이어폰이 연결됐는데 헤드폰 모션 권한을 아직 안 물어봤으면 이때 묻는다(이어폰 없이 A-07에서 팝업이 안 떴을 때 대비).
+    // A-09 이어폰 미연결·A-10 연결됨(계획 0025). 끼고 빼면(Headphones.Changed) 저절로 바뀐다.
+    // 움직임 센서가 있는 이어폰이 연결됐는데 헤드폰 모션 권한을 아직 안 물어봤으면 "다음"을 누를 때 묻는다(이어폰 없이 A-07에서 팝업이 안 떴을 때 대비).
+    // 그리기(Render)는 묻지 않는다 — 끼고 빼거나 권한이 바뀔 때마다 불려서, 누르지도 않았는데 팝업이 뜨지 않게.
     // 미연결: "연결 확인하기"(다시 읽기)·"이어폰 없이 계속"·"건너뛰기" / 연결됨: "다음" → 홈(Onboarding.Finish)
     public sealed class EarphoneScreen : AppScreen
     {
@@ -31,7 +32,7 @@ namespace Scrun.App
             check.clicked += Render;
             skip.clicked += Finish;
             without.clicked += Finish;
-            next.clicked += Finish;
+            next.clicked += Next;
         }
 
         protected internal override void OnShow()
@@ -45,7 +46,27 @@ namespace Scrun.App
 
         void Finish()
         {
-            if (Nav.Current == this) Onboarding.Finish(Nav);
+            if (!asking && Nav.Current == this) Onboarding.Finish(Nav);
+        }
+
+        // A-10 "다음": 헤드폰 모션을 아직 안 물어봤으면 이때 묻고 끝냄
+        async void Next()
+        {
+            if (asking || Nav.Current != this) return;
+            if (Native.Headphones.Status == HeadphoneStatus.Connected &&
+                Native.Permissions.GetStatus(PermissionKind.HeadphoneMotion) == PermissionStatus.NotDetermined)
+            {
+                asking = true;
+                next.SetEnabled(false);
+                try { await Onboarding.Ask(PermissionKind.HeadphoneMotion); }
+                finally
+                {
+                    asking = false;
+                    next.SetEnabled(true);
+                }
+                if (Root.panel == null) return;
+            }
+            Finish();
         }
 
         void OnHeadphonesChanged(HeadphoneStatus _) => Render();
@@ -76,16 +97,6 @@ namespace Scrun.App
             check.SetVisible(!connected);
             without.SetVisible(!connected);
             next.SetVisible(connected);
-
-            if (status == HeadphoneStatus.Connected && motion == PermissionStatus.NotDetermined) AskHeadphoneMotion();
-        }
-
-        async void AskHeadphoneMotion()
-        {
-            if (asking) return;
-            asking = true;
-            try { await Native.Permissions.RequestAsync(PermissionKind.HeadphoneMotion); } // 답하면 Changed로 다시 그림
-            finally { asking = false; }
         }
 
         void Subscribe(bool on)
