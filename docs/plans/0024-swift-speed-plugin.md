@@ -2,7 +2,8 @@
 
 - 상태: **승인 · 구현 중** (11/10 민재, 결정 1–4 추천안 그대로. 11/10 밤 맥·Windows 동시 진행 시작, 아래 "Swift ↔ C# 약속")
 - 진행
-  - Windows: 1번(Python), 4번(C# `IosSpeedSensor`) 진행 중
+  - Windows 1번 끝(11/10 밤): `fusion_live.py`에 `measure_stage`(TooShort·SensorLost·NoSteps·Irregular·Ok), 누적 걸음(봉우리), 걷기 절편(`WALK_OWN`, **꺼 둠**: 10/29 두 사람에서 나아지지 않음). 숫자: 걸음 없음 문턱 0.12, 걸음 수 215 이상은 벨트 진동, 4 km/h 이하 달리기 판정은 다시 잼(근거·수치 `docs/speed/README.md` 11/10 줄). **맥은 Swift를 이 파일에 맞춘 뒤** `speedlab/golden/replay_20261029-040156.csv`(Python 재생, 열에 `steps` 추가)와 비교
+  - Windows 4번: C# `IosSpeedSensor`(칸 → SpeedReading, 단계 JSON, 보정 넘기기) + `IosSpeedNative`(DllImport) + `Native.cs` iOS 줄 + 테스트 `IosSpeedSensorTests`. 에디터 컴파일·테스트 확인 남음
   - 맥: 2번 앞부분(파일 옮기기·Swift 재생 도구로 그날 `estimate.csv` 다시 만들기), 3번(`ScrunSpeed.swift`·C 함수·헤드폰 manager), 5번 점검 화면 칸, 아이폰 책상 확인 시작 전
 - 담당: 민재. 기간 S2 뒤쪽(11/11)에서 S3 앞(11/12), 11/13 시연에 들어감. Python·C# 일부는 Windows, Swift·아이폰은 맥
 - 근거: 계획 0020(`ISpeedSensor` 모양 + 가짜, 진짜는 이 계획), 계획 0023 6번(단계 재기·걷기 절편·실패 판정을 Swift에), ADR-0009(센서는 JSON 통로를 쓰지 않음), 계획 0010·[live_iphone.md](../speed/live_iphone.md)(SpeedRecorder 안 실시간 추정, 달리기 5구간 0.16 km/h, 1명·같은 날 보정이라 낙관적)
@@ -60,7 +61,8 @@ C 함수(Swift `@_cdecl`, C# `[DllImport("__Internal")]`). 모두 **메인 스�
 - **걸음 상태·속도**: `SpeedEstimator` 그대로(6초 창, 걸음 규칙성 0.3, 2.5초 유지, 2초 중앙값). 지연 줄이기는 이 계획에서 안 함
 - **누적 걸음 수(새로)**: `SpeedReading.Steps`는 감지 지연 없이 늘어야 한다(다리 애니메이션, BL-13). 지금 `SpeedEstimator`엔 없다. 포락선 봉우리를 세는 방식으로 넣는다(가설: 0.27초 안에 봉우리 하나, 최근 6초 상위 값 기준 문턱). 기록으로 "케이던스 × 시간"과 3% 안에서 맞는지 Python에서 먼저 확인
 - **단계 하나 재기(0023)**: 단계 시작 + 5초부터 끝까지의 폰 신호로 판정. 잴 시간이 3초 미만 → TooShort, 그 사이 폰 흐름이 끊김 → SensorLost, 신호 세기가 서 있을 때 수준 → NoSteps, 걸음 규칙성 0.3 미만 → Irregular, 아니면 Ok와 점 하나(`v`·`limp`·`cad`·`amp`·`running`). NotFaster는 C#이 이미 판정. "서 있을 때 수준"의 숫자는 걸음 없는 부분과 걷기 2 km/h 구간 사이에서 정함. 10/29 기록엔 `still` 구간 표시가 없어서(`segments.csv`가 거의 비어 있음) 기록 앞뒤의 걸음 없는 부분을 손으로 골라 쓰고, 모자라면 아이폰 책상 확인 때 "벨트 옆 발판에 30초 서 있기"·"폰을 손에 들고 30초"를 새로 기록
-- **걷기 절편(0023)**: 걷기 기울기는 공통 0.0732 그대로, 절편만 이 사람의 걷기 점들로(점들의 `v − 0.0732·cad` 평균). 걷기 점이 없으면 공통 절편 −3.45
+- **걷기 절편(0023)**: 걷기 기울기는 공통 0.0732 그대로, 절편만 이 사람의 걷기 점들로(점들의 `v − 0.0732·cad` 평균). 걷기 점이 없으면 공통 절편 −3.45. **11/10 결과: 10/29 두 사람에서 나아지지 않아 꺼 둠(`WALK_OWN = False`), 헬스장 여러 명 뒤 판단**
+- **1번에서 더한 판정(11/10, 10/29 기록 근거)**: 걸음 수가 215 이상(찾는 범위 끝)이면 NoSteps(벨트 모터 진동), 안내 속도 4 km/h 이하인데 달리기로 나오면 Irregular(걸음 수를 두 배로 잡음)
 
 ## 순서
 | # | 할 일 | 어디서 | 끝나면 |
