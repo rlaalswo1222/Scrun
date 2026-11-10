@@ -2,10 +2,7 @@
 
 - 상태: **승인 · 구현 중** (11/10 민재, 결정 1–4 추천안 그대로. 11/10 밤 맥·Windows 동시 진행 시작, 아래 "Swift ↔ C# 약속")
 - **맥 할 일**(Windows가 적고 맥이 읽음. 맥은 `git pull --rebase` 뒤 위에서부터 하고, 끝낸 줄은 지우고 결과는 아래 "진행"의 맥 줄에. 사용자는 맥에 "0024 맥 할 일 해 줘"만 침)
-  1. 문제 A Swift: `fusion_live.py`의 `steps_like(level, cad)`(세기 ≥ `STILL_ENV` 이고 걸음 수 < `CAD_EDGE`)를 `SpeedEstimator.swift`에 옮겨 `update`의 걸음 후보(q 확인과 같은 자리, `phoneFeats`에 `level` 추가)와 `stagePoint`가 같이 쓰게
-  2. `ios/SpeedReplay`로 정답 세 개 비교: `speedlab/golden/replay_20261029-040156.csv`, `..._walkcal.csv`(`--model speedlab/golden/model_walk_20261029.json`), 새 `replay_beltonly_20261029-014932.csv`(기록 폴더 `speedlab/golden/beltonly_20261029-014932`, 에어팟·구간 파일 없음). 모든 열 차를 "진행"에
-  3. 아이폰: 가만히 둔 폰이 걸음 상태 None인지, 문제 B(가만히 둔 단계 재기가 SensorLost) 원인 → 고치기
-  4. 책상 확인 나머지: 모션 권한 거부 뒤 가속도가 오는지(오면 지환에게 권한 필수 목록 조정), 10분 켜 둔 CPU·발열
+  - (11/11 맥: 1–3 끝, 4는 민재 결정으로 넘김. 결과는 "진행"의 맥 줄) 지금 남은 맥 할 일 없음
 - 진행
   - Windows 1번 끝(11/10 밤): `fusion_live.py`에 `measure_stage`(TooShort·SensorLost·NoSteps·Irregular·Ok), 누적 걸음(봉우리), 걷기 절편(`WALK_OWN` 켬, 4 km/h 이상 걷기 점, 11/10 민재 결정). 숫자: 걸음 없음 문턱 0.12, 걸음 수 215 이상은 벨트 진동, 4 km/h 이하 달리기 판정은 다시 잼(근거·수치 `docs/speed/README.md` 11/10 줄). **맥은 Swift를 이 파일에 맞춘 뒤** `speedlab/golden/replay_20261029-040156.csv`(기록의 보정 구간으로)와 `..._walkcal.csv`(`model_walk_20261029.json` 보정을 불러와 시작, 걷기 절편까지)를 Swift 재생과 비교(열에 `steps` 추가)
   - Windows 4번 끝(11/10 밤): C# `IosSpeedSensor`(칸 → SpeedReading, 단계 JSON, 보정 넘기기) + `IosSpeedNative`(DllImport) + `Native.cs` iOS 줄 + 테스트 `IosSpeedSensorTests`, EditMode 131개 통과. 아이폰 빌드는 Swift `ScrunSpeed.swift`가 들어와야 링크됨(맥)
@@ -18,6 +15,7 @@
     - **문제 B(맥)**: 가만히 둔 폰의 단계 재기가 NoSteps가 아니라 SensorLost(흐름은 내내 Ok 100/초). 원인 모름(가설: 단계 중 앱 비활성). Swift가 실패 이유를 콘솔에 남기게 함 → 다음 아이폰 확인에서 다시
     - 남은 책상 확인: 가만히 둔 단계 재기 NoSteps, 모션 권한 거부 뒤 가속도, 10분 CPU·발열
   - 맥(11/11): Swift에 걷기 절편 켬(`walkOwn`, 4 km/h 이상 점) 옮김. 재생 도구 `--model`(보정 JSON으로 시작)로 `replay_20261029-040156.csv`·`_walkcal.csv` 둘 다 모든 열 차 0(걷기 119칸 중 절편으로 속도가 바뀌는 117칸 포함)
+  - 맥(11/11): 문제 A를 Swift에(`stepsLike`, 실시간 걸음 후보·단계 판정이 같이 씀). 정답 셋(`replay_20261029-040156`, `_walkcal`, `replay_beltonly_20261029-014932`) 모든 열 차 0, 벨트만 222 spm 근처 102칸 모두 걸음 없음. 아이폰 책상 2차: 가만히 30초 내내 None·0 spm(고치기 전 222 spm Running), 가만히 둔 단계 재기 **NoSteps**, 두드리면 6.3초 뒤 Walking. 문제 B(SensorLost)는 다시 안 나옴(원인 모름, 나오면 콘솔에 이유). 모션 권한 거부 뒤 가속도·10분 CPU·발열은 11/11 민재 결정으로 넘김(나중에 할 것: 권한은 설정에서 끄면 앱이 종료되므로 끄고 → 다시 실행 → 점검 화면에서 켜기, CPU·발열은 Xcode 계측으로 10분)
 - 담당: 민재. 기간 S2 뒤쪽(11/11)에서 S3 앞(11/12), 11/13 시연에 들어감. Python·C# 일부는 Windows, Swift·아이폰은 맥
 - 근거: 계획 0020(`ISpeedSensor` 모양 + 가짜, 진짜는 이 계획), 계획 0023 6번(단계 재기·걷기 절편·실패 판정을 Swift에), ADR-0009(센서는 JSON 통로를 쓰지 않음), 계획 0010·[live_iphone.md](../speed/live_iphone.md)(SpeedRecorder 안 실시간 추정, 달리기 5구간 0.16 km/h, 1명·같은 날 보정이라 낙관적)
 - 먼저 있어야 하는 것: PR #33(보정 메서드가 들어간 `ISpeedSensor`)이 develop에 합쳐질 것. 구현 브랜치는 그 뒤 develop에서 `feat/speed-plugin`
