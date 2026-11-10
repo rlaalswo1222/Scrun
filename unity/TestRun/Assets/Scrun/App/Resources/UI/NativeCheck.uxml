@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- 개발 빌드 전용: 아이폰 기능(권한·이어폰·키체인)을 눌러 보는 점검 화면. 출시 빌드에는 들어가는 버튼이 없다 -->
+    <!-- 개발 빌드 전용: 아이폰 기능(권한·이어폰·키체인·속도 센서)을 눌러 보는 점검 화면. 출시 빌드에는 들어가는 버튼이 없다 -->
     <ui:VisualElement class="screen">
         <ui:VisualElement class="top-bar">
             <ui:Button name="back" text="‹" class="back-button" />
@@ -10,6 +10,12 @@
             <ui:Button name="settings" text="설정 앱 열기" class="btn btn-secondary" />
             <ui:Label name="headphones" class="body-text" />
             <ui:Button name="keychain" text="키체인 저장·읽기·지우기" class="btn btn-secondary" />
+            <ui:Label text="속도 센서" class="field-label" />
+            <ui:VisualElement class="field-row">
+                <ui:Button name="speed-toggle" text="켜기" class="btn btn-secondary field-col" />
+                <ui:Button name="speed-stage" text="단계 재기 15초" class="btn btn-secondary field-col" />
+            </ui:VisualElement>
+            <ui:Label name="speed" class="body-text" />
             <ui:Label name="log" class="hint-text" />
         </ui:ScrollView>
     </ui:VisualElement>
