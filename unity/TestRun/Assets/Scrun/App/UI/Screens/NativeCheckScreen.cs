@@ -158,10 +158,10 @@ namespace Scrun.App
                     Log("속도 센서가 이미 다른 곳에서 켜져 있음");
                     return;
                 }
+                sensor = s; // Start 안에서 첫 이벤트가 오므로 먼저(OnFlow가 sensor를 읽음)
                 s.GaitChanged += OnGait;
                 s.FlowChanged += OnFlow;
                 s.Start();
-                sensor = s;
                 lastSteps = 0;
                 firstStepAt = lastStepAt = lastStatusLog = -1;
                 Log("속도 센서 켬");
@@ -169,6 +169,12 @@ namespace Scrun.App
             catch (Exception e)
             {
                 Log("속도 센서 실패: " + e.Message);
+                if (sensor != null && !sensor.IsRunning)
+                {
+                    sensor.GaitChanged -= OnGait;
+                    sensor.FlowChanged -= OnFlow;
+                    sensor = null;
+                }
             }
             RefreshSpeed();
         }
