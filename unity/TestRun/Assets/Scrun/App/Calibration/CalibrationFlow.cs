@@ -29,7 +29,7 @@ namespace Scrun.App
         Done,
     }
 
-    // 처음 보정 순서(계획 0022). 화면과 떨어져 있어 에디터 테스트로 확인한다.
+    // 처음 보정 순서(계획 0023). 화면과 떨어져 있어 에디터 테스트로 확인한다.
     // 모두에게 같은 사다리(CalibrationLadder)를 오름으로 한 단계씩 재고, 실패한 단계는 제대로 잴 때까지 다시 한다(건너뛰지 않음).
     // 화면은 매 프레임 Tick(시각)을 부르고, State·StageRemaining을 그리고, Cue로 소리·문구를 바꾼다.
     //   var flow = new CalibrationFlow(Native.Speed, model => Api.Calibration.SaveAsync(model));

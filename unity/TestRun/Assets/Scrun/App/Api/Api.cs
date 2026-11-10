@@ -110,5 +110,12 @@ namespace Scrun.App
         public Task<NicknameCheck> CheckNicknameAsync(string nickname) =>
             c.GetAsync<NicknameCheck>("/v1/users/nickname/check?nickname=" + Uri.EscapeDataString(nickname ?? ""),
                                       AuthMode.SignupOrUser);
+
+        // 내 보정(계획 0023). 없으면 null. 저장은 덮어쓰기(서버는 이력으로 쌓고 가장 최근 것이 지금 보정)
+        public Task<CalibrationRecord> GetCalibrationAsync() =>
+            c.GetAsync<CalibrationRecord>("/v1/users/me/calibration", AuthMode.User);
+
+        public Task<CalibrationRecord> PutCalibrationAsync(CalibrationUpload body) =>
+            c.SendAsync<CalibrationRecord>("PUT", "/v1/users/me/calibration", body, AuthMode.User);
     }
 }
