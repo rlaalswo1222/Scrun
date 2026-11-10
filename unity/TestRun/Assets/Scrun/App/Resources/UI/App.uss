@@ -15,6 +15,9 @@
     --color-night-dim: rgba(15, 27, 61, 0.5);     /* 맵 위를 어둡게 덮기(I-11) */
     --color-primary-tint: rgba(47, 111, 228, 0.08); /* 파란 안내 바탕 */
     --color-glass-dark: rgba(17, 24, 39, 0.72);    /* 흐린 맵 위 동그란 버튼(D-01 X, D-05·D-06 뒤로) */
+    --color-success: #1E8F5A;       /* Chip/Success 글자 */
+    --color-success-soft: rgba(43, 182, 115, 0.14); /* Chip/Success 바탕 */
+    --color-warn: #FFB020;          /* warn(권한 거부 아이콘 바탕) */
 
     --font-size-title: 28px;        /* App/Title */
     --font-size-heading: 22px;      /* App/Heading */

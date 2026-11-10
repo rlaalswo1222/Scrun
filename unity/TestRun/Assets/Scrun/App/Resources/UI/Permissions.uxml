@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- A-07 권한 안내(Figma). 줄 4개는 코드가 Onboarding.AskOrder 순서로 채움. "권한 설정하기"는 4개를 차례로 묻는다(계획 0025) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <ui:VisualElement class="onb">
+        <ui:VisualElement class="nav-bar">
+            <ui:VisualElement class="nav-side">
+                <ui:Button name="back" class="nav-back" />
+            </ui:VisualElement>
+            <ui:Label text="권한 안내" class="nav-title" />
+            <ui:VisualElement class="nav-side nav-side--right" />
+        </ui:VisualElement>
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+            <ui:Label text="측정을 위해&#10;권한이 필요해요" class="onb-title" />
+            <ui:VisualElement name="rows" />
+        </ui:ScrollView>
+        <ui:Button name="allow" text="권한 설정하기" class="btn btn-primary" />
+        <ui:Button name="later" text="나중에 하기" class="btn btn-ghost" />
+    </ui:VisualElement>
+</ui:UXML>

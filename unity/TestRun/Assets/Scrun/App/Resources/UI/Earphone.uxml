@@ -1,0 +1,33 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- A-09 이어폰 미연결·A-10 연결됨(Figma). 끼고 빼면 저절로 바뀜. 이어폰 그림("[에셋] headphone")은 에셋이 나오면 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <ui:VisualElement class="onb">
+        <ui:VisualElement class="nav-bar">
+            <ui:VisualElement class="nav-side">
+                <ui:Button name="back" class="nav-back" />
+            </ui:VisualElement>
+            <ui:Label text="이어폰 연결" class="nav-title" />
+            <ui:VisualElement class="nav-side nav-side--right">
+                <ui:Button name="skip" text="건너뛰기" class="nav-action" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+            <ui:Label name="title" class="onb-title" />
+            <ui:Label name="lead" class="onb-lead" />
+            <ui:VisualElement class="info-row info-row--tall">
+                <ui:VisualElement name="icon-box" class="info-icon-box">
+                    <ui:VisualElement name="icon" class="info-icon" />
+                </ui:VisualElement>
+                <ui:VisualElement class="info-text">
+                    <ui:Label name="device" class="info-name" />
+                    <ui:Label name="detail" class="info-desc" />
+                </ui:VisualElement>
+                <ui:Label name="chip" class="tag" />
+            </ui:VisualElement>
+        </ui:ScrollView>
+        <!-- 미연결: 연결 확인하기 + 이어폰 없이 계속 / 연결됨: 다음 -->
+        <ui:Button name="check" text="연결 확인하기" class="btn btn-primary" />
+        <ui:Button name="without" text="이어폰 없이 계속" class="btn btn-ghost" />
+        <ui:Button name="next" text="다음" class="btn btn-primary" />
+    </ui:VisualElement>
+</ui:UXML>
