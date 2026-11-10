@@ -10,8 +10,7 @@ namespace Scrun.App
     }
 
     // 헤드폰 모션 권한은 IPermissions(PermissionKind.HeadphoneMotion)에서 따로 본다.
-    // 연결 상태를 iOS에서 어떻게 읽을지(오디오 출력 경로 + 헤드폰 모션 연결 알림)는
-    // Swift 구현(계획 0018의 5번)에서 아이폰으로 확인한다(가설).
+    // 아이폰은 오디오 출력 경로 + 헤드폰 모션 연결 알림으로 판단한다(ScrunHeadphones.swift, 실기기 확인은 가설).
     public interface IHeadphones
     {
         HeadphoneStatus Status { get; }
@@ -20,6 +19,9 @@ namespace Scrun.App
         string DeviceName { get; }
 
         // 끼거나 빼면 메인 스레드에서 불린다.
+        // 아이폰: 에어팟 모션 연결(Connected)은 누군가 이 이벤트를 구독하는 동안에만 지켜본다(배터리).
+        // 구독자가 없을 때 Status를 읽으면 에어팟도 ConnectedNoMotion으로 보일 수 있다 → 상태를 보여 주는 화면은
+        // OnShow에서 구독하고 OnHide에서 뺀다. 구독 직후 에어팟이 확인되면 Changed(Connected)가 온다.
         event Action<HeadphoneStatus> Changed;
     }
 }

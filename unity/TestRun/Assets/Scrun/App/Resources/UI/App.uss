@@ -16,7 +16,7 @@
     --space-4: 16px;
     --space-6: 24px;
 
-    --tab-bar-height: 56px;
+    --tab-bar-height: 49px; /* 아이폰 기본 탭 바 높이(49pt). 홈 바 여백은 그 아래에 따로 더해짐 */
 }
 
 .app-root {
@@ -64,10 +64,9 @@
     white-space: normal;
 }
 
-/* 아래 탭 */
+/* 아래 탭. 높이는 탭 버튼이 정하고, 홈 바 여백은 SafeArea가 탭 바 아래 padding으로 더한다(배경이 화면 끝까지) */
 .tab-bar {
     flex-direction: row;
-    height: var(--tab-bar-height);
     background-color: var(--color-surface);
     border-top-width: 1px;
     border-top-color: var(--color-line);
@@ -76,6 +75,7 @@
 .tab {
     flex-grow: 1;
     flex-basis: 0;
+    height: var(--tab-bar-height);
     margin: 0;
     border-width: 0;
     border-radius: 0;
@@ -84,7 +84,8 @@
     color: var(--color-muted);
 }
 
-.tab:hover {
+/* 누르는 동안만(:hover는 터치 화면에서 마지막으로 누른 탭에 남음, 11/10 아이폰) */
+.tab:active {
     background-color: rgba(0, 0, 0, 0.03);
 }
 

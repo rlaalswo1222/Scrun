@@ -1,22 +1,26 @@
-# 민재 인수인계 (2026-11-10)
+# 민재 인수인계 (2026-11-10 새벽 3시, 맥)
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`, `docs/plans/`)에 있고, 11/09까지의 전체본은 `docs/log/HANDOFF_minjae_20261109.md`(그 전은 `_20261107.md`, `_20261106.md`).
 
-## 지금: 계획 0018(S1 앱 뼈대) 5번부터, **맥에서**
-- **11/10 계획 0020 구현 끝(PR #29 `feat/speed-sensor-shape`, 11/10 밤 기준 아직 안 합침 → 민재가 합치기)**: `Native.Speed`(`ISpeedSensor`) + 에디터 가짜 `FakeSpeedSensor`(Fake Native 창 "속도 센서" 칸, 시나리오 버튼) + `Scripts/NativeSpeedSource` 어댑터. EditMode 49개 통과, Play에서 시나리오 확인. 사용법 `docs/unity/unity_map.md` "앱 코드 묶음". 리뷰 반영: 끌 때 이벤트 없음, 켠 쪽이 끔, 일시정지 시계
+## 진행 중(11/10 밤): 6번·아이폰 확인 끝, PR #31(`feat/kakao-ios` → `feat/ios-bridge`, #28 먼저 합치기)
+- **아이폰 실기기(11/10 밤, 지환 아이폰 15 Pro Max·iOS 26.5, 무료 개인 팀)**: 권한 4종·에어팟 끼기/빼기/케이스·키체인·카카오톡 앱 로그인 모두 됨. 설치 순서는 `docs/unity/unity_map.md` "아이폰에 설치". 팀 ID는 `ScrunLocal.json`에 넣음(다음 빌드부터 자동 서명). 결과 로그는 `unity/Builds/device-console.log`(git 밖, 카카오 토큰이 찍혀 있으니 공유 금지)
+- 아이폰에서 고친 것(11/10 밤): 탭 바 밑 빈 띠(홈 바 여백을 탭 바 안쪽으로), 탭 높이 56 → 49, 터치 뒤 남는 회색(`:hover` → `:active`). 노치 가림 없음, 재설치 뒤 로그인 유지 확인. Claude가 `xcrun devicectl device capture screenshot`으로 아이폰 화면을 직접 캡처해 확인함
+- URP DOF·Panini 셰이더가 빌드에서 빠짐(할 일). **상준에게**: 탭 아이콘 4개(홈·기록·친구·내 정보) UI Kit에
+- 시뮬레이터에서 카카오계정 웹 로그인 → 공용 서버 실제 가입 → 홈, 재실행 뒤 로그인 유지까지 확인. 사용법·주의는 `docs/unity/unity_map.md` "카카오 로그인"
+- 앱 키는 `unity/TestRun/ScrunLocal.json`(git 밖)에 넣음. Claude in Chrome으로 카카오 개발자 콘솔에서 읽음(번들 ID `com.scrun.app` 등록 확인)
+- Claude in Chrome 연결(11/10): VS Code에 전체 디스크 접근 권한, 확장 안 CLI(`~/.vscode/extensions/anthropic.claude-code-*/resources/native-binary/claude --chrome`)를 한 번 실행해 연결 파일 설치, `/chrome`에서 Enabled by default → 새 대화
+- 시뮬레이터 키보드는 Mac 입력기를 영어로 바꿔야 영어가 쳐짐
+
+## 5번(11/10, PR #28) 요약과 남은 것
+- 5번 Swift 브리지·iOS 빌드 메뉴·네이티브 점검 화면은 PR #28(`feat/ios-bridge` → develop). ADR-0009, `docs/unity/unity_map.md` "아이폰 진짜 구현"·"아이폰 빌드"
+- **아이폰 확인**: 11/10 밤 끝(위 "진행 중"). 남은 2개(한글 입력, 거부 → 설정 앱에서 허용)는 아래 "민재가 직접 할 것"
+- **11/10 계획 0020 구현 끝(PR #29, develop에 합침)**: `Native.Speed`(`ISpeedSensor`) + 에디터 가짜 `FakeSpeedSensor`(Fake Native 창 "속도 센서" 칸, 시나리오 버튼) + `Scripts/NativeSpeedSource` 어댑터. EditMode 49개 통과, Play에서 시나리오 확인. 사용법 `docs/unity/unity_map.md` "앱 코드 묶음". 리뷰 반영: 끌 때 이벤트 없음, 켠 쪽이 끔, 일시정지 시계
 - **다음 세션 바로 할 일**: (Windows) PR 합친 뒤 지환에게 알림(아래 "민재가 직접 할 것") → **S2 보정 계획(0021) 쓰기**: 보정 계산(걷기 1 + 달리기 3 × 20초, 계획 0013) + 보정 화면, 가짜 센서·지환 보정값 API 스텁으로 에디터에서 → 그다음 S3 실시간 방 서버 계획. (맥) 아래 0018 5번 + Swift 속도 플러그인(`Native.Speed` 진짜: `SpeedSensorBase.Sample`만 구현). 아이폰에서: `CMMotionManager`에 모션 권한이 필요한지(Apple 포럼은 불필요 → 필요 없으면 권한 필수 목록 조정), 걸음 감지까지 걸리는 시간
-- **맥 진행(11/10 아침)**: Xcode 설치 끝, Xcode iOS 시뮬레이터 받는 중, Unity Hub 설치·로그인 끝, Unity 6000.6.7f1 + iOS Build Support 받는 중(Hub가 먼저 받던 6000.6.8f1은 취소 — 팀과 버전이 달라짐). 맥은 Apple silicon/Intel 확인 안 함
-- **1–4번 끝, develop에 합침(PR #19–#24)**. 무엇이 있는지는 `docs/unity/unity_map.md` "앱 코드 묶음 Scrun.App", 계획 0018
-  - 1 `Native`(권한·헤드폰·보안 저장소·카카오) 모양 + 에디터 가짜 `FakeNative`(메뉴 Scrun → Fake Native), 2 `ApiClient`·`Session`·`Api.Auth/Users`(메뉴 Scrun → API 서버), 3 앱 씬·화면 틀·탭(메뉴 Scrun → Build App Scene), 4 로그인·약관·프로필 화면 + `Feedback`(로딩·오류). EditMode 테스트 37개 통과, 로컬 서버로 화면을 눌러 가입까지 확인
-  - 빌드(에디터 밖)에선 `Native.cs`의 `#else`가 예외를 던짐 → 5번에서 진짜 구현으로 채움
-- **맥 준비 상태(11/09 밤)**: macOS 업데이트 후 Xcode 설치 끝(App Store Xcode가 macOS 26.6 이상 요구). 민재는 **맥에서도 VS Code + Claude Code 확장**으로 작업
-  - 남은 준비: Xcode 한 번 열어 iOS 구성요소 설치·Settings → Accounts에 Apple ID, Unity Hub 6000.6.7f1 + **iOS Build Support**, `git clone https://github.com/rlaalswo1222/Scrun.git` → `develop`, `git config user.name minjae`(이 handoff를 찾는 이름), VS Code(응용 프로그램 폴더로 옮김) + Claude Code 확장(+ 선택 C# Dev Kit·Swift), 아이폰 연결·신뢰·개발자 모드, 카카오 네이티브 앱 키(아래 "카카오 개발자 앱", 저장소에 안 올림). 푸시하려면 `gh` 로그인
-  - 맥 Claude 첫 말: "handoff 로드해와 → 계획 0018의 5번부터"
-- **5번**: 빌드 대상 iOS 전환(Bundle ID `com.scrun.app`, 최소 iOS 15.0, Objective-C Xcode 틀), `Assets/Plugins/iOS/`에 Swift 브리지(`scrun_call(reqId, name, json)` + `scrun_query` + 등록 콜백 → C# 메인 스레드 큐), `IosNative`로 `Native.Permissions`(모션·카메라·헤드폰 모션·알림)·`Headphones`·`SecureStore`(키체인)·`Kakao` 진짜 구현. 결정 내용은 ADR-0009로. 센서는 이 통로를 안 씀(Swift가 속도까지 계산, Unity는 매 프레임 결과만 읽음)
-- **6번**: 카카오 SDK를 빌드 후처리로 SPM 추가(`PBXProject.AddRemotePackageReferenceAtVersion`, `kakao-ios-sdk`), URL 스킴 `kakao{앱키}`·`LSApplicationQueriesSchemes`, 앱 키는 git 밖 로컬 파일에서 주입. 안 되면 Append 빌드로 손 추가
-- **아이폰 확인**: 노치 여백(Device Simulator로도), 한글 입력·키보드 가림, 공용 서버(`https://161-118-211-155.sslip.io`, 진짜 카카오)로 실제 가입, 권한 팝업, 에어팟 끼고 빼기, 키체인 토큰이 앱 재실행 뒤에도 남는지
-- 맥에서 주의: `unity/tools/*.sh`에 이 Windows 노트북 경로(`/c/Users/rlaal/...`)가 박혀 있음 → 맥 경로로 고치거나 MCP 도구 직접 사용(Window → MCP for Unity → Start Server). 처음 열면 가져오기가 오래 걸림. Game 창이 가로(Free Aspect)면 세로 앱이 크게 잘림 → Device Simulator(Apple iPhone 15)나 1170×2532
 - **S2(11/10–11)**: **실시간 방식 결정 끝(11/10): FastAPI WebSocket**(ADR-0010, 설명 자료 `docs/research/realtime_options.html`, 오라클 싱가포르 지연 중앙값 222ms 실측). 센서 준비·걸음 감지 C# 모양 + 가짜는 끝(계획 0020, PR #29). 남은 S2: 보정 계획 0021(보정 계산·보정 화면), Swift 속도 플러그인(맥). 노션 작업 표·기능 보드 민재 상태는 11/10 정리함(진행 중·완료). S3 "실시간 방 서버 기본" 계획에 넣을 것: 메시지 모양(입장·상태·들어옴/나감·봇), 입장 응답 `realtime.url`·`token` 확정, 재접속, 앱 연결 인터페이스(나중에 바꿀 수 있게), 아이폰 2대로 지연 실측
+- **맥 상태(11/10)**: Xcode 27.2, Unity 6000.6.7f1 + iOS 모듈, 빌드 대상 iOS로 전환됨, MCP for Unity 서버 켜짐(`unity/tools/*.sh`가 이제 맥에서도 됨). uv·Python 3.12는 `~/.local/bin`(셸 PATH엔 아직 없음: 필요하면 `~/.local/bin/uv python update-shell`). `gh`는 `~/.local/bin`에 설치·로그인됨(Homebrew는 없음). 시뮬레이터 앱이 없고 Xcode 27의 DeviceHub가 시뮬레이터 화면을 보여 주는 듯(가설)
+- **맥 주의(Unity가 바꾼 파일, 커밋 금지)**: Mixamo 파일(`Characters/YBot/*.fbx`)이 이 맥에 없어 Unity가 그 `.meta` 7개를 지움 → mixamo.com에서 받기 전엔 커밋 때 빼고, 받은 뒤 `git checkout -- unity/TestRun/Assets/Scrun/Characters/YBot`. Poly Haven은 받았지만 iOS로 전환하며 Unity가 `.meta`에 iOS 칸·`materialImportMode`를 고쳐 씀(빼고 커밋). 맥 기본 화면 배치에 열려 있던 "Unity Version Control" 창이 버전 관리 모드를 계속 "Unity Version Control"로 바꿔서 창을 닫고 "Visible Meta Files"로 되돌림(그 창을 다시 열지 않기). URP 전역 설정·ProjectSettings(시뮬레이터 SDK 값)도 Unity가 다시 썼던 것 되돌림
+- 빌드(에디터 밖) 안드로이드에선 `Native`가 예외(아이폰만). Island01은 Mixamo가 없어 캐릭터가 빠진 채 빌드됨
+- `App.uss`의 `:last-child`는 UI Toolkit이 모름(콘솔 경고, `.field-col`·`.dialog-buttons` 마지막 여백) → 클래스로 바꾸기
 
 ## 공용 개발 서버 (계획 0019 완료, ADR-0008)
 - `https://161-118-211-155.sslip.io`(오라클 싱가포르 ARM, SSH `ubuntu@161.118.211.155` 키 `~/.ssh/oracle_key` — Windows 노트북에만 있음). 진짜 카카오만, 아이폰용(에디터는 localhost 가짜 `k_123`). develop 기준으로 올라가 있음, 다시 올리기 `~/scrun/backend/deploy/update.sh [브랜치]`. 비밀값은 서버 `backend/deploy/.env`에만. 매일 KST 4:30 백업(`~/scrun-backups`)
@@ -26,6 +30,9 @@
 - 서버 정해진 것(11/08, 계획 0016·`docs/api/README.md`): refresh 재사용 30초 유예 + 그 로그인만 폐기, 재로그인은 deviceId로 같은 기기 폐기 + 사용자당 5개, 닉네임은 한글 완성형·영문·숫자·`_`(NFKC). 공통 규칙 "미정"에 "OCR 서버/앱 미정"이 남아 있음(11/06 서버 처리로 확정) → OCR API 만들 때 같이 고침
 
 ## 민재가 직접 할 것
+- **아이폰 확인 2개(나중에, 맥 + 아이폰, 각 5분)**: 설치는 `docs/unity/unity_map.md` "아이폰에 설치"
+  1. 한글 입력: 가입 화면 닉네임 칸에 한글(받침·쌍자음 포함)이 바로 쳐지고, 지우기·커서 이동이 되는지. 이미 가입돼 있으니 앱을 지우고 다시 설치하면 처음부터 가입(키체인은 새 설치 때 지워짐). 어색하면 ADR-0001 11/06 보충대로 입력 칸만 iOS 네이티브 입력
+  2. 권한 거부 → 허용: 앱을 지우고 다시 설치 → 점검 화면에서 모션 요청 → "허용 안 함" → 설정 앱 열기 → 동작 및 피트니스 켜기 → 앱으로 돌아오면 점검 화면 기록에 `Motion → Granted` 이벤트가 오는지(iOS는 허용 → 거부로 바꾸면 앱을 끄므로 그 방향은 이벤트 없음)
 - **지환에게**: 11/09 답장(수정본: 샘플 주기·thumbnailUrl·20명 임시 방식) + "FakeNative·앱 틀·로그인 화면 develop에 있음, 권한·에어팟 화면 시작해도 됨(사용법 `docs/unity/unity_map.md` "앱 코드 묶음")". 추가로 알릴 것: 실시간은 WebSocket으로 결정 → "지금 달리는 사람 수"는 연결 수로 세니 샘플 주기·`updated_at` 갱신은 신경 안 써도 됨. **+ 속도 센서 가짜(`Native.Speed`, 계획 0020)로 센서 준비·카운트다운 화면 시작 가능**. 보냈으면 이 줄 지우기
 - 원격 옛 브랜치 `feat/dev-server` 지우기(PR 화면)
 - `Lm_LampGlass.mat`: 11/07 Unity 설정 저장 때 Unity가 다시 써서 `_EMISSION` 키워드 한 줄 빠짐(의도 아님) → 되돌릴지 결정. 커밋 안 한 것: 이 파일, 지환 실명 파일 2개(아래), 와이어프레임 초안, 중간발표 자료, `.claude/settings.json`
