@@ -3,7 +3,7 @@
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
 ## 지금 (11/10 밤)
-- **코스 화면 끝, PR 준비**: 브랜치 `feat/course-screens`, 계획 [0022](../docs/plans/0022-course-screens.md). Figma C-01·C-02·I-10·I-11·D-10 + 아래 탭 바를 Figma대로, `/code-review` 두 번 반영, EditMode 58/58, 에디터 Play로 코스 4개 입장·재입장·연결 끊김·없는 코스 확인. 무엇이 바뀌었는지는 계획 0022 "진행 상황", `docs/unity/unity_map.md` "코스 화면·맵 입장"
+- **코스 화면 PR #32 올림**: 브랜치 `feat/course-screens`, 계획 [0022](../docs/plans/0022-course-screens.md). Figma C-01·C-02·I-10·I-11·D-10 + 아래 탭 바를 Figma대로, `/code-review` 두 번 반영, EditMode 58/58, 에디터 Play로 코스 4개 입장·재입장·연결 끊김·없는 코스 확인. 무엇이 바뀌었는지는 계획 0022 "진행 상황", `docs/unity/unity_map.md` "코스 화면·맵 입장"
   - Figma: "SCRUN"(키 `w5YpqhN1yyWXf03z23eTKK`) > 페이지 "스크런 와이어 프레임"(585:18179). claude.ai Figma 연결로 읽음(`get_design_context`)
   - **PR #30(코스 API, `feat/course-api`)이 먼저 머지돼야 함**(민재 리뷰 대기). 이 handoff 파일은 두 브랜치에 다 있음 → 합칠 때 이 브랜치 쪽(나중 내용)을 고른다
   - 민재에게 알릴 것: 흐름 변경(입장은 가로 맵 화면이 I-10 아래에서), App.uss UI Kit 값(로그인·약관·프로필 색·제목 28), 아래 탭 바 Figma대로 바꿈(앱 틀), App.uss `:last-child` 두 곳이 USS에서 안 먹음, 나가도 서버 자리 10분 남음(러닝 종료 API BL-14에서 `course_entries` 지우기)
@@ -12,9 +12,12 @@ jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md
 - Unity(맥): MCP for Unity 켜고 `unity/tools/*.sh` 앞에 `PATH=/usr/bin:/bin:/opt/homebrew/bin`(옛 인텔 파이썬이 "Bad CPU type"). Game 창은 세로 고정이라 가로는 Game 창 크기를 852×393 비율로. Play 중 UXML·USS를 고치면 Live Reload로 홈으로. MCP로 버튼을 누를 때 Game 창에 포커스를 주지 말 것(앞서 누른 버튼이 다시 눌림)
 - **develop에 커밋 금지**: `feat/...`·`docs/...` 브랜치를 따서 나눠 올린다
 
+- **권한 안내·이어폰 화면(S1 남은 것) 구현 끝, 커밋 전**: 브랜치 `feat/permission-screens`(**`feat/course-screens` 위에 쌓음**, PR base도 `feat/course-screens` → #32 머지되면 develop으로). 계획 [0023](../docs/plans/0023-permission-earphone-screens.md), EditMode 93/93, 에디터 Play + Fake Native로 허용·거부·이어서 하기·맵 입장 전 확인, `/code-review` 반영
+  - 정한 것(지환): 권한 4개는 Figma대로 한 번에, A-09 문구 Figma 그대로(실측은 아직 안 받쳐 줌, 계획 0023에 기록), 모션 없으면 맵 입장 전에 막음
+
 ## 다음 할 일
-1. 코스 화면: develop 받아 합치기 → 커밋·PR(사용자 요청 시) → 민재 리뷰. 아이폰에서 가로 배치·노치 여백, 상준에게 Figma와 나란히 확인 요청
-2. **[FE] 권한 안내·에어팟 화면(S1 남은 것)**: Figma A-07(권한 안내)·A-09·A-10(이어폰 연결), `FakeNative`(develop에 있음)로. 계획 문서부터(develop pull 뒤 마지막 번호 + 1)
+1. 코스 화면 PR #32(이미 올림) → 민재 리뷰. 아이폰에서 가로 배치·노치 여백, 상준에게 Figma와 나란히 확인 요청
+2. 권한·이어폰 PR(base `feat/course-screens`) → 민재 리뷰. A-09 문구 상준 확인. 아이폰 팝업·설정 앱 왕복·에어팟은 PR #28 뒤
 3. S2: 러닝 설정·거치 안내(D-01·D-05, 상세 → 맵 사이), 내 정보·설정·보정값 API, Y Bot 애니메이션 속도
 4. S3: 센서 준비·카운트다운(D-07·D-09), 맵 HUD(D-10 진행 막대·멈춤 D-17), MapScreen 쪼개기
 
