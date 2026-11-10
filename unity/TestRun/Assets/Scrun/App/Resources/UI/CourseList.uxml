@@ -1,0 +1,22 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- C-01 코스 선택(Figma). 홈 탭에서 쌓이는 화면이라 뒤로 가기 대신 아래 탭 "홈"을 다시 누르면 홈으로.
+         카드는 서버 코스(GET /v1/courses)로 채움. "친구가 있는 코스" 칩은 친구 API가 생기면 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
+    <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="course course-list">
+        <ui:VisualElement class="course-list-page">
+            <ui:Label text="어디서 달릴까요?" class="page-title" />
+            <ui:Label text="코스를 고르면 같은 코스의 러너들과 함께 달려요" class="page-lead" />
+            <ui:VisualElement class="chip-row">
+                <ui:Button name="filter-all" text="전체" class="chip chip--active" />
+                <ui:Button name="filter-live" text="지금 달리는 중" class="chip" />
+            </ui:VisualElement>
+            <ui:VisualElement name="list" />
+            <ui:Label name="list-empty" text="지금 달리는 사람이 있는 코스가 없어요" class="list-empty" />
+            <!-- 불러오기에 실패하고 안내창을 닫았을 때 -->
+            <ui:VisualElement name="load-failed" class="empty-state">
+                <ui:Label text="코스를 불러오지 못했어요" class="hint-text" />
+                <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:ScrollView>
+</ui:UXML>

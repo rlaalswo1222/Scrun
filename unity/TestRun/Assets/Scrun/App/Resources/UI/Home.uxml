@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- B-01 홈 자리. "달리기 시작하기"는 Figma B-01 버튼 → C-01. 목표·아바타·친구·최근 기록은 S6(BL-31)에 채움 -->
+    <ui:VisualElement class="screen">
+        <ui:Label text="홈" class="screen-title" />
+        <ui:ScrollView class="screen-body">
+            <ui:Label text="이번 주 목표, 최근 기록, 달리는 친구가 들어갈 자리" class="body-text" />
+        </ui:ScrollView>
+        <ui:Button name="choose-course" text="달리기 시작하기" class="btn btn-primary" />
+    </ui:VisualElement>
+</ui:UXML>

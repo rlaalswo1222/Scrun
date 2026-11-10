@@ -1,0 +1,39 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- 맵(가로). 뒤에 섬 씬이 보이고, 위에 코스 이름·나가기(D-10 윗줄 자리).
+         들어가는 동안 I-10 로딩, 입장이 안 되면 I-11 카드. 진행 막대·HUD·멈춤(D-17)은 S3 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
+    <ui:VisualElement class="course map-screen" picking-mode="Ignore">
+        <!-- I-10 맵 로딩 -->
+        <ui:VisualElement name="map-loading" class="map-loading">
+            <ui:Label text="코스를 불러오는 중이에요" class="map-loading-title" />
+            <ui:Label text="3D 맵과 함께 달릴 러너를 준비하고 있어요" class="map-loading-lead" />
+            <ui:VisualElement class="map-progress">
+                <ui:VisualElement name="progress" class="map-progress-fill" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- I-11 맵 입장 실패(가득 참·없는 코스) -->
+        <ui:VisualElement name="unavailable" class="map-dim">
+            <ui:VisualElement class="map-card">
+                <ui:VisualElement class="map-card-icon">
+                    <ui:VisualElement class="map-card-icon-img" />
+                </ui:VisualElement>
+                <ui:Label name="unavailable-title" class="map-card-title" />
+                <ui:Label name="unavailable-body" class="map-card-body" />
+                <ui:VisualElement class="map-card-buttons">
+                    <ui:Button name="other-course" text="다른 코스 보기" class="btn btn-ghost" />
+                    <ui:Button name="retry" text="다시 입장하기" class="btn btn-primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement class="map-top" picking-mode="Ignore">
+            <ui:Label name="course-label" class="map-course-label" picking-mode="Ignore" />
+            <!-- 나가기. S3에 멈춤 버튼(D-10)으로 바뀌고 나가기는 멈춤 화면(D-17·D-18)으로 -->
+            <ui:Button name="leave" class="map-round-btn">
+                <ui:VisualElement class="map-x-bar" picking-mode="Ignore" />
+                <ui:VisualElement class="map-x-bar map-x-bar--2" picking-mode="Ignore" />
+            </ui:Button>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

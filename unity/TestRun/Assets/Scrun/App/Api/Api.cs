@@ -15,11 +15,13 @@ namespace Scrun.App
         static ApiClient client;
         static AuthApi auth;
         static UsersApi users;
+        static CoursesApi courses;
 
         public static ApiClient Client { get { Ensure(); return client; } }
         public static Session Session => Client.Session;
         public static AuthApi Auth { get { Ensure(); return auth; } }
         public static UsersApi Users { get { Ensure(); return users; } }
+        public static CoursesApi Courses { get { Ensure(); return courses; } }
 
         static void Ensure()
         {
@@ -27,6 +29,7 @@ namespace Scrun.App
             client = new ApiClient(new UnityHttpTransport(), new Session(Native.SecureStore), () => ApiConfig.BaseUrl);
             auth = new AuthApi(client);
             users = new UsersApi(client);
+            courses = new CoursesApi(client);
         }
 
         // Play마다 저장된 로그인부터 다시 읽는다(이 프로젝트는 Play 때 도메인 리로드를 꺼 둠).
@@ -117,5 +120,25 @@ namespace Scrun.App
 
         public Task<CalibrationRecord> PutCalibrationAsync(CalibrationUpload body) =>
             c.SendAsync<CalibrationRecord>("PUT", "/v1/users/me/calibration", body, AuthMode.User);
+    }
+
+    // 코스 목록·상세·맵 입장(계획 0021·PR #30). 셋 다 로그인 필요
+    public sealed class CoursesApi
+    {
+        readonly ApiClient c;
+        public CoursesApi(ApiClient client) => c = client;
+
+        public Task<List<Course>> ListAsync() => c.GetAsync<List<Course>>("/v1/courses", AuthMode.User);
+
+        public Task<CourseDetail> GetAsync(string courseId) =>
+            c.GetAsync<CourseDetail>("/v1/courses/" + Uri.EscapeDataString(courseId), AuthMode.User);
+
+        // 자리 잡기. 실패: 409 CALIBRATION_REQUIRED(보정 먼저) / 409 COURSE_FULL(다른 코스) / 404 COURSE_NOT_FOUND
+        public async Task<MapEntry> EnterAsync(string courseId)
+        {
+            var e = await c.PostAsync<MapEntry>("/v1/courses/" + Uri.EscapeDataString(courseId) + "/entries", null, AuthMode.User);
+            if (e == null) throw new ApiException(ApiFailure.BadResponse, "입장 응답이 비었습니다.");
+            return e;
+        }
     }
 }

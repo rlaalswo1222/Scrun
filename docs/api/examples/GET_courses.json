@@ -2,6 +2,7 @@
   "request": {
     "method": "GET",
     "path": "/v1/courses",
+    "auth": "Bearer {accessToken}",
     "body": null
   },
   "status": 200,
@@ -10,12 +11,36 @@
     "success": {
       "data": [
         {
-          "courseId": "crs_island_loop",
-          "name": "섬 루프 코스(가칭)",
+          "courseId": "crs_lake_loop",
+          "name": "노을 호수 한 바퀴",
           "type": "LOOP_3D",
-          "lengthM": 3000,
-          "runnersNow": 7,
-          "thumbnailUrl": "https://example.com/course/island_loop.png"
+          "lengthM": 6671,
+          "runnersNow": 0,
+          "thumbnailUrl": null
+        },
+        {
+          "courseId": "crs_coast_run",
+          "name": "해안 절벽 순환",
+          "type": "LOOP_3D",
+          "lengthM": 8776,
+          "runnersNow": 0,
+          "thumbnailUrl": null
+        },
+        {
+          "courseId": "crs_forest_run",
+          "name": "거목 협곡 순환",
+          "type": "LOOP_3D",
+          "lengthM": 9695,
+          "runnersNow": 0,
+          "thumbnailUrl": null
+        },
+        {
+          "courseId": "crs_island_tour",
+          "name": "섬 일주",
+          "type": "LOOP_3D",
+          "lengthM": 10884,
+          "runnersNow": 0,
+          "thumbnailUrl": null
         }
       ]
     },

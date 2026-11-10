@@ -1,19 +1,32 @@
-/* 앱 공통 스타일. 색·크기 값은 임시 — 상준 UI Kit(Figma)이 오면 아래 변수만 바꾼다.
-   화면별 모양은 화면 UXML 옆에 따로 USS를 두고, 색·크기는 이 변수를 쓴다. */
+/* 앱 공통 스타일. 색·글자 값은 Figma "SCRUN" > 스크런 와이어 프레임 > UI Kit(상준) 기준(11/10).
+   화면별 모양은 화면 UXML 옆에 따로 USS를 두고, 색·크기는 이 변수를 쓴다. USS는 그림자·흐림·줄 높이가 없어 그건 뺐다. */
 :root {
-    --color-bg: #F6F5F1;
-    --color-surface: #FFFFFF;
-    --color-text: #1F2328;
-    --color-muted: #6B7280;
-    --color-primary: #2F6FDE;
-    --color-line: #E3E5E8;
+    --color-bg: #F3F8FF;            /* sky/50 */
+    --color-surface: #FFFFFF;       /* white */
+    --color-surface-2: #EEF2F9;     /* surface (회색 칩) */
+    --color-text: #172036;          /* ink */
+    --color-body: #4A5468;          /* body */
+    --color-muted: #8A93A6;         /* mute */
+    --color-primary: #2F6FE4;       /* sky/700 */
+    --color-primary-soft: #DCEBFE;  /* sky/100 */
+    --color-line: #E3EAF6;          /* line */
+    --color-lime: #D8FF3E;          /* lime (지금 달리는 중·진행) */
+    --color-night: #0F1B3D;         /* 가로 맵 화면 바탕 */
+    --color-night-dim: rgba(15, 27, 61, 0.5);     /* 맵 위를 어둡게 덮기(I-11) */
+    --color-primary-tint: rgba(47, 111, 228, 0.08); /* 파란 안내 바탕 */
 
-    --font-size-title: 24px;
-    --font-size-body: 16px;
+    --font-size-title: 28px;        /* App/Title */
+    --font-size-heading: 22px;      /* App/Heading */
+    --font-size-sub: 18px;          /* App/Subheading */
+    --font-size-body: 16px;         /* App/Body */
+    --font-size-body-sm: 14px;      /* App/BodySm */
+    --font-size-caption: 12px;      /* App/Caption */
     --font-size-tab: 12px;
 
     --space-2: 8px;
+    --space-3: 12px;
     --space-4: 16px;
+    --space-5: 20px;
     --space-6: 24px;
 
     --tab-bar-height: 49px; /* 아이폰 기본 탭 바 높이(49pt). 홈 바 여백은 그 아래에 따로 더해짐 */
@@ -22,6 +35,11 @@
 .app-root {
     flex-grow: 1;
     background-color: var(--color-bg);
+}
+
+/* 맵처럼 뒤의 3D가 보여야 하는 화면(AppScreen.ShowsWorld): 앱 배경을 투명하게 */
+.app-root--world {
+    background-color: rgba(0, 0, 0, 0);
 }
 
 .safe-area {
@@ -60,11 +78,13 @@
 
 .body-text {
     font-size: var(--font-size-body);
-    color: var(--color-muted);
+    color: var(--color-body);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
     white-space: normal;
 }
 
-/* 아래 탭. 높이는 탭 버튼이 정하고, 홈 바 여백은 SafeArea가 탭 바 아래 padding으로 더한다(배경이 화면 끝까지) */
+/* 아래 탭(UI Kit Tab Bar): 아이콘 24 + 글자 12, 고른 탭은 파란 아이콘·굵은 글자.
+   높이는 탭 버튼이 정하고, 홈 바 여백은 SafeArea가 탭 바 아래 padding으로 더한다(배경이 화면 끝까지, 11/10 아이폰) */
 .tab-bar {
     flex-direction: row;
     background-color: var(--color-surface);
@@ -76,30 +96,81 @@
     flex-grow: 1;
     flex-basis: 0;
     height: var(--tab-bar-height);
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
     margin: 0;
+    padding: var(--space-2) 0 0 0;
     border-width: 0;
     border-radius: 0;
     background-color: rgba(0, 0, 0, 0);
-    font-size: var(--font-size-tab);
-    color: var(--color-muted);
 }
 
-/* 누르는 동안만(:hover는 터치 화면에서 마지막으로 누른 탭에 남음, 11/10 아이폰) */
+/* :hover는 터치 화면에서 마지막으로 누른 탭에 남으므로 색을 안 바꾸고, 누르는 동안만 살짝(11/10 아이폰) */
+.tab:hover {
+    background-color: rgba(0, 0, 0, 0);
+}
+
 .tab:active {
     background-color: rgba(0, 0, 0, 0.03);
 }
 
-.tab--selected {
-    color: var(--color-primary);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+.tab-icon {
+    width: 24px;
+    height: 24px;
 }
 
-/* ---- 공통 부품(임시 모양, 상준 UI Kit으로 바꿈) ---- */
+.tab-icon--home {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-home-off.svg");
+}
+
+.tab--selected .tab-icon--home {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-home-on.svg");
+}
+
+.tab-icon--friends {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-friends-off.svg");
+}
+
+.tab--selected .tab-icon--friends {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-friends-on.svg");
+}
+
+.tab-icon--records {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-records-off.svg");
+}
+
+.tab--selected .tab-icon--records {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-records-on.svg");
+}
+
+.tab-icon--me {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-me-off.svg");
+}
+
+.tab--selected .tab-icon--me {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-me-on.svg");
+}
+
+.tab-label {
+    margin: 3px 0 0 0;
+    padding: 0;
+    font-size: var(--font-size-tab);
+    color: var(--color-muted);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.tab--selected .tab-label {
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+/* ---- 공통 부품(UI Kit Button: 높이 54, 모서리 16, App/Button 17 SemiBold) ---- */
 .btn {
-    height: 52px;
+    height: 54px;
     margin: var(--space-4) 0 var(--space-4) 0;
     border-width: 0;
-    border-radius: 12px;
+    border-radius: 16px;
     font-size: 17px;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
@@ -109,9 +180,28 @@
     color: #FFFFFF;
 }
 
+/* 기본 테마의 hover·active 회색을 막음(UI Kit에 눌림 색이 없음) */
+.btn-primary:hover,
+.btn-primary:active {
+    background-color: var(--color-primary);
+}
+
 .btn-secondary {
     background-color: var(--color-line);
     color: var(--color-text);
+}
+
+/* Button/Ghost: 테두리만 */
+.btn-ghost {
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 1.5px;
+    border-color: var(--color-line);
+    color: var(--color-body);
+}
+
+.btn-ghost:hover,
+.btn-ghost:active {
+    background-color: rgba(0, 0, 0, 0);
 }
 
 /* 카카오 로그인 버튼: 카카오 디자인 가이드 색(배경 #FEE500, 글자 검정 85%) */

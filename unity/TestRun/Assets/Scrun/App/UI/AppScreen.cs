@@ -23,6 +23,9 @@ namespace Scrun.App
         // 달리기 화면처럼 가로로 돌릴지(나머지는 세로 고정)
         public virtual bool Landscape => false;
 
+        // 맵처럼 뒤의 3D 화면이 보이게 앱 배경을 투명하게 할지
+        public virtual bool ShowsWorld => false;
+
         internal void Create(Navigator nav)
         {
             Nav = nav;

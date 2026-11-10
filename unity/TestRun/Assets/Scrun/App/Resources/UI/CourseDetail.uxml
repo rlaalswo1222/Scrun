@@ -1,0 +1,39 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- C-02 코스 상세(Figma). 값은 GET /v1/courses/{courseId}. "맵 입장"을 누르면 가로 맵 화면이 입장(POST /entries)·로딩(I-10)을 맡는다.
+         Figma의 "친구" 칸은 친구 API가 생기면, [모션] 3D 코스 프리뷰는 S3 이후 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
+    <ui:VisualElement class="course detail">
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="detail-scroll">
+            <ui:VisualElement name="content">
+                <!-- 코스 그림 + 지금 달리는 사람 칩(코드가 채움) -->
+                <ui:VisualElement name="hero" class="detail-hero" />
+                <ui:VisualElement class="detail-body">
+                    <ui:Label name="title" class="detail-title" />
+                    <ui:Label name="description" class="detail-desc" />
+                    <ui:VisualElement class="stat-row">
+                        <ui:VisualElement class="stat">
+                            <ui:Label text="달리는 러너" class="stat-label" />
+                            <ui:Label name="runners" class="stat-value" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="stat stat--next">
+                            <ui:Label text="코스 길이" class="stat-label" />
+                            <ui:Label name="length" class="stat-value" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:Label text="입장하면 화면이 가로로 전환돼요. 러닝머신에 폰을 거치해 주세요." class="info-note" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <!-- 불러오기 실패(다시 불러오기) 또는 없는 코스(다른 코스 보기) -->
+            <ui:VisualElement name="load-failed" class="empty-state">
+                <ui:Label name="load-failed-text" text="코스를 불러오지 못했어요" class="hint-text" />
+                <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
+            </ui:VisualElement>
+        </ui:ScrollView>
+        <ui:VisualElement class="detail-footer">
+            <ui:Button name="enter" text="맵 입장" class="btn btn-primary" />
+        </ui:VisualElement>
+        <ui:Button name="back" class="round-back">
+            <ui:VisualElement class="round-back-icon" picking-mode="Ignore" />
+        </ui:Button>
+    </ui:VisualElement>
+</ui:UXML>
