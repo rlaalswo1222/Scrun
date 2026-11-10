@@ -1,32 +1,14 @@
 """로그인 API 5개 + 닉네임 확인 진짜 흐름(테스트 DB + 가짜 카카오). 실행 전 `docker compose up -d`."""
 import threading
 
-from fastapi.testclient import TestClient
 from sqlalchemy import func, select, text
 
 from app.core import sessions, tokens
 from app.db.models import AuthIdentity, RefreshToken, User, UserAgreement, UserProgress
-from app.main import app
 from app.routers import auth as auth_router
+from tests.helpers import bearer, data, fail, run_together
 
 SIGNUP_BODY = {"agreedIds": ["terms", "privacy"], "nickname": "새벽러너", "heightCm": 175, "weightKg": 70}
-
-
-def bearer(token: str) -> dict:
-    return {"Authorization": f"Bearer {token}"}
-
-
-def data(r):
-    j = r.json()
-    assert j["resultType"] == "SUCCESS", r.text
-    assert j["meta"]["requestId"].startswith("req_") and j["meta"]["timestamp"].endswith("Z")
-    return j["success"]["data"]
-
-
-def fail(r, status: int, code: str):
-    assert r.status_code == status, r.text
-    j = r.json()
-    assert j["resultType"] == "FAIL" and j["error"]["code"] == code, r.text
 
 
 def signup_token(client, kakao="k_1") -> str:
@@ -198,21 +180,6 @@ def test_nickname_check_same_rules_as_signup(db_client):
 
 # ---------- 리뷰 후 수정: 동시 가입 ----------
 
-def _run_together(calls):
-    """calls를 스레드로 동시에(스레드마다 자기 TestClient). 응답 목록."""
-    out = [None] * len(calls)
-
-    def run(i, fn):
-        out[i] = fn(TestClient(app))
-
-    threads = [threading.Thread(target=run, args=(i, fn)) for i, fn in enumerate(calls)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join(timeout=30)
-    return out
-
-
 def _sync_friend_code(monkeypatch, n, code=None):
     """n개 요청이 존재 확인을 다 지난 뒤 함께 넣게 만든다(첫 친구 코드를 고를 때 서로 기다림)."""
     barrier = threading.Barrier(n, timeout=10)
@@ -238,7 +205,7 @@ def test_concurrent_same_signup_returns_same_account(db_client, test_db, monkeyp
     token = signup_token(db_client, "k_7")
     _sync_friend_code(monkeypatch, 2)
     body = {**SIGNUP_BODY, "nickname": "동시가입"}
-    r1, r2 = _run_together([lambda c: c.post("/v1/auth/signup", headers=bearer(token), json=body)] * 2)
+    r1, r2 = run_together([lambda c: c.post("/v1/auth/signup", headers=bearer(token), json=body)] * 2)
     assert r1.status_code == r2.status_code == 201, (r1.text, r2.text)
     sub1 = tokens.decode(r1.json()["success"]["data"]["accessToken"])["sub"]
     sub2 = tokens.decode(r2.json()["success"]["data"]["accessToken"])["sub"]
@@ -251,7 +218,7 @@ def test_concurrent_same_nickname_one_wins(db_client, monkeypatch):
     t1, t2 = signup_token(db_client, "k_1"), signup_token(db_client, "k_2")
     _sync_friend_code(monkeypatch, 2)
     body = {**SIGNUP_BODY, "nickname": "같은이름"}
-    rs = _run_together([lambda c: c.post("/v1/auth/signup", headers=bearer(t1), json=body),
+    rs = run_together([lambda c: c.post("/v1/auth/signup", headers=bearer(t1), json=body),
                         lambda c: c.post("/v1/auth/signup", headers=bearer(t2), json=body)])
     assert sorted(r.status_code for r in rs) == [201, 409], [r.text for r in rs]
     assert next(r for r in rs if r.status_code == 409).json()["error"]["code"] == "NICKNAME_DUPLICATED"
@@ -261,7 +228,7 @@ def test_concurrent_friend_code_collision_retries(db_client, test_db, monkeypatc
     t1, t2 = signup_token(db_client, "k_1"), signup_token(db_client, "k_2")
     _sync_friend_code(monkeypatch, 2, code="SCR-AAAA")
     caplog.set_level("WARNING", logger="scrun.auth")
-    rs = _run_together([
+    rs = run_together([
         lambda c: c.post("/v1/auth/signup", headers=bearer(t1), json={**SIGNUP_BODY, "nickname": "첫째"}),
         lambda c: c.post("/v1/auth/signup", headers=bearer(t2), json={**SIGNUP_BODY, "nickname": "둘째"}),
     ])
@@ -311,7 +278,7 @@ def test_grace_replay_after_child_used_is_theft(db_client, test_db):
 
 def test_concurrent_refresh_both_succeed_without_logout(db_client, test_db):
     t1 = signup(db_client)
-    rs = _run_together([lambda c: refresh(c, t1)] * 2)
+    rs = run_together([lambda c: refresh(c, t1)] * 2)
     assert [r.status_code for r in rs] == [200, 200], [r.text for r in rs]
     assert _live_tokens(test_db) == 1
     # 앱이 어느 응답을 저장했든 30초 안이면 이어서 쓸 수 있음
@@ -393,7 +360,7 @@ def test_concurrent_logins_keep_session_cap(db_client, test_db, monkeypatch):
     for _ in range(3):
         login(db_client)  # 살아 있는 로그인 4개
     _sync_session_start(monkeypatch, 2)
-    rs = _run_together([lambda c: c.post("/v1/auth/kakao", json={"kakaoAccessToken": "k_1"})] * 2)
+    rs = run_together([lambda c: c.post("/v1/auth/kakao", json={"kakaoAccessToken": "k_1"})] * 2)
     assert [r.status_code for r in rs] == [200, 200], [r.text for r in rs]
     assert _live_tokens(test_db) == 5
 
@@ -402,7 +369,7 @@ def test_concurrent_logins_same_device_leave_one(db_client, test_db, monkeypatch
     signup(db_client, device="phone")
     _sync_session_start(monkeypatch, 2)
     body = {"kakaoAccessToken": "k_1", "deviceId": "phone"}
-    rs = _run_together([lambda c: c.post("/v1/auth/kakao", json=body)] * 2)
+    rs = run_together([lambda c: c.post("/v1/auth/kakao", json=body)] * 2)
     assert [r.status_code for r in rs] == [200, 200], [r.text for r in rs]
     assert _live_tokens(test_db) == 1
 
