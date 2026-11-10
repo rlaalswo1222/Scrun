@@ -12,14 +12,15 @@
      - 받는 법: Claude in Chrome(VS Code 패널에서 연결) → mixamo.com 페이지에서 JS로 내부 API(`/api/v1/products`, `/animations/export`, `/characters/{id}/monitor`, 헤더 `X-Api-Key: mixamo2` + localStorage 토큰) 호출 → a 태그 클릭으로 다운로드. Chrome "자동 다운로드" 허용 필요. 결과에 서명 URL이 나오면 차단되니 URL은 출력하지 말 것
      - Y Bot id `4f5d21e1-4ccc-41f1-b35b-fb2547bd8493`. 계정 기본 캐릭터는 Remy(안 바꿈). Downloads에 사용자가 받은 `Remy.fbx` 있음
      - Mixamo In Place가 Sprint엔 적용 안 됨 → `MixamoImportSetup`(AssetPostprocessor)에서 XZ를 루트 모션으로 빼고 `applyRootMotion=false`로 버림. 모든 동작 제자리 확인(엉덩이 ±4cm)
-     - Blend Tree 기준점은 `GaitAnalysis`가 클립을 240Hz로 샘플링해 "디딘 발의 엉덩이 대비 속도 중앙값"으로 자동 측정(몸통 이동량 기준은 틀렸음). 현재 Walking 3.4 / Jogging 5.2 / Slow Run 9.3 / Standard Run 13.6 / Fast Run 17.6 / Sprint 18.2 km/h. 최고 기준점 초과 시 재생 속도 배율(`RunnerAnimator`)
+     - Blend Tree 기준점은 `GaitAnalysis`가 클립을 240Hz로 샘플링해 "디딘 발의 엉덩이 대비 속도 중앙값"으로 자동 측정(몸통 이동량 기준은 틀렸음). 현재(11/11) Walking 3.5 / Jogging 6.0 / Slow Run 11.4 / Standard Run 15.6 / Fast Run 18.2 / Sprint 18.8 km/h. 단, 실행 중 Animator의 실제 발 속도는 이와 다르다(걷기 6.2 km/h, 아래 발 속도 표)
      - Jogging 원본엔 걸음 주기 3번 → 왼발 착지~다음 왼발 착지 1주기로 자동 자름. 모든 클립 cycleOffset = 왼발 착지(박자 맞춤)
      - 메뉴: Scrun → Build Test Track Scene 하나로 Animator까지 생성 (캐릭터 새로 넣었을 땐 먼저 Reimport Mixamo Characters)
      - 바닥 기준 무늬: 트랙 1m 가로줄·흰 차선, 잔디 1m 체커, 5m 기둥(50m마다 높게). 텍스처는 빌더가 절차 생성(`Assets/Scrun/Textures`)
-     - `FootSlipProbe`(개발용): 디딘 발 미끄러짐 중앙값/평균. 결과(중앙값): 기준점에서 ±6% 이내, 기준점 사이 4.5 km/h 19%·7 km/h 21% (조깅~Slow Run 사이 간격이 넓음 — 러닝머신 주 사용 구간). 평균은 조깅·Slow Run 클립 자체가 디딤 중 미끄러져 큼
-     - **남은 개선**: ① 기준점 사이 속도 보정 곡선(파라미터→실제 발 속도 측정 후 역보정) 또는 6~8 km/h 동작 추가 ② 발 IK 고정(Animation Rigging)으로 클립 자체 미끄러짐 제거
+     - `FootSlipProbe`(개발용): 땅에 닿은 점(발목·발끝 네 점 중 가장 낮은 것, 11/11부터. 그전엔 발목만이라 구르는 동작을 미끄러짐으로 셌다)의 땅 기준 앞뒤 속도 중앙값/평균
+     - **발 속도 표(11/11, 계획 0027)**: 블렌드 값마다 실행 중 Animator의 실제 발 속도를 재서 `Assets/Scrun/App/Resources/RunnerGait.asset`에 두고, `RunnerAnimator`가 재생 속도 = 속도 / 그 블렌드의 발 속도로 맞춘다. 걷는 동안엔 서 있기와 섞지 않고(0.5 km/h 넘으면 걷기, 0.3 아래면 서 있기) 느리면 걷기를 느리게 튼다(0.05배까지). 멈추면 블렌드가 서 있기로 내려오는 동안 동작을 그 자리에 세운다(다리만 달리지 않게, 플레이어·봇·고스트 모두). 미끄러짐 1에서 20 km/h 모두 5% 이내(전: 1 km/h 80%, 8 km/h 28%). 표는 Play 중 메뉴 Scrun → Measure Runner Gait(몇 초, Build Runner Animator로 기준점이 바뀌면 다시). 원본 `data/avatar/`
+     - **남은 개선**: 발 IK 고정(Animation Rigging)으로 클립 자체 미끄러짐 제거, 1 km/h 근처는 걷기를 0.16배로 트는 것이라 느린 화면처럼 보임(새 아바타 때 느린 걷기 동작), 클립 분석값과 실행 중 발 속도가 다른 원인(미확인)
      - Unity `PlayerSettings.runInBackground = true`로 바꿈(꺼져 있으면 Unity 창이 비활성일 때 Play가 멈춰 MCP 테스트 불가). 모바일 빌드엔 영향 없음
-   - **마지막에 고칠 것(사용자 요청)**: ① 0~3 km/h(Idle↔Walk 블렌드)에서 발이 심하게 미끄러져 보임 ② 20 km/h에서 발 동작이 이상함(최고 기준점 Sprint 18.2 초과 구간 — 재생 배율·Fast Run/Sprint 블렌드 확인)
+   - **마지막에 고칠 것(사용자 요청)**: ① 0에서 3 km/h 발 미끄러짐 → 11/11 발 속도 표로 고침(서 있기와 안 섞음) ② 20 km/h 발 동작 → 미끄러짐은 0%, Fast Run·Sprint가 섞이는 모양은 눈으로 다시 확인
    - **맵 1단계 완료 (2026-10-26)**: 가상 코스 "노을 호수 코스"(사용자 선택: 가상 코스 직접 제작 + 세미 리얼). 설계 미리보기 `docs/unity/course_preview.html` (아티팩트 https://claude.ai/artifact/2ASihiWwj1VehRnZyqCoBo, 사용자 브라우저에선 안 열렸음)
      - 메뉴 Scrun → Build Course Scene → `Assets/Scrun/Scenes/Course01_SunsetLake.unity` (3000 m 루프, 반시계)
      - `Track`(추상) ← `CircleTrack`, `SplineTrack`(자체 centripetal Catmull-Rom + 0.5m 누적거리표). Unity Splines 패키지는 비활성 창에서 임포트가 안 돼 제거하고 자체 구현
