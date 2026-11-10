@@ -132,7 +132,15 @@
   Native.Headphones.Changed += st => Refresh(st);
   ```
 - **에디터에서는 가짜**: 메뉴 Scrun → Fake Native 창. Play 전엔 처음 상태와 "팝업에서 허용/거부"·누르는 시간을 정하고(이 컴퓨터에 저장), Play 중엔 지금 상태를 바꾸면 설정 앱에서 바꾸고 돌아온 것·에어팟을 끼고 뺀 것처럼 `Changed`가 온다. Play를 시작할 때마다 처음 상태로 돌아감
-- 아이폰 진짜 구현(Swift 브리지 `scrun_call` + 콜백)은 계획 0018의 5번에서 붙인다. 그 전의 빌드(아이폰·안드로이드)에서는 `Native`를 부르면 바로 예외가 난다(가짜가 몰래 "허용"을 주지 않게). 기기에서 가짜로 화면만 보려면 Player Settings → Scripting Define Symbols에 `SCRUN_FAKE_NATIVE`. 화면 코드는 진짜가 붙어도 안 바뀜
+- **아이폰 진짜 구현**(11/10, 계획 0018의 5번, ADR-0009): Swift `Assets/Plugins/iOS/Scrun/`(통로 `ScrunBridge`, 권한 `ScrunPermissions`, 이어폰 `ScrunHeadphones`, 키체인 `ScrunKeychain`, 카카오 `ScrunKakao`) ↔ C# `App/Native/`(`NativeBridge` 요청 번호 짝·메인 스레드 큐, `IosNative`, iOS 빌드에서만 `IosChannel`). 화면 코드는 그대로
+  - 새 기능 더하기: Swift `ScrunBridge.swift`의 `scrun_call`(답을 기다림)이나 `scrunQuery`(바로 답)에 `case` 하나 + C# `IosNative`에 메서드 하나. 이름 문자열은 두 파일이 짝
+  - 센서·속도는 이 통로를 안 쓴다(S2: Swift가 속도까지, Unity는 매 프레임 숫자만)
+  - 안드로이드 등 다른 빌드에선 `Native`가 바로 예외(아이폰만, ADR-0007). 가짜로 화면만 보려면 Scripting Define Symbols에 `SCRUN_FAKE_NATIVE`
+  - 키체인을 못 읽어도 앱은 "로그인 안 됨"으로 뜬다(`Session`). 키체인은 앱을 지워도 남아서 새로 설치하면 처음 쓸 때 지움
+  - 개발 빌드 전용 **네이티브 점검** 화면: 로그인 화면 아래 링크 → 권한 4종 요청·설정 앱·이어폰 상태·키체인 저장/읽기/지우기와 이벤트 기록(출시 빌드엔 링크가 안 보임)
+  - 시뮬레이터 확인(11/10, iPhone 18 Pro): 카메라·알림 팝업 → 허용이 이벤트·결과로 옴, 모션·헤드폰 모션은 팝업 없이 2초 안에 `NotDetermined`(센서 없는 기기), 키체인·설정 앱 정상. iOS는 설정 앱에서 권한을 **끄면** 앱을 종료시킨다(그래서 "허용 → 거부" 이벤트는 없고 다음 실행 때 상태로 앎)
+  - 에어팟 모션 연결(`Connected`)은 누군가 `Native.Headphones.Changed`를 구독하는 동안에만 지켜본다(모션 업데이트 = 배터리). 이어폰 상태를 보여 주는 화면은 `OnShow`에서 구독, `OnHide`에서 빼기. 구독자가 없으면 에어팟도 `ConnectedNoMotion`으로 보일 수 있음
+  - 아이폰에서 확인할 가설: 헤드폰 모션 팝업이 이어폰 없이도 뜨는지, 에어팟 연결 알림에 모션 업데이트가 켜져 있어야 하는지(지금은 권한이 있으면 켜 둠)
 - **속도 센서는 `Native.Speed`**(11/10, 계획 0020, `App/Native/SpeedSensor.cs`): 센서 준비(D-07)·대기·카운트다운(D-08·09)·보정·달리기 화면이 쓴다. Swift가 속도까지 계산하고 C#은 **한 프레임에 한 번** 읽는다(다른 Update보다 먼저 갱신돼 같은 프레임엔 모든 화면이 같은 값)
   ```csharp
   Native.Speed.Start();                                   // 센서 준비 화면에 들어올 때. 끝·취소 때 Stop(이벤트 없이 꺼짐). 센서는 하나라 켠 쪽이 끈다
@@ -144,7 +152,13 @@
   - 판정(계획 0020, 숫자는 가설 → 아이폰에서 잼): 폰은 1초에 80개 이상이면 정상, 에어팟은 연결 + 헤드폰 모션 허용 + 1초에 20개 이상(아니면 꺼짐 = "이어폰 없이 진행", 실패 아님). `Gait`는 걸음 상태가 2.5초 유지되면 바뀜. 네트워크는 여기 없음(S3 실시간)
   - **에디터 가짜**: Fake Native 창 "속도 센서" 칸. 폰·에어팟 데이터 들어옴(끄면 2초 뒤 끊김, Play 중에도 바로), 보정값 있음, 켜고 들어오기까지·걸음 감지 지연. Play 중엔 사람 속도 슬라이더·"서 있음/걷기 4/달리기 8"·시나리오(3초 뒤 걷기 → 10초 뒤 달리기)와 화면이 읽는 값이 보이고, 키보드 ↑/↓(±0.5)·Space(정지). 7 km/h 미만은 걷기(흉내 경계). 에어팟은 위 이어폰·헤드폰 모션 권한을 따름
   - 섬 씬 아바타에 꽂기: `Scripts/NativeSpeedSource`(`ISpeedSource`)를 `RunnerController`의 속도 소스로(그 씬의 `FakeSpeedSource`는 빼기: 키가 둘 다 먹음). 센서가 꺼져 있으면 켜고, 자기가 켠 경우에만 끔
-  - 아이폰 진짜 구현은 S2 Swift 속도 플러그인(BL-5). 그 전 빌드에서는 다른 `Native`처럼 예외
+  - 아이폰 진짜 구현은 S2 Swift 속도 플러그인(BL-5). 그 전 아이폰 빌드에서 `Native.Speed`는 예외(`NativeSpeedSource`는 한 번 알리고 속도 0)
+- **아이폰 빌드**(11/10, 맥): 메뉴 **Scrun → iOS → Xcode 만들기**(아이폰 개발 / 시뮬레이터 개발 / 아이폰 출시) → `unity/Builds/iOS-*`. 빌드 대상이 iOS가 아니면 먼저 전환(끝나면 메뉴 한 번 더)
+  - 빌드 직후 `IosPostprocess`가 Info.plist 권한 문구(모션·카메라)·`CFBundleDevelopmentRegion ko`·암호화 신고 면제, UnityFramework에 Swift 5·CoreMotion 등 프레임워크, 서명 팀을 채운다
+  - 사람마다 다른 값은 git 밖 `unity/TestRun/ScrunLocal.json`(예시 `ScrunLocal.example.json`, 메뉴 Scrun → iOS → 로컬 설정 파일 열기): `appleTeamId`(비우면 Xcode Signing에서 고름), `kakaoNativeAppKey`(6번)
+  - 터미널로 시뮬레이터 빌드: `xcodebuild -project Unity-iPhone.xcodeproj -scheme Unity-iPhone -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 18 Pro' CODE_SIGN_IDENTITY=- build` → `xcrun simctl install/launch`. 서명을 끄면(`CODE_SIGNING_ALLOWED=NO`) 키체인이 -34018로 실패한다. Xcode 27은 시뮬레이터 화면을 DeviceHub 앱에서 보여 줌(가설, 11/10 확인 중)
+  - 맥에서 처음 열면 "Unity Version Control" 창이 기본 배치에 있고, 이 창이 버전 관리 모드를 "Unity Version Control"로 바꾼다 → 창을 닫고 Project Settings → Version Control → Mode를 "Visible Meta Files"로(우리는 git)
+  - 새로 받은 컴퓨터에서 Unity를 처음 열기 **전에** `python unity/tools/polyhaven_fetch.py`(Poly Haven 파일)와 Mixamo 파일(`README` "처음 받았을 때")을 채운다. 파일 없이 열면 Unity가 짝 없는 `.meta`를 지우는데 이걸 커밋하면 팀원 쪽 참조(GUID)가 깨진다 → `git checkout -- <폴더>`로 되살림
 - **서버는 `Api`로만 부른다**(11/09, 계획 0018의 2번, `App/Api/`):
   ```csharp
   var r = await Api.Auth.KakaoLoginAsync(kakaoToken);     // 처음이면 r.IsNewUser → Api.Session.IsSigningUp

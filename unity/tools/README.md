@@ -1,6 +1,6 @@
 # Unity 작업 도구 (MCP for Unity를 curl로 호출)
 
-Unity에서 Window → MCP for Unity → Start Server 켠 상태에서 Git Bash로 실행.
+Unity에서 Window → MCP for Unity → Start Server 켠 상태에서 실행(Windows는 Git Bash, 맥은 터미널). 스크립트는 자기 폴더 기준으로 경로를 찾는다.
 
 | 파일 | 하는 일 |
 |---|---|
