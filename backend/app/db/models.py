@@ -1,4 +1,4 @@
-"""DB 테이블 20개. 설계 문서 docs/api/data_model.md(데이터 모델 v1)와 같게 유지한다.
+"""DB 테이블 21개. 설계 문서 docs/api/data_model.md(데이터 모델 v1)와 같게 유지한다.
 
 - 사용자에 딸린 행은 모두 users 삭제 때 같이 지워진다(ON DELETE CASCADE)
 - 시각은 timestamptz(UTC), ID는 ULID 문자열(app/db/ids.py)
@@ -139,11 +139,22 @@ class Course(_Created, Base):
     name: Mapped[str] = mapped_column(Text)
     description: Mapped[str] = mapped_column(Text, server_default="")
     mood: Mapped[str] = mapped_column(Text, server_default="")
-    thumbnail_url: Mapped[str] = mapped_column(Text, server_default="")
+    thumbnail_url: Mapped[Optional[str]] = mapped_column(Text)  # 없으면 null → 앱 기본 그림
     type: Mapped[str] = mapped_column(Text)  # LOOP_3D, VIDEO
     length_m: Mapped[int] = mapped_column(Integer)
     max_runners_per_map: Mapped[int] = mapped_column(SmallInteger, server_default="20")
     active: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
+
+
+class CourseEntry(Base):
+    """맵 입장 = 자리 잡기(사람당 한 줄, 다른 코스에 들어가면 옮겨짐). 실시간 서버 전까지 인원은 이것 + 달리는 중 기록으로 센다."""
+    __tablename__ = "course_entries"
+    user_id: Mapped[str] = mapped_column(Text, ForeignKey("users.id", ondelete=CASCADE), primary_key=True)
+    course_id: Mapped[str] = mapped_column(Text, ForeignKey("courses.id"))
+    entered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # 인원 세기(core/occupancy): 코스별 최근 입장
+    __table_args__ = (Index("ix_course_entries_course_id_entered_at", "course_id", "entered_at"),)
 
 
 # ---------- 러닝·인증 ----------
@@ -171,7 +182,11 @@ class Run(_Created, Base):
     shared: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    __table_args__ = (UniqueConstraint("user_id", "client_run_id"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "client_run_id"),
+        # 인원 세기(core/occupancy): 코스별 달리는 중·최근 갱신
+        Index("ix_runs_course_id_status_updated_at", "course_id", "status", "updated_at"),
+    )
 
 
 class RunSample(Base):

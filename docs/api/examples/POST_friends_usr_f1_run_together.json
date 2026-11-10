@@ -9,8 +9,8 @@
     "resultType": "SUCCESS",
     "success": {
       "data": {
-        "mapInstanceId": "map_01",
-        "courseId": "crs_island_loop",
+        "mapInstanceId": "map_crs_lake_loop",
+        "courseId": "crs_lake_loop",
         "entryPositionM": 1795.0,
         "realtime": {
           "url": "wss://example.com/rt",

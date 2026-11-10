@@ -21,15 +21,17 @@ namespace Scrun.App
         PanelSettings panel; // 실행 중에만 쓰는 복사본(원본 에셋을 바꾸지 않게)
         VisualElement safeArea;
         VisualElement appRoot;
+        VisualElement tabBar;
         bool started;
         bool pendingInit;
         bool subscribed;
         bool landscape;
         bool orientationApplied;
-        // 안전 영역을 마지막으로 맞춘 조건(화면 크기·안전 영역·패널 크기 중 하나라도 바뀌면 다시)
+        // 안전 영역을 마지막으로 맞춘 조건(화면 크기·안전 영역·패널 크기·탭 바 보임 중 하나라도 바뀌면 다시)
         Rect lastSafe;
         Vector2Int lastScreen;
         Vector2 lastPanelSize;
+        bool lastTabsShown;
 
         void Awake()
         {
@@ -57,7 +59,8 @@ namespace Scrun.App
             var root = doc.rootVisualElement;
             safeArea = root.Q("safe-area");
             appRoot = root.Q("app-root");
-            Nav = new Navigator(root.Q("screen-host"), root.Q("tab-bar"), TabRoot);
+            tabBar = root.Q("tab-bar");
+            Nav = new Navigator(root.Q("screen-host"), tabBar, TabRoot);
             Nav.Changed += OnScreenChanged;
             orientationApplied = false;
             lastPanelSize = default;
@@ -72,10 +75,10 @@ namespace Scrun.App
                 subscribed = true;
                 loggedIn = Api.Session.IsLoggedIn;
             }
-            catch (PlatformNotSupportedException e)
+            catch (Exception e)
             {
-                // 아직 기기 기능(키체인 등)이 없는 빌드: 빈 화면 대신 로그인 화면을 띄우고, 누르면 안내가 뜬다
-                Debug.LogError("[App] " + e.Message);
+                // 기기 기능이 없는 빌드(PlatformNotSupportedException)·네이티브 초기화 실패: 빈 화면 대신 로그인 화면을 띄우고, 누르면 안내가 뜬다
+                Debug.LogException(e);
             }
             if (loggedIn) Onboarding.Begin(Nav); // 모션 권한을 아직 안 물어봤으면 권한 안내부터(계획 0023)
             else Nav.StartFlow(new LoginScreen());
@@ -98,7 +101,7 @@ namespace Scrun.App
         {
             if (Nav == null) return;
             Feedback.HideError();
-            try { Api.Session.Clear(); } catch (PlatformNotSupportedException) { } // 만료된 가입용 토큰까지 정리
+            try { Api.Session.Clear(); } catch (Exception e) { Debug.LogException(e); } // 만료된 가입용 토큰까지 정리. 실패해도 로그인 화면으로는 간다
             if (!Nav.InTabs && Nav.Current is LoginScreen) return;
             Nav.StartFlow(new LoginScreen(notice));
         }
@@ -143,13 +146,15 @@ namespace Scrun.App
             {
                 var screen = new Vector2Int(Screen.width, Screen.height);
                 var panelSize = safeArea.panel.visualTree.layout.size;
-                if (Screen.safeArea != lastSafe || screen != lastScreen || panelSize != lastPanelSize)
+                bool tabsShown = tabBar != null && SafeArea.BarShown(tabBar);
+                if (Screen.safeArea != lastSafe || screen != lastScreen || panelSize != lastPanelSize || tabsShown != lastTabsShown)
                 {
-                    if (SafeArea.Apply(safeArea))
+                    if (SafeArea.Apply(safeArea, tabBar))
                     {
                         lastSafe = Screen.safeArea;
                         lastScreen = screen;
                         lastPanelSize = panelSize;
+                        lastTabsShown = tabsShown;
                     }
                 }
             }

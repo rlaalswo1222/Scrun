@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from app.core.errors import ErrorCode
 from app.main import app
-from app.stub_requests import CALLS, REAL
+from app.stub_requests import CALLS, real_key
 
 client = TestClient(app)
 AUTH = {"Authorization": "Bearer demo"}
@@ -18,7 +18,7 @@ README = Path(__file__).resolve().parents[2] / "docs" / "api" / "README.md"
 
 PUBLIC = {"/v1/auth/kakao", "/v1/agreements", "/v1/auth/refresh"}
 # 진짜가 된 API는 tests/test_auth.py 등에서 실제 흐름으로 확인. 여기선 스텁만
-STUB_CALLS = [c for c in CALLS if (c[0], c[1].split("?")[0]) not in REAL]
+STUB_CALLS = [c for c in CALLS if real_key(c[0], c[1]) is None]
 
 
 def call(method, path, body, headers=None):
@@ -95,9 +95,6 @@ def test_unknown_path_and_method():
 
 
 @pytest.mark.parametrize("method,path,body,status,code", [
-    ("GET", "/v1/courses/crs_x", None, 404, "COURSE_NOT_FOUND"),
-    ("POST", "/v1/courses/crs_full/entries", None, 409, "COURSE_FULL"),
-    ("POST", "/v1/courses/crs_nocalib/entries", None, 409, "CALIBRATION_REQUIRED"),
     ("GET", "/v1/runs/run_x", None, 404, "RUN_NOT_FOUND"),
     ("GET", "/v1/runs/run_other", None, 403, "FORBIDDEN"),
     ("POST", "/v1/friends", {"friendCode": "SCR-7K2Q"}, 400, "SELF_FRIEND_CODE"),

@@ -7,5 +7,7 @@
         </ui:VisualElement>
         <ui:Label name="notice" class="notice-text" />
         <ui:Button name="kakao" text="카카오 로그인" class="btn btn-kakao" />
+        <!-- 개발 빌드에서만 보임(LoginScreen) -->
+        <ui:Button name="dev-native" text="네이티브 점검 (개발 빌드)" class="link-button" />
     </ui:VisualElement>
 </ui:UXML>
