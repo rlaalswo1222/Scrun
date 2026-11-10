@@ -79,6 +79,7 @@ public func scrun_set_callback(_ cb: ScrunReplyCallback?) {
         ScrunBridge.callback = cb
         ScrunPermissions.shared.start()
         ScrunHeadphones.shared.start()
+        ScrunKakao.setup()
     }
 }
 

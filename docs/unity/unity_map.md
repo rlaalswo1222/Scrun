@@ -140,7 +140,16 @@
   - 개발 빌드 전용 **네이티브 점검** 화면: 로그인 화면 아래 링크 → 권한 4종 요청·설정 앱·이어폰 상태·키체인 저장/읽기/지우기와 이벤트 기록(출시 빌드엔 링크가 안 보임)
   - 시뮬레이터 확인(11/10, iPhone 18 Pro): 카메라·알림 팝업 → 허용이 이벤트·결과로 옴, 모션·헤드폰 모션은 팝업 없이 2초 안에 `NotDetermined`(센서 없는 기기), 키체인·설정 앱 정상. iOS는 설정 앱에서 권한을 **끄면** 앱을 종료시킨다(그래서 "허용 → 거부" 이벤트는 없고 다음 실행 때 상태로 앎)
   - 에어팟 모션 연결(`Connected`)은 누군가 `Native.Headphones.Changed`를 구독하는 동안에만 지켜본다(모션 업데이트 = 배터리). 이어폰 상태를 보여 주는 화면은 `OnShow`에서 구독, `OnHide`에서 빼기. 구독자가 없으면 에어팟도 `ConnectedNoMotion`으로 보일 수 있음
-  - 아이폰에서 확인할 가설: 헤드폰 모션 팝업이 이어폰 없이도 뜨는지, 에어팟 연결 알림에 모션 업데이트가 켜져 있어야 하는지(지금은 권한이 있으면 켜 둠)
+  - 아이폰 확인(11/10, 아이폰 15 Pro Max·iOS 26.5): 모션·카메라·알림 팝업 → 허용이 결과·이벤트로 옴. **헤드폰 모션은 모션과 같은 "동작 및 피트니스" 권한**이라 모션을 허용하면 따로 묻지 않고 바로 `Granted` 이벤트가 옴(그래서 "이어폰 없이 헤드폰 모션 팝업이 뜨나"는 앱 흐름에선 상관없음). 에어팟 끼기 → `Connected`, 귀에서 빼기 → `ConnectedNoMotion`, 케이스 → `NotConnected`가 이벤트로 옴. 키체인 저장·읽기·지우기 정상
+  - 다시 설치·재실행해도 로그인 유지(키체인 토큰, 11/10 아이폰). 아직 안 본 것: 거부 → 설정 앱에서 허용 → 돌아오면 이벤트, 한글 입력(닉네임)
+  - 안전 영역(11/10 아이폰): 노치·다이내믹 아일랜드에 안 가림. 아래 탭이 보이면 홈 바 여백은 `safe-area`가 아니라 **탭 바 안쪽 아래 padding**(`SafeArea.Apply(safeArea, tabBar)`) → 탭 바 배경이 화면 끝까지, 버튼은 홈 바 위. 탭 높이 49(아이폰 기본 탭 바, 폭 390 기준 단위). 터치 화면에선 `:hover`가 마지막으로 누른 곳에 남으므로 누름 표시는 `:active`로. 탭 아이콘은 상준 UI Kit에서(지금은 글자만이라 글자 밑이 비어 보임)
+- **카카오 로그인**(11/10, 계획 0018의 6번): `Native.Kakao.LoginAsync()` → 카카오 access 토큰(취소면 null) → `Api.Auth.KakaoLoginAsync`
+  - Swift `ScrunKakao.swift`: 카카오톡이 깔려 있으면(`kakaokompassauth` 스킴) 카카오톡 로그인, 없거나 카카오톡을 열지 못하면(`NotSupported`) 카카오계정 웹 로그인(앱 안 창). 그 밖의 실패는 오류로 돌려줘 화면이 "다시 시도"를 띄움. SDK 기본(유니버설 링크)은 카카오톡이 없을 때 Safari로 열려 "성공"이 되므로 스킴으로 먼저 확인한다. 카카오톡에서 로그인 없이 돌아오면 2초 뒤 취소. 돌아온 URL은 Unity가 뿌리는 `kUnityOnOpenURL` 알림에서 받아 SDK에 넘김(Objective-C 불필요)
+  - 빌드 후처리가 SDK 2.30.0(SPM, `kakao-ios-sdk`, Common·Auth·User)을 UnityFramework에 붙이고 Info.plist에 `KAKAO_APP_KEY`·URL 스킴 `kakao{키}`·`LSApplicationQueriesSchemes`(kakaokompassauth, kakaolink)를 넣는다. 키는 `ScrunLocal.json`의 `kakaoNativeAppKey`(카카오 개발자 → SCRUN → 앱 → 플랫폼 키 → 네이티브 앱 키, 번들 ID `com.scrun.app` 등록됨). 키가 없으면 경고 + SDK 없이 빌드(로그인은 "SDK 없음" 오류)
+  - 시뮬레이터 확인(11/10): 카카오계정 웹 로그인 → 공용 서버로 약관·프로필·가입 → 홈, 웹 창 취소 뒤 다시 누르기, 앱 재실행 뒤 로그인 유지(키체인)
+  - 아이폰 확인(11/10): 카카오톡 없을 때 웹 로그인 창 → 취소 두 번 모두 로그인 버튼이 다시 눌림, 카카오톡 설치 뒤 카카오톡 앱으로 넘어가 동의 → 앱으로 돌아와 토큰 받음 → 공용 서버 로그인(오류 없음)
+  - 개발(Debug) 빌드에서는 카카오 SDK가 카카오 토큰·인가 코드를 콘솔에 찍는다(SDK의 `#if DEBUG`, 출시 Release 빌드는 안 찍음) → 개발 빌드 로그를 남과 공유하지 않기
+  - Xcode 경고 "KakaoSDK… was not compiled with library evolution support"는 UnityFramework를 따로 배포할 때만 의미가 있어 무시
 - **속도 센서는 `Native.Speed`**(11/10, 계획 0020, `App/Native/SpeedSensor.cs`): 센서 준비(D-07)·대기·카운트다운(D-08·09)·보정·달리기 화면이 쓴다. Swift가 속도까지 계산하고 C#은 **한 프레임에 한 번** 읽는다(다른 Update보다 먼저 갱신돼 같은 프레임엔 모든 화면이 같은 값)
   ```csharp
   Native.Speed.Start();                                   // 센서 준비 화면에 들어올 때. 끝·취소 때 Stop(이벤트 없이 꺼짐). 센서는 하나라 켠 쪽이 끈다
@@ -157,6 +166,8 @@
   - 빌드 직후 `IosPostprocess`가 Info.plist 권한 문구(모션·카메라)·`CFBundleDevelopmentRegion ko`·암호화 신고 면제, UnityFramework에 Swift 5·CoreMotion 등 프레임워크, 서명 팀을 채운다
   - 사람마다 다른 값은 git 밖 `unity/TestRun/ScrunLocal.json`(예시 `ScrunLocal.example.json`, 메뉴 Scrun → iOS → 로컬 설정 파일 열기): `appleTeamId`(비우면 Xcode Signing에서 고름), `kakaoNativeAppKey`(6번)
   - 터미널로 시뮬레이터 빌드: `xcodebuild -project Unity-iPhone.xcodeproj -scheme Unity-iPhone -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 18 Pro' CODE_SIGN_IDENTITY=- build` → `xcrun simctl install/launch`. 서명을 끄면(`CODE_SIGNING_ALLOWED=NO`) 키체인이 -34018로 실패한다. Xcode 27은 시뮬레이터 화면을 DeviceHub 앱에서 보여 줌(가설, 11/10 확인 중)
+  - **아이폰에 설치**(11/10 확인): ① 케이블로 연결 → 아이폰에서 "신뢰" ② 아이폰 설정 → 개인정보 보호 및 보안 → 개발자 모드 켜기(재시작 뒤 "켜기") ③ Xcode → Settings(⌘,) → Accounts → + Apple Account ④ 팀 ID를 `ScrunLocal.json` `appleTeamId`에(처음 한 번은 Xcode에서 Unity-iPhone 타깃 → Signing & Capabilities → Automatically manage signing 체크 → Team 고르면 `project.pbxproj`의 `DEVELOPMENT_TEAM`에 보임) ⑤ 메뉴 Xcode 만들기(아이폰, 개발) ⑥ 터미널: `xcodebuild -project unity/Builds/iOS-Device/Unity-iPhone.xcodeproj -scheme Unity-iPhone -configuration Debug -destination 'id=<UDID>' -derivedDataPath unity/Builds/DerivedData-Device -allowProvisioningUpdates build` → `xcrun devicectl device install app --device <UDID> unity/Builds/DerivedData-Device/Build/Products/Debug-iphoneos/Scrun.app` → `xcrun devicectl device process launch --console --device <UDID> com.scrun.app`(콘솔 로그가 터미널로 옴). UDID는 `xcrun devicectl list devices`. 화면 캡처는 `xcrun devicectl device capture screenshot --device <UDID> --destination 파일.png`(Claude가 직접 화면을 보고 확인할 때) ⑦ 무료 개인 팀이면 처음 실행이 막힘 → 아이폰 설정 → 일반 → VPN 및 기기 관리 → 개발자 앱 신뢰. 무료 팀은 7일마다 다시 설치
+  - 아이폰 빌드 콘솔 경고(11/10): URP 피사계 심도(Gaussian·Bokeh DOF)·Panini 셰이더가 빌드에서 빠져 그 후처리가 안 돈다 → 달리기 화면에 쓸 거면 URP 설정에서 남기기, 안 쓰면 볼륨에서 끄기(할 일)
   - 맥에서 처음 열면 "Unity Version Control" 창이 기본 배치에 있고, 이 창이 버전 관리 모드를 "Unity Version Control"로 바꾼다 → 창을 닫고 Project Settings → Version Control → Mode를 "Visible Meta Files"로(우리는 git)
   - 새로 받은 컴퓨터에서 Unity를 처음 열기 **전에** `python unity/tools/polyhaven_fetch.py`(Poly Haven 파일)와 Mixamo 파일(`README` "처음 받았을 때")을 채운다. 파일 없이 열면 Unity가 짝 없는 `.meta`를 지우는데 이걸 커밋하면 팀원 쪽 참조(GUID)가 깨진다 → `git checkout -- <폴더>`로 되살림
 - **서버는 `Api`로만 부른다**(11/09, 계획 0018의 2번, `App/Api/`):
