@@ -2,10 +2,10 @@
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`, `docs/plans/`)에 있고, 11/09까지의 전체본은 `docs/log/HANDOFF_minjae_20261109.md`(그 전은 `_20261107.md`, `_20261106.md`).
 
-## 진행 중(11/10 밤): 아이폰 실기기 확인 끝 → 6번 커밋·PR(브랜치 `feat/kakao-ios`, PR #28 위)
+## 진행 중(11/10 밤): 6번·아이폰 확인 끝, PR #31(`feat/kakao-ios` → `feat/ios-bridge`, #28 먼저 합치기)
 - **아이폰 실기기(11/10 밤, 지환 아이폰 15 Pro Max·iOS 26.5, 무료 개인 팀)**: 권한 4종·에어팟 끼기/빼기/케이스·키체인·카카오톡 앱 로그인 모두 됨. 설치 순서는 `docs/unity/unity_map.md` "아이폰에 설치". 팀 ID는 `ScrunLocal.json`에 넣음(다음 빌드부터 자동 서명). 결과 로그는 `unity/Builds/device-console.log`(git 밖, 카카오 토큰이 찍혀 있으니 공유 금지)
 - 아이폰에서 고친 것(11/10 밤): 탭 바 밑 빈 띠(홈 바 여백을 탭 바 안쪽으로), 탭 높이 56 → 49, 터치 뒤 남는 회색(`:hover` → `:active`). 노치 가림 없음, 재설치 뒤 로그인 유지 확인. Claude가 `xcrun devicectl device capture screenshot`으로 아이폰 화면을 직접 캡처해 확인함
-- 아이폰 남은 것: 한글 입력(닉네임), 거부 → 설정 앱에서 허용 → 이벤트. URP DOF·Panini 셰이더가 빌드에서 빠짐(할 일). **상준에게**: 탭 아이콘 4개(홈·기록·친구·내 정보) UI Kit에
+- URP DOF·Panini 셰이더가 빌드에서 빠짐(할 일). **상준에게**: 탭 아이콘 4개(홈·기록·친구·내 정보) UI Kit에
 - 시뮬레이터에서 카카오계정 웹 로그인 → 공용 서버 실제 가입 → 홈, 재실행 뒤 로그인 유지까지 확인. 사용법·주의는 `docs/unity/unity_map.md` "카카오 로그인"
 - 앱 키는 `unity/TestRun/ScrunLocal.json`(git 밖)에 넣음. Claude in Chrome으로 카카오 개발자 콘솔에서 읽음(번들 ID `com.scrun.app` 등록 확인)
 - Claude in Chrome 연결(11/10): VS Code에 전체 디스크 접근 권한, 확장 안 CLI(`~/.vscode/extensions/anthropic.claude-code-*/resources/native-binary/claude --chrome`)를 한 번 실행해 연결 파일 설치, `/chrome`에서 Enabled by default → 새 대화
@@ -28,6 +28,9 @@
 - 서버 정해진 것(11/08, 계획 0016·`docs/api/README.md`): refresh 재사용 30초 유예 + 그 로그인만 폐기, 재로그인은 deviceId로 같은 기기 폐기 + 사용자당 5개, 닉네임은 한글 완성형·영문·숫자·`_`(NFKC). 공통 규칙 "미정"에 "OCR 서버/앱 미정"이 남아 있음(11/06 서버 처리로 확정) → OCR API 만들 때 같이 고침
 
 ## 민재가 직접 할 것
+- **아이폰 확인 2개(나중에, 맥 + 아이폰, 각 5분)**: 설치는 `docs/unity/unity_map.md` "아이폰에 설치"
+  1. 한글 입력: 가입 화면 닉네임 칸에 한글(받침·쌍자음 포함)이 바로 쳐지고, 지우기·커서 이동이 되는지. 이미 가입돼 있으니 앱을 지우고 다시 설치하면 처음부터 가입(키체인은 새 설치 때 지워짐). 어색하면 ADR-0001 11/06 보충대로 입력 칸만 iOS 네이티브 입력
+  2. 권한 거부 → 허용: 앱을 지우고 다시 설치 → 점검 화면에서 모션 요청 → "허용 안 함" → 설정 앱 열기 → 동작 및 피트니스 켜기 → 앱으로 돌아오면 점검 화면 기록에 `Motion → Granted` 이벤트가 오는지(iOS는 허용 → 거부로 바꾸면 앱을 끄므로 그 방향은 이벤트 없음)
 - **지환에게**: 11/09 답장(수정본: 샘플 주기·thumbnailUrl·20명 임시 방식) + "FakeNative·앱 틀·로그인 화면 develop에 있음, 권한·에어팟 화면 시작해도 됨(사용법 `docs/unity/unity_map.md` "앱 코드 묶음")". 보냈으면 이 줄 지우기
 - 원격 옛 브랜치 `feat/dev-server` 지우기(PR 화면)
 - `Lm_LampGlass.mat`: 11/07 Unity 설정 저장 때 Unity가 다시 써서 `_EMISSION` 키워드 한 줄 빠짐(의도 아님) → 되돌릴지 결정. 커밋 안 한 것: 이 파일, 지환 실명 파일 2개(아래), 와이어프레임 초안, 중간발표 자료, `.claude/settings.json`
