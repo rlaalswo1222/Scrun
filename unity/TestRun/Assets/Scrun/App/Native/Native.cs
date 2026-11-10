@@ -14,6 +14,7 @@ namespace Scrun.App
         public static IHeadphones Headphones => FakeNative.Instance;
         public static ISecureStore SecureStore => FakeSecureStore.Instance;
         public static IKakaoLogin Kakao => FakeNative.Instance;
+        public static ISpeedSensor Speed => FakeSpeedSensor.Instance;
 #else
         // 아이폰용 진짜 구현(Swift 브리지)은 계획 0018의 5번에서 붙인다. 그 전의 빌드에서
         // 가짜가 몰래 "허용"을 주면 권한 없이 달리기까지 가 버리므로, 바로 멈추게 한다.
@@ -22,6 +23,7 @@ namespace Scrun.App
         public static IHeadphones Headphones => throw NotReady();
         public static ISecureStore SecureStore => throw NotReady();
         public static IKakaoLogin Kakao => throw NotReady();
+        public static ISpeedSensor Speed => throw NotReady(); // Swift 속도 플러그인(S2, BL-5)
 
         static Exception NotReady() => new PlatformNotSupportedException(
             "이 플랫폼의 Native 구현이 아직 없습니다(계획 0018의 5번). 가짜로 보려면 SCRUN_FAKE_NATIVE를 켜세요.");
