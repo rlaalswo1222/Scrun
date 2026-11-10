@@ -210,7 +210,7 @@ namespace Scrun.App.Tests
             Assert.GreaterOrEqual(s.Current.Steps, steps);
         }
 
-        // ---- 보정(계획 0022) ----
+        // ---- 보정(계획 0023) ----
 
         // 사람이 kmh로 달리는 동안 안내 속도 v 단계를 sec초 잰다
         CalStageResult Stage(float v, float kmh, double sec = CalibrationLadder.StageSec)

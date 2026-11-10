@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace Scrun.App.Tests
 {
-    // 보정 순서(계획 0022): 사다리 7단계, 실패하면 그 단계 다시, 연달아 실패하면 도움, 멈추면 기다림, 그만두기, 저장.
+    // 보정 순서(계획 0023): 사다리 7단계, 실패하면 그 단계 다시, 연달아 실패하면 도움, 멈추면 기다림, 그만두기, 저장.
     // 가짜 사람이 안내(Cue)를 듣고 ReactSec초 뒤 러닝머신 속도를 바꾼다. 시계는 손으로 0.1초씩.
     public class CalibrationFlowTests
     {

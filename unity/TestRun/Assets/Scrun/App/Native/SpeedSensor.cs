@@ -54,7 +54,7 @@ namespace Scrun.App
         event Action<Gait> GaitChanged;
         event Action FlowChanged; // Phone·AirPods 중 하나가 바뀜
 
-        // ---- 보정(계획 0022). 순서는 보정 흐름(CalibrationFlow)이 정하고, 센서는 단계 하나를 잰다 ----
+        // ---- 보정(계획 0023). 순서는 보정 흐름(CalibrationFlow)이 정하고, 센서는 단계 하나를 잰다 ----
         //   BeginCalibration();                          // 새 보정. 지금 보정은 확정될 때까지 그대로 씀
         //   BeginCalibrationStage(8f); ...20초...        // 센서가 켜져 있어야 함. 앞 5초는 버림
         //   var r = EndCalibrationStage();               // Ok면 점이 쌓임, 아니면 그 단계 다시

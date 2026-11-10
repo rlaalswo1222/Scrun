@@ -1,4 +1,4 @@
-"""계획 0022: 모두에게 같은 보정 사다리 — 보정점 간격이 얼마면 그 사이·바깥 속도 오차가 얼마인지.
+"""계획 0023: 모두에게 같은 보정 사다리 — 보정점 간격이 얼마면 그 사이·바깥 속도 오차가 얼마인지.
 
 실행: .venv\\Scripts\\python speedlab/exp/calib_fixed.py
 입력: calib_design.py와 같음(우리 10/29 M·B 기록, SoundTrackDB — 우리 실측 아님)

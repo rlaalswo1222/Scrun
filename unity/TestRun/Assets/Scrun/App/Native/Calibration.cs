@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace Scrun.App
 {
-    // 보정 단계 하나를 잰 결과(계획 0022).
+    // 보정 단계 하나를 잰 결과(계획 0023).
     public enum CalStageResult
     {
         Ok,
@@ -16,7 +16,7 @@ namespace Scrun.App
         TooShort,   // 버리는 5초 뒤 잴 시간이 3초도 안 됨(단계를 너무 빨리 끝냄)
     }
 
-    // 모두에게 같은 보정 사다리(ADR-0005 추가 결정 11/10, 계획 0022). 헬스장 실험 뒤 숫자만 바꾼다.
+    // 모두에게 같은 보정 사다리(ADR-0005 추가 결정 11/10, 계획 0023). 헬스장 실험 뒤 숫자만 바꾼다.
     public static class CalibrationLadder
     {
         public static readonly float[] SpeedsKmh = { 2f, 4f, 6f, 8f, 10f, 12f, 14f };
