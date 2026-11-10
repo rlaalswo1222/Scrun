@@ -207,6 +207,7 @@ namespace Scrun.App.Tests
         [TestCase(8, 2.0, 160, true)]
         [TestCase(8, 2.0, 0, false)]      // 걸음 수 0
         [TestCase(8, double.NaN, 160, false)]
+        [TestCase(8, double.PositiveInfinity, 160, false)]
         [TestCase(0, 2.0, 160, false)]
         public void 보정점은_속도_걸음수가_양수이고_충격이_숫자여야_쓴다(double v, double limp, double cad, bool valid) =>
             Assert.AreEqual(valid, new CalibrationPoint { V = v, LnImpact = limp, Cadence = cad }.IsValid);

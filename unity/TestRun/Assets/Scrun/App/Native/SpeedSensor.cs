@@ -215,7 +215,7 @@ namespace Scrun.App
             CancelCalibrationStage();
             var model = new CalibrationModel(draft);
             draft = null;
-            Apply(model);
+            if (!Apply(model)) Debug.LogError("[보정] 센서가 새 보정을 받지 않음(지금 보정 그대로). 서버에는 올림");
             return model.ToJson();
         }
 
@@ -230,9 +230,7 @@ namespace Scrun.App
         public bool LoadCalibration(string model)
         {
             var m = CalibrationModel.Parse(model);
-            if (m == null) return false;
-            Apply(m);
-            return true;
+            return m != null && Apply(m);
         }
 
         public void ClearCalibration()
@@ -243,11 +241,13 @@ namespace Scrun.App
             CalibrationChanged?.Invoke();
         }
 
-        void Apply(CalibrationModel m)
+        // 구현(Swift)이 받지 않으면 지금 보정 그대로(C#만 "있음"이 되어 다시 불러오지 않는 일이 없게)
+        bool Apply(CalibrationModel m)
         {
+            if (!OnCalibrationApplied(m)) return false;
             active = m;
-            OnCalibrationApplied(m);
             CalibrationChanged?.Invoke();
+            return true;
         }
 
         // Play를 새로 시작할 때(도메인 리로드가 꺼져 있어 정적 객체가 남음) 지난 Play의 상태와 구독자를 지운다.
@@ -283,7 +283,8 @@ namespace Scrun.App
         protected abstract void OnBeginStage(float speedKmh);
         protected abstract StageMeasurement OnEndStage(float speedKmh);
         protected abstract void OnCancelStage();
-        protected abstract void OnCalibrationApplied(CalibrationModel m);
+        // 받았으면 true. m이 null(지우기)이면 결과를 보지 않음
+        protected abstract bool OnCalibrationApplied(CalibrationModel m);
     }
 
     // 센서를 켠 동안 매 프레임 Tick을 부르는 숨은 오브젝트. 다른 스크립트의 Update보다 먼저 돌아서

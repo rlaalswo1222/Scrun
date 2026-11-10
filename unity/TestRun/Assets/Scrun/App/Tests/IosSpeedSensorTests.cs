@@ -173,7 +173,8 @@ namespace Scrun.App.Tests
         {
             api.LoadOk = false;
             LogAssert.Expect(LogType.Error, new Regex("보정을 받지 않았습니다"));
-            s.LoadCalibration(FakeSpeedSensor.SampleModel().ToJson());
+            Assert.IsFalse(s.LoadCalibration(FakeSpeedSensor.SampleModel().ToJson()));
+            Assert.IsFalse(s.HasCalibration); // C#만 "있음"이면 다시 불러오지 않아 보정 없이 달림
         }
 
         [Test]

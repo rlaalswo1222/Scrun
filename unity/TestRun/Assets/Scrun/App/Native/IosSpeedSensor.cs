@@ -88,10 +88,11 @@ namespace Scrun.App
 
         protected override void OnCancelStage() => api.StageCancel();
 
-        protected override void OnCalibrationApplied(CalibrationModel m)
+        protected override bool OnCalibrationApplied(CalibrationModel m)
         {
-            if (!api.Load(m?.ToJson()))
-                Debug.LogError("[속도] Swift가 보정을 받지 않았습니다(모양이 다름). 속도는 이전 보정으로 계산됩니다.");
+            if (api.Load(m?.ToJson()) || m == null) return true;
+            Debug.LogError("[속도] Swift가 보정을 받지 않았습니다(모양이 다름). 속도는 이전 보정으로 계산됩니다.");
+            return false;
         }
 
         // Swift 단계 결과 JSON → 측정. 읽을 수 없으면 그 단계는 다시 재게 SensorLost

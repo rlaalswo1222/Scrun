@@ -34,7 +34,10 @@ namespace Scrun.App
             if (sensor.HasCalibration) return;
             var pending = Pending;
             if (pending != null && sensor.LoadCalibration(pending)) return;
+            int epoch = Api.Session.Epoch;
             var rec = await Api.Users.GetCalibrationAsync();
+            // 기다리는 사이 로그아웃·다른 계정으로 바뀌었거나 다른 곳에서 이미 채웠으면 넣지 않음(앞 사람 보정이 되살아나지 않게)
+            if (Api.Session.Epoch != epoch || sensor.HasCalibration) return;
             if (rec?.Model == null || rec.Model.Type == JTokenType.Null) return; // 서버에도 보정 없음
             var model = rec.Model.ToString(Newtonsoft.Json.Formatting.None);
             if (!sensor.LoadCalibration(model))

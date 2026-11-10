@@ -33,7 +33,7 @@ namespace Scrun.App
         double lastStatusLog = -1;   // 켜져 있는 동안 10초마다 상태 줄을 콘솔에만 남김(맥에서 devicectl --console로 읽음)
         const double StatusLogSec = 10;
         const float StageKmh = 8f;  // 책상 확인용 가정 속도(4 km/h 이하면 달리기 판정이 Irregular가 되므로 달리기 속도)
-        const long StageMs = 15000; // CalibrationLadder.StageSec과 같음
+        static readonly long StageMs = (long)(CalibrationLadder.StageSec * 1000); // 보정 흐름과 같은 단계 길이
 
         protected override void OnCreate()
         {
@@ -209,6 +209,11 @@ namespace Scrun.App
                 return;
             }
             if (sensor.StageOpen) return;
+            if (sensor.Calibrating && !ownCalibration)
+            {
+                Log("보정 중이라 단계 재기를 할 수 없어요(그 보정에 점이 섞임)");
+                return;
+            }
             try
             {
                 if (!sensor.Calibrating)
@@ -223,7 +228,7 @@ namespace Scrun.App
                 Log("단계 시작 실패: " + e.Message);
                 return;
             }
-            Log($"단계 재기 시작({StageKmh} km/h로 가정, 15초 중 앞 5초는 버림)");
+            Log($"단계 재기 시작({StageKmh} km/h로 가정, {StageMs / 1000}초 중 앞 {SpeedSensorBase.StageSkipSec:0}초는 버림)");
             stageTimer = Root.schedule.Execute(EndStage);
             stageTimer.ExecuteLater(StageMs);
         }

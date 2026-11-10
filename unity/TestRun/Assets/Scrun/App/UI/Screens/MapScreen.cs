@@ -140,8 +140,7 @@ namespace Scrun.App
                 return;
             }
             if (leaving) return;
-            await LoadCalibrationQuietly();
-            if (leaving) return;
+            _ = LoadCalibrationQuietly(); // 섬 불러오기와 같이(달리기 시작은 카운트다운 뒤라 그 전에 끝남)
             SetProgress(EntryShare);
 
             await islandFree;
