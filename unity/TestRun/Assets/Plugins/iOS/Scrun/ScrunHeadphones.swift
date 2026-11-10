@@ -9,13 +9,16 @@ import Foundation
 // 판단 근거(가설, 아이폰에서 확인): 오디오 출력 경로 + CMHeadphoneMotionManager 연결 알림.
 // 연결 알림을 받으려면 모션 업데이트를 켜 둬야 한다고 보고, C#이 지켜보는 동안(watch, Headphones.Changed 구독 중)에만
 // 켠다. 앱 내내 켜 두면 에어팟·아이폰 배터리를 쓴다.
-// S2 속도 플러그인은 이 manager를 같이 쓴다(헤드폰 모션 manager를 여러 개 만들지 않게).
+// 속도 센서(ScrunSpeed, 계획 0024)도 이 manager를 같이 쓴다(헤드폰 모션 manager를 여러 개 만들지 않게).
+// 속도 센서가 켜져 있으면 핸들러 있는 업데이트(샘플을 받음)로, 아니면 핸들러 없이(연결 알림만) 켠다.
 final class ScrunHeadphones: NSObject, CMHeadphoneMotionManagerDelegate {
     static let shared = ScrunHeadphones()
 
     let motion = CMHeadphoneMotionManager()
     private var motionConnected = false
     private var updating = false
+    private var updatingWithHandler = false
+    private var speedHandler: (queue: OperationQueue, handler: CMHeadphoneMotionManager.DeviceMotionHandler)?
     private var watching = false
     private var requesting = false
     private var started = false
@@ -53,6 +56,16 @@ final class ScrunHeadphones: NSObject, CMHeadphoneMotionManagerDelegate {
         emitIfChanged()
     }
 
+    // 속도 센서가 샘플을 받기 시작·끝(nil). 이어폰 연결 알림은 그대로 여기서 C#으로 보낸다
+    func setSpeedHandler(_ queue: OperationQueue?, _ handler: CMHeadphoneMotionManager.DeviceMotionHandler?) {
+        if let queue, let handler { speedHandler = (queue, handler) } else { speedHandler = nil }
+        syncUpdates()
+        emitIfChanged()
+    }
+
+    // 헤드폰 모션 샘플이 올 수 있는 상태(업데이트가 켜져 있고 연결 알림을 받았고 허용됨)
+    var motionReady: Bool { updating && motionConnected && Self.authorized }
+
     // 권한이 바뀌었을 수 있을 때(ScrunPermissions가 부름)
     func permissionMaybeChanged() {
         syncUpdates()
@@ -78,15 +91,29 @@ final class ScrunHeadphones: NSObject, CMHeadphoneMotionManagerDelegate {
         }
     }
 
-    // 모션 업데이트는 (지켜보는 중 && 허용) 또는 권한을 묻는 중일 때만 켠다.
+    // 모션 업데이트는 ((지켜보는 중 || 속도 센서) && 허용) 또는 권한을 묻는 중일 때만 켠다.
+    // 속도 센서가 켜져 있고 허용이면 핸들러 있는 업데이트. 방식이 바뀌면 껐다 바로 켠다(연결 상태는 그대로 둠.
+    // 이때 iOS가 끊김·연결 알림을 다시 보내는지는 가설, 아이폰에서 확인)
     private func syncUpdates() {
-        let want = requesting || (watching && Self.authorized && motion.isDeviceMotionAvailable)
+        let usable = Self.authorized && motion.isDeviceMotionAvailable
+        let withHandler = speedHandler != nil && usable
+        let want = requesting || withHandler || (watching && usable)
+        if want && updating && withHandler != updatingWithHandler {
+            motion.stopDeviceMotionUpdates()
+            updating = false
+        }
         if want && !updating {
-            motion.startDeviceMotionUpdates()
+            if withHandler, let h = speedHandler {
+                motion.startDeviceMotionUpdates(to: h.queue, withHandler: h.handler)
+            } else {
+                motion.startDeviceMotionUpdates()
+            }
             updating = true
+            updatingWithHandler = withHandler
         } else if !want && updating {
             motion.stopDeviceMotionUpdates()
             updating = false
+            updatingWithHandler = false
             motionConnected = false // 업데이트를 끄면 연결 알림도 안 오므로 모른다고 본다
         }
     }
