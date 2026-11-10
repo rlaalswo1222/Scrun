@@ -45,6 +45,9 @@ namespace Scrun.App
         // 뒤로 가서 없어질 때(구독 해제 등)
         protected internal virtual void OnDestroy() { }
 
+        // 뒤로 가기(에디터 Esc)를 이 화면이 직접 처리했으면 true(예: 확인을 묻기). false면 그냥 닫힘
+        protected internal virtual bool OnBack() => false;
+
         // 이름으로 찾되, 없으면 바로 알려 준다(UXML과 코드가 어긋난 것을 일찍 발견)
         protected T Q<T>(string name) where T : VisualElement =>
             Root.Q<T>(name) ?? throw new InvalidOperationException($"{Uxml}.uxml에 '{name}'({typeof(T).Name})이 없음");

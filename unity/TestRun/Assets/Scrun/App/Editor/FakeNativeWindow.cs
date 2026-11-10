@@ -130,7 +130,17 @@ namespace Scrun.App.Editor
             EditorGUILayout.LabelField("속도 센서", EditorStyles.boldLabel);
             cfg.phoneData = EditorGUILayout.Toggle("폰 데이터 들어옴", cfg.phoneData);
             cfg.airPodsData = EditorGUILayout.Toggle("에어팟 데이터 들어옴", cfg.airPodsData);
-            cfg.hasCalibration = EditorGUILayout.Toggle("보정값 있음", cfg.hasCalibration);
+            if (playing)
+            {
+                var sp = FakeSpeedSensor.Instance;
+                bool has = EditorGUILayout.Toggle("보정값 있음(지금)", sp.HasCalibration);
+                if (has != sp.HasCalibration)
+                    Later(() => { if (has) sp.LoadCalibration(FakeSpeedSensor.SampleModel().ToJson()); else sp.ClearCalibration(); });
+            }
+            else
+            {
+                cfg.hasCalibration = EditorGUILayout.Toggle("보정값 있음(처음)", cfg.hasCalibration);
+            }
             cfg.sensorStartSec = EditorGUILayout.Slider("켜고 들어오기까지(초)", cfg.sensorStartSec, 0f, 5f);
             cfg.detectDelaySec = EditorGUILayout.Slider("걸음 감지 지연(초)", cfg.detectDelaySec, 0f, 10f);
             if (!playing) cfg.startKmh = EditorGUILayout.Slider("켤 때 속도(km/h)", cfg.startKmh, 0f, 20f);
@@ -138,7 +148,11 @@ namespace Scrun.App.Editor
             if (EditorGUI.EndChangeCheck())
             {
                 SaveConfig();
-                if (!playing) fake.LoadStartState(); // 에디트 모드에서도 바로 반영
+                if (!playing)
+                {
+                    fake.LoadStartState(); // 에디트 모드에서도 바로 반영
+                    FakeSpeedSensor.Instance.LoadStartCalibration();
+                }
             }
 
             if (playing) SpeedSensorLive();
@@ -152,7 +166,11 @@ namespace Scrun.App.Editor
                 FakeNative.Config = new FakeNativeConfig();
                 SaveConfig();
                 if (playing) Later(fake.SimulateStartState);
-                else fake.LoadStartState();
+                else
+                {
+                    fake.LoadStartState();
+                    FakeSpeedSensor.Instance.LoadStartCalibration();
+                }
             }
         }
 
@@ -188,6 +206,22 @@ namespace Scrun.App.Editor
             EditorGUILayout.LabelField("속도", r.HasSpeed ? $"{r.SpeedKmh:0.0} km/h{(r.UsingAirPods ? " (에어팟 포함)" : "")}" : "없음");
             EditorGUILayout.LabelField("걸음 수 · 케이던스", $"{r.Steps} · {r.CadenceSpm:0} spm");
             EditorGUILayout.LabelField("센서 시각", $"{r.Time:0.0} 초");
+
+            EditorGUILayout.LabelField("보정", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("지금 보정", s.HasCalibration ? "있음" : "없음");
+            if (s.Calibrating)
+            {
+                EditorGUILayout.LabelField("이번 보정 점", $"{s.CalibrationPointCount} / {CalibrationLadder.SpeedsKmh.Length}");
+                EditorGUILayout.LabelField("단계", s.StageOpen ? $"재는 중 {s.StageMeasuredSec:0.0}초(앞 {SpeedSensorBase.StageSkipSec:0}초 버림)" : "쉬는 중");
+            }
+            int forced = s.ForceNextStage is CalStageResult f ? (int)f + 1 : 0;
+            int pickedForce = EditorGUILayout.Popup("다음 단계 결과", forced, ForceLabels);
+            if (pickedForce != forced)
+                Later(() => s.ForceNextStage = pickedForce == 0 ? (CalStageResult?)null : (CalStageResult)(pickedForce - 1));
+            EditorGUILayout.HelpBox("보정 단계는 '사람 속도'로 판정합니다: 안내 속도로 맞추면 성공, 그대로 두면 '속도 안 올림', " +
+                "재는 중에 속도를 1 km/h 넘게 바꾸면 '고르지 않음', 서 있으면 '걸음 없음'. '다음 단계 결과'는 한 번만 적용됩니다.", MessageType.None);
         }
+
+        static readonly string[] ForceLabels = { "사람 속도로(강제 없음)", "성공", "걸음 없음", "고르지 않음", "속도 안 올림", "센서 끊김", "너무 짧음" };
     }
 }
