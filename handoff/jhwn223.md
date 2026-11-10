@@ -3,7 +3,7 @@
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
 ## 지금 (11/11)
-- **러닝 설정·거치 안내 끝, 커밋 전**: 브랜치 `feat/run-setup`(develop 681f47a에서), 계획 [0026](../docs/plans/0026-run-setup-mount-guide.md). Figma D-01·D-05·D-06을 맵 화면 위 층(`RunSetupView`)으로, 흐린 배경은 `MapBackdrop`(섬 카메라 한 장 찍어 줄이기, 안내 중 섬 카메라 끔). `/code-review` 반영, EditMode 145/145, 에디터 Play로 흐름 확인. 바뀐 동작은 `docs/unity/unity_map.md` "러닝 설정·거치 안내"
+- **러닝 설정·거치 안내 PR #35**(민재 리뷰·상준 Figma 대조 대기): 브랜치 `feat/run-setup`(develop 681f47a에서), 계획 [0026](../docs/plans/0026-run-setup-mount-guide.md). Figma D-01·D-05·D-06을 맵 화면 위 층(`RunSetupView`)으로, 흐린 배경은 `MapBackdrop`(섬 카메라 한 장 찍어 줄이기, 안내 중 섬 카메라 끔). `/code-review` 반영, EditMode 145/145, 에디터 Play로 흐름 확인. 바뀐 동작은 `docs/unity/unity_map.md` "러닝 설정·거치 안내"
   - 커밋할 것: `App/Run/`, `App/Map/MapBackdrop.cs`, `RunSetupView.cs`, `RunSetup.uxml`·`.uss`, `RunSetupTests.cs`(+ 새 `.meta`), `MapScreen.cs`, `Map.uxml`, `Api.cs`, `Dtos.cs`, `UiExtensions.cs`, 섬 `Scripts/RunnerLabels.cs`, 계획 0026, `unity_map.md`, 이 파일. **넣지 말 것**: Y Bot·PolyHaven `.meta`, `.gitignore`(따로)
   - 이 handoff 파일은 #34 브랜치에도 있음 → 합칠 때 이 브랜치 쪽(나중 내용)을 고른다
   - 상준 답(11/11): 그림은 라이선스 미확인이라 빈 칸 유지(캐릭터는 상준이 Blender로, 계기판은 새로), 시간 퀵·범위 확정, "다시 보지 않기"·뒤로 가기·X·고스트 숨김 OK(상준이 Figma·노션 반영), BL-9 ③ 안내는 BL-45 조사 뒤 D-08 쪽으로. PR 올리면 링크 보내기
@@ -21,7 +21,7 @@ jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md
 
 ## 다음 할 일
 1. #34 재리뷰·머지 → 노션 상태 완료. 아이폰(PR #28 뒤): 권한 팝업·설정 앱 왕복 때 앱이 꺼지는지(꺼지면 입장하려던 코스·온보딩 단계 저장해 이어 가기, 계획 0025), 에어팟, 가로 맵·노치
-2. **S2 남은 것**: 러닝 설정·거치 안내 커밋·PR(사용자 요청 시) → [3D] 임시 아바타 달리기 애니메이션 속도 맞춤(BL-42, 민재 S3가 씀, 계획 0027) → [BE] 내 정보 `GET·PATCH /users/me`·설정 `GET·PATCH /users/me/settings`(BL-36, 계획 0028). 보정값 API(BL-4)는 #30에서 끝남 → 노션 완료 표시만
+2. **S2 남은 것**: #35 리뷰 반영 → [3D] 임시 아바타 달리기 애니메이션 속도 맞춤(BL-42, 민재 S3가 씀, 계획 0027) → [BE] 내 정보 `GET·PATCH /users/me`·설정 `GET·PATCH /users/me/settings`(BL-36, 계획 0028). 보정값 API(BL-4)는 #30에서 끝남 → 노션 완료 표시만
 3. S3: 센서 준비·카운트다운(D-07·D-09), 맵 HUD(D-10 진행 막대·멈춤 D-17), MapScreen 쪼개기
 
 ## 맡은 영역 (계획 0017, 노션 [개발 계획](https://tough-wednesday-fe0.notion.site/11-08-11-23-4114ae82f1de81a9bec2db16a9bfe635) 작업 표 지환 36줄)
