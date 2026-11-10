@@ -20,7 +20,8 @@ namespace Scrun.App
     public static class CalibrationLadder
     {
         public static readonly float[] SpeedsKmh = { 2f, 4f, 6f, 8f, 10f, 12f, 14f };
-        public const float StageSec = 20f; // 앞 SpeedSensorBase.StageSkipSec초는 버림
+        // 앞 SpeedSensorBase.StageSkipSec(5)초는 속도 바꾸는 시간이라 버리고 10초를 잰다. 우리 기록에서 3–17초가 오차 차이 없음(calibration_design.md)
+        public const float StageSec = 15f;
     }
 
     // 보정점 하나: "안내 속도 v일 때 이 사람의 ln(충격)·걸음 수·에어팟 흔들림 폭".
