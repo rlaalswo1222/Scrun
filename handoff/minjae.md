@@ -4,7 +4,8 @@
 
 ## 진행 중(11/10 밤): 아이폰 실기기 확인 끝 → 6번 커밋·PR(브랜치 `feat/kakao-ios`, PR #28 위)
 - **아이폰 실기기(11/10 밤, 지환 아이폰 15 Pro Max·iOS 26.5, 무료 개인 팀)**: 권한 4종·에어팟 끼기/빼기/케이스·키체인·카카오톡 앱 로그인 모두 됨. 설치 순서는 `docs/unity/unity_map.md` "아이폰에 설치". 팀 ID는 `ScrunLocal.json`에 넣음(다음 빌드부터 자동 서명). 결과 로그는 `unity/Builds/device-console.log`(git 밖, 카카오 토큰이 찍혀 있으니 공유 금지)
-- 아이폰 남은 것: 노치(다이내믹 아일랜드)·홈 막대 가림, 한글 입력(닉네임), 거부 → 설정 앱에서 허용 → 이벤트, 앱 재실행 뒤 키체인 토큰. URP DOF·Panini 셰이더가 빌드에서 빠짐(할 일)
+- 아이폰에서 고친 것(11/10 밤): 탭 바 밑 빈 띠(홈 바 여백을 탭 바 안쪽으로), 탭 높이 56 → 49, 터치 뒤 남는 회색(`:hover` → `:active`). 노치 가림 없음, 재설치 뒤 로그인 유지 확인. Claude가 `xcrun devicectl device capture screenshot`으로 아이폰 화면을 직접 캡처해 확인함
+- 아이폰 남은 것: 한글 입력(닉네임), 거부 → 설정 앱에서 허용 → 이벤트. URP DOF·Panini 셰이더가 빌드에서 빠짐(할 일). **상준에게**: 탭 아이콘 4개(홈·기록·친구·내 정보) UI Kit에
 - 시뮬레이터에서 카카오계정 웹 로그인 → 공용 서버 실제 가입 → 홈, 재실행 뒤 로그인 유지까지 확인. 사용법·주의는 `docs/unity/unity_map.md` "카카오 로그인"
 - 앱 키는 `unity/TestRun/ScrunLocal.json`(git 밖)에 넣음. Claude in Chrome으로 카카오 개발자 콘솔에서 읽음(번들 ID `com.scrun.app` 등록 확인)
 - Claude in Chrome 연결(11/10): VS Code에 전체 디스크 접근 권한, 확장 안 CLI(`~/.vscode/extensions/anthropic.claude-code-*/resources/native-binary/claude --chrome`)를 한 번 실행해 연결 파일 설치, `/chrome`에서 Enabled by default → 새 대화
