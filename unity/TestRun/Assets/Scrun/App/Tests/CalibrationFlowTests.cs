@@ -177,6 +177,33 @@ namespace Scrun.App.Tests
             Assert.AreEqual(CalState.Help, flow.State);
         }
 
+        [Test]
+        public void 센서에_보정이_있으면_서버를_부르지_않는다()
+        {
+            s.LoadCalibration(FakeSpeedSensor.SampleModel().ToJson());
+            var t = CalibrationStore.EnsureLoadedAsync(s); // Api를 부르면 테스트 환경엔 서버가 없어 실패
+            Assert.IsTrue(t.IsCompleted && !t.IsFaulted);
+        }
+
+        [Test]
+        public void 이_폰에_못_올린_보정이_있으면_그것을_센서에_넣는다()
+        {
+            var model = FakeSpeedSensor.SampleModel().ToJson();
+            UnityEngine.PlayerPrefs.SetString("Scrun.Calibration.Pending", model);
+            try
+            {
+                Assert.IsFalse(s.HasCalibration);
+                var t = CalibrationStore.EnsureLoadedAsync(s);
+                Assert.IsTrue(t.IsCompleted && !t.IsFaulted);
+                Assert.IsTrue(s.HasCalibration);
+                Assert.AreEqual(model, s.ExportCalibration());
+            }
+            finally
+            {
+                CalibrationStore.ClearPending();
+            }
+        }
+
         [TestCase(8, 2.0, 160, true)]
         [TestCase(8, 2.0, 0, false)]      // 걸음 수 0
         [TestCase(8, double.NaN, 160, false)]

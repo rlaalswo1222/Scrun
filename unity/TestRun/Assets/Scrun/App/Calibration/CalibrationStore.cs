@@ -6,8 +6,9 @@ using UnityEngine;
 namespace Scrun.App
 {
     // 보정 저장·불러오기(계획 0023 4번). 서버가 원본이고, 서버에 못 올린 보정은 이 폰에 남겨 두었다가 다시 올린다.
-    // 다시 올리는 곳: 코스 입장이 "보정 없음"(409)일 때(CourseDetailScreen). 로그인 뒤 GET으로 불러오기는 아직(4번 남은 것).
-    // 남긴 보정은 로그인이 끝나면(로그아웃·다른 계정 가입·재로그인 필요) 지운다: 다음 사람 계정에 올라가지 않게.
+    // 다시 올리는 곳: 코스 입장이 "보정 없음"(409)일 때(CourseDetailScreen).
+    // 불러오는 곳: 맵 입장이 된 직후 센서에 보정이 없으면(앱을 다시 켜면 센서 보정은 비어 있음, MapScreen) EnsureLoadedAsync.
+    // 로그인이 끝나면(로그아웃·다른 계정 가입·재로그인 필요) 남긴 보정과 센서의 보정을 지운다: 다음 사람이 앞 사람 보정으로 달리거나 올리지 않게.
     public static class CalibrationStore
     {
         const string PendingKey = "Scrun.Calibration.Pending";
@@ -15,8 +16,29 @@ namespace Scrun.App
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void Hook()
         {
-            Session.Cleared -= ClearPending;
-            Session.Cleared += ClearPending;
+            Session.Cleared -= OnLoginEnded;
+            Session.Cleared += OnLoginEnded;
+        }
+
+        static void OnLoginEnded()
+        {
+            ClearPending();
+            try { Native.Speed.ClearCalibration(); }
+            catch (System.Exception e) { Debug.LogWarning("[보정] 로그아웃 때 센서 보정을 못 지움: " + e.Message); } // 센서 없는 빌드
+        }
+
+        // 센서에 보정이 없으면 채운다: 이 폰에 못 올린 보정이 있으면 그게 가장 새것이라 그것, 아니면 서버(GET).
+        // 서버에도 없거나 모양이 다르면(옛 버전) 그대로 둔다. 서버 오류는 ApiException 그대로
+        public static async Task EnsureLoadedAsync(ISpeedSensor sensor)
+        {
+            if (sensor.HasCalibration) return;
+            var pending = Pending;
+            if (pending != null && sensor.LoadCalibration(pending)) return;
+            var rec = await Api.Users.GetCalibrationAsync();
+            if (rec?.Model == null || rec.Model.Type == JTokenType.Null) return; // 서버에도 보정 없음
+            var model = rec.Model.ToString(Newtonsoft.Json.Formatting.None);
+            if (!sensor.LoadCalibration(model))
+                Debug.LogWarning("[보정] 서버 보정을 이 앱이 읽을 수 없음(버전이 다름) → 다시 보정해야 함");
         }
 
         // 보정 흐름이 끝나면 부른다. 실패하면 이 폰에 남기고 예외를 그대로 던진다(화면은 "서버에 아직 못 올렸어요")

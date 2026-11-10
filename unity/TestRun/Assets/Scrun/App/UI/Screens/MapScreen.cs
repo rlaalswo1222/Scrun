@@ -113,6 +113,20 @@ namespace Scrun.App
             }
         }
 
+        // 입장이 됐다 = 서버에 보정이 있음. 센서에 아직 없으면(앱을 다시 켬) 불러온다(계획 0023 4번).
+        // 실패해도 입장은 계속(속도가 안 나오면 다음 입장 때 다시 불러옴), 기록만 남김
+        static async Task LoadCalibrationQuietly()
+        {
+            try
+            {
+                await CalibrationStore.EnsureLoadedAsync(Native.Speed);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[보정] 서버 보정을 못 불러옴(다음 입장 때 다시): " + e.Message);
+            }
+        }
+
         async Task EnterAndLoad()
         {
             MapEntry entry;
@@ -125,6 +139,8 @@ namespace Scrun.App
                 if (!leaving) OnEnterFailed(e);
                 return;
             }
+            if (leaving) return;
+            await LoadCalibrationQuietly();
             if (leaving) return;
             SetProgress(EntryShare);
 
