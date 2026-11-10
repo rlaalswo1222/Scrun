@@ -86,7 +86,7 @@ def main():
         d = replay(run, model)
         out.parent.mkdir(parents=True, exist_ok=True)
         d.to_csv(out, index=False, float_format='%.5f', lineterminator='\n')
-        print(f'{out.relative_to(ROOT)}: {len(d)}줄, 마지막 누적 걸음 {int(d.steps.iloc[-1])}')
+        print(f"{out.resolve().relative_to(ROOT)}: {len(d)}줄, 마지막 누적 걸음 {int(d.steps.iloc[-1])}")
         if model is None:
             compare(d, run / 'phone/estimate.csv')
 
