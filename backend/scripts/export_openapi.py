@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 
 from app.core.errors import ERRORS, ErrorCode
 from app.main import app
-from app.stub_requests import CALLS, REAL
+from app.stub_requests import CALLS, real_key
 from scripts.real_examples import collect as collect_real
 
 OUT = Path(__file__).resolve().parents[2] / "docs" / "api"
@@ -52,8 +52,8 @@ def main() -> None:
 
     real = collect_real()  # 진짜 API는 실제 흐름(테스트 DB)으로
     for method, path, body, status in CALLS:
-        key = (method, path.split("?")[0])
-        if key in REAL:
+        key = real_key(method, path)
+        if key is not None:
             ex = real[key]
             _write(examples / f"{_slug(method, path)}.json", {
                 "request": {"method": method, "path": path, "auth": ex["auth"], "body": ex["body"]},

@@ -23,6 +23,8 @@ erDiagram
     users ||--o{ weekly_goal_cycles : "주기별 목표"
     users ||--o{ runs : ""
     courses ||--o{ runs : ""
+    courses ||--o{ course_entries : "입장(자리)"
+    users ||--o| course_entries : ""
     runs ||--o{ run_samples : "속도 시계열"
     runs ||--o{ run_companions : "함께 달린 러너"
     runs ||--o{ verifications : "인증 시도"
@@ -107,12 +109,22 @@ erDiagram
 **courses** — 운영 데이터
 | 칸 | 형식 | 설명 |
 |---|---|---|
-| **id** | text | `crs_island_loop` |
-| name, description, mood, thumbnail_url | text | |
+| **id** | text | `crs_lake_loop` |
+| name, description, mood | text | |
+| thumbnail_url | text, null | 없으면 null(앱 기본 그림) |
 | type | text | `LOOP_3D`·`VIDEO`(실사 영상은 최하위, 자리만) |
 | length_m | int | |
 | max_runners_per_map | smallint | 20 |
 | active | bool | 목록에 보일지 |
+
+코스 데이터는 마이그레이션으로 넣는다(`seed_courses`, 계획 0021): 기존 섬 맵(Island01) 코스 4개 `crs_lake_loop`·`crs_coast_run`·`crs_forest_run`·`crs_island_tour`, 길이는 Unity `RoadNetwork.BuildRoute`와 같은 계산으로 잰 한 바퀴 m(6671·8776·9695·10884). 임시 맵이라 새 맵(BL-43 3km 루프)이 나오면 새 마이그레이션으로 바꾼다
+
+**course_entries** — 맵 입장 = 자리 잡기. 사람당 한 줄(다른 코스에 들어가면 옮겨짐). 입장 API가 코스 줄을 잠그고(`SELECT … FOR UPDATE`) 인원을 센 뒤 여기에 써서, 동시에 들어와도 최대 인원을 넘지 않는다(계획 0021). 실시간 서버(BL-25) 뒤에는 연결 수로 세므로 다시 본다
+| 칸 | 형식 | 설명 |
+|---|---|---|
+| **user_id** | → users | 사람당 한 줄 |
+| course_id | → courses | |
+| entered_at | timestamptz | 마지막 입장 시각. 최근 10분(임시) 안이면 인원에 셈 |
 
 ### 러닝·인증
 **runs** — 러닝 1번 = 1줄. **② 공식 값과 미인증 사유를 따로 저장**
@@ -213,7 +225,7 @@ erDiagram
 |---|---|
 | 주간 목표 달성 횟수 | 이번 주기(사용자 시간대) 안 `runs`: `status = VERIFIED` 그리고 `official_duration_s ≥ 300` |
 | 지금 달리는 친구 | 친구의 `runs.status = ACTIVE`(실시간 서버가 생기면 그쪽 상태로) |
-| 코스별 지금 러너 수 | 실시간 서버(BL-25 전에는 `runs.status = ACTIVE` 수) |
+| 코스별 지금 러너 수 | 실시간 서버 연결 수(ADR-0010). 그 전에는 최근 10분 안에 입장(`course_entries`)했거나 달리는 중(`runs.status = ACTIVE`, `updated_at` 최근 10분)인 사람 수. 세는 곳은 `app/core/occupancy.py` 한 곳 |
 | 피드 | 위 친구 피드 조회 |
 | 평균 페이스 | 공식 시간 ÷ 공식 거리 |
 
@@ -235,8 +247,8 @@ R = 읽기, W = 쓰기. (노션 API 명세 42개)
 | GET /v1/users/me/weekly-goal | R weekly_goals, weekly_goal_cycles, runs |
 | PUT /v1/users/me/weekly-goal | W weekly_goals, weekly_goal_cycles |
 | GET /v1/home | R weekly_goals, weekly_goal_cycles, user_progress, impacts, user_impacts, friendships, runs, courses |
-| GET /v1/courses, /v1/courses/{courseId} | R courses (+ 실시간 러너 수) |
-| POST /v1/courses/{courseId}/entries | R courses, calibrations (+ 실시간 서버) |
+| GET /v1/courses, /v1/courses/{courseId} | R courses, course_entries, runs (+ 실시간 러너 수) |
+| POST /v1/courses/{courseId}/entries | R courses(잠금), calibrations, runs · W course_entries (+ 실시간 서버) |
 | POST /v1/runs | W runs, run_ghosts |
 | PUT /v1/runs/{runId}/samples | W run_samples |
 | POST /v1/runs/{runId}/finish | W runs, run_companions |

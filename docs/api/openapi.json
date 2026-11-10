@@ -978,7 +978,7 @@
           "Course"
         ],
         "summary": "코스 목록",
-        "description": "화면 C-01 · BL-7, BL-43. 실사 영상 코스는 최하위라 type만 열어 둠",
+        "description": "화면 C-01 · BL-7, BL-43. 짧은 코스부터. runnersNow는 그 맵에 지금 있는 사람 수(실시간 서버 전까지 임시: 최근 10분 안에 입장했거나 달리는 중인 사람). 실사 영상 코스는 최하위라 type만 열어 둠",
         "operationId": "list_courses_v1_courses_get",
         "responses": {
           "200": {
@@ -1025,7 +1025,7 @@
           "Course"
         ],
         "summary": "코스 상세",
-        "description": "화면 C-02 · BL-7",
+        "description": "화면 C-02 · BL-7. 숨긴 코스도 404",
         "operationId": "get_course_v1_courses__courseId__get",
         "security": [
           {
@@ -1103,7 +1103,7 @@
           "Course"
         ],
         "summary": "맵 입장",
-        "description": "화면 C-02, D-01, I-10, I-11 · BL-7, BL-21. 맵 인스턴스 배정(최대 20명), 입장 위치, 실시간 접속 정보(모양 미정, BL-25).\n\n스텁: courseId `crs_full` → COURSE_FULL, `crs_nocalib` → CALIBRATION_REQUIRED",
+        "description": "화면 C-02, D-01, I-10, I-11 · BL-7, BL-21. 판정 순서: 코스 없음 → 보정 없음(CALIBRATION_REQUIRED) → 나 말고 그 맵에 있는 사람이 maxRunnersPerMap 이상(COURSE_FULL). 통과하면 자리를 잡는다(다른 코스에 있던 자리는 옮겨짐). 코스를 잠그고 세므로 동시에 들어와도 최대 인원을 넘지 않는다. 코스 하나 = 맵 하나(mapInstanceId = map_{courseId}). 실시간 서버(BL-25) 전이라 입장 위치는 코스 위 랜덤, realtime은 null",
         "operationId": "enter_map_v1_courses__courseId__entries_post",
         "security": [
           {
@@ -3348,8 +3348,16 @@
             "description": "지금 달리는 러너 수(봇 제외)"
           },
           "thumbnailUrl": {
-            "type": "string",
-            "title": "Thumbnailurl"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnailurl",
+            "description": "없으면 null(앱 기본 그림)"
           }
         },
         "type": "object",
@@ -3387,8 +3395,16 @@
             "description": "지금 달리는 러너 수(봇 제외)"
           },
           "thumbnailUrl": {
-            "type": "string",
-            "title": "Thumbnailurl"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnailurl",
+            "description": "없으면 null(앱 기본 그림)"
           },
           "description": {
             "type": "string",
@@ -4802,7 +4818,7 @@
           "entryPositionM": {
             "type": "number",
             "title": "Entrypositionm",
-            "description": "입장 위치(코스 시작점부터 m). 러너 많은 구간 근처, 없으면 랜덤"
+            "description": "입장 위치(코스 시작점부터 m). 실시간 서버(BL-25) 전에는 코스 위 랜덤, 뒤에 러너 많은 구간 근처로"
           },
           "realtime": {
             "anyOf": [

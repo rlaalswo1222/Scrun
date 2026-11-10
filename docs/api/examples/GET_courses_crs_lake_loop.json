@@ -1,0 +1,31 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/v1/courses/crs_lake_loop",
+    "auth": "Bearer {accessToken}",
+    "body": null
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "courseId": "crs_lake_loop",
+        "name": "노을 호수 한 바퀴",
+        "type": "LOOP_3D",
+        "lengthM": 6671,
+        "runnersNow": 0,
+        "thumbnailUrl": null,
+        "description": "등대 항구에서 출발해 호숫가 나무 데크 길을 지나 고원 아래 골짜기로 돌아오는 코스.",
+        "mood": "노을 지는 호숫가",
+        "maxRunnersPerMap": 20
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/courses/crs_lake_loop",
+      "requestId": "req_example"
+    }
+  }
+}

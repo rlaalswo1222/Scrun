@@ -1,4 +1,6 @@
 """모든 API를 한 번씩 부르는 예시 요청 표. 테스트(tests/test_contract.py)와 예시 내보내기(scripts/export_openapi.py)가 같이 쓴다."""
+import re
+from typing import Optional
 
 # (동작, 주소, 본문, 기대 상태). 새 API를 만들면 여기 한 줄 추가(빠지면 test_all_operations_listed 실패). 본문 "PHOTO"는 사진 파일 업로드
 CALLS = [
@@ -20,9 +22,9 @@ CALLS = [
     ("PUT", "/v1/users/me/weekly-goal", {"targetCount": 4}, 200),
     ("GET", "/v1/home", None, 200),
     ("GET", "/v1/courses", None, 200),
-    ("GET", "/v1/courses/crs_island_loop", None, 200),
-    ("POST", "/v1/courses/crs_island_loop/entries", None, 201),
-    ("POST", "/v1/runs", {"clientRunId": "c1", "mapInstanceId": "map_01", "goal": {"type": "DISTANCE", "value": 3000},
+    ("GET", "/v1/courses/crs_lake_loop", None, 200),
+    ("POST", "/v1/courses/crs_lake_loop/entries", None, 201),
+    ("POST", "/v1/runs", {"clientRunId": "c1", "mapInstanceId": "map_crs_lake_loop", "goal": {"type": "DISTANCE", "value": 3000},
                           "startedAt": "2026-11-06T10:00:00Z"}, 201),
     ("GET", "/v1/runs?month=2026-11", None, 200),
     ("GET", "/v1/runs/active", None, 200),
@@ -58,4 +60,20 @@ REAL = {
     ("POST", "/v1/auth/refresh"),
     ("POST", "/v1/auth/logout"),
     ("GET", "/v1/users/nickname/check"),
+    ("GET", "/v1/courses"),
+    ("GET", "/v1/courses/{courseId}"),
+    ("POST", "/v1/courses/{courseId}/entries"),
 }
+
+
+def real_key(method: str, path: str) -> Optional[tuple[str, str]]:
+    """실제 주소(/v1/courses/crs_lake_loop?x=1)가 진짜 API면 REAL의 (동작, 주소 틀)을, 아니면 None.
+    똑같은 주소가 먼저(/v1/users/me가 /v1/users/{userId}보다), 그다음 {..} 자리를 채운 틀을 이름순으로."""
+    path = path.split("?")[0]
+    if (method, path) in REAL:
+        return method, path
+    for m, tpl in sorted(REAL):
+        pattern = "[^/]+".join(re.escape(part) for part in re.split(r"\{[^/]+\}", tpl))
+        if m == method and re.fullmatch(pattern, path):
+            return m, tpl
+    return None

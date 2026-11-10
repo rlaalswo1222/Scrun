@@ -4,7 +4,7 @@
     "path": "/v1/runs",
     "body": {
       "clientRunId": "c1",
-      "mapInstanceId": "map_01",
+      "mapInstanceId": "map_crs_lake_loop",
       "goal": {
         "type": "DISTANCE",
         "value": 3000

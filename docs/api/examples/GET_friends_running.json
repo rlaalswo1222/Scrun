@@ -12,8 +12,8 @@
         {
           "userId": "usr_f1",
           "nickname": "바닷바람",
-          "courseId": "crs_island_loop",
-          "courseName": "섬 루프 코스(가칭)",
+          "courseId": "crs_lake_loop",
+          "courseName": "노을 호수 한 바퀴",
           "distanceM": 1800,
           "paceSPerKm": 330
         }

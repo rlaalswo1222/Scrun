@@ -1,0 +1,26 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/v1/courses/crs_lake_loop/entries",
+    "auth": "Bearer {accessToken}",
+    "body": null
+  },
+  "status": 201,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "mapInstanceId": "map_crs_lake_loop",
+        "courseId": "crs_lake_loop",
+        "entryPositionM": 1100.4,
+        "realtime": null
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/courses/crs_lake_loop/entries",
+      "requestId": "req_example"
+    }
+  }
+}
