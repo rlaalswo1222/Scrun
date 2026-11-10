@@ -1,7 +1,7 @@
 """진짜로 구현된 API의 예시를 실제 흐름으로 만든다(테스트 DB + 가짜 카카오). export_openapi·notion_pages가 쓴다.
 
-흐름: 카카오 로그인(처음) → 약관 → 닉네임 확인 → 가입 → 코스 목록·상세 → (보정 저장) → 맵 입장 → 토큰 재발급 → 로그아웃.
-토큰 값은 매번 바뀌므로 고정 글자로 바꿔 넣는다. 입장 위치(랜덤)는 시드를 고정한 난수로 바꿔 끼워 매번 같게.
+흐름: 카카오 로그인(처음) → 약관 → 닉네임 확인 → 가입 → 코스 목록·상세 → 보정 저장·조회 → 맵 입장 → 토큰 재발급 → 로그아웃.
+토큰 값·저장 시각은 매번 바뀌므로 고정 값으로 바꿔 넣는다. 입장 위치(랜덤)는 시드를 고정한 난수로 바꿔 끼워 매번 같게.
 """
 from app.testenv import use_test_settings
 
@@ -11,8 +11,6 @@ import random
 
 from fastapi.testclient import TestClient
 
-from app.db.ids import new_id
-from app.db.models import Calibration, User
 from app.db.testing import TestDatabase
 from app.main import app
 from app.routers.courses import get_rng
@@ -32,6 +30,8 @@ def _clean(j):
         for k, v in PLACEHOLDER.items():
             if data.get(k):
                 data[k] = v
+        if data.get("createdAt"):  # 저장 시각(보정 등)도 다시 만들 때마다 바뀌지 않게
+            data["createdAt"] = FIXED_META["timestamp"]
     return j
 
 
@@ -44,6 +44,8 @@ def collect() -> dict:
         out = {}
 
         def rec(method, path, body, auth, r):
+            if r.status_code >= 400:  # 실패한 응답을 예시로 남기지 않게
+                raise RuntimeError(f"예시 흐름 실패: {method} {path} → {r.status_code} {r.text}")
             out[(method, path)] = {"body": body, "auth": auth, "status": r.status_code,
                                    "response": _clean(r.json()) if r.content else None}
             return r.json() if r.content else None
@@ -62,9 +64,15 @@ def collect() -> dict:
         auth = {"Authorization": f"Bearer {tok['accessToken']}"}
         rec("GET", "/v1/courses", None, "Bearer {accessToken}", c.get("/v1/courses", headers=auth))
         rec("GET", "/v1/courses/{courseId}", None, "Bearer {accessToken}", c.get("/v1/courses/crs_lake_loop", headers=auth))
-        with tdb.Session() as s:  # 보정 저장 API(BL-4)는 아직 스텁이라 DB에 바로
-            s.add(Calibration(id=new_id(), user_id=s.query(User.id).scalar(), points=[], model={}, device="iPhone15,4"))
-            s.commit()
+        cal = {  # 예시 값(실측 아님). model은 폰 SpeedEstimator가 만든 것을 서버는 해석하지 않고 보관
+            "points": [{"speedKmh": 4.0, "gait": "WALK", "durationS": 20}, {"speedKmh": 8.0, "gait": "RUN", "durationS": 20}],
+            "model": {"version": 1, "points": [{"v": 4.0, "limp": 0.9, "cad": 112, "amp": 0.31, "running": False},
+                                               {"v": 8.0, "limp": 2.4, "cad": 158, "amp": 0.62, "running": True}]},
+            "device": "iPhone15,4",
+        }
+        rec("PUT", "/v1/users/me/calibration", cal, "Bearer {accessToken}",
+            c.put("/v1/users/me/calibration", json=cal, headers=auth))
+        rec("GET", "/v1/users/me/calibration", None, "Bearer {accessToken}", c.get("/v1/users/me/calibration", headers=auth))
         app.dependency_overrides[get_rng] = lambda: random.Random(21)
         try:
             rec("POST", "/v1/courses/{courseId}/entries", None, "Bearer {accessToken}",

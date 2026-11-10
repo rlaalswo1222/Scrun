@@ -11,7 +11,7 @@ from app.core.occupancy import FRESH
 from app.db.ids import new_id
 from app.db.models import Calibration, Course, CourseEntry, Run, User
 from app.routers import courses as courses_router
-from tests.helpers import bearer, data, fail, run_together
+from tests.helpers import bearer, data, fail, run_together, signup
 
 COURSES = [  # 짧은 코스부터
     ("crs_lake_loop", "노을 호수 한 바퀴", 6671),
@@ -20,15 +20,6 @@ COURSES = [  # 짧은 코스부터
     ("crs_island_tour", "섬 일주", 10884),
 ]
 STALE = FRESH + timedelta(minutes=1)
-
-
-def signup(client, kakao) -> dict:
-    """진짜 가입 → Authorization 헤더."""
-    first = data(client.post("/v1/auth/kakao", json={"kakaoAccessToken": kakao}))
-    r = client.post("/v1/auth/signup", headers=bearer(first["signupToken"]),
-                    json={"agreedIds": ["terms", "privacy"], "nickname": f"러너{kakao[2:]}", "heightCm": 175, "weightKg": 70})
-    assert r.status_code == 201, r.text
-    return bearer(data(r)["accessToken"])
 
 
 @pytest.fixture

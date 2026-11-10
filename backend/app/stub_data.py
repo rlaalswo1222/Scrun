@@ -22,18 +22,6 @@ ME = {
 
 SETTINGS = {"feedShareDefault": True}
 
-CALIBRATION = {
-    "points": [
-        {"speedKmh": 4.0, "gait": "WALK", "durationS": 20},
-        {"speedKmh": 7.0, "gait": "RUN", "durationS": 20},
-        {"speedKmh": 8.5, "gait": "RUN", "durationS": 20},
-        {"speedKmh": 10.0, "gait": "RUN", "durationS": 20},
-    ],
-    "model": {"runA": 1.2, "runB": 2.1, "runC": 0.012, "walkSlope": 0.035},
-    "device": "iPhone15,4",
-    "createdAt": "2026-11-05T10:00:00Z",
-}
-
 WEEKLY_GOAL = {
     "targetCount": 3,
     "cycleStart": "2026-11-03",

@@ -2,16 +2,38 @@
   "request": {
     "method": "PUT",
     "path": "/v1/users/me/calibration",
+    "auth": "Bearer {accessToken}",
     "body": {
       "points": [
         {
-          "speedKmh": 8,
+          "speedKmh": 4.0,
+          "gait": "WALK",
+          "durationS": 20
+        },
+        {
+          "speedKmh": 8.0,
           "gait": "RUN",
           "durationS": 20
         }
       ],
       "model": {
-        "runA": 1.0
+        "version": 1,
+        "points": [
+          {
+            "v": 4.0,
+            "limp": 0.9,
+            "cad": 112,
+            "amp": 0.31,
+            "running": false
+          },
+          {
+            "v": 8.0,
+            "limp": 2.4,
+            "cad": 158,
+            "amp": 0.62,
+            "running": true
+          }
+        ]
       },
       "device": "iPhone15,4"
     }
@@ -23,16 +45,37 @@
       "data": {
         "points": [
           {
+            "speedKmh": 4.0,
+            "gait": "WALK",
+            "durationS": 20
+          },
+          {
             "speedKmh": 8.0,
             "gait": "RUN",
             "durationS": 20
           }
         ],
         "model": {
-          "runA": 1.0
+          "points": [
+            {
+              "v": 4.0,
+              "amp": 0.31,
+              "cad": 112,
+              "limp": 0.9,
+              "running": false
+            },
+            {
+              "v": 8.0,
+              "amp": 0.62,
+              "cad": 158,
+              "limp": 2.4,
+              "running": true
+            }
+          ],
+          "version": 1
         },
         "device": "iPhone15,4",
-        "createdAt": "2026-11-05T10:00:00Z"
+        "createdAt": "2026-11-06T00:00:00Z"
       }
     },
     "error": null,

@@ -687,7 +687,7 @@
           "User"
         ],
         "summary": "내 보정값",
-        "description": "화면 A-11, D-07, H-09 · BL-4, BL-10. 없으면 data=null → 맵 입장 전에 보정 화면으로",
+        "description": "화면 A-11, D-07, H-09 · BL-4, BL-10. 가장 최근에 올린 보정. 없으면 data=null → 맵 입장 전에 보정 화면으로",
         "operationId": "get_calibration_v1_users_me_calibration_get",
         "responses": {
           "200": {
@@ -732,7 +732,7 @@
           "User"
         ],
         "summary": "보정값 올리기",
-        "description": "화면 A-15, H-09 · BL-4. 계산은 폰, 서버는 보관만. OCR 값은 받지 않음(독립성 원칙). 보정 단계(6·8·10 km/h vs 걷기 1 + 달리기 3점)는 PRD 검토 대기",
+        "description": "화면 A-15, H-09 · BL-4. 계산은 폰, 서버는 보관만(model은 해석하지 않음). 이력으로 쌓이고 가장 최근 것이 현재 보정. 올린 뒤부터 맵 입장(CALIBRATION_REQUIRED 해제). OCR 값은 받지 않음(독립성 원칙). 보정 단계(6·8·10 km/h vs 걷기 1 + 달리기 3점)는 PRD 검토 대기",
         "operationId": "put_calibration_v1_users_me_calibration_put",
         "requestBody": {
           "content": {
@@ -3345,7 +3345,7 @@
           "runnersNow": {
             "type": "integer",
             "title": "Runnersnow",
-            "description": "지금 달리는 러너 수(봇 제외)"
+            "description": "그 맵에 지금 있는 사람 수(봇 제외). 실시간 서버 전까지 임시: 최근 10분 안에 입장했거나 달리는 중인 사람"
           },
           "thumbnailUrl": {
             "anyOf": [
@@ -3392,7 +3392,7 @@
           "runnersNow": {
             "type": "integer",
             "title": "Runnersnow",
-            "description": "지금 달리는 러너 수(봇 제외)"
+            "description": "그 맵에 지금 있는 사람 수(봇 제외). 실시간 서버 전까지 임시: 최근 10분 안에 입장했거나 달리는 중인 사람"
           },
           "thumbnailUrl": {
             "anyOf": [

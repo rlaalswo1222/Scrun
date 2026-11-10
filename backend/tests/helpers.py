@@ -1,4 +1,4 @@
-"""진짜 API 테스트가 같이 쓰는 도우미(응답 껍데기 확인, 토큰 헤더, 동시 요청)."""
+"""진짜 API 테스트가 같이 쓰는 도우미(응답 껍데기 확인, 토큰 헤더, 가입, 동시 요청)."""
 import threading
 
 from fastapi.testclient import TestClient
@@ -21,6 +21,15 @@ def fail(r, status: int, code: str):
     assert r.status_code == status, r.text
     j = r.json()
     assert j["resultType"] == "FAIL" and j["error"]["code"] == code, r.text
+
+
+def signup(client, kakao) -> dict:
+    """진짜 가입(가짜 카카오 k_숫자) → Authorization 헤더."""
+    first = data(client.post("/v1/auth/kakao", json={"kakaoAccessToken": kakao}))
+    r = client.post("/v1/auth/signup", headers=bearer(first["signupToken"]),
+                    json={"agreedIds": ["terms", "privacy"], "nickname": f"러너{kakao[2:]}", "heightCm": 175, "weightKg": 70})
+    assert r.status_code == 201, r.text
+    return bearer(data(r)["accessToken"])
 
 
 def run_together(calls):
