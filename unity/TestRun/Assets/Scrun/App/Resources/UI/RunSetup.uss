@@ -50,20 +50,33 @@
 }
 
 .setup-back {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     margin: 0 var(--space-3) 0 0;
     padding: 0;
     border-width: 0;
-    border-radius: 20px;
-    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 22px;
+    background-color: var(--color-glass-dark);
     align-items: center;
     justify-content: center;
 }
 
+/* Figma: 흐린 맵 위 버튼은 어두운 원에 흰 아이콘(D-01 X, D-05·D-06 뒤로) */
 .setup-back:hover,
-.setup-back:active {
-    background-color: rgba(255, 255, 255, 0.9);
+.setup-back:active,
+.run-setup .map-round-btn,
+.run-setup .map-round-btn:hover,
+.run-setup .map-round-btn:active {
+    background-color: var(--color-glass-dark);
+}
+
+.setup-back .round-back-icon {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/icon-back-white.svg");
+}
+
+.run-setup .map-x-bar {
+    height: 16px;
+    background-color: var(--color-surface);
 }
 
 /* 아랫줄: 안내 한 줄(왼쪽)과 다음 버튼(오른쪽) */

@@ -14,6 +14,7 @@
     --color-night: #0F1B3D;         /* 가로 맵 화면 바탕 */
     --color-night-dim: rgba(15, 27, 61, 0.5);     /* 맵 위를 어둡게 덮기(I-11) */
     --color-primary-tint: rgba(47, 111, 228, 0.08); /* 파란 안내 바탕 */
+    --color-glass-dark: rgba(17, 24, 39, 0.72);    /* 흐린 맵 위 동그란 버튼(D-01 X, D-05·D-06 뒤로) */
 
     --font-size-title: 28px;        /* App/Title */
     --font-size-heading: 22px;      /* App/Heading */
