@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Scrun.App
@@ -52,6 +53,33 @@ namespace Scrun.App
 
         event Action<Gait> GaitChanged;
         event Action FlowChanged; // Phone·AirPods 중 하나가 바뀜
+
+        // ---- 보정(계획 0022). 순서는 보정 흐름(CalibrationFlow)이 정하고, 센서는 단계 하나를 잰다 ----
+        //   BeginCalibration();                          // 새 보정. 지금 보정은 확정될 때까지 그대로 씀
+        //   BeginCalibrationStage(8f); ...20초...        // 센서가 켜져 있어야 함. 앞 5초는 버림
+        //   var r = EndCalibrationStage();               // Ok면 점이 쌓임, 아니면 그 단계 다시
+        //   string model = CommitCalibration();          // 다 모이면 확정 → 서버 PUT의 model
+        // 그만두면 AbortCalibration(). 서버에서 받은 보정은 LoadCalibration(model).
+        bool Calibrating { get; }          // BeginCalibration 뒤, 확정·취소 전
+        bool StageOpen { get; }            // 단계를 재는 중
+        int CalibrationPointCount { get; } // 이번 보정에서 모은 점
+        void BeginCalibration();
+        void BeginCalibrationStage(float speedKmh);
+        CalStageResult EndCalibrationStage();
+        void CancelCalibrationStage();
+        string CommitCalibration();
+        void AbortCalibration();
+        string ExportCalibration();        // 지금 보정(model JSON), 없으면 null
+        bool LoadCalibration(string model); // 모양이 틀리면 false(지금 보정은 그대로)
+        void ClearCalibration();
+        event Action CalibrationChanged;   // 지금 보정이 바뀜(확정·불러오기·지우기)
+    }
+
+    // 보정 단계 하나를 잰 것. 진짜(Swift)와 가짜가 채운다.
+    public struct StageMeasurement
+    {
+        public CalStageResult Result; // Ok, NoSteps, Irregular, SensorLost, TooShort(NotFaster는 앞 점과 비교라 C#이 판정)
+        public CalibrationPoint Point; // Result가 Ok일 때만
     }
 
     // 켜기·끄기, 프레임마다 읽기, 바뀐 것만 이벤트로 알리기는 진짜(아이폰)와 가짜(에디터)가 같으므로 여기 둔다.
@@ -62,10 +90,29 @@ namespace Scrun.App
         public SpeedReading Current { get; private set; }
         public SensorFlow Phone { get; private set; }
         public SensorFlow AirPods { get; private set; }
-        public abstract bool HasCalibration { get; }
 
         public event Action<Gait> GaitChanged;
         public event Action FlowChanged;
+        public event Action CalibrationChanged;
+
+        // 단계에서 앞을 버리는 시간(SpeedEstimator.swift calSkipS, 벨트가 바뀐 속도에 닿는 시간)
+        public const float StageSkipSec = 5f;
+        // 앞 점보다 ln(충격)도 걸음 수도 이만큼 넘게 늘지 않으면 속도를 안 올린 것(가설, 아이폰에서 고침).
+        // 2 km/h 간격에서 걷기·달리기 모두 ln(충격)이 0.3 넘게 늘었음(우리 10/29 기록, calibration_design.md)
+        public const double NotFasterLnImpact = 0.05;
+        public const double NotFasterCadence = 3.0;
+
+        CalibrationModel active;
+        List<CalibrationPoint> draft;
+        enum Stage { None, Open, Interrupted }
+        Stage stage;
+        float stageKmh;
+
+        public bool HasCalibration => active != null;
+        public bool Calibrating => draft != null;
+        public bool StageOpen => stage == Stage.Open;
+        public int CalibrationPointCount => draft?.Count ?? 0;
+        public IReadOnlyList<CalibrationPoint> DraftPoints => draft;
 
         public void Start()
         {
@@ -81,6 +128,11 @@ namespace Scrun.App
         public void Stop()
         {
             if (!IsRunning) return;
+            if (stage == Stage.Open)
+            {
+                stage = Stage.Interrupted; // 그 단계는 EndCalibrationStage에서 SensorLost
+                OnCancelStage();
+            }
             IsRunning = false;
             OnStop();
             Current = default;
@@ -102,16 +154,114 @@ namespace Scrun.App
             if (reading.Gait != oldGait) GaitChanged?.Invoke(reading.Gait);
         }
 
+        // ---- 보정 ----
+
+        public void BeginCalibration()
+        {
+            CancelCalibrationStage();
+            draft = new List<CalibrationPoint>();
+        }
+
+        public void BeginCalibrationStage(float speedKmh)
+        {
+            if (draft == null) throw new InvalidOperationException("BeginCalibration을 먼저 부르세요.");
+            if (!IsRunning) throw new InvalidOperationException("센서를 켠 뒤에 단계를 시작하세요(Native.Speed.Start).");
+            if (stage == Stage.Open) throw new InvalidOperationException("재는 단계가 이미 있습니다. EndCalibrationStage나 CancelCalibrationStage를 먼저.");
+            if (!(speedKmh > 0f)) throw new ArgumentOutOfRangeException(nameof(speedKmh));
+            stage = Stage.Open;
+            stageKmh = speedKmh;
+            OnBeginStage(speedKmh);
+        }
+
+        public CalStageResult EndCalibrationStage()
+        {
+            if (stage == Stage.None) throw new InvalidOperationException("시작한 단계가 없습니다.");
+            if (stage == Stage.Interrupted)
+            {
+                stage = Stage.None;
+                return CalStageResult.SensorLost;
+            }
+            stage = Stage.None;
+            var m = OnEndStage(stageKmh);
+            if (m.Result != CalStageResult.Ok) return m.Result;
+            if (m.Point == null) throw new InvalidOperationException("Ok인데 보정점이 없습니다.");
+            if (draft.Count > 0 && !Faster(draft[draft.Count - 1], m.Point)) return CalStageResult.NotFaster;
+            draft.Add(m.Point);
+            return CalStageResult.Ok;
+        }
+
+        // 사다리는 오름만이라 다음 점은 앞 점보다 충격이나 걸음 수가 늘어야 한다
+        internal static bool Faster(CalibrationPoint prev, CalibrationPoint next) =>
+            next.LnImpact - prev.LnImpact > NotFasterLnImpact || next.Cadence - prev.Cadence > NotFasterCadence;
+
+        public void CancelCalibrationStage()
+        {
+            if (stage == Stage.Open) OnCancelStage();
+            stage = Stage.None;
+        }
+
+        public string CommitCalibration()
+        {
+            if (draft == null || draft.Count == 0) throw new InvalidOperationException("확정할 보정점이 없습니다.");
+            CancelCalibrationStage();
+            var model = new CalibrationModel(draft);
+            draft = null;
+            Apply(model);
+            return model.ToJson();
+        }
+
+        public void AbortCalibration()
+        {
+            CancelCalibrationStage();
+            draft = null;
+        }
+
+        public string ExportCalibration() => active?.ToJson();
+
+        public bool LoadCalibration(string model)
+        {
+            var m = CalibrationModel.Parse(model);
+            if (m == null) return false;
+            Apply(m);
+            return true;
+        }
+
+        public void ClearCalibration()
+        {
+            if (active == null) return;
+            active = null;
+            OnCalibrationApplied(null);
+            CalibrationChanged?.Invoke();
+        }
+
+        void Apply(CalibrationModel m)
+        {
+            active = m;
+            OnCalibrationApplied(m);
+            CalibrationChanged?.Invoke();
+        }
+
         // Play를 새로 시작할 때(도메인 리로드가 꺼져 있어 정적 객체가 남음) 지난 Play의 상태와 구독자를 지운다.
         protected void ResetForPlay()
         {
             GaitChanged = null;
             FlowChanged = null;
+            CalibrationChanged = null;
             IsRunning = false;
             Current = default;
             Phone = SensorFlow.Off;
             AirPods = SensorFlow.Off;
+            active = null;
+            draft = null;
+            stage = Stage.None;
             OnResetForPlay();
+        }
+
+        // 이벤트 없이 지금 보정을 넣는다(가짜의 처음 상태)
+        protected void SetCalibrationSilently(CalibrationModel m)
+        {
+            active = m;
+            OnCalibrationApplied(m);
         }
 
         protected virtual void OnResetForPlay() { }
@@ -119,6 +269,12 @@ namespace Scrun.App
         protected abstract void OnStart();
         protected abstract void OnStop();
         protected abstract void Sample(out SpeedReading reading, out SensorFlow phone, out SensorFlow airPods);
+
+        // 보정: 단계 하나를 재고(앞 StageSkipSec초 버림), 확정·불러온 보정으로 다시 맞춘다(m이 null이면 보정 없음)
+        protected abstract void OnBeginStage(float speedKmh);
+        protected abstract StageMeasurement OnEndStage(float speedKmh);
+        protected abstract void OnCancelStage();
+        protected abstract void OnCalibrationApplied(CalibrationModel m);
     }
 
     // 센서를 켠 동안 매 프레임 Tick을 부르는 숨은 오브젝트. 다른 스크립트의 Update보다 먼저 돌아서

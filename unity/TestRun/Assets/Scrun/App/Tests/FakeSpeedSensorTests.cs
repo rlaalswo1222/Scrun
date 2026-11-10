@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 
 namespace Scrun.App.Tests
@@ -209,12 +210,180 @@ namespace Scrun.App.Tests
             Assert.GreaterOrEqual(s.Current.Steps, steps);
         }
 
-        [Test]
-        public void 보정값은_설정을_그대로_읽는다()
+        // ---- 보정(계획 0022) ----
+
+        // 사람이 kmh로 달리는 동안 안내 속도 v 단계를 sec초 잰다
+        CalStageResult Stage(float v, float kmh, double sec = CalibrationLadder.StageSec)
         {
+            s.SetTargetKmh(kmh);
+            s.BeginCalibrationStage(v);
+            Run(sec);
+            return s.EndCalibrationStage();
+        }
+
+        [Test]
+        public void 보정값_있음_설정이면_사다리_보정으로_시작하고_불러오기_지우기는_이벤트를_낸다()
+        {
+            int changed = 0;
+            s.CalibrationChanged += () => changed++;
             Assert.IsTrue(s.HasCalibration);
-            cfg.hasCalibration = false;
+            var json = s.ExportCalibration();
+            Assert.AreEqual(CalibrationLadder.SpeedsKmh.Length, CalibrationModel.Parse(json).Points.Count);
+
+            s.ClearCalibration();
             Assert.IsFalse(s.HasCalibration);
+            Assert.IsNull(s.ExportCalibration());
+            Assert.IsTrue(s.LoadCalibration(json));
+            Assert.IsTrue(s.HasCalibration);
+            Assert.AreEqual(2, changed);
+
+            Assert.IsFalse(s.LoadCalibration("{깨진"));
+            Assert.IsFalse(s.LoadCalibration("{\"version\":2,\"points\":[{\"v\":8,\"limp\":1,\"cad\":170,\"running\":true}]}"));
+            Assert.IsFalse(s.LoadCalibration("{\"version\":1,\"points\":[]}"));
+            Assert.IsTrue(s.HasCalibration); // 틀린 값은 지금 보정을 안 건드림
+            Assert.AreEqual(2, changed);
+
+            var none = new FakeSpeedSensor(new FakeNativeConfig { hasCalibration = false }, native, native, () => now);
+            Assert.IsFalse(none.HasCalibration);
+        }
+
+        [Test]
+        public void 사다리를_안내대로_뛰면_7점이_모이고_확정된다()
+        {
+            cfg.hasCalibration = false;
+            s = new FakeSpeedSensor(cfg, native, native, () => now);
+            s.Start();
+            Run(1);
+            s.BeginCalibration();
+            foreach (var v in CalibrationLadder.SpeedsKmh)
+                Assert.AreEqual(CalStageResult.Ok, Stage(v, v), $"{v} km/h");
+            Assert.AreEqual(7, s.CalibrationPointCount);
+
+            var json = s.CommitCalibration();
+            Assert.IsFalse(s.Calibrating);
+            Assert.IsTrue(s.HasCalibration);
+            Assert.AreEqual(json, s.ExportCalibration());
+            var pts = CalibrationModel.Parse(json).Points;
+            CollectionAssert.AreEqual(CalibrationLadder.SpeedsKmh.Select(v => (double)v), pts.Select(p => p.V));
+            CollectionAssert.AreEqual(new[] { false, false, false, true, true, true, true }, pts.Select(p => p.Running));
+            Assert.IsTrue(pts.All(p => p.AirAmp.HasValue)); // 에어팟 끼고 뜀
+        }
+
+        [Test]
+        public void 속도를_안_올리면_속도_안_올림이고_점이_안_쌓이며_올리고_다시_하면_된다()
+        {
+            s.Start();
+            Run(1);
+            s.BeginCalibration();
+            Assert.AreEqual(CalStageResult.Ok, Stage(4f, 4f));
+            Assert.AreEqual(CalStageResult.NotFaster, Stage(6f, 4f));
+            Assert.AreEqual(1, s.CalibrationPointCount);
+            Assert.AreEqual(CalStageResult.Ok, Stage(6f, 6f));
+            Assert.AreEqual(2, s.CalibrationPointCount);
+        }
+
+        [Test]
+        public void 앞_5초_안에_속도를_맞추면_괜찮고_재는_중에_바꾸면_고르지_않음()
+        {
+            s.Start();
+            Run(1);
+            s.BeginCalibration();
+            // 4로 걷다가 단계가 시작되고 3초 뒤 6으로 올림 → 버리는 5초 안이라 성공, 점은 6의 특징
+            s.SetTargetKmh(4f);
+            s.BeginCalibrationStage(6f);
+            Run(3);
+            s.SetTargetKmh(6f);
+            Run(17);
+            Assert.AreEqual(CalStageResult.Ok, s.EndCalibrationStage());
+            Assert.AreEqual(FakeSpeedSensor.CadenceFor(6f), s.DraftPoints[0].Cadence, 1e-4);
+
+            // 8로 재는 중 8초째에 10으로 바꿈
+            s.SetTargetKmh(8f);
+            s.BeginCalibrationStage(8f);
+            Run(8);
+            s.SetTargetKmh(10f);
+            Run(12);
+            Assert.AreEqual(CalStageResult.Irregular, s.EndCalibrationStage());
+        }
+
+        [Test]
+        public void 서_있으면_걸음_없음_너무_빨리_끝내면_너무_짧음()
+        {
+            s.Start();
+            Run(1);
+            s.BeginCalibration();
+            Assert.AreEqual(CalStageResult.NoSteps, Stage(2f, 0f));
+            Assert.AreEqual(CalStageResult.TooShort, Stage(2f, 2f, sec: 7));
+            Assert.AreEqual(0, s.CalibrationPointCount);
+        }
+
+        [Test]
+        public void 단계_중_센서를_끄거나_폰_데이터가_끊기면_센서_끊김()
+        {
+            s.Start();
+            Run(1);
+            s.BeginCalibration();
+            s.SetTargetKmh(4f);
+            s.BeginCalibrationStage(4f);
+            Run(10);
+            s.Stop();
+            Assert.IsFalse(s.StageOpen);
+            Assert.AreEqual(CalStageResult.SensorLost, s.EndCalibrationStage());
+
+            s.Start();
+            Run(1);
+            s.BeginCalibrationStage(4f);
+            Run(8);
+            cfg.phoneData = false;
+            Run(12);
+            Assert.AreEqual(CalStageResult.SensorLost, s.EndCalibrationStage());
+            Assert.AreEqual(0, s.CalibrationPointCount);
+        }
+
+        [Test]
+        public void 보정을_그만두면_지금_보정은_그대로다()
+        {
+            var before = s.ExportCalibration();
+            int changed = 0;
+            s.CalibrationChanged += () => changed++;
+            s.Start();
+            Run(1);
+            s.BeginCalibration();
+            Assert.AreEqual(CalStageResult.Ok, Stage(2f, 3f)); // 안내와 다른 속도로 뛰었어도 점은 쌓임(알 수 없음)
+            s.SetTargetKmh(4f);
+            s.BeginCalibrationStage(4f);
+            Run(5);
+            s.AbortCalibration();
+            Assert.IsFalse(s.Calibrating);
+            Assert.IsFalse(s.StageOpen);
+            Assert.AreEqual(before, s.ExportCalibration());
+            Assert.AreEqual(0, changed);
+        }
+
+        [Test]
+        public void 다음_단계_결과_강제는_한_번만_적용된다()
+        {
+            s.Start();
+            Run(1);
+            s.BeginCalibration();
+            s.ForceNextStage = CalStageResult.Irregular;
+            Assert.AreEqual(CalStageResult.Irregular, Stage(2f, 2f));
+            Assert.IsNull(s.ForceNextStage);
+            Assert.AreEqual(CalStageResult.Ok, Stage(2f, 2f));
+        }
+
+        [Test]
+        public void 순서를_어기면_예외()
+        {
+            Assert.Throws<System.InvalidOperationException>(() => s.BeginCalibrationStage(2f)); // BeginCalibration 전
+            s.BeginCalibration();
+            Assert.Throws<System.InvalidOperationException>(() => s.BeginCalibrationStage(2f)); // 센서 꺼짐
+            Assert.Throws<System.InvalidOperationException>(() => s.EndCalibrationStage());     // 시작한 단계 없음
+            s.Start();
+            s.BeginCalibrationStage(2f);
+            Assert.Throws<System.InvalidOperationException>(() => s.BeginCalibrationStage(4f)); // 이미 재는 중
+            s.CancelCalibrationStage();
+            Assert.Throws<System.InvalidOperationException>(() => s.CommitCalibration());      // 점 없음
         }
     }
 }
