@@ -4,6 +4,8 @@ import Foundation
 //   ios/SpeedReplay/run.sh data/runs/20261029-040156/phone [--out a.csv]   → 0.5초마다 결과(기본 $TMPDIR/replay_swift.csv)
 //   ios/SpeedReplay/run.sh <폴더> --compare                                → 그 폴더 estimate.csv(그날 폰이 낸 값)와 비교
 //   ios/SpeedReplay/run.sh <폴더> --golden speedlab/golden/replay_<기록>.csv → Python 기준 구현(replay_live.py)과 비교
+//   --model <보정 JSON>(C# CalibrationModel 모양): 그 보정으로 시작하고 기록의 보정 구간은 안 씀(replay_live.py와 같음)
+//     예: --model speedlab/golden/model_walk_20261029.json --golden speedlab/golden/replay_20261029-040156_walkcal.csv
 //     (계획 0024 2번 기준: 0.5초 칸마다 속도 차 0.01 km/h 이하, 걸음 상태·누적 걸음 같음)
 //   ios/SpeedReplay/run.sh <폴더> --stages <v,t_begin,t_end CSV> [--expect <v,kind,result,steps CSV>]
 //     → 폰 가속도만 넣으며 구간 끝마다 앱 단계 판정(measureStage). expect(Python live_stage_check 결과)와 비교
@@ -29,7 +31,8 @@ var args = Array(CommandLine.arguments.dropFirst())
 let compare = args.contains("--compare")
 var outPath = (NSTemporaryDirectory() as NSString).appendingPathComponent("replay_swift.csv")
 if let i = args.firstIndex(of: "--out"), i + 1 < args.count { outPath = args[i + 1]; args.removeSubrange(i...(i + 1)) }
-var golden: String?, stagesPath: String?, expectPath: String?
+var golden: String?, stagesPath: String?, expectPath: String?, modelPath: String?
+if let i = args.firstIndex(of: "--model"), i + 1 < args.count { modelPath = args[i + 1]; args.removeSubrange(i...(i + 1)) }
 if let i = args.firstIndex(of: "--stages"), i + 1 < args.count { stagesPath = args[i + 1]; args.removeSubrange(i...(i + 1)) }
 if let i = args.firstIndex(of: "--expect"), i + 1 < args.count { expectPath = args[i + 1]; args.removeSubrange(i...(i + 1)) }
 if let i = args.firstIndex(of: "--golden"), i + 1 < args.count { golden = args[i + 1]; args.removeSubrange(i...(i + 1)) }
@@ -83,10 +86,15 @@ let acc = readCSV(file("airpods_acc.csv")), grav = readCSV(file("airpods_grav.cs
 for (a, g) in zip(acc, grav) where a.t == g.t {
     events.append((a.t, 1, .air(a.t, a.v[0] + g.v[0], a.v[1] + g.v[1], a.v[2] + g.v[2])))
 }
-for r in readCSV(file("stage.csv")) { events.append((r.t, 2, .stage(r))) }
+if modelPath == nil { for r in readCSV(file("stage.csv")) { events.append((r.t, 2, .stage(r))) } }
 events.sort { $0.t != $1.t ? $0.t < $1.t : $0.order < $1.order }
 
 let est = SpeedEstimator()
+if let modelPath {
+    struct Model: Decodable { let version: Int; let points: [SpeedEstimator.Point] }
+    let m = try! JSONDecoder().decode(Model.self, from: Data(contentsOf: URL(fileURLWithPath: modelPath)))
+    est.load(m.points)
+}
 var out: [[Double]] = []
 var openCalib: (v: Double, t: Double)?
 for ev in events {

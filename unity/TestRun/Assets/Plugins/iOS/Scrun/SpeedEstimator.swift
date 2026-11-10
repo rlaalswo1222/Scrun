@@ -4,7 +4,7 @@ import Foundation
 /// speedlab/fusion_live.py를 그대로 옮긴 것(맞는지는 ios/SpeedReplay로 speedlab/golden과 비교). 숫자·규칙을 바꾸면 둘 다 고친다.
 /// 1. 걷기·달리기: 에어팟 "0.5 g 아래 시간"(걷기는 공중이 없어 거의 0), 에어팟이 끊기면 폰 걸음 수. holdS 동안 이어져야 바꿈
 /// 2. 달리기: 에어팟 있으면 a + b·ln(충격) + airD·흔들림 폭, 끊기면 a' + b'·ln(충격). a·b는 이 기록의 보정 구간(달리기만)
-/// 3. 걷기: 걸음 수 공식. 기울기는 공통, 절편은 이 사람의 걷기 보정점이 있으면 그걸로(walkOwn, 지금은 꺼 둠), 없으면 공통
+/// 3. 걷기: 걸음 수 공식. 기울기는 공통, 절편은 이 사람의 걷기 보정점이 있으면 그걸로(walkOwn), 없으면 공통
 /// 4. 보정 단계 하나 판정(계획 0023·0024): measureStage. 점은 쌓지 않고 돌려준다(Unity 앱은 C#이 모아 확정한 뒤 load)
 /// 5. 누적 걸음: 포락선 봉우리를 그때그때 셈(다리 애니메이션용, 감지 지연 없이). 문턱은 0.5초마다 최근 3초로 다시 정함
 /// 쓰는 곳: Unity 앱(ScrunSpeed.swift), 실험 앱 SpeedRecorder(ios/SpeedRecorder, 이 파일을 복사하지 않고 참조),
@@ -41,8 +41,10 @@ final class SpeedEstimator {
     static let bFull = 4.828, bPhone = 6.396   // 보정점이 하나뿐일 때 빌리는 ln(충격) 기울기 (B)
     static let walkA = -3.45, walkB = 0.0732   // 걷기 v = a + b·spm
     static let g = 9.80665
-    // 이 사람 걷기 절편을 쓸지(계획 0023 설계). 10/29 두 사람에서 공통 절편보다 낫지 않아 끔(fusion_live.py WALK_OWN)
-    static let walkOwn = false
+    // 이 사람 걷기 절편(계획 0023 설계, 11/10 민재 결정으로 켬, fusion_live.py WALK_OWN·WALK_MIN_KMH).
+    // 절편은 walkMinKmh 이상 걷기 점으로(2 km/h는 오를 때·내릴 때 걸음 수 차이가 가장 큼), 그런 점이 없으면 걷기 점 전부
+    static let walkOwn = true
+    static let walkMinKmh = 4.0
     // 보정 단계 판정(계획 0024). 숫자는 가설, fusion_live.py와 같음(근거는 그 파일과 speedlab/exp/live_stage_check.py)
     static let stageMinS = 3.0      // 앞을 버린 뒤 잴 시간이 이보다 짧으면 TooShort
     static let lostGapS = 2.0       // 폰 샘플이 이만큼 끊기면 SensorLost
@@ -231,7 +233,9 @@ final class SpeedEstimator {
         let run = points.filter { $0.running }
         phone = Self.fit(run.map { ($0.limp, $0.v) }, bDefault: Self.bPhone)
         full = Self.fit(run.compactMap { p in p.amp.map { (p.limp, p.v - Self.airD * $0) } }, bDefault: Self.bFull)
-        let walk = points.filter { !$0.running }
+        let allWalk = points.filter { !$0.running }
+        let fast = allWalk.filter { $0.v >= Self.walkMinKmh }
+        let walk = fast.isEmpty ? allWalk : fast
         walkA = walk.isEmpty ? nil : walk.map { $0.v - Self.walkB * $0.cad }.reduce(0, +) / Double(walk.count)
     }
 
