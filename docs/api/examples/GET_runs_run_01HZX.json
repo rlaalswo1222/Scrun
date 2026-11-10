@@ -11,8 +11,8 @@
       "data": {
         "runId": "run_01HZX",
         "startedAt": "2026-11-05T11:02:00Z",
-        "courseId": "crs_island_loop",
-        "courseName": "섬 루프 코스(가칭)",
+        "courseId": "crs_lake_loop",
+        "courseName": "노을 호수 한 바퀴",
         "distanceM": 3120,
         "durationS": 1080,
         "avgPaceSPerKm": 346,

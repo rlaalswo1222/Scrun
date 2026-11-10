@@ -2,6 +2,7 @@
   "request": {
     "method": "GET",
     "path": "/v1/users/me/calibration",
+    "auth": "Bearer {accessToken}",
     "body": null
   },
   "status": 200,
@@ -16,29 +17,32 @@
             "durationS": 20
           },
           {
-            "speedKmh": 7.0,
-            "gait": "RUN",
-            "durationS": 20
-          },
-          {
-            "speedKmh": 8.5,
-            "gait": "RUN",
-            "durationS": 20
-          },
-          {
-            "speedKmh": 10.0,
+            "speedKmh": 8.0,
             "gait": "RUN",
             "durationS": 20
           }
         ],
         "model": {
-          "runA": 1.2,
-          "runB": 2.1,
-          "runC": 0.012,
-          "walkSlope": 0.035
+          "points": [
+            {
+              "v": 4.0,
+              "amp": 0.31,
+              "cad": 112,
+              "limp": 0.9,
+              "running": false
+            },
+            {
+              "v": 8.0,
+              "amp": 0.62,
+              "cad": 158,
+              "limp": 2.4,
+              "running": true
+            }
+          ],
+          "version": 1
         },
         "device": "iPhone15,4",
-        "createdAt": "2026-11-05T10:00:00Z"
+        "createdAt": "2026-11-06T00:00:00Z"
       }
     },
     "error": null,

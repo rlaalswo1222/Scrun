@@ -16,8 +16,8 @@ class Course(CamelModel):
     name: str
     type: CourseType
     length_m: int = Field(description="한 바퀴(루프) 또는 전체(영상) 길이")
-    runners_now: int = Field(description="지금 달리는 러너 수(봇 제외)")
-    thumbnail_url: str
+    runners_now: int = Field(description="그 맵에 지금 있는 사람 수(봇 제외). 실시간 서버 전까지 임시: 최근 10분 안에 입장했거나 달리는 중인 사람")
+    thumbnail_url: Optional[str] = Field(description="없으면 null(앱 기본 그림)")
 
 
 class CourseDetail(Course):
@@ -36,5 +36,5 @@ class RealtimeAccess(CamelModel):
 class MapEntry(CamelModel):
     map_instance_id: str
     course_id: str
-    entry_position_m: float = Field(description="입장 위치(코스 시작점부터 m). 러너 많은 구간 근처, 없으면 랜덤")
+    entry_position_m: float = Field(description="입장 위치(코스 시작점부터 m). 실시간 서버(BL-25) 전에는 코스 위 랜덤, 뒤에 러너 많은 구간 근처로")
     realtime: Optional[RealtimeAccess] = None
