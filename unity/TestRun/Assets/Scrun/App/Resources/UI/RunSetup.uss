@@ -1,0 +1,377 @@
+/* 맵 위 러닝 설정(D-01)·거치 안내(D-05)·달리는 매뉴얼(D-06) 모양. 계획 0026.
+   Figma "SCRUN" 와이어프레임(가로 852×393) 기준. 색·글자 크기는 App.uss 변수, 칩·동그란 버튼·카드는 Course.uss.
+   배경 흐림은 USS에 없어서 MapBackdrop(C#)이 맡는다. USS에 없는 것: 그림자, 줄 높이 */
+
+.run-setup {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.setup-step {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    padding: var(--space-5) var(--space-6) var(--space-2) var(--space-6);
+}
+
+.course .setup-title {
+    font-size: var(--font-size-title);
+    letter-spacing: -0.56px;
+    color: var(--color-surface);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+/* 윗줄: 제목(왼쪽)과 나가기(오른쪽) */
+.setup-head {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+/* 뒤로 가기 + 제목 */
+.setup-head--back {
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.setup-chip-row {
+    margin-top: 6px;
+}
+
+/* Label로 쓴 칩: .course .unity-label(여백 0)보다 앞서게 */
+.course Label.chip {
+    padding: 5px 12px;
+}
+
+.setup-back {
+    width: 40px;
+    height: 40px;
+    margin: 0 var(--space-3) 0 0;
+    padding: 0;
+    border-width: 0;
+    border-radius: 20px;
+    background-color: rgba(255, 255, 255, 0.9);
+    align-items: center;
+    justify-content: center;
+}
+
+.setup-back:hover,
+.setup-back:active {
+    background-color: rgba(255, 255, 255, 0.9);
+}
+
+/* 아랫줄: 안내 한 줄(왼쪽)과 다음 버튼(오른쪽) */
+.setup-foot {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.course .setup-foot-note {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-surface);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.setup-next {
+    width: 220px;
+    margin: 0;
+}
+
+/* ---- D-01 목표 카드(고스트 카드가 S7에 들어오기 전까지 가운데) ---- */
+.setup-middle {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+}
+
+.setup-card {
+    padding: var(--space-5);
+    border-radius: var(--space-5);
+    background-color: var(--color-surface);
+}
+
+.goal-card {
+    width: 370px;
+}
+
+.course .goal-label {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-body);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+/* 거리/시간 탭 */
+.segment {
+    flex-direction: row;
+    align-self: flex-start;
+    margin-top: var(--space-3);
+    padding: 4px;
+    border-radius: 12px;
+    background-color: var(--color-primary-soft);
+}
+
+.segment-item {
+    width: 65px;
+    height: 37px;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    border-radius: 10px;
+    background-color: rgba(0, 0, 0, 0);
+    color: var(--color-body);
+    font-size: var(--font-size-body-sm);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.segment-item:hover,
+.segment-item:active {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.segment-item--selected,
+.segment-item--selected:hover,
+.segment-item--selected:active {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+/* − 3.0 km + */
+.stepper {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--space-3);
+}
+
+.stepper-btn {
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    border-radius: 22px;
+    background-color: var(--color-primary-soft);
+    align-items: center;
+    justify-content: center;
+}
+
+.stepper-btn:hover,
+.stepper-btn:active {
+    background-color: var(--color-primary-soft);
+}
+
+.stepper-btn:disabled {
+    opacity: 0.4;
+}
+
+.stepper-bar {
+    position: absolute;
+    width: 18px;
+    height: 2.5px;
+    border-radius: 1.25px;
+    background-color: var(--color-primary);
+}
+
+.stepper-bar--v {
+    rotate: 90deg;
+}
+
+.goal-value-row {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+    min-width: 98px;
+    margin: 0 var(--space-4);
+}
+
+.course .goal-value {
+    font-size: 40px;
+    letter-spacing: -0.8px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course .goal-unit {
+    margin: 0 0 6px 4px;
+    font-size: var(--font-size-sub);
+    color: var(--color-body);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.quick-row {
+    margin-top: var(--space-3);
+}
+
+/* ---- D-05 거치 안내 ---- */
+.mount-step {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mount-text {
+    width: 340px;
+    align-items: flex-start;
+}
+
+.course .mount-title {
+    margin-top: var(--space-3);
+}
+
+.course .mount-lead {
+    margin-top: var(--space-4);
+    font-size: var(--font-size-body);
+    color: rgba(255, 255, 255, 0.85);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.mount-chip-row {
+    margin-top: var(--space-5);
+}
+
+.mount-next {
+    width: 240px;
+    margin: var(--space-6) 0 0 0;
+}
+
+.mount-art-card {
+    width: 316px;
+    height: 272px;
+    padding: 16px 14px;
+    border-radius: var(--space-6);
+    background-color: var(--color-surface);
+}
+
+/* 그림 자리(그림을 받기 전에는 빈 칸) */
+.art-slot {
+    border-radius: var(--space-4);
+    background-color: var(--color-primary-soft);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.mount-art {
+    flex-grow: 1;
+}
+
+/* ---- D-06 달리는 매뉴얼 ---- */
+.manual-cards {
+    flex-grow: 1;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.manual-card {
+    width: 158px;
+    height: 214px;
+    margin-right: 14px;
+    padding: var(--space-3);
+    border-radius: var(--space-5);
+    background-color: var(--color-surface);
+    align-items: center;
+}
+
+.manual-card--last {
+    margin-right: 0;
+}
+
+.course .manual-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+    font-size: var(--font-size-caption);
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.manual-art {
+    width: 134px;
+    height: 108px;
+    margin-top: var(--space-2);
+}
+
+.course .manual-text {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-text);
+    white-space: normal;
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+/* "다시 보지 않기" */
+.skip-toggle {
+    margin: 0;
+    align-items: center;
+}
+
+.skip-toggle .unity-toggle__checkmark {
+    width: 20px;
+    height: 20px;
+    border-width: 1.5px;
+    border-radius: 6px;
+    border-color: rgba(255, 255, 255, 0.85);
+    background-color: rgba(0, 0, 0, 0);
+    -unity-background-image-tint-color: var(--color-surface);
+}
+
+.skip-toggle:checked .unity-toggle__checkmark {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+}
+
+.course .skip-toggle .unity-toggle__text {
+    margin-left: var(--space-2);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-surface);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* ---- 목표 직접 입력 ---- */
+.goal-input {
+    justify-content: flex-start;
+    padding-top: var(--space-3);
+}
+
+.input-card {
+    width: 360px;
+    padding: var(--space-5);
+    background-color: var(--color-surface); /* 뒤의 목표 카드가 비치지 않게(I-11 카드는 반투명) */
+}
+
+.input-row {
+    flex-direction: row;
+    align-items: center;
+    align-self: stretch;
+    margin-top: var(--space-3);
+}
+
+.input-field {
+    flex-grow: 1;
+    margin: 0;
+}
+
+.course .input-unit {
+    margin-left: var(--space-2);
+    font-size: var(--font-size-sub);
+    color: var(--color-body);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.course .input-error {
+    min-height: 18px;
+    margin-top: 6px;
+    font-size: var(--font-size-caption);
+    white-space: normal;
+    -unity-text-align: middle-center;
+}

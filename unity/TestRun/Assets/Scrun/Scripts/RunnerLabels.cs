@@ -20,7 +20,7 @@ namespace Scrun
             var me = RunnerTag.Player;
             if (!me || !me.runner) return;
             cam ??= Camera.main;
-            if (!cam) return;
+            if (!cam || !cam.isActiveAndEnabled) return; // 앱 안내(러닝 설정·거치 안내)가 섬 카메라를 끈 동안은 이름표도 숨김
             white ??= Texture2D.whiteTexture;
             float fs = Mathf.Max(13, Screen.height / 52);
             tag ??= new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };

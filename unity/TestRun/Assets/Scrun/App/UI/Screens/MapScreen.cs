@@ -18,11 +18,13 @@ namespace Scrun.App
     // 서버 호출을 Feedback.Run으로 감싸지 않는 예외: 로딩은 I-10이, 실패 안내는 I-11 카드가 맡는다(로그인 만료만 공통 처리).
     // 섬 씬(Island01)은 앱 위에 겹쳐 불러오고(additive: 앱 화면·로그인은 그대로), 이 화면을 떠나면 내린다.
     // 고른 코스·입장 위치는 MapLaunch로 넘기고 섬 쪽 MapLaunchApplier가 적용한다. 앱 배경은 투명(ShowsWorld).
-    // S2에 러닝 설정·거치 안내가 상세와 이 화면 사이에, S3에 센서 준비·카운트다운·HUD·멈춤이 이 화면 위에 들어간다.
+    // 섬이 열리면 흐린 맵 위에 러닝 설정 → 거치 안내 → 달리는 매뉴얼(RunSetupView, 계획 0026)을 띄우고, 끝나면 맵을 보여 준다.
+    // S3에 센서 준비·카운트다운·HUD·멈춤이 이 화면 위에 들어간다(고른 목표는 Setup).
     public sealed class MapScreen : AppScreen
     {
         const float EntryShare = 0.15f; // 진행 막대에서 입장 요청 몫(나머지는 씬 불러오기)
-        static readonly Color Night = new Color32(0x0F, 0x1B, 0x3D, 0xFF); // App.uss --color-night(USS 변수는 C#에서 못 읽음)
+        const int SettleFrames = 3;     // 섬이 열린 뒤 흐린 배경을 찍기 전에 기다릴 프레임(MapLaunchApplier가 한 프레임 뒤 입장 위치로 옮김)
+        internal static readonly Color Night = new Color32(0x0F, 0x1B, 0x3D, 0xFF); // App.uss --color-night(USS 변수는 C#에서 못 읽음)
 
         // 섬 씬은 한 번에 한 화면만 잡는다. 앞 맵 화면이 섬 씬을 불러오기 시작해서 다 내릴 때까지 끝나지 않음 →
         // 불러오는 도중에 나갔다가 바로 다시 들어와도 섬 씬이 둘 겹치거나 입장 정보(MapLaunch)를 앞 씬이 가져가지 않는다
@@ -44,6 +46,12 @@ namespace Scrun.App
         Color appCameraColor;
         string appCameraTag;
         bool busy, leaving, started;
+        VisualElement mapTop;
+        RunSetupView setupView;
+        MapBackdrop backdrop;
+
+        // 러닝 설정에서 고른 것(안내를 끝내기 전에는 null). S3 센서 준비·카운트다운이 쓴다
+        public RunSetup Setup { get; private set; }
 
         public MapScreen(CourseDetail course, Action<MapExit, ApiException> onExit)
         {
@@ -59,6 +67,7 @@ namespace Scrun.App
         protected override void OnCreate()
         {
             Q<Button>("leave").clicked += () => Nav.Pop();
+            mapTop = Q<VisualElement>("map-top");
             Q<Label>("course-label").text = CourseText.MapLabel(course.LengthM, course.Name);
             loadingView = Q<VisualElement>("map-loading");
             progress = Q<VisualElement>("progress");
@@ -79,10 +88,19 @@ namespace Scrun.App
             Begin();
         }
 
+        // 안내가 떠 있으면 한 단계 앞으로(D-01에서는 맵 나가기). 맵만 보이면 그냥 닫힘
+        protected internal override bool OnBack()
+        {
+            if (setupView == null || !setupView.Visible) return false;
+            setupView.Back();
+            return true;
+        }
+
         protected internal override void OnDestroy()
         {
             leaving = true;
             MapLaunch.Clear();
+            CloseSetup();
             ReleaseIsland();
             if (appCamera != null) appCamera.backgroundColor = appCameraColor;
         }
@@ -104,6 +122,7 @@ namespace Scrun.App
                 // 씬을 못 불렀거나(빌드 씬 목록) 앱 쪽 버그. 불러온 씬은 내리고, 멈춘 것처럼 보이지 않게 카드로 알리고 기록은 남긴다
                 Debug.LogException(e);
                 MapLaunch.Clear();
+                CloseSetup();
                 ReleaseIsland();
                 if (!leaving) ShowUnavailable("맵을 열지 못했어요", "잠시 후 다시 시도해 주세요.", canRetry: true);
             }
@@ -161,7 +180,50 @@ namespace Scrun.App
             SceneManager.SetActiveScene(island);
             SetAppCamera(false);
             SetProgress(1f);
+
+            // 입장 위치로 옮겨지고 카메라가 따라붙은 뒤에 흐린 배경을 찍는다(그동안 I-10이 덮고 있음)
+            int settled = Time.frameCount + SettleFrames;
+            while (Time.frameCount < settled)
+            {
+                await Task.Yield();
+                if (leaving) return;
+            }
+            StartSetup();
             loadingView.SetVisible(false);
+        }
+
+        void StartSetup()
+        {
+            if (setupView == null)
+            {
+                setupView = new RunSetupView(Root, course, RunSetupPrefs.Device());
+                setupView.Done += OnSetupDone;
+                setupView.Exit += () => Nav.Pop();
+            }
+            backdrop?.Dispose();
+            backdrop = null;
+            // 앱 카메라는 태그를 비켜 둬서 Camera.main = 섬 카메라. 화면이 패널에서 떨어졌으면(await 사이) 흐림 없이 안내만
+            var panel = Root.panel;
+            if (panel != null) backdrop = MapBackdrop.Show(panel.visualTree, Camera.main, appCamera);
+            mapTop.SetVisible(false);
+            Setup = null;
+            setupView.Start();
+        }
+
+        void OnSetupDone(RunSetup setup)
+        {
+            Setup = setup;
+            backdrop?.Dispose(); // 섬 카메라 다시 켬
+            backdrop = null;
+            mapTop.SetVisible(true);
+        }
+
+        // 섬 씬을 내리기 전에: 흐린 배경이 앱 카메라를 켜 둔 것을 먼저 되돌려야 ReleaseIsland가 앱 카메라를 제대로 켠다
+        void CloseSetup()
+        {
+            setupView?.Hide();
+            backdrop?.Dispose();
+            backdrop = null;
         }
 
         void OnEnterFailed(ApiException e)

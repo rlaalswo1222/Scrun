@@ -8,5 +8,8 @@ namespace Scrun.App
         // 보이기·숨기기(숨기면 자리도 차지하지 않음)
         public static void SetVisible(this VisualElement e, bool on) =>
             e.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
+
+        // SetVisible로 숨기지 않았는지
+        public static bool IsVisible(this VisualElement e) => e.style.display != DisplayStyle.None;
     }
 }
