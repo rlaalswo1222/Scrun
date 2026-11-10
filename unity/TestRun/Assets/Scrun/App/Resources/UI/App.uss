@@ -83,10 +83,12 @@
     white-space: normal;
 }
 
-/* 아래 탭 */
+/* 아래 탭(UI Kit Tab Bar): 아이콘 24 + 글자 12, 고른 탭은 파란 아이콘·굵은 글자 */
 .tab-bar {
     flex-direction: row;
+    align-items: flex-start;
     height: var(--tab-bar-height);
+    padding-top: var(--space-2);
     background-color: var(--color-surface);
     border-top-width: 1px;
     border-top-color: var(--color-line);
@@ -95,21 +97,68 @@
 .tab {
     flex-grow: 1;
     flex-basis: 0;
+    flex-direction: column;
+    align-items: center;
     margin: 0;
+    padding: 0;
     border-width: 0;
     border-radius: 0;
     background-color: rgba(0, 0, 0, 0);
+}
+
+.tab:hover,
+.tab:active {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.tab-icon {
+    width: 24px;
+    height: 24px;
+}
+
+.tab-icon--home {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-home-off.svg");
+}
+
+.tab--selected .tab-icon--home {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-home-on.svg");
+}
+
+.tab-icon--friends {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-friends-off.svg");
+}
+
+.tab--selected .tab-icon--friends {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-friends-on.svg");
+}
+
+.tab-icon--records {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-records-off.svg");
+}
+
+.tab--selected .tab-icon--records {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-records-on.svg");
+}
+
+.tab-icon--me {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-me-off.svg");
+}
+
+.tab--selected .tab-icon--me {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-me-on.svg");
+}
+
+.tab-label {
+    margin: 3px 0 0 0;
+    padding: 0;
     font-size: var(--font-size-tab);
     color: var(--color-muted);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.tab:hover {
-    background-color: rgba(0, 0, 0, 0.03);
-}
-
-.tab--selected {
+.tab--selected .tab-label {
     color: var(--color-primary);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 /* ---- 공통 부품(UI Kit Button: 높이 54, 모서리 16, App/Button 17 SemiBold) ---- */

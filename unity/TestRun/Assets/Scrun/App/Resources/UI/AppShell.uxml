@@ -4,11 +4,24 @@
     <ui:VisualElement name="app-root" class="app-root">
         <ui:VisualElement name="safe-area" class="safe-area">
             <ui:VisualElement name="screen-host" class="screen-host" />
+            <!-- 아래 탭: Figma UI Kit "Tab Bar"(아이콘 + 글자, 홈·친구·기록·마이 순서) -->
             <ui:VisualElement name="tab-bar" class="tab-bar">
-                <ui:Button name="tab-home" class="tab" text="홈" />
-                <ui:Button name="tab-records" class="tab" text="기록" />
-                <ui:Button name="tab-friends" class="tab" text="친구" />
-                <ui:Button name="tab-me" class="tab" text="내 정보" />
+                <ui:Button name="tab-home" class="tab">
+                    <ui:VisualElement class="tab-icon tab-icon--home" picking-mode="Ignore" />
+                    <ui:Label text="홈" class="tab-label" picking-mode="Ignore" />
+                </ui:Button>
+                <ui:Button name="tab-friends" class="tab">
+                    <ui:VisualElement class="tab-icon tab-icon--friends" picking-mode="Ignore" />
+                    <ui:Label text="친구" class="tab-label" picking-mode="Ignore" />
+                </ui:Button>
+                <ui:Button name="tab-records" class="tab">
+                    <ui:VisualElement class="tab-icon tab-icon--records" picking-mode="Ignore" />
+                    <ui:Label text="기록" class="tab-label" picking-mode="Ignore" />
+                </ui:Button>
+                <ui:Button name="tab-me" class="tab">
+                    <ui:VisualElement class="tab-icon tab-icon--me" picking-mode="Ignore" />
+                    <ui:Label text="마이" class="tab-label" picking-mode="Ignore" />
+                </ui:Button>
             </ui:VisualElement>
         </ui:VisualElement>
 
