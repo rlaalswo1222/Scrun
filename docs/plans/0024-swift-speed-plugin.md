@@ -2,11 +2,7 @@
 
 - 상태: **구현 끝 · 리뷰 중**(6번 러닝머신 확인 남음) (11/10 민재, 결정 1–4 추천안 그대로. 11/10 밤 맥·Windows 동시 진행 시작, 아래 "Swift ↔ C# 약속")
 - **맥 할 일**(Windows가 적고 맥이 읽음. 맥은 `git pull --rebase` 뒤 위에서부터 하고, 끝낸 줄은 지우고 결과는 아래 "진행"의 맥 줄에. 사용자는 맥에 "0024 맥 할 일 해 줘"만 침)
-  - (11/11 맥: 이전 1–3 끝, 4는 민재 결정으로 넘김) PR #36 `/code-review`의 Swift 4건(C# 5건은 Windows가 고침, 3dfe107). 고친 뒤 `ios/SpeedReplay`로 정답 세 개 다시 비교(차 0 유지), 아이폰에서 점검 화면 한 번
-  1. `ScrunSpeed.swift` `stop()`: `dq.sync {}`는 OperationQueue(최대 1개)를 비우지 않음 → 멈춘 뒤에도 남은 샘플 작업이 돌아 snap·steps·시각을 되살림, 바로 다시 켜면 옛 샘플이 새 계산에 들어감. `queue.cancelAllOperations()` + `queue.waitUntilAllOperationsAreFinished()`로
-  2. `ScrunSpeed.swift` 에어팟 시각: 샘플마다 `|t − now| > 2`면 `now`로 바꿔서, 차이가 2초 근처로 흔들리면 원래 시각과 바꾼 시각이 섞여 `airT`가 순서대로가 아니게 됨(`slice`·`count`는 정렬 가정). 켤 때 한 번 정한 고정 차이(오프셋)로 바꾸기. Python `replay_live.py`·SpeedRecorder와 같은 결과인지(10/29 기록은 차이가 작아 정답은 그대로일 것, 가설)
-  3. `ScrunHeadphones.swift` `syncUpdates`: 핸들러 있음·없음을 바꿀 때 껐다 켜며 `motionConnected`를 그대로 두는데, 끌 때의 끊김 알림이 나중에(main async) 와서 false로 덮음 → 이어폰이 "연결됨"에서 "모션 없음"으로 잘못 바뀔 수 있음. 바꾸는 동안 온 끊김은 무시하거나 다시 켠 뒤 연결 상태를 다시 확인. 아이폰에서 센서 준비 화면처럼 이어폰을 지켜보는 중 속도 센서 켜기·끄기로 확인
-  4. `ScrunSpeed.swift` `read()`: 매 프레임 `[Double]` 새로 만듦 → `out`에 바로 쓰기(0으로 채우고 `min(n, slotCount)`까지)
+  - (11/11 맥: PR #36 리뷰 Swift 4건 끝, 결과는 "진행"의 맥 줄) 지금 남은 맥 할 일 없음
 - 진행
   - Windows(11/11): 0023 4번 — 맵 입장 때 센서에 보정이 없으면 이 폰에 못 올린 보정이나 서버(GET)에서 불러옴(`CalibrationStore.EnsureLoadedAsync`, `MapScreen`), 로그아웃하면 센서 보정도 지움. 에디터 Play로 비운 센서 → 입장 → 서버 7점, 로그아웃 → 지워짐 확인. 7번 문서(`unity_map.md` 아이폰 진짜·점검·Swift = Python 확인, ADR-0009 한 줄). 남은 것: 6번 러닝머신(헬스장), 미룬 책상 확인 2개(권한 거부 뒤 가속도, 10분 발열)
   - Windows 1번 끝(11/10 밤): `fusion_live.py`에 `measure_stage`(TooShort·SensorLost·NoSteps·Irregular·Ok), 누적 걸음(봉우리), 걷기 절편(`WALK_OWN` 켬, 4 km/h 이상 걷기 점, 11/10 민재 결정). 숫자: 걸음 없음 문턱 0.12, 걸음 수 215 이상은 벨트 진동, 4 km/h 이하 달리기 판정은 다시 잼(근거·수치 `docs/speed/README.md` 11/10 줄). **맥은 Swift를 이 파일에 맞춘 뒤** `speedlab/golden/replay_20261029-040156.csv`(기록의 보정 구간으로)와 `..._walkcal.csv`(`model_walk_20261029.json` 보정을 불러와 시작, 걷기 절편까지)를 Swift 재생과 비교(열에 `steps` 추가)
@@ -21,6 +17,7 @@
     - 남은 책상 확인: 가만히 둔 단계 재기 NoSteps, 모션 권한 거부 뒤 가속도, 10분 CPU·발열
   - 맥(11/11): Swift에 걷기 절편 켬(`walkOwn`, 4 km/h 이상 점) 옮김. 재생 도구 `--model`(보정 JSON으로 시작)로 `replay_20261029-040156.csv`·`_walkcal.csv` 둘 다 모든 열 차 0(걷기 119칸 중 절편으로 속도가 바뀌는 117칸 포함)
   - 맥(11/11): 문제 A를 Swift에(`stepsLike`, 실시간 걸음 후보·단계 판정이 같이 씀). 정답 셋(`replay_20261029-040156`, `_walkcal`, `replay_beltonly_20261029-014932`) 모든 열 차 0, 벨트만 222 spm 근처 102칸 모두 걸음 없음. 아이폰 책상 2차: 가만히 30초 내내 None·0 spm(고치기 전 222 spm Running), 가만히 둔 단계 재기 **NoSteps**, 두드리면 6.3초 뒤 Walking. 문제 B(SensorLost)는 다시 안 나옴(원인 모름, 나오면 콘솔에 이유). 모션 권한 거부 뒤 가속도·10분 CPU·발열은 11/11 민재 결정으로 넘김(나중에 할 것: 권한은 설정에서 끄면 앱이 종료되므로 끄고 → 다시 실행 → 점검 화면에서 켜기, CPU·발열은 Xcode 계측으로 10분)
+  - 맥(11/11): PR #36 리뷰 Swift 4건 고침. ① `stop()`이 OperationQueue를 `cancelAllOperations` + `waitUntilAllOperationsAreFinished`로 비움, 메인이 큐를 기다리는 곳(start·stageEnd·load)은 같은 큐에 작업을 넣고 기다림(`onQueue`, 앞에 쌓인 샘플 뒤) ② 에어팟 시각은 첫 샘플에서 정한 고정 차이 ③ `ScrunHeadphones` 핸들러 방식 바꾸기 뒤 1초 동안 온 끊김 알림은 무시하고 끝난 뒤 오디오 출력으로 다시 확인 ④ `read()`가 배열 없이 `out`에 바로 씀. 정답 셋 차 0 유지, EditMode 134개 통과. 아이폰: 에어팟 낀 채 점검 화면에서 속도 센서 켜기·끄기 4번 동안 이어폰 이벤트 0번(고치기 전이면 끌 때마다 ConnectedNoMotion이 될 수 있었음), 끈 뒤 값이 되살아나지 않음. 점검 화면이 켤 때 빈 흐름 줄을 찍던 것도 고침
 - 담당: 민재. 기간 S2 뒤쪽(11/11)에서 S3 앞(11/12), 11/13 시연에 들어감. Python·C# 일부는 Windows, Swift·아이폰은 맥
 - 근거: 계획 0020(`ISpeedSensor` 모양 + 가짜, 진짜는 이 계획), 계획 0023 6번(단계 재기·걷기 절편·실패 판정을 Swift에), ADR-0009(센서는 JSON 통로를 쓰지 않음), 계획 0010·[live_iphone.md](../speed/live_iphone.md)(SpeedRecorder 안 실시간 추정, 달리기 5구간 0.16 km/h, 1명·같은 날 보정이라 낙관적)
 - 먼저 있어야 하는 것: PR #33(보정 메서드가 들어간 `ISpeedSensor`)이 develop에 합쳐질 것. 구현 브랜치는 그 뒤 develop에서 `feat/speed-plugin`
