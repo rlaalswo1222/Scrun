@@ -11,8 +11,8 @@ using UnityEngine;
 public static class RunnerAnimatorBuilder
 {
     const string Dir = MixamoImportSetup.Folder + "YBot/";
-    const string ModelPath = Dir + "Y Bot@Breathing Idle.fbx";
-    const string ControllerPath = Dir + "YBotRunner.controller";
+    public const string ModelPath = Dir + "Y Bot@Breathing Idle.fbx";
+    public const string ControllerPath = Dir + "YBotRunner.controller";
     const string IdleClip = "Breathing Idle";
 
     // 느린 것부터. 실제 순서·기준점은 측정값으로 정함
@@ -85,6 +85,7 @@ public static class RunnerAnimatorBuilder
         tree.children = children;
 
         TopSpeedKmh = last;
+        log.AppendLine("  기준점이 바뀌었으면 Play 중 Scrun → Measure Runner Gait로 발 속도 표를 다시 잴 것(계획 0027)");
         AssetDatabase.SaveAssets();
         Debug.Log(log.ToString());
         return ctrl;
