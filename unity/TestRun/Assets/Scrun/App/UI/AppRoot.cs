@@ -20,15 +20,17 @@ namespace Scrun.App
         UIDocument doc;
         PanelSettings panel; // 실행 중에만 쓰는 복사본(원본 에셋을 바꾸지 않게)
         VisualElement safeArea;
+        VisualElement tabBar;
         bool started;
         bool pendingInit;
         bool subscribed;
         bool landscape;
         bool orientationApplied;
-        // 안전 영역을 마지막으로 맞춘 조건(화면 크기·안전 영역·패널 크기 중 하나라도 바뀌면 다시)
+        // 안전 영역을 마지막으로 맞춘 조건(화면 크기·안전 영역·패널 크기·탭 바 보임 중 하나라도 바뀌면 다시)
         Rect lastSafe;
         Vector2Int lastScreen;
         Vector2 lastPanelSize;
+        bool lastTabsShown;
 
         void Awake()
         {
@@ -55,7 +57,8 @@ namespace Scrun.App
         {
             var root = doc.rootVisualElement;
             safeArea = root.Q("safe-area");
-            Nav = new Navigator(root.Q("screen-host"), root.Q("tab-bar"), TabRoot);
+            tabBar = root.Q("tab-bar");
+            Nav = new Navigator(root.Q("screen-host"), tabBar, TabRoot);
             Nav.Changed += OnScreenChanged;
             orientationApplied = false;
             lastPanelSize = default;
@@ -140,13 +143,15 @@ namespace Scrun.App
             {
                 var screen = new Vector2Int(Screen.width, Screen.height);
                 var panelSize = safeArea.panel.visualTree.layout.size;
-                if (Screen.safeArea != lastSafe || screen != lastScreen || panelSize != lastPanelSize)
+                bool tabsShown = tabBar != null && SafeArea.BarShown(tabBar);
+                if (Screen.safeArea != lastSafe || screen != lastScreen || panelSize != lastPanelSize || tabsShown != lastTabsShown)
                 {
-                    if (SafeArea.Apply(safeArea))
+                    if (SafeArea.Apply(safeArea, tabBar))
                     {
                         lastSafe = Screen.safeArea;
                         lastScreen = screen;
                         lastPanelSize = panelSize;
+                        lastTabsShown = tabsShown;
                     }
                 }
             }
