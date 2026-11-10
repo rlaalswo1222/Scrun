@@ -15,6 +15,7 @@ docker compose up -d                                            # PostgreSQL(개
 ```
 `.env`에 `JWT_SECRET`이 없거나 32자 미만이면 서버가 시작하지 않는다(`ConfigError`). `KAKAO_MODE`를 안 적으면 `real`이고 `KAKAO_APP_ID`가 필요하다. 로컬 개발은 `.env.example`대로 `KAKAO_MODE=fake`. 테스트·예시 내보내기는 `.env` 없이도 돈다(임시 키 + 가짜 카카오, `app/testenv.py`).
 Docker Desktop이 켜져 있어야 한다. DB를 지우고 처음부터: `docker compose down -v` → 위 두 줄 다시.
+맥에서 Docker 없이: `brew install postgresql@16` → `brew services start postgresql@16` → `psql -d postgres`에서 `CREATE ROLE scrun LOGIN PASSWORD 'scrun-local-only'; CREATE DATABASE scrun OWNER scrun; CREATE DATABASE scrun_test OWNER scrun;` (주소·계정이 Docker와 같아서 `.env`는 그대로). 그다음 `docker compose up -d` 줄만 빼고 같다.
 
 ## 실행
 ```bash
