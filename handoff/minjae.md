@@ -2,11 +2,13 @@
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/product/`, `docs/adr/`, `docs/plans/`)에 있고, 11/09까지의 전체본은 `docs/log/HANDOFF_minjae_20261109.md`(그 전은 `_20261107.md`, `_20261106.md`).
 
-## 지금: 계획 0018 5번 끝(브랜치 `feat/ios-bridge`, 커밋 전) → 리뷰·PR → 6번(카카오 SDK)
+## 지금: 계획 0018 5번 끝(PR #28 `feat/ios-bridge`) → 6번(카카오 SDK, PR #31)
 - **5번(11/10, 맥)**: Swift 브리지 + `IosNative`, 빌드 메뉴 Scrun → iOS → Xcode 만들기, 개발 빌드 전용 "네이티브 점검" 화면(로그인 아래 링크). ADR-0009, 사용법·주의는 `docs/unity/unity_map.md` "아이폰 진짜 구현"·"아이폰 빌드". 테스트 48개 통과, 시뮬레이터에서 카메라·알림 팝업·키체인·설정 앱 확인
 - **다음**: `/code-review` → 커밋·PR(커밋할 땐 아래 "맥 주의"의 Unity가 바꾼 파일을 빼고 내 파일만) → 6번: 카카오 SDK를 빌드 후처리로 SPM 추가(`PBXProject.AddRemotePackageReferenceAtVersion`, `kakao-ios-sdk`), URL 스킴 `kakao{앱키}`·`LSApplicationQueriesSchemes`, 앱 키는 `unity/TestRun/ScrunLocal.json`의 `kakaoNativeAppKey`(git 밖), Swift `ScrunKakao.swift`를 채우고 카카오톡 앱에서 돌아오는 URL은 Unity `AppDelegateListener`(Objective-C)로 받아 `AuthController.handleOpenUrl`
 - **아이폰 확인(남음)**: 모션·헤드폰 모션 팝업(에어팟 없이도 뜨는지 = 가설), 에어팟 끼고 빼기 → 이벤트, 거부 → 설정 앱에서 허용 → 돌아오면 이벤트, 앱 재실행 뒤 키체인 토큰, 노치·한글 입력, 공용 서버로 실제 가입(6번 뒤). 서명: Xcode → Settings → Accounts에 Apple ID → 팀 ID를 `ScrunLocal.json` `appleTeamId`에(또는 Xcode Signing에서 고름), 아이폰 개발자 모드
-- **그다음 S2(11/10–11)**: 실시간 방식 설명 자료(WebSocket vs Photon, BL-25) → 민재 선택 → ADR, 센서 준비·걸음 감지 C# 모양 + 가짜(지환 S3 화면이 기다림, 지금 `ISpeedSource`는 `SpeedKmh` 하나), S2 계획(속도 플러그인·보정 계산·보정 화면)
+- **11/10 계획 0020 구현 끝(PR #29, develop에 합침)**: `Native.Speed`(`ISpeedSensor`) + 에디터 가짜 `FakeSpeedSensor`(Fake Native 창 "속도 센서" 칸, 시나리오 버튼) + `Scripts/NativeSpeedSource` 어댑터. EditMode 49개 통과, Play에서 시나리오 확인. 사용법 `docs/unity/unity_map.md` "앱 코드 묶음". 리뷰 반영: 끌 때 이벤트 없음, 켠 쪽이 끔, 일시정지 시계
+- **다음 세션 바로 할 일**: (Windows) PR 합친 뒤 지환에게 알림(아래 "민재가 직접 할 것") → **S2 보정 계획(0021) 쓰기**: 보정 계산(걷기 1 + 달리기 3 × 20초, 계획 0013) + 보정 화면, 가짜 센서·지환 보정값 API 스텁으로 에디터에서 → 그다음 S3 실시간 방 서버 계획. (맥) 아래 0018 5번 + Swift 속도 플러그인(`Native.Speed` 진짜: `SpeedSensorBase.Sample`만 구현). 아이폰에서: `CMMotionManager`에 모션 권한이 필요한지(Apple 포럼은 불필요 → 필요 없으면 권한 필수 목록 조정), 걸음 감지까지 걸리는 시간
+- **S2(11/10–11)**: **실시간 방식 결정 끝(11/10): FastAPI WebSocket**(ADR-0010, 설명 자료 `docs/research/realtime_options.html`, 오라클 싱가포르 지연 중앙값 222ms 실측). 센서 준비·걸음 감지 C# 모양 + 가짜는 끝(계획 0020, PR #29). 남은 S2: 보정 계획 0021(보정 계산·보정 화면), Swift 속도 플러그인(맥). 노션 작업 표·기능 보드 민재 상태는 11/10 정리함(진행 중·완료). S3 "실시간 방 서버 기본" 계획에 넣을 것: 메시지 모양(입장·상태·들어옴/나감·봇), 입장 응답 `realtime.url`·`token` 확정, 재접속, 앱 연결 인터페이스(나중에 바꿀 수 있게), 아이폰 2대로 지연 실측
 - **맥 상태(11/10)**: Xcode 27.2, Unity 6000.6.7f1 + iOS 모듈, 빌드 대상 iOS로 전환됨, MCP for Unity 서버 켜짐(`unity/tools/*.sh`가 이제 맥에서도 됨). uv·Python 3.12는 `~/.local/bin`(셸 PATH엔 아직 없음: 필요하면 `~/.local/bin/uv python update-shell`). `gh` 없음(푸시·PR 하려면 설치·로그인, Homebrew도 없음). 시뮬레이터 앱이 없고 Xcode 27의 DeviceHub가 시뮬레이터 화면을 보여 주는 듯(가설)
 - **맥 주의(Unity가 바꾼 파일, 커밋 금지)**: Mixamo 파일(`Characters/YBot/*.fbx`)이 이 맥에 없어 Unity가 그 `.meta` 7개를 지움 → mixamo.com에서 받기 전엔 커밋 때 빼고, 받은 뒤 `git checkout -- unity/TestRun/Assets/Scrun/Characters/YBot`. Poly Haven은 받았지만 iOS로 전환하며 Unity가 `.meta`에 iOS 칸·`materialImportMode`를 고쳐 씀(빼고 커밋). 맥 기본 화면 배치에 열려 있던 "Unity Version Control" 창이 버전 관리 모드를 계속 "Unity Version Control"로 바꿔서 창을 닫고 "Visible Meta Files"로 되돌림(그 창을 다시 열지 않기). URP 전역 설정·ProjectSettings(시뮬레이터 SDK 값)도 Unity가 다시 썼던 것 되돌림
 - `/code-review`(11/10) 반영: 키체인 저장 실패에도 로그인 전환을 끝까지(`Session.Persist`), `AppRoot`가 모든 예외에서 로그인 화면으로, 팝업 기다리기는 "활성 2초 연속"이면 끝(제어 센터를 내려도 안 멈춤), 시작 때 알림 상태를 기다리지 않음, 에어팟 모션은 `Headphones.Changed` 구독 중에만 켬(배터리), 메인 스레드 넘기기는 PlayerLoop 대신 SynchronizationContext. 안 고친 것: 이어폰 `Status`·`DeviceName`이 따로 조회(작음), `unity/tools/*.sh` 머리 3줄 중복
@@ -21,7 +23,7 @@
 - 서버 정해진 것(11/08, 계획 0016·`docs/api/README.md`): refresh 재사용 30초 유예 + 그 로그인만 폐기, 재로그인은 deviceId로 같은 기기 폐기 + 사용자당 5개, 닉네임은 한글 완성형·영문·숫자·`_`(NFKC). 공통 규칙 "미정"에 "OCR 서버/앱 미정"이 남아 있음(11/06 서버 처리로 확정) → OCR API 만들 때 같이 고침
 
 ## 민재가 직접 할 것
-- **지환에게**: 11/09 답장(수정본: 샘플 주기·thumbnailUrl·20명 임시 방식) + "FakeNative·앱 틀·로그인 화면 develop에 있음, 권한·에어팟 화면 시작해도 됨(사용법 `docs/unity/unity_map.md` "앱 코드 묶음")". 보냈으면 이 줄 지우기
+- **지환에게**: 11/09 답장(수정본: 샘플 주기·thumbnailUrl·20명 임시 방식) + "FakeNative·앱 틀·로그인 화면 develop에 있음, 권한·에어팟 화면 시작해도 됨(사용법 `docs/unity/unity_map.md` "앱 코드 묶음")". 추가로 알릴 것: 실시간은 WebSocket으로 결정 → "지금 달리는 사람 수"는 연결 수로 세니 샘플 주기·`updated_at` 갱신은 신경 안 써도 됨. **+ 속도 센서 가짜(`Native.Speed`, 계획 0020)로 센서 준비·카운트다운 화면 시작 가능**. 보냈으면 이 줄 지우기
 - 원격 옛 브랜치 `feat/dev-server` 지우기(PR 화면)
 - `Lm_LampGlass.mat`: 11/07 Unity 설정 저장 때 Unity가 다시 써서 `_EMISSION` 키워드 한 줄 빠짐(의도 아님) → 되돌릴지 결정. 커밋 안 한 것: 이 파일, 지환 실명 파일 2개(아래), 와이어프레임 초안, 중간발표 자료, `.claude/settings.json`
 - 스프린트 재분배(11/08)·11/13 시연 범위는 계획 0017 "11/08 재분배"·"11/13 시연"

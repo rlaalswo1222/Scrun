@@ -141,6 +141,18 @@
   - 시뮬레이터 확인(11/10, iPhone 18 Pro): 카메라·알림 팝업 → 허용이 이벤트·결과로 옴, 모션·헤드폰 모션은 팝업 없이 2초 안에 `NotDetermined`(센서 없는 기기), 키체인·설정 앱 정상. iOS는 설정 앱에서 권한을 **끄면** 앱을 종료시킨다(그래서 "허용 → 거부" 이벤트는 없고 다음 실행 때 상태로 앎)
   - 에어팟 모션 연결(`Connected`)은 누군가 `Native.Headphones.Changed`를 구독하는 동안에만 지켜본다(모션 업데이트 = 배터리). 이어폰 상태를 보여 주는 화면은 `OnShow`에서 구독, `OnHide`에서 빼기. 구독자가 없으면 에어팟도 `ConnectedNoMotion`으로 보일 수 있음
   - 아이폰에서 확인할 가설: 헤드폰 모션 팝업이 이어폰 없이도 뜨는지, 에어팟 연결 알림에 모션 업데이트가 켜져 있어야 하는지(지금은 권한이 있으면 켜 둠)
+- **속도 센서는 `Native.Speed`**(11/10, 계획 0020, `App/Native/SpeedSensor.cs`): 센서 준비(D-07)·대기·카운트다운(D-08·09)·보정·달리기 화면이 쓴다. Swift가 속도까지 계산하고 C#은 **한 프레임에 한 번** 읽는다(다른 Update보다 먼저 갱신돼 같은 프레임엔 모든 화면이 같은 값)
+  ```csharp
+  Native.Speed.Start();                                   // 센서 준비 화면에 들어올 때. 끝·취소 때 Stop(이벤트 없이 꺼짐). 센서는 하나라 켠 쪽이 끈다
+  Native.Speed.FlowChanged += Refresh;                    // Phone·AirPods: 꺼짐/기다림/정상/끊김(2초 넘게 안 옴)
+  Native.Speed.GaitChanged += g => { if (g != Gait.None) StartCountdown(); else BackToWaiting(); };
+  var r = Native.Speed.Current;                           // r.HasSpeed, r.SpeedKmh, r.Gait, r.Steps(감지 지연 없이 바로 늘어남), r.UsingAirPods
+  if (!Native.Speed.HasCalibration) Nav.Push(new CalibrationScreen());
+  ```
+  - 판정(계획 0020, 숫자는 가설 → 아이폰에서 잼): 폰은 1초에 80개 이상이면 정상, 에어팟은 연결 + 헤드폰 모션 허용 + 1초에 20개 이상(아니면 꺼짐 = "이어폰 없이 진행", 실패 아님). `Gait`는 걸음 상태가 2.5초 유지되면 바뀜. 네트워크는 여기 없음(S3 실시간)
+  - **에디터 가짜**: Fake Native 창 "속도 센서" 칸. 폰·에어팟 데이터 들어옴(끄면 2초 뒤 끊김, Play 중에도 바로), 보정값 있음, 켜고 들어오기까지·걸음 감지 지연. Play 중엔 사람 속도 슬라이더·"서 있음/걷기 4/달리기 8"·시나리오(3초 뒤 걷기 → 10초 뒤 달리기)와 화면이 읽는 값이 보이고, 키보드 ↑/↓(±0.5)·Space(정지). 7 km/h 미만은 걷기(흉내 경계). 에어팟은 위 이어폰·헤드폰 모션 권한을 따름
+  - 섬 씬 아바타에 꽂기: `Scripts/NativeSpeedSource`(`ISpeedSource`)를 `RunnerController`의 속도 소스로(그 씬의 `FakeSpeedSource`는 빼기: 키가 둘 다 먹음). 센서가 꺼져 있으면 켜고, 자기가 켠 경우에만 끔
+  - 아이폰 진짜 구현은 S2 Swift 속도 플러그인(BL-5). 그 전 아이폰 빌드에서 `Native.Speed`는 예외(`NativeSpeedSource`는 한 번 알리고 속도 0)
 - **아이폰 빌드**(11/10, 맥): 메뉴 **Scrun → iOS → Xcode 만들기**(아이폰 개발 / 시뮬레이터 개발 / 아이폰 출시) → `unity/Builds/iOS-*`. 빌드 대상이 iOS가 아니면 먼저 전환(끝나면 메뉴 한 번 더)
   - 빌드 직후 `IosPostprocess`가 Info.plist 권한 문구(모션·카메라)·`CFBundleDevelopmentRegion ko`·암호화 신고 면제, UnityFramework에 Swift 5·CoreMotion 등 프레임워크, 서명 팀을 채운다
   - 사람마다 다른 값은 git 밖 `unity/TestRun/ScrunLocal.json`(예시 `ScrunLocal.example.json`, 메뉴 Scrun → iOS → 로컬 설정 파일 열기): `appleTeamId`(비우면 Xcode Signing에서 고름), `kakaoNativeAppKey`(6번)
