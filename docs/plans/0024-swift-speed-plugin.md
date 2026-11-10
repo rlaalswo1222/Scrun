@@ -2,7 +2,7 @@
 
 - 상태: **승인 · 구현 중** (11/10 민재, 결정 1–4 추천안 그대로. 11/10 밤 맥·Windows 동시 진행 시작, 아래 "Swift ↔ C# 약속")
 - 진행
-  - Windows 1번 끝(11/10 밤): `fusion_live.py`에 `measure_stage`(TooShort·SensorLost·NoSteps·Irregular·Ok), 누적 걸음(봉우리), 걷기 절편(`WALK_OWN`, **꺼 둠**: 10/29 두 사람에서 나아지지 않음). 숫자: 걸음 없음 문턱 0.12, 걸음 수 215 이상은 벨트 진동, 4 km/h 이하 달리기 판정은 다시 잼(근거·수치 `docs/speed/README.md` 11/10 줄). **맥은 Swift를 이 파일에 맞춘 뒤** `speedlab/golden/replay_20261029-040156.csv`(Python 재생, 열에 `steps` 추가)와 비교
+  - Windows 1번 끝(11/10 밤): `fusion_live.py`에 `measure_stage`(TooShort·SensorLost·NoSteps·Irregular·Ok), 누적 걸음(봉우리), 걷기 절편(`WALK_OWN` 켬, 4 km/h 이상 걷기 점, 11/10 민재 결정). 숫자: 걸음 없음 문턱 0.12, 걸음 수 215 이상은 벨트 진동, 4 km/h 이하 달리기 판정은 다시 잼(근거·수치 `docs/speed/README.md` 11/10 줄). **맥은 Swift를 이 파일에 맞춘 뒤** `speedlab/golden/replay_20261029-040156.csv`(기록의 보정 구간으로)와 `..._walkcal.csv`(`model_walk_20261029.json` 보정을 불러와 시작, 걷기 절편까지)를 Swift 재생과 비교(열에 `steps` 추가)
   - Windows 4번 끝(11/10 밤): C# `IosSpeedSensor`(칸 → SpeedReading, 단계 JSON, 보정 넘기기) + `IosSpeedNative`(DllImport) + `Native.cs` iOS 줄 + 테스트 `IosSpeedSensorTests`, EditMode 131개 통과. 아이폰 빌드는 Swift `ScrunSpeed.swift`가 들어와야 링크됨(맥)
   - 맥 2번 끝(11/11): `SpeedEstimator.swift`를 `Assets/Plugins/iOS/Scrun/`으로 옮기고(SpeedRecorder는 참조, 저장 보정은 `ios/SpeedRecorder/SavedCalibration.swift`로 뺌) Python 1번과 같게 고침. 재생 도구 `ios/SpeedReplay/run.sh`(swiftc). 결과: 고치기 전 버전이 그날 폰 `estimate.csv` 488칸을 다시 만듦(걸음 상태 같음, 속도 차 평균 0.002·최대 0.035 km/h, 에어팟 샘플 도착 순서 차이). 고친 뒤 `speedlab/golden` 488칸과 모든 열 차 0.0000(속도·걸음 상태·누적 걸음·보정점 수), 10/29 SpeedLab M·B 59구간 단계 판정·구간 걸음 수 59/59 같음(`--stages`, live_stage_check 입력을 소수 자르지 않고 내보냄)
   - 맥 3번 끝(11/11): `ScrunSpeed.swift`(C 함수 7개, 칸 11개, 흐름 판정, 백그라운드면 폰 Lost·재던 단계 SensorLost), `ScrunHeadphones`가 속도 센서용 핸들러 있는 업데이트를 같은 manager로 켬. iOS SDK 타입 검사 통과. 시뮬레이터 켜고 끄기는 C# 4번이 들어온 뒤. Unity 자체 가속도(`accelerometerFrequency` 60)는 꺼 0으로(우리 코드는 안 씀, CoreMotion manager가 둘이 되지 않게)
@@ -63,7 +63,7 @@ C 함수(Swift `@_cdecl`, C# `[DllImport("__Internal")]`). 모두 **메인 스�
 - **걸음 상태·속도**: `SpeedEstimator` 그대로(6초 창, 걸음 규칙성 0.3, 2.5초 유지, 2초 중앙값). 지연 줄이기는 이 계획에서 안 함
 - **누적 걸음 수(새로)**: `SpeedReading.Steps`는 감지 지연 없이 늘어야 한다(다리 애니메이션, BL-13). 지금 `SpeedEstimator`엔 없다. 포락선 봉우리를 세는 방식으로 넣는다(가설: 0.27초 안에 봉우리 하나, 최근 6초 상위 값 기준 문턱). 기록으로 "케이던스 × 시간"과 3% 안에서 맞는지 Python에서 먼저 확인
 - **단계 하나 재기(0023)**: 단계 시작 + 5초부터 끝까지의 폰 신호로 판정. 잴 시간이 3초 미만 → TooShort, 그 사이 폰 흐름이 끊김 → SensorLost, 신호 세기가 서 있을 때 수준 → NoSteps, 걸음 규칙성 0.3 미만 → Irregular, 아니면 Ok와 점 하나(`v`·`limp`·`cad`·`amp`·`running`). NotFaster는 C#이 이미 판정. "서 있을 때 수준"의 숫자는 걸음 없는 부분과 걷기 2 km/h 구간 사이에서 정함. 10/29 기록엔 `still` 구간 표시가 없어서(`segments.csv`가 거의 비어 있음) 기록 앞뒤의 걸음 없는 부분을 손으로 골라 쓰고, 모자라면 아이폰 책상 확인 때 "벨트 옆 발판에 30초 서 있기"·"폰을 손에 들고 30초"를 새로 기록
-- **걷기 절편(0023)**: 걷기 기울기는 공통 0.0732 그대로, 절편만 이 사람의 걷기 점들로(점들의 `v − 0.0732·cad` 평균). 걷기 점이 없으면 공통 절편 −3.45. **11/10 결과: 10/29 두 사람에서 나아지지 않아 꺼 둠(`WALK_OWN = False`), 헬스장 여러 명 뒤 판단**
+- **걷기 절편(0023)**: 걷기 기울기는 공통 0.0732 그대로, 절편만 이 사람의 걷기 점들로(점들의 `v − 0.0732·cad` 평균). 걷기 점이 없으면 공통 절편 −3.45. **11/10 민재 결정: 켬(`WALK_OWN = True`), 절편은 4 km/h 이상 걷기 점으로(`WALK_MIN_KMH`, 없으면 있는 걷기 점 전부)**. 2 km/h는 오를 때·내릴 때 걸음 수 차이가 가장 크고 걸음 감지가 불안정. 10/29 두 사람에선 뚜렷한 이득이 안 보였지만 공통 공식이 바로 그 두 사람(다리 길이 비슷)으로 만든 것이라 키가 다른 사람을 대표 못 함 → 헬스장 여러 명으로 다시 확인
 - **1번에서 더한 판정(11/10, 10/29 기록 근거)**: 걸음 수가 215 이상(찾는 범위 끝)이면 NoSteps(벨트 모터 진동), 안내 속도 4 km/h 이하인데 달리기로 나오면 Irregular(걸음 수를 두 배로 잡음)
 
 ## 순서

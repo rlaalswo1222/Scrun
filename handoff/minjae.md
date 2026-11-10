@@ -3,7 +3,7 @@
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만 하고 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/api/README.md`, `docs/adr/`, `docs/plans/`)에 있다. 옛 전체본: `docs/log/HANDOFF_minjae_20261110.md`(11/10 정리 전), `_20261109.md`, `_20261107.md`, `_20261106.md`
 
 ## 지금
-- **계획 0024 Swift 속도 플러그인 구현 중**(브랜치 `feat/speed-plugin`, 맥·Windows 동시). 계획에 "Swift ↔ C# 약속"(C 함수 7개·읽는 칸 11개) 확정. Windows: 1번 Python 끝(단계 판정·누적 걸음·걷기 절편은 꺼 둠, 결과 `docs/speed/README.md` 11/10 줄), 4번 C# `IosSpeedSensor` 끝(EditMode 131개). 맥: 지시문을 붙여 넣어 Swift 쪽(파일 옮기기·Swift 재생 비교·`ScrunSpeed.swift`·책상 확인) 시작, 진행은 계획 0024 "진행"의 맥 줄에(맥은 이 파일 안 고침). **민재 결정 대기**: 걷기 절편을 꺼 둔 채로 갈지(추천: 헬스장 여러 명 뒤 판단)
+- **계획 0024 Swift 속도 플러그인 구현 중**(브랜치 `feat/speed-plugin`, 맥·Windows 동시). 계획에 "Swift ↔ C# 약속"(C 함수 7개·읽는 칸 11개) 확정. Windows: 1번 Python 끝(단계 판정·누적 걸음·걷기 절편 켬(4 km/h 이상 점, 11/10 민재 결정), 결과 `docs/speed/README.md` 11/10 줄), 4번 C# `IosSpeedSensor` 끝(EditMode 131개). 맥: 지시문을 붙여 넣어 Swift 쪽(파일 옮기기·Swift 재생 비교·`ScrunSpeed.swift`·책상 확인) 시작, 진행은 계획 0024 "진행"의 맥 줄에(맥은 이 파일 안 고침). 헬스장 실험에 키가 다른 사람을 넣어 걷기 절편 "2 포함 대 4 이상"·키로 조정 비교
 - **S2 처음 보정 PR #33**(`feat/calibration`, 계획 0023): 1–3번 끝(보정 메서드·가짜, `CalibrationFlow`, 화면 A-11–A-15 + 다시·도움·멈춤 카드, `CalibrationStore`). EditMode 79개 통과, 에디터에서 7단계 끝까지 확인. 정한 것은 ADR-0005 "추가 결정(11/10)"과 0023 본문
 
 - **PR 정리(11/10 밤)**: 지환이 리뷰를 반영해 #30(보정 API DB 연결 포함)·#32를 다시 올림 → 확인 코멘트 달고 develop에 합침. #32는 develop과 충돌(아래 탭 UI Kit 아이콘 vs 아이폰 높이 49·홈 바 여백)을 민재가 풀어 `feat/course-screens`에 merge 커밋(지환에게 pull 부탁). #34(지환 권한·이어폰 화면) 리뷰 올림: 고칠 것 4개(나중에 하기 → 매번 A-07, 로그인 경로 온보딩 빠짐, 이어폰 화면이 그리기만 해도 팝업, 요청이 안 끝나면 버튼 잠김) + 계획 번호 0023 겹침 → 지환 쪽을 0025로. base는 develop으로 바꿈
