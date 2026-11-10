@@ -3,7 +3,7 @@
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
 ## 지금 (11/11)
-- **아바타 속도 맞춤 끝, PR 준비**: 브랜치 `feat/avatar-run-speed`(develop 681f47a에서), 계획 [0027](../docs/plans/0027-avatar-run-speed.md). 실행 중 Animator의 실제 발 속도 표(`App/Resources/RunnerGait.asset`)로 `RunnerAnimator` 재생 속도를 맞춤 → 1에서 20 km/h 미끄러짐 5% 이내(전 최대 80%). 멈추면 동작을 세움. `/code-review` 반영, EditMode 117/117. 원본 `data/avatar/`, 바뀐 동작은 `unity_map.md` 캐릭터 절
+- **아바타 속도 맞춤 PR #39**(민재 리뷰 대기): 브랜치 `feat/avatar-run-speed`(develop 681f47a에서), 계획 [0027](../docs/plans/0027-avatar-run-speed.md). 실행 중 Animator의 실제 발 속도 표(`App/Resources/RunnerGait.asset`)로 `RunnerAnimator` 재생 속도를 맞춤 → 1에서 20 km/h 미끄러짐 5% 이내(전 최대 80%). 멈추면 동작을 세움. `/code-review` 반영, EditMode 117/117. 원본 `data/avatar/`, 바뀐 동작은 `unity_map.md` 캐릭터 절
   - 커밋 a7fda83(Y Bot `.meta` Avatar 공유)이 이 브랜치에 있음. develop(#35 머지 뒤) 합침
   - 영상(저장소 밖): scratchpad `avatar_compare/`(1·8 km/h 전·후, 20 km/h 후). 형에게 보여 줄 때 다시 찍으려면 Play 중 메뉴 Scrun/Dev/Capture Runner Side
   - 아이폰·섬 씬(봇·고스트)에서 눈으로 확인 남음. 클립 분석값(GaitAnalysis)과 실행 중 발 속도가 다른 원인 미확인
@@ -26,7 +26,7 @@ jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md
 
 ## 다음 할 일
 1. #34 머지됨 → 노션 상태 완료. 아이폰(PR #28 뒤): 권한 팝업·설정 앱 왕복 때 앱이 꺼지는지(꺼지면 입장하려던 코스·온보딩 단계 저장해 이어 가기, 계획 0025), 에어팟, 가로 맵·노치
-2. **S2 남은 것**: 아바타 PR(#37 예정) 리뷰 → [BE] 내 정보 `GET·PATCH /users/me`·설정 `GET·PATCH /users/me/settings`(BL-36, 계획 0028). 보정값 API(BL-4)는 #30에서 끝남 → 노션 완료 표시만
+2. **S2 남은 것**: 아바타 PR #39 리뷰·머지 → [BE] 내 정보 `GET·PATCH /users/me`·설정 `GET·PATCH /users/me/settings`(BL-36, 계획 0028). 보정값 API(BL-4)는 #30에서 끝남 → 노션 완료 표시만
 3. S3: 센서 준비·카운트다운(D-07·D-09), 맵 HUD(D-10 진행 막대·멈춤 D-17), MapScreen 쪼개기
 
 ## 맡은 영역 (계획 0017, 노션 [개발 계획](https://tough-wednesday-fe0.notion.site/11-08-11-23-4114ae82f1de81a9bec2db16a9bfe635) 작업 표 지환 36줄)
