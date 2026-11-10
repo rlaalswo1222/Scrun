@@ -134,6 +134,19 @@ namespace Scrun.App
             Wait(CalCue.Prepare);
         }
 
+        // 도움 화면이 "속도 안 올림"(NotFaster) 때문이면 앞 단계를 다시 잴 수 있다.
+        // 앞 점이 잘못 잡혔으면(그 단계에서 이미 다음 속도로 달림 등) 이 단계는 계속 "안 빨라짐"이라 그 점부터 다시 재야 풀린다.
+        public bool CanRetryPrevious => State == CalState.Help && LastResult == CalStageResult.NotFaster && StageIndex > 0;
+
+        public void RetryPreviousStage()
+        {
+            if (!CanRetryPrevious) return;
+            sensor.DropLastCalibrationPoint();
+            StageIndex--;
+            Fails = 0;
+            Wait(CalCue.Prepare);
+        }
+
         // 앱이 백그라운드로 가는 등 잴 수 없게 됨: 그 단계는 버리고 걸음을 기다린다(실패로 안 셈)
         public void Interrupt()
         {

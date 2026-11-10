@@ -11,7 +11,9 @@ namespace Scrun.App
     // Figma에 없는 다시·도움·멈춤·그만두기 확인·저장 중은 같은 카드로 보여 준다(문구 CalibrationCopy).
     public sealed class CalibrationScreen : AppScreen
     {
-        enum Card { None, Transition, Retry, Help, Stopped, Quit, Saving }
+        enum Card { None, Transition, Retry, Help, Stopped, NoSensor, Quit, Saving }
+
+        const double NoSensorSec = 5; // 걸음을 기다리는데 폰 센서가 이만큼 안 오면 안내(권한 꺼짐·센서 실패)
 
         readonly Action<bool> finish;
         readonly ISpeedSensor sensor;
@@ -29,7 +31,9 @@ namespace Scrun.App
         double now;
         double transitionUntil;
         bool transitionIsRetry;
-        bool stopped, confirmQuit, finished;
+        bool revertHint;            // 다시·도움: "곧 올려요"를 들은 뒤 실패해 같은 속도로 다시 잼 → 되돌리라고 알림
+        double phoneMissingSince = -1;
+        bool stopped, confirmQuit, finished, doneFilled;
         string nextHintText = "";
         int savedSleepTimeout;
 
@@ -126,7 +130,20 @@ namespace Scrun.App
 #endif
         }
 
-        // 뒤로(에디터 Esc)로 닫혀도 모은 점은 버리고 센서를 돌려놓는다
+        // 뒤로(에디터 Esc): 재는 중이면 그만두기 확인, 완료면 "계속"과 같게, 저장 중엔 막음. 시작 전이면 안내 화면으로
+        protected internal override bool OnBack()
+        {
+            if (flow == null || flow.State == CalState.Aborted) return false;
+            if (flow.State == CalState.Done) Finish(true);
+            else if (flow.State != CalState.Saving)
+            {
+                confirmQuit = true;
+                Render();
+            }
+            return true;
+        }
+
+        // 어떻게든 닫히면 모은 점은 버리고 센서를 돌려놓는다
         protected internal override void OnDestroy()
         {
             if (flow != null && flow.State != CalState.Done && flow.State != CalState.Saving) flow.Abort();
@@ -152,6 +169,9 @@ namespace Scrun.App
         {
             now = Clock;
             flow?.Tick(now);
+            bool phoneMissing = flow?.State == CalState.WaitingSteps && sensor.Phone != SensorFlow.Ok;
+            if (!phoneMissing) phoneMissingSince = -1;
+            else if (phoneMissingSince < 0) phoneMissingSince = now;
             Render();
         }
 
@@ -165,12 +185,18 @@ namespace Scrun.App
                     break;
                 case CalCue.Go:
                 case CalCue.Retry:
+                    revertHint = cue == CalCue.Retry && nextHintText != ""; // 이 단계 끝에 "곧 올려요"를 이미 들었음
                     nextHintText = "";
                     transitionIsRetry = cue == CalCue.Retry;
                     transitionUntil = now + SpeedSensorBase.StageSkipSec;
                     break;
+                case CalCue.Help:
+                    revertHint = nextHintText != "";
+                    nextHintText = "";
+                    break;
                 case CalCue.Stopped:
                     stopped = true;
+                    nextHintText = "";
                     break;
                 case CalCue.Prepare:
                 case CalCue.Resume:
@@ -209,9 +235,13 @@ namespace Scrun.App
                 : gait == Gait.Running ? CalibrationCopy.BadgeRunning : CalibrationCopy.BadgeWaiting;
             badge.EnableInClassList("calib-badge--waiting", gait == Gait.None);
 
-            Show(mount, flow == null);
-            Show(done, flow?.State == CalState.Done);
-            if (flow?.State == CalState.Done) FillDone();
+            mount.SetVisible(flow == null);
+            done.SetVisible(flow?.State == CalState.Done);
+            if (flow?.State == CalState.Done && !doneFilled)
+            {
+                doneFilled = true; // 결과는 바뀌지 않으므로 한 번만
+                FillDone();
+            }
             cancel.style.visibility = flow != null && (flow.State == CalState.Saving || flow.State == CalState.Done)
                 ? Visibility.Hidden : Visibility.Visible;
 
@@ -229,6 +259,7 @@ namespace Scrun.App
                 case CalState.Help: return confirmQuit ? Card.Quit : Card.Help;
             }
             if (confirmQuit) return Card.Quit;
+            if (flow.State == CalState.WaitingSteps && phoneMissingSince >= 0 && now - phoneMissingSince >= NoSensorSec) return Card.NoSensor;
             if (flow.State == CalState.WaitingSteps && stopped) return Card.Stopped;
             if (flow.State == CalState.Measuring && now < transitionUntil) return transitionIsRetry ? Card.Retry : Card.Transition;
             return Card.None;
@@ -236,7 +267,7 @@ namespace Scrun.App
 
         void ShowCard(Card card, float kmh, int index)
         {
-            Show(cardLayer, card != Card.None);
+            cardLayer.SetVisible(card != Card.None);
             if (card == Card.None) return;
             var ladder = CalibrationLadder.SpeedsKmh;
             int countdown = (int)Math.Ceiling(Math.Max(0, transitionUntil - now));
@@ -256,21 +287,39 @@ namespace Scrun.App
                 case Card.Retry:
                     title = CalibrationCopy.RetryTitle;
                     body = CalibrationCopy.Reason(reason, kmh);
+                    if (revertHint) body += " " + CalibrationCopy.RevertSpeed(kmh);
                     chip = CalibrationCopy.StartsIn(countdown, index, ladder.Length);
                     break;
                 case Card.Help:
                     title = CalibrationCopy.HelpTitle;
                     body = CalibrationCopy.Help(reason, kmh);
+                    if (revertHint) body += "\n• " + CalibrationCopy.RevertSpeed(kmh);
                     primary = CalibrationCopy.HelpAgain(kmh);
                     primaryAction = () => flow.RetryAfterHelp();
-                    secondary = CalibrationCopy.Quit;
-                    secondaryAction = Quit;
+                    if (flow.CanRetryPrevious)
+                    {
+                        // 그만두기는 위 "취소"(확인을 거침)로
+                        body += CalibrationCopy.HelpBackNote;
+                        secondary = CalibrationCopy.HelpBack(ladder[index - 1]);
+                        secondaryAction = () => flow.RetryPreviousStage();
+                    }
+                    else
+                    {
+                        secondary = CalibrationCopy.Quit;
+                        secondaryAction = AskQuit;
+                    }
                     break;
                 case Card.Stopped:
                     title = CalibrationCopy.StoppedTitle;
                     body = CalibrationCopy.StoppedBody(kmh);
                     secondary = CalibrationCopy.Quit;
-                    secondaryAction = Quit;
+                    secondaryAction = AskQuit;
+                    break;
+                case Card.NoSensor:
+                    title = CalibrationCopy.NoSensorTitle;
+                    body = CalibrationCopy.NoSensorBody;
+                    secondary = CalibrationCopy.Quit;
+                    secondaryAction = AskQuit;
                     break;
                 case Card.Quit:
                     title = CalibrationCopy.QuitTitle;
@@ -291,14 +340,14 @@ namespace Scrun.App
             cardIcon.EnableInClassList("calib-card-icon--warn", !ok && card != Card.Saving);
             cardTitle.text = title;
             cardBody.text = body;
-            Show(cardBody, !string.IsNullOrEmpty(body));
+            cardBody.SetVisible(!string.IsNullOrEmpty(body));
             cardChip.text = chip ?? "";
-            Show(cardChip, chip != null);
+            cardChip.SetVisible(chip != null);
             cardPrimary.text = primary ?? "";
             cardSecondary.text = secondary ?? "";
-            Show(cardPrimary, primary != null);
-            Show(cardSecondary, secondary != null);
-            Show(cardButtons, primary != null || secondary != null);
+            cardPrimary.SetVisible(primary != null);
+            cardSecondary.SetVisible(secondary != null);
+            cardButtons.SetVisible(primary != null || secondary != null);
         }
 
         void FillDone()
@@ -320,7 +369,14 @@ namespace Scrun.App
             airChip.EnableInClassList("calib-chip--gray", !air);
             var note = Q<Label>("save-note");
             note.text = flow.SavedToServer ? "" : CalibrationCopy.SavedLocalOnly;
-            Show(note, !flow.SavedToServer);
+            note.SetVisible(!flow.SavedToServer);
+        }
+
+        // 모은 점을 버리는 일이라 언제나 확인 카드를 거친다
+        void AskQuit()
+        {
+            confirmQuit = true;
+            Render();
         }
 
         void Quit()
@@ -336,8 +392,6 @@ namespace Scrun.App
             ticker?.Pause();
             finish(ok);
         }
-
-        static void Show(VisualElement e, bool on) => e.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
     // A-13의 원형 타이머: 단계가 지나는 만큼 원이 채워진다

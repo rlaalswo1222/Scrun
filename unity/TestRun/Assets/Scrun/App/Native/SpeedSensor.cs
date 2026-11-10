@@ -67,6 +67,7 @@ namespace Scrun.App
         void BeginCalibrationStage(float speedKmh);
         CalStageResult EndCalibrationStage();
         void CancelCalibrationStage();
+        void DropLastCalibrationPoint();   // 앞 단계를 다시 잴 때(그 점이 잘못 잡혀 다음 단계가 계속 "안 빨라짐")
         string CommitCalibration();
         void AbortCalibration();
         string ExportCalibration();        // 지금 보정(model JSON), 없으면 null
@@ -185,6 +186,7 @@ namespace Scrun.App
             var m = OnEndStage(stageKmh);
             if (m.Result != CalStageResult.Ok) return m.Result;
             if (m.Point == null) throw new InvalidOperationException("Ok인데 보정점이 없습니다.");
+            if (!m.Point.IsValid) return CalStageResult.Irregular; // 쓸 수 없는 값(걸음 수 0, NaN)은 저장하면 불러올 때 버려지므로 다시 잼
             if (draft.Count > 0 && !Faster(draft[draft.Count - 1], m.Point)) return CalStageResult.NotFaster;
             draft.Add(m.Point);
             return CalStageResult.Ok;
@@ -198,6 +200,13 @@ namespace Scrun.App
         {
             if (stage == Stage.Open) OnCancelStage();
             stage = Stage.None;
+        }
+
+        public void DropLastCalibrationPoint()
+        {
+            if (draft == null || draft.Count == 0) throw new InvalidOperationException("버릴 보정점이 없습니다.");
+            CancelCalibrationStage();
+            draft.RemoveAt(draft.Count - 1);
         }
 
         public string CommitCalibration()

@@ -161,7 +161,10 @@ namespace Scrun.App
 
             // 뒤로 가기: 에디터·안드로이드는 Esc/뒤로 키. 아이폰은 화면의 뒤로 버튼(각 화면이 Nav.Pop)
             var kb = Keyboard.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame && !Feedback.IsBlocking) Nav?.Pop(); // 로딩·오류창 중엔 막음
+            if (kb != null && kb.escapeKey.wasPressedThisFrame && !Feedback.IsBlocking && Nav != null) // 로딩·오류창 중엔 막음
+            {
+                if (Nav.Current == null || !Nav.Current.OnBack()) Nav.Pop(); // 화면이 직접 처리하면(확인 묻기 등) 닫지 않음
+            }
         }
     }
 }

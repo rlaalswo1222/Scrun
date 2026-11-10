@@ -33,6 +33,10 @@ namespace Scrun.App
         [JsonProperty("cad")] public double Cadence;   // 분당 걸음 수
         [JsonProperty("amp")] public double? AirAmp;   // 에어팟 흔들림 폭(g), 에어팟을 못 썼으면 null
         [JsonProperty("running")] public bool Running; // 이 점에서 달렸는지(걷기·달리기는 센서가 판정)
+
+        // 저장·불러오기에 쓸 수 있는 점(속도·걸음 수가 양수, ln(충격)이 숫자)
+        [JsonIgnore]
+        public bool IsValid => V > 0 && Cadence > 0 && !double.IsNaN(LnImpact) && !double.IsInfinity(LnImpact);
     }
 
     // 서버 calibration.model 칸에 그대로 들어가는 보정(서버는 해석 안 함, docs/api/data_model.md).
@@ -57,7 +61,7 @@ namespace Scrun.App
             {
                 var m = JsonConvert.DeserializeObject<CalibrationModel>(json);
                 if (m == null || m.Version != CurrentVersion || m.Points == null || m.Points.Count == 0) return null;
-                if (m.Points.Any(p => p == null || p.V <= 0 || double.IsNaN(p.LnImpact) || p.Cadence <= 0)) return null;
+                if (m.Points.Any(p => p == null || !p.IsValid)) return null;
                 return m;
             }
             catch (JsonException)

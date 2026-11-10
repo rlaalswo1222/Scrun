@@ -139,6 +139,52 @@ namespace Scrun.App.Tests
         }
 
         [Test]
+        public void 속도_안_올림이_연달아면_앞_단계부터_다시_잴_수_있고_그_점은_버린다()
+        {
+            bool ignore = true;
+            obey = (c, k) => !(ignore && c != CalCue.Prepare && k == 4f); // 4 km/h로 올리라는 안내를 무시
+            flow.Start(now);
+            RunUntil(CalState.Help);
+            Assert.AreEqual(1, flow.StageIndex);
+            Assert.AreEqual(CalStageResult.NotFaster, flow.LastResult);
+            Assert.IsTrue(flow.CanRetryPrevious);
+            Assert.AreEqual(1, s.CalibrationPointCount);
+
+            ignore = false;
+            flow.RetryPreviousStage();
+            Assert.AreEqual(0, flow.StageIndex);
+            Assert.AreEqual(0, s.CalibrationPointCount); // 앞 단계 점을 버림
+            Assert.AreEqual(CalState.WaitingSteps, flow.State);
+            Assert.AreEqual((CalCue.Prepare, 2f), cues.Last());
+            RunUntil(CalState.Done);
+            var points = CalibrationModel.Parse(saved[0]).Points;
+            Assert.AreEqual(7, points.Count);
+            CollectionAssert.AreEqual(CalibrationLadder.SpeedsKmh.Select(v => (double)v), points.Select(p => p.V));
+        }
+
+        [Test]
+        public void 다른_이유의_도움_화면에선_앞_단계로_못_간다()
+        {
+            flow.Start(now);
+            RunUntil(CalState.Measuring);
+            s.ForceNextStage = CalStageResult.Irregular;
+            Run(CalibrationLadder.StageSec + 0.5);
+            s.ForceNextStage = CalStageResult.Irregular;
+            Run(CalibrationLadder.StageSec + 0.5);
+            Assert.AreEqual(CalState.Help, flow.State);
+            Assert.IsFalse(flow.CanRetryPrevious); // 첫 단계이고, 이유도 NotFaster가 아님
+            flow.RetryPreviousStage();
+            Assert.AreEqual(CalState.Help, flow.State);
+        }
+
+        [TestCase(8, 2.0, 160, true)]
+        [TestCase(8, 2.0, 0, false)]      // 걸음 수 0
+        [TestCase(8, double.NaN, 160, false)]
+        [TestCase(0, 2.0, 160, false)]
+        public void 보정점은_속도_걸음수가_양수이고_충격이_숫자여야_쓴다(double v, double limp, double cad, bool valid) =>
+            Assert.AreEqual(valid, new CalibrationPoint { V = v, LnImpact = limp, Cadence = cad }.IsValid);
+
+        [Test]
         public void 재는_중에_멈추면_실패로_안_세고_기다렸다가_그_단계부터_이어서()
         {
             flow.Start(now);

@@ -118,11 +118,31 @@ namespace Scrun.App
                     Nav.Pop(); // 목록은 보일 때 다시 불러와 인원이 새로 보임
                     break;
                 case MapExit.NeedsCalibration:
+                    // 서버에 못 올린 보정이 이 폰에 있으면 그것부터 올리고 다시 입장(보정을 또 시키지 않음)
+                    if (CalibrationStore.Pending != null)
+                    {
+                        UploadPendingThenEnter();
+                        break;
+                    }
                     // 보정 없음(409) → A-11 보정 안내(계획 0023). 끝나면 바로 다시 입장, 그만두면 이 화면에 머묾
                     fromCalibration = true;
-                    Nav.Push(new CalibrationIntroScreen(onDone: Enter));
+                    Nav.Push(new CalibrationIntroScreen(onDone: AfterCalibration));
                     break;
             }
+        }
+
+        // 보정이 끝남. 서버 저장이 실패했으면(이 폰에 남음) 입장해도 또 409라, 한 번 더 올려 보고 들어간다
+        void AfterCalibration()
+        {
+            if (CalibrationStore.Pending == null) Enter();
+            else UploadPendingThenEnter();
+        }
+
+        // 실패하면 안내창의 "다시 시도"로 다시 올림. 보정 화면으로는 돌려보내지 않는다
+        async void UploadPendingThenEnter()
+        {
+            bool ok = await Feedback.Run(CalibrationStore.UploadPendingAsync, UploadPendingThenEnter);
+            if (ok && Root.panel != null) Enter();
         }
 
         // 없는 코스(404)는 화면 안에서 안내. true면 공통 안내창을 띄우지 않음

@@ -84,7 +84,18 @@ namespace Scrun.App
         public const string PhoneSensor = "폰 센서";
         public const string AirPodsOn = "AirPods 연결됨";
         public const string AirPodsOff = "이어폰 없음";
-        public const string SavedLocalOnly = "서버에 아직 못 올렸어요. 이 폰에는 저장됐고, 연결되면 다시 올릴게요.";
+        public const string SavedLocalOnly = "서버에 아직 못 올렸어요. 이 폰에 남겨 두고, 코스에 들어갈 때 다시 올릴게요.";
+
+        // 다시·도움 카드: 곧 올린다는 안내를 듣고 미리 올렸을 수 있을 때(그 단계를 다시 재므로 되돌려야 함)
+        public static string RevertSpeed(float kmh) => $"다음 속도로 올렸다면 {Kmh(kmh)}로 되돌려 주세요.";
+
+        // 도움 카드: 속도를 올렸는데도 계속 "그대로"면 앞 단계 점이 잘못 잡힌 것일 수 있음
+        public static string HelpBack(float prevKmh) => $"{Kmh(prevKmh)}부터 다시";
+        public const string HelpBackNote = "\n• 맞게 올렸는데도 계속 이러면 앞 단계가 잘못 재졌을 수 있어요. 앞 단계부터 다시 재요.";
+
+        // 센서 안 들어옴(Figma에 없음): 걸음을 기다리는데 폰 센서 값이 계속 안 옴
+        public const string NoSensorTitle = "폰 센서가 들어오지 않아요";
+        public const string NoSensorBody = "앱을 껐다 켜 보세요. 그래도 안 되면 설정 > 개인정보 보호 및 보안 > 동작 및 피트니스에서 Scrun이 켜져 있는지 확인해 주세요.";
         public const string DoneNext = "계속";
     }
 }

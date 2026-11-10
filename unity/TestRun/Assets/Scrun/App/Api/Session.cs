@@ -86,12 +86,17 @@ namespace Scrun.App
             SignupToken = token;
         }
 
+        // 로그인이 끝남(로그아웃·재로그인 필요·새 가입 시작). 이 계정의 것으로 폰에 남겨 둔 것을 지울 때 듣는다(예: 못 올린 보정)
+        public static event Action Cleared;
+
         // 로그아웃·재로그인 필요. 저장된 토큰도 지운다.
         internal void Clear()
         {
             AccessToken = RefreshToken = SignupToken = null;
             Epoch++;
             Persist(() => store.Delete(StoreKey));
+            try { Cleared?.Invoke(); }
+            catch (Exception e) { UnityEngine.Debug.LogException(e); } // 정리 실패가 로그아웃을 막지 않게
         }
 
         // 기준은 메모리의 로그인 상태이고, 기기 저장(키체인)은 최선만 다한다. 저장·삭제가 실패해도
