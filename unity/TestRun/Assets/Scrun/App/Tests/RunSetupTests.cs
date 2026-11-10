@@ -82,9 +82,11 @@ namespace Scrun.App.Tests
         [TestCase("3.25", "0.1 km 단위까지 입력해 주세요")]
         [TestCase("0.4", "0.5km에서 42.2km 사이로 입력해 주세요")]
         [TestCase("42.3", "0.5km에서 42.2km 사이로 입력해 주세요")]
+        [TestCase("1500", "0.5km에서 42.2km 사이로 입력해 주세요")]
+        [TestCase("99999999", "0.5km에서 42.2km 사이로 입력해 주세요")]
         [TestCase("abc", "숫자로 입력해 주세요")]
         [TestCase("-3", "숫자로 입력해 주세요")]
-        [TestCase("99999999", "숫자로 입력해 주세요")]
+        [TestCase("3.5.1", "숫자로 입력해 주세요")]
         public void RejectsBadDistance(string text, string expected)
         {
             Assert.IsFalse(RunGoal.TryParse(GoalKind.Distance, text, out _, out var problem));
@@ -102,8 +104,10 @@ namespace Scrun.App.Tests
 
         [TestCase("4", "5분에서 180분 사이로 입력해 주세요")]
         [TestCase("181", "5분에서 180분 사이로 입력해 주세요")]
-        [TestCase("30.5", "분 단위 숫자로 입력해 주세요")]
-        [TestCase("99999999999", "분 단위 숫자로 입력해 주세요")]
+        [TestCase("100001", "5분에서 180분 사이로 입력해 주세요")]
+        [TestCase("99999999999", "5분에서 180분 사이로 입력해 주세요")]
+        [TestCase("30.5", "1분 단위로 입력해 주세요")]
+        [TestCase("삼십", "숫자로 입력해 주세요")]
         public void RejectsBadTime(string text, string expected)
         {
             Assert.IsFalse(RunGoal.TryParse(GoalKind.Time, text, out _, out var problem));
@@ -189,12 +193,6 @@ namespace Scrun.App.Tests
         public void CourseChip() => Assert.AreEqual("노을 호수 한 바퀴 · 지금 12명", RunSetupText.CourseChip("노을 호수 한 바퀴", 12));
 
         // ---------- 서버 응답 ----------
-        sealed class FakeHttp : IHttpTransport
-        {
-            public readonly List<HttpRequest> Sent = new List<HttpRequest>();
-            public Func<HttpRequest, HttpResponse> Handler;
-            public Task<HttpResponse> SendAsync(HttpRequest r) { Sent.Add(r); return Task.FromResult(Handler(r)); }
-        }
 
         [Test]
         public void WeeklyGoalReadsServerShape()
@@ -206,13 +204,8 @@ namespace Scrun.App.Tests
                 var http = new FakeHttp
                 {
                     // 서버 stub_data.WEEKLY_GOAL 모양
-                    Handler = _ => new HttpResponse
-                    {
-                        Status = 200,
-                        Body = "{\"resultType\":\"SUCCESS\",\"success\":{\"data\":{\"targetCount\":3,\"cycleStart\":\"2026-11-03\"," +
-                               "\"cycleEnd\":\"2026-11-09\",\"doneCount\":2,\"daysLeft\":3,\"nextTargetCount\":null,\"history\":[]}}," +
-                               "\"error\":null,\"meta\":{\"requestId\":\"req_ok\"}}"
-                    }
+                    Handler = _ => FakeHttp.Ok("{\"targetCount\":3,\"cycleStart\":\"2026-11-03\",\"cycleEnd\":\"2026-11-09\"," +
+                                               "\"doneCount\":2,\"daysLeft\":3,\"nextTargetCount\":null,\"history\":[]}")
                 };
                 var session = new Session(new MemorySecureStore());
                 session.SetTokens("access", "refresh");

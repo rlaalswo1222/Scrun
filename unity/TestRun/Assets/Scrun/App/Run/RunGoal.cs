@@ -78,34 +78,25 @@ namespace Scrun.App
             var t = (text ?? "").Trim().Replace(',', '.');
             if (t.Length == 0) return false;
 
-            var s = SpecOf(kind);
-            int units;
-            if (kind == GoalKind.Distance)
+            // 숫자인지 → 범위 → 단위(거리 0.1 km, 시간 1분) 순서로 본다. 그래야 "1500"은 범위, "3.5.1"은 숫자 아님으로 안내된다
+            if (!decimal.TryParse(t, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number))
             {
-                int dot = t.IndexOf('.');
-                if (dot >= 0 && t.Length - dot - 1 > 1)
-                {
-                    problem = "0.1 km 단위까지 입력해 주세요";
-                    return false;
-                }
-                if (!decimal.TryParse(t, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var km) || km > 1000m)
-                {
-                    problem = "숫자로 입력해 주세요";
-                    return false;
-                }
-                units = (int)(km * 10m);
-            }
-            else if (!int.TryParse(t, NumberStyles.None, CultureInfo.InvariantCulture, out units) || units > 100000)
-            {
-                problem = "분 단위 숫자로 입력해 주세요";
+                problem = "숫자로 입력해 주세요";
                 return false;
             }
-
-            if (units < s.Min || units > s.Max)
+            var s = SpecOf(kind);
+            decimal scaled = kind == GoalKind.Distance ? number * 10m : number; // 화면 단위 → Units
+            if (scaled < s.Min || scaled > s.Max)
             {
                 problem = $"{QuickText(kind, s.Min)}에서 {QuickText(kind, s.Max)} 사이로 입력해 주세요";
                 return false;
             }
+            if (scaled != decimal.Truncate(scaled))
+            {
+                problem = kind == GoalKind.Distance ? "0.1 km 단위까지 입력해 주세요" : "1분 단위로 입력해 주세요";
+                return false;
+            }
+            int units = (int)scaled;
             goal = new RunGoal(kind, units);
             return true;
         }

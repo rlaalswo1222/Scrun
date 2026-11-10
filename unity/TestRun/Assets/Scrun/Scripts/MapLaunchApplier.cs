@@ -49,7 +49,8 @@ namespace Scrun
         IEnumerator Start()
         {
             yield return null;
-            Apply();
+            try { Apply(); }
+            finally { MapLaunch.MarkApplied(); } // 맵 화면이 이걸 기다렸다 흐린 배경을 찍음(실패해도 알림)
             Destroy(gameObject);
         }
 

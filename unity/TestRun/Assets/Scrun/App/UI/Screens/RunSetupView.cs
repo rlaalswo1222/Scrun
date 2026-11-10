@@ -19,6 +19,7 @@ namespace Scrun.App
         readonly Label value, unit, weekly, inputTitle, inputUnit, inputError;
         readonly TextField inputField;
         readonly Toggle skipManual;
+        readonly Button[] quickChips;
 
         RunSetupSteps steps;
         RunGoal distance, time; // 탭을 오가도 각자 고친 값을 기억
@@ -37,8 +38,7 @@ namespace Scrun.App
             var container = tree.Instantiate();
             container.AddToClassList("run-setup");
             container.pickingMode = PickingMode.Ignore;
-            host.Add(container);
-            root = container;
+            root = container; // host에는 다 만든 뒤 붙인다(중간에 예외면 반쯤 만든 층이 맵 화면에 남지 않게)
 
             goalStep = Q<VisualElement>("goal-step");
             mountStep = Q<VisualElement>("mount-step");
@@ -80,7 +80,23 @@ namespace Scrun.App
             Q<Button>("input-cancel").clicked += CloseInput;
             inputOk.clicked += ConfirmInput;
 
+            // 퀵 칩과 "직접 입력"은 한 번만 만들고, 종류·값이 바뀌면 글자와 chip--active만 바꾼다
+            int quickCount = Math.Max(RunGoal.QuickUnits(GoalKind.Distance).Count, RunGoal.QuickUnits(GoalKind.Time).Count);
+            quickChips = new Button[quickCount];
+            for (int i = 0; i < quickCount; i++)
+            {
+                int index = i;
+                var chip = new Button(() => OnQuick(index));
+                chip.AddToClassList("chip");
+                quickRow.Add(chip);
+                quickChips[i] = chip;
+            }
+            var custom = new Button(OpenInput) { text = "직접 입력" };
+            custom.AddToClassList("chip");
+            quickRow.Add(custom);
+
             root.SetVisible(false);
+            host.Add(root);
         }
 
         public bool Visible => root.IsVisible();
@@ -173,18 +189,21 @@ namespace Scrun.App
             minus.SetEnabled(g.CanMinus);
             plus.SetEnabled(g.CanPlus);
 
-            quickRow.Clear();
-            foreach (var units in RunGoal.QuickUnits(kind))
+            var quick = RunGoal.QuickUnits(kind);
+            for (int i = 0; i < quickChips.Length; i++)
             {
-                var q = new RunGoal(kind, units);
-                var chip = new Button(() => SetGoal(q)) { text = RunGoal.QuickText(kind, units) };
-                chip.AddToClassList("chip");
-                chip.EnableInClassList("chip--active", q.Equals(g));
-                quickRow.Add(chip);
+                var chip = quickChips[i];
+                chip.SetVisible(i < quick.Count);
+                if (i >= quick.Count) continue;
+                chip.text = RunGoal.QuickText(kind, quick[i]);
+                chip.EnableInClassList("chip--active", g.Units == quick[i]);
             }
-            var custom = new Button(OpenInput) { text = "직접 입력" };
-            custom.AddToClassList("chip");
-            quickRow.Add(custom);
+        }
+
+        void OnQuick(int index)
+        {
+            var quick = RunGoal.QuickUnits(kind);
+            if (index < quick.Count) SetGoal(new RunGoal(kind, quick[index]));
         }
 
         // Feedback.Run으로 감싸지 않는 예외(docs/unity/unity_map.md): 이 줄은 곁들이는 안내라 로딩 덮개·오류창으로 설정을 막지 않고,
@@ -206,6 +225,11 @@ namespace Scrun.App
                 if (request != weeklyRequest) return;
                 if (e.Failure == ApiFailure.NotLoggedIn) { Feedback.Handle(e); return; } // 로그인 화면으로
                 Debug.LogWarning("[Api] 주간 목표를 못 불러옴(러닝 설정은 계속): " + e);
+            }
+            catch (Exception e)
+            {
+                // async void라 여기서 놓치면 줄이 숨은 채 원인을 모름. 기록만 하고 설정은 계속
+                if (request == weeklyRequest) Debug.LogException(e);
             }
         }
 

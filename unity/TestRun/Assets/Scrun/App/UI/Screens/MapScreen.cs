@@ -23,7 +23,8 @@ namespace Scrun.App
     public sealed class MapScreen : AppScreen
     {
         const float EntryShare = 0.15f; // 진행 막대에서 입장 요청 몫(나머지는 씬 불러오기)
-        const int SettleFrames = 3;     // 섬이 열린 뒤 흐린 배경을 찍기 전에 기다릴 프레임(MapLaunchApplier가 한 프레임 뒤 입장 위치로 옮김)
+        const int AppliedTimeoutMs = 2000; // 섬 쪽 입장 위치 적용(MapLaunch.Applied)을 기다리는 최대 시간
+        const int AfterAppliedFrames = 2;  // 적용 뒤 식생·LOD(카메라 위치로 매 프레임 갱신)가 새 자리로 한 번 바뀌도록
         internal static readonly Color Night = new Color32(0x0F, 0x1B, 0x3D, 0xFF); // App.uss --color-night(USS 변수는 C#에서 못 읽음)
 
         // 섬 씬은 한 번에 한 화면만 잡는다. 앞 맵 화면이 섬 씬을 불러오기 시작해서 다 내릴 때까지 끝나지 않음 →
@@ -181,8 +182,12 @@ namespace Scrun.App
             SetAppCamera(false);
             SetProgress(1f);
 
-            // 입장 위치로 옮겨지고 카메라가 따라붙은 뒤에 흐린 배경을 찍는다(그동안 I-10이 덮고 있음)
-            int settled = Time.frameCount + SettleFrames;
+            // 섬 쪽이 입장 위치로 옮기고 카메라를 맞춘 뒤에 흐린 배경을 찍는다(그동안 I-10이 덮고 있음)
+            var applied = MapLaunch.Applied;
+            if (await Task.WhenAny(applied, Task.Delay(AppliedTimeoutMs)) != applied)
+                Debug.LogWarning("[MapLaunch] 섬 쪽 입장 위치 적용 알림이 없음 → 지금 자리로 흐린 배경을 찍음");
+            if (leaving) return;
+            int settled = Time.frameCount + AfterAppliedFrames;
             while (Time.frameCount < settled)
             {
                 await Task.Yield();
@@ -192,22 +197,33 @@ namespace Scrun.App
             loadingView.SetVisible(false);
         }
 
+        // 중간에 예외가 나면(UXML 이름이 바뀌는 등) 흐린 배경·숨긴 윗줄을 되돌리고 던진다 → Begin의 catch가 I-11 카드로
         void StartSetup()
         {
-            if (setupView == null)
+            try
             {
-                setupView = new RunSetupView(Root, course, RunSetupPrefs.Device());
-                setupView.Done += OnSetupDone;
-                setupView.Exit += () => Nav.Pop();
+                if (setupView == null)
+                {
+                    var view = new RunSetupView(Root, course, RunSetupPrefs.Device()); // 다 만든 뒤에야 Root에 붙음
+                    view.Done += OnSetupDone;
+                    view.Exit += () => Nav.Pop();
+                    setupView = view;
+                }
+                backdrop?.Dispose();
+                backdrop = null;
+                // 앱 카메라는 태그를 비켜 둬서 Camera.main = 섬 카메라. 화면이 패널에서 떨어졌으면(await 사이) 흐림 없이 안내만
+                var panel = Root.panel;
+                if (panel != null) backdrop = MapBackdrop.Show(panel.visualTree, Camera.main);
+                mapTop.SetVisible(false);
+                Setup = null;
+                setupView.Start();
             }
-            backdrop?.Dispose();
-            backdrop = null;
-            // 앱 카메라는 태그를 비켜 둬서 Camera.main = 섬 카메라. 화면이 패널에서 떨어졌으면(await 사이) 흐림 없이 안내만
-            var panel = Root.panel;
-            if (panel != null) backdrop = MapBackdrop.Show(panel.visualTree, Camera.main, appCamera);
-            mapTop.SetVisible(false);
-            Setup = null;
-            setupView.Start();
+            catch
+            {
+                CloseSetup();
+                mapTop.SetVisible(true);
+                throw;
+            }
         }
 
         void OnSetupDone(RunSetup setup)
@@ -218,7 +234,7 @@ namespace Scrun.App
             mapTop.SetVisible(true);
         }
 
-        // 섬 씬을 내리기 전에: 흐린 배경이 앱 카메라를 켜 둔 것을 먼저 되돌려야 ReleaseIsland가 앱 카메라를 제대로 켠다
+        // 섬 씬을 내리기 전에: 흐린 배경이 끈 섬 카메라·바꾼 그리기 간격을 먼저 되돌린다
         void CloseSetup()
         {
             setupView?.Hide();
