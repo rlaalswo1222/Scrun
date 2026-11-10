@@ -76,20 +76,30 @@ def replay(session):
     return pd.DataFrame(rows)
 
 
-def walk_check(d, label):
-    """걷기 오름 2·4·6 km/h 점으로 절편 → 나머지 걷기 구간. 공통 공식과 비교"""
-    ok = d[(d.kind == 'walk') & (d.result == 'Ok') & (~d.running.astype(bool))]
+def walk_points(d):
+    return d[(d.kind == 'walk') & (d.result == 'Ok') & (~d.running.astype(bool))]
+
+
+def walk_check(d, other, label):
+    """앱 사다리처럼 걷기 오름 2·4·6 km/h 점을 보정으로 → 앱 규칙(fusion_live.refit)으로 절편 → 나머지 걷기 구간.
+    비교: 다른 사람 걷기 점 전부로 만든 절편(새 사람에게 남의 공식을 쓰는 경우), 공통 공식(이 두 사람으로 만든 것이라 유리)"""
+    ok = walk_points(d)
     first = ok.drop_duplicates('v')                     # 오름(처음 나온 것)
     cal = first[first.v.isin([2, 4, 6])]
     test = ok.drop(cal.index)
     if cal.empty or test.empty:
         print(f'  {label}: 걷기 점 부족(보정 {len(cal)}, 시험 {len(test)})')
         return
-    a = float(np.mean(cal.v - fl.WALK[1] * cal.cad))
-    e_own = a + fl.WALK[1] * test.cad - test.v
-    e_com = fl.WALK[0] + fl.WALK[1] * test.cad - test.v
-    print(f'  {label}: 보정 {sorted(cal.v.tolist())} → 절편 {a:.2f}(공통 {fl.WALK[0]}) | 시험 {len(test)}구간 '
-          f'오차 절댓값 중앙 이 사람 {np.median(np.abs(e_own)):.2f} / 공통 {np.median(np.abs(e_com)):.2f} km/h')
+    est = fl.SpeedEstimator()
+    est.load([dict(v=r.v, limp=r.limp, cad=r.cad, amp=None, running=False) for r in cal.itertuples()])
+    a = est.walk_a
+    o = walk_points(other)
+    a_other = float(np.mean(o.v - fl.WALK[1] * o.cad))
+    err = {name: np.median(np.abs(x + fl.WALK[1] * test.cad - test.v))
+           for name, x in (('이 사람', a), ('다른 사람', a_other), ('공통', fl.WALK[0]))}
+    used = sorted(v for v in cal.v if v >= fl.WALK_MIN_KMH) or sorted(cal.v)
+    print(f'  {label}: 보정 {sorted(cal.v.tolist())} 중 {used}로 절편 {a:.2f}(다른 사람 {a_other:.2f}, 공통 {fl.WALK[0]}) | '
+          f'시험 {len(test)}구간 오차 절댓값 중앙 ' + ' / '.join(f'{k} {v:.2f}' for k, v in err.items()) + ' km/h')
 
 
 def main():
@@ -111,9 +121,9 @@ def main():
         lv = d[sel].level
         print(f'  {name:8s} n {len(lv):2d}  최소 {lv.min():.3f}  중앙 {lv.median():.3f}  최대 {lv.max():.3f}')
 
-    print('\n[걷기 절편] 오름 2·4·6 km/h로 이 사람 절편 → 나머지 걷기 구간(같은 날, 낙관적)')
-    for who in SESSIONS:
-        walk_check(d[d.who == who], who)
+    print(f'\n[걷기 절편] 오름 2·4·6 km/h 보정, 절편은 {fl.WALK_MIN_KMH:g} km/h 이상 점으로 → 나머지 걷기 구간(같은 날, 2명)')
+    for who, other in (('M', 'B'), ('B', 'M')):
+        walk_check(d[d.who == who], d[d.who == other], who)
 
     ok = d[(d.result == 'Ok') & (d.expect > 0)]
     r = ok.steps / ok.expect

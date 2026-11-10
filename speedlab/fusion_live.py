@@ -37,9 +37,11 @@ UPDATE_S = 0.5
 AIR_D = 2.598                    # km/h per g (B 달리기 11구간 전체 맞춤)
 B_FULL, B_PHONE = 4.828, 6.396   # 보정점이 하나뿐일 때 빌리는 ln(충격) 기울기 (B)
 WALK = (-3.45, 0.0732)           # 걷기 v = a + b·spm (fusion.py 두 사람 합친 공식)
-# 이 사람 걷기 절편을 쓸지(계획 0023 설계). 10/29 두 사람에서 다른 사람 절편보다 M 0.26 대 0.17로 나쁘고 B 0.09 대 0.12로
-# 조금 나음(live_stage_check.py, 오름 점만이라 오를 때 걸음 수가 높은 M은 절편이 치우침) → 헬스장 여러 명 실험 전까지 끔
-WALK_OWN = False
+# 이 사람 걷기 절편(계획 0023 설계, 11/10 민재 결정으로 켬). 공통 공식은 10/29 두 사람(다리 길이 비슷)으로 만든 것이라
+# 키가 다른 사람은 보폭이 달라 틀림. 절편은 WALK_MIN_KMH 이상 걷기 점으로(2 km/h는 오를 때·내릴 때 걸음 수 차이가 가장 크고
+# 걸음 감지도 불안정, live_stage_check.py), 그런 점이 없으면 있는 걷기 점 전부. 헬스장 여러 명으로 "2 포함 대 4 이상" 다시 확인
+WALK_OWN = True
+WALK_MIN_KMH = 4.0
 # 앱 보정 단계(계획 0024). 숫자는 가설, speedlab/exp/live_stage_check.py로 10/29 기록에서 정함 → 아이폰에서 다시 확인
 STAGE_MIN_S = 3.0    # 앞을 버린 뒤 잴 시간이 이보다 짧으면 TooShort
 LOST_GAP_S = 2.0     # 폰 샘플이 이만큼 끊기면 SensorLost(앱 폰 흐름 Lost와 같음)
@@ -209,6 +211,7 @@ class SpeedEstimator:
         self.phone = self.fit([(p['limp'], p['v']) for p in run], B_PHONE)
         self.full = self.fit([(p['limp'], p['v'] - AIR_D * p['amp']) for p in run if p['amp'] is not None], B_FULL)
         walk = [p for p in self.points if not p['running']]
+        walk = [p for p in walk if p['v'] >= WALK_MIN_KMH] or walk
         self.walk_a = float(np.mean([p['v'] - WALK[1] * p['cad'] for p in walk])) if walk else None
 
     @staticmethod
