@@ -1,0 +1,238 @@
+/* 보정 화면(A-11–A-15) 모양. 임시 — 상준 UI Kit이 오면 다듬는다. 색은 App.uss 변수.
+   Figma: 가로 화면은 흐린 코스 사진 위에 흰 카드. 사진·흐림은 아직 없어 어두운 단색으로 대신한다. */
+
+/* A-11 안내 */
+.calib-intro-steps {
+    margin: var(--space-6) 0 var(--space-4) 0;
+    padding: var(--space-4);
+    border-radius: 14px;
+    background-color: var(--color-surface);
+}
+
+.calib-intro-step {
+    flex-direction: row;
+    align-items: center;
+    margin: 6px 0;
+}
+
+.calib-intro-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    margin-right: 10px;
+    background-color: var(--color-primary);
+    color: #FFFFFF;
+    font-size: 13px;
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.calib-intro-text {
+    flex-shrink: 1;
+    font-size: 15px;
+    color: var(--color-text);
+    white-space: normal;
+}
+
+/* 가로 보정 화면 */
+.calib {
+    flex-grow: 1;
+    background-color: #2C3440;
+    padding: var(--space-4) var(--space-6);
+}
+
+.calib-top {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.calib-segments {
+    flex-direction: row;
+}
+
+.calib-segment {
+    width: 28px;
+    height: 4px;
+    margin-right: 6px;
+    border-radius: 2px;
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.calib-segment--done {
+    background-color: #D7F75B;
+}
+
+.calib-segment--now {
+    background-color: #FFFFFF;
+}
+
+.calib-stage-label {
+    margin-top: 6px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.calib-cancel {
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 15px;
+}
+
+.calib-run {
+    flex-grow: 1;
+    flex-direction: row;
+    align-items: center;
+}
+
+.calib-run-left {
+    flex-grow: 1;
+    flex-basis: 0;
+}
+
+.calib-instruction {
+    font-size: 34px;
+    color: #FFFFFF;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.calib-next-hint {
+    margin-top: var(--space-2);
+    font-size: 16px;
+    color: #D7F75B;
+    min-height: 22px;
+}
+
+.calib-badge {
+    align-self: flex-start;
+    margin-top: var(--space-4);
+    padding: 4px 12px;
+    border-radius: 12px;
+    background-color: #D7F75B;
+    color: #1F2328;
+    font-size: 14px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.calib-badge--waiting {
+    background-color: rgba(255, 255, 255, 0.85);
+}
+
+.calib-ring-host {
+    width: 200px;
+    height: 200px;
+    justify-content: center;
+    align-items: center;
+}
+
+.calib-timer {
+    font-size: 52px;
+    color: #FFFFFF;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.calib-timer-sub {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* 카드(A-12·A-14·A-15, 다시·도움·멈춤) */
+.calib-dim {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(20, 24, 30, 0.55);
+    display: none;
+}
+
+.calib-card {
+    width: 360px;
+    padding: var(--space-6) var(--space-6) var(--space-2) var(--space-6);
+    border-radius: 24px;
+    background-color: var(--color-surface);
+    align-items: stretch;
+}
+
+.calib-card--wide {
+    width: 440px;
+}
+
+.calib-card-icon {
+    align-self: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 24px;
+    background-color: var(--color-primary);
+    color: #FFFFFF;
+    font-size: 24px;
+    -unity-text-align: middle-center;
+    margin-bottom: var(--space-2);
+}
+
+.calib-card-icon--ok {
+    background-color: #22B573;
+}
+
+.calib-card-icon--warn {
+    background-color: #F2A93B;
+}
+
+.calib-card-title {
+    font-size: 24px;
+    color: var(--color-text);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.calib-card-body {
+    margin-top: var(--space-2);
+    font-size: 15px;
+    color: var(--color-muted);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.calib-chips {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    margin-top: var(--space-2);
+}
+
+.calib-chip {
+    align-self: center;
+    margin: 4px 3px 0 3px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background-color: #E7F6EE;
+    color: #1F7A4D;
+    font-size: 13px;
+}
+
+.calib-chip--blue {
+    background-color: #E8F0FD;
+    color: var(--color-primary);
+}
+
+.calib-chip--gray {
+    background-color: var(--color-line);
+    color: var(--color-muted);
+}
+
+.calib-chip-label {
+    margin: 4px 6px 0 0;
+    font-size: 13px;
+    color: var(--color-muted);
+}
+
+.calib-btn-tight {
+    margin-top: 0;
+}

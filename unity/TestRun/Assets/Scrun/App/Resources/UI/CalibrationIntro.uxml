@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- A-11 속도 보정 안내(첫 러닝 전, 세로). 문구는 코드(CalibrationCopy)에서 채움 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Calibration.uss" />
+    <ui:VisualElement class="screen">
+        <ui:VisualElement class="top-bar">
+            <ui:Button name="back" text="‹" class="back-button" />
+        </ui:VisualElement>
+        <ui:Label name="title" class="screen-title" />
+        <ui:Label name="lead" class="body-text" />
+        <ui:VisualElement name="steps" class="calib-intro-steps" />
+        <ui:Label name="note" class="hint-text" />
+        <ui:VisualElement class="screen-body" />
+        <ui:Button name="start" class="btn btn-primary" />
+    </ui:VisualElement>
+</ui:UXML>

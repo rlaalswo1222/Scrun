@@ -3,7 +3,8 @@ using UnityEngine.UIElements;
 namespace Scrun.App
 {
     // C-02 코스 상세(GET /v1/courses/{id}). "맵 입장"을 누르면 가로 맵 화면으로 가고, 입장(POST /entries)·로딩(I-10)·가득 참(I-11)은 맵 화면이 맡는다.
-    // 맵 화면이 입장하지 못하고 돌려보내면(ReturnFromMap): 보정 없음 → 여기서 안내(보정 화면은 민재 S2, Figma C-03 시트), 다른 코스 보기 → 목록으로.
+    // 순서: "맵 입장" → 모션 권한 확인(계획 0025, 없으면 팝업·I-05) → 맵 → 보정 없음(409)이면 보정 안내(A-11, 계획 0023) → 다시 Enter(모션은 이미 허용이라 통과).
+    // 맵 화면이 입장하지 못하고 돌려보내면(ReturnFromMap): 보정 없음 → 보정 안내를 거쳐 다시 입장, 다른 코스 보기 → 목록으로.
     // 없는 코스(404)는 안내창 대신 화면 안에 "다른 코스 보기"로 보여 준다(목록으로 바로 돌아가면 목록 불러오기 안내가 덮을 수 있음).
     public sealed class CourseDetailScreen : AppScreen
     {
@@ -12,7 +13,7 @@ namespace Scrun.App
         Label title, description, runners, length, loadFailedText;
         Button enter, reload;
         VisualElement hero, content, loadFailed;
-        bool loading, skipReload, notFound, gating;
+        bool loading, skipReload, notFound, gating, fromCalibration;
 
         public CourseDetailScreen(string courseId) => this.courseId = courseId;
 
@@ -39,9 +40,15 @@ namespace Scrun.App
             enter.SetEnabled(false);
         }
 
-        // 맵에서 나왔을 때도 인원을 새로(곧 다른 곳으로 갈 때는 빼고)
+        // 맵에서 나왔을 때도 인원을 새로(곧 다른 곳으로 갈 때는 빼고).
+        // 보정에서 돌아올 때도 다시 불러오지 않음: 끝나면 곧바로 맵으로 가서, 불러오기 오류창이 맵을 덮을 수 있음
         protected internal override void OnShow()
         {
+            if (fromCalibration)
+            {
+                fromCalibration = false;
+                return;
+            }
             if (!skipReload && !notFound) Load();
         }
 
@@ -150,11 +157,31 @@ namespace Scrun.App
                     Nav.Pop(); // 목록은 보일 때 다시 불러와 인원이 새로 보임
                     break;
                 case MapExit.NeedsCalibration:
-                    // TODO(민재 S2 보정 화면): Figma C-03 시트 "보정 시작하기"로 보정 흐름에 보내기
-                    var (t, b) = CourseText.Failure(CourseText.CalibrationRequired).Value;
-                    Feedback.ShowError(t, b, error?.RequestId);
+                    // 서버에 못 올린 보정이 이 폰에 있으면 그것부터 올리고 다시 입장(보정을 또 시키지 않음)
+                    if (CalibrationStore.Pending != null)
+                    {
+                        UploadPendingThenEnter();
+                        break;
+                    }
+                    // 보정 없음(409) → A-11 보정 안내(계획 0023). 끝나면 바로 다시 입장, 그만두면 이 화면에 머묾
+                    fromCalibration = true;
+                    Nav.Push(new CalibrationIntroScreen(onDone: AfterCalibration));
                     break;
             }
+        }
+
+        // 보정이 끝남. 서버 저장이 실패했으면(이 폰에 남음) 입장해도 또 409라, 한 번 더 올려 보고 들어간다
+        void AfterCalibration()
+        {
+            if (CalibrationStore.Pending == null) Enter();
+            else UploadPendingThenEnter();
+        }
+
+        // 실패하면 안내창의 "다시 시도"로 다시 올림. 보정 화면으로는 돌려보내지 않는다
+        async void UploadPendingThenEnter()
+        {
+            bool ok = await Feedback.Run(CalibrationStore.UploadPendingAsync, UploadPendingThenEnter);
+            if (ok && Root.panel != null) Enter();
         }
 
         // 없는 코스(404)는 화면 안에서 안내. true면 공통 안내창을 띄우지 않음

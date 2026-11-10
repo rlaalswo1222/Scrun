@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -44,12 +46,11 @@ namespace Scrun.App
             // 프레임 시각: 에디터 일시정지 중엔 멈춰서 재개할 때 걸음 수가 한 번에 뛰지 않는다
             this.clock = clock ?? (() => Time.unscaledTimeAsDouble);
             this.useKeyboard = useKeyboard;
+            LoadStartCalibration();
         }
 
         IHeadphones Headphones => headphones ?? FakeNative.Instance;
         IPermissions Permissions => permissions ?? FakeNative.Instance;
-
-        public override bool HasCalibration => Cfg.hasCalibration;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetOnPlay() => Instance.ResetForPlay();
@@ -59,7 +60,13 @@ namespace Scrun.App
             scenarioStart = -1;
             TargetKmh = 0f;
             keyboardFrame = -1;
+            ForceNextStage = null;
+            stageOpen = false;
+            LoadStartCalibration();
         }
+
+        // 설정의 "보정값 있음"이면 사다리를 다 뛴 가짜 보정으로 시작한다(이벤트 없음)
+        public void LoadStartCalibration() => SetCalibrationSilently(Cfg.hasCalibration ? SampleModel() : null);
 
         // 걷기·달리기 경계와 케이던스는 화면을 만들기 위한 흉내다(사람마다 다름, B는 7 km/h에서 걸음).
         public static Gait GaitFor(float kmh) =>
@@ -71,6 +78,74 @@ namespace Scrun.App
             Gait.Running => 140f + 3.5f * kmh, // 10 km/h = 175 spm
             _ => 0f,
         };
+
+        // 가짜 사람의 ln(충격). 속도가 오르면 늘고, 걷다 뛰면 크게 뛴다(값 자체는 흉내)
+        public static double LnImpactFor(float kmh) => GaitFor(kmh) switch
+        {
+            Gait.Walking => 0.2 + 0.15 * kmh,
+            Gait.Running => 0.5 + 0.2 * kmh,
+            _ => 0.0,
+        };
+
+        // 안내 속도 v에서 사람이 실제로 actualKmh로 달렸을 때 잰 보정점
+        public static CalibrationPoint PointFor(float v, float actualKmh, bool airPods) => new CalibrationPoint
+        {
+            V = v,
+            LnImpact = LnImpactFor(actualKmh),
+            Cadence = CadenceFor(actualKmh),
+            AirAmp = airPods ? 0.3 + 0.05 * actualKmh : (double?)null,
+            Running = GaitFor(actualKmh) == Gait.Running,
+        };
+
+        // 사다리를 안내대로 다 뛴 보정
+        public static CalibrationModel SampleModel() =>
+            new CalibrationModel(CalibrationLadder.SpeedsKmh.Select(v => PointFor(v, v, true)));
+
+        // ---- 보정 단계 흉내 ----
+
+        // 다음 단계 하나를 이 결과로 끝낸다(창에서 고름). Ok가 아니면 그 결과, null이면 사람 속도로 판정
+        public CalStageResult? ForceNextStage { get; set; }
+
+        // 이번 단계가 이미 몇 초 쟀는지(버리는 시간 뒤), 창에 보여 주기용
+        public double StageMeasuredSec => stageOpen && stageTicks > 0 ? stageLast - stageFirst : 0;
+
+        bool stageOpen;
+        double stageStart, stageFirst, stageLast;
+        int stageTicks, stageNone, stageAirOk;
+        bool stageLost;
+        readonly List<float> stageKmh = new List<float>();
+
+        protected override void OnBeginStage(float speedKmh)
+        {
+            stageOpen = true;
+            stageStart = Now();
+            stageTicks = stageNone = stageAirOk = 0;
+            stageLost = false;
+            stageKmh.Clear();
+        }
+
+        protected override void OnCancelStage() => stageOpen = false;
+
+        protected override StageMeasurement OnEndStage(float speedKmh)
+        {
+            stageOpen = false;
+            if (ForceNextStage is CalStageResult forced)
+            {
+                ForceNextStage = null;
+                if (forced != CalStageResult.Ok) return new StageMeasurement { Result = forced };
+            }
+            if (stageLost) return new StageMeasurement { Result = CalStageResult.SensorLost };
+            if (stageTicks == 0 || stageLast - stageFirst < 3.0) return new StageMeasurement { Result = CalStageResult.TooShort };
+            if (stageNone * 2 > stageTicks) return new StageMeasurement { Result = CalStageResult.NoSteps };
+            // 재는 동안 속도가 1 km/h 넘게 바뀌면 걸음이 고르지 않다(진짜는 걸음 규칙성 0.3 미만)
+            if (stageKmh.Max() - stageKmh.Min() > 1f) return new StageMeasurement { Result = CalStageResult.Irregular };
+            var sorted = stageKmh.OrderBy(x => x).ToList();
+            float actual = sorted[sorted.Count / 2];
+            bool air = stageAirOk >= 0.7 * stageTicks; // SpeedEstimator airMinCover
+            return new StageMeasurement { Result = CalStageResult.Ok, Point = PointFor(speedKmh, actual, air) };
+        }
+
+        protected override void OnCalibrationApplied(CalibrationModel m) { } // 가짜 속도는 사람 속도 그대로라 쓸 데가 없음
 
         // ---- 창·키보드에서 부르는 흉내 ----
 
@@ -159,6 +234,18 @@ namespace Scrun.App
                 if (t - pendingSince >= cfg.detectDelaySec) detected = actual;
             }
             if (actual != Gait.None) stepAcc += CadenceFor(TargetKmh) / 60.0 * dt;
+
+            // 보정 단계: 앞 StageSkipSec초 뒤부터 잰다
+            if (stageOpen && t - stageStart >= StageSkipSec)
+            {
+                if (stageTicks == 0) stageFirst = t;
+                stageLast = t;
+                stageTicks++;
+                if (phone != SensorFlow.Ok) stageLost = true;
+                if (actual == Gait.None) stageNone++;
+                if (airPods == SensorFlow.Ok) stageAirOk++;
+                stageKmh.Add(TargetKmh);
+            }
 
             bool has = detected != Gait.None;
             reading = new SpeedReading

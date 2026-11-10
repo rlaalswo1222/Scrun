@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Scrun.App
@@ -38,6 +39,29 @@ namespace Scrun.App
         public int WeightKg { get; set; }  // 20–250
         public string Timezone { get; set; } = "Asia/Seoul";
         public string DeviceId { get; set; } // 비우면 ApiClient가 이 기기 값으로 채움
+    }
+
+    // GET·PUT /v1/users/me/calibration (계획 0023). points는 보여 주기용 요약, model은 보정점 원본(서버는 해석 안 함)
+    public sealed class CalibrationSummaryPoint
+    {
+        public float SpeedKmh { get; set; }
+        public string Gait { get; set; }  // WALK / RUN
+        public int DurationS { get; set; } // 잰 시간(버린 앞 시간 제외)
+    }
+
+    public sealed class CalibrationUpload
+    {
+        public List<CalibrationSummaryPoint> Points { get; set; } = new List<CalibrationSummaryPoint>();
+        public Newtonsoft.Json.Linq.JToken Model { get; set; }
+        public string Device { get; set; } // 폰 기종(예: iPhone15,4). 바뀌면 재보정 안내(ADR-0005 3번)
+    }
+
+    public sealed class CalibrationRecord
+    {
+        public List<CalibrationSummaryPoint> Points { get; set; }
+        public Newtonsoft.Json.Linq.JToken Model { get; set; }
+        public string Device { get; set; }
+        public DateTime? CreatedAt { get; set; }
     }
 
     public sealed class NicknameCheck
