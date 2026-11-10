@@ -22,18 +22,6 @@ ME = {
 
 SETTINGS = {"feedShareDefault": True}
 
-CALIBRATION = {
-    "points": [
-        {"speedKmh": 4.0, "gait": "WALK", "durationS": 20},
-        {"speedKmh": 7.0, "gait": "RUN", "durationS": 20},
-        {"speedKmh": 8.5, "gait": "RUN", "durationS": 20},
-        {"speedKmh": 10.0, "gait": "RUN", "durationS": 20},
-    ],
-    "model": {"runA": 1.2, "runB": 2.1, "runC": 0.012, "walkSlope": 0.035},
-    "device": "iPhone15,4",
-    "createdAt": "2026-11-05T10:00:00Z",
-}
-
 WEEKLY_GOAL = {
     "targetCount": 3,
     "cycleStart": "2026-11-03",
@@ -75,27 +63,21 @@ PROGRESS = {
     "selectedImpactId": "imp_wind",
 }
 
+# 홈(GET /v1/home) 스텁이 쓰는 코스 요약. ID·이름·길이는 진짜 코스(마이그레이션 seed_courses)와 같게
 COURSES = [
     {
-        "courseId": "crs_island_loop",
-        "name": "섬 루프 코스(가칭)",
+        "courseId": "crs_lake_loop",
+        "name": "노을 호수 한 바퀴",
         "type": "LOOP_3D",
-        "lengthM": 3000,
+        "lengthM": 6671,
         "runnersNow": 7,
-        "thumbnailUrl": "https://example.com/course/island_loop.png",
+        "thumbnailUrl": None,
     },
 ]
 
-COURSE_DETAIL = {
-    **COURSES[0],
-    "description": "한 바퀴 3km를 계속 도는 3D 루프 코스.",
-    "mood": "해안 길과 숲을 지나는 아침",
-    "maxRunnersPerMap": 20,
-}
-
 MAP_ENTRY = {
-    "mapInstanceId": "map_01",
-    "courseId": "crs_island_loop",
+    "mapInstanceId": "map_crs_lake_loop",
+    "courseId": "crs_lake_loop",
     "entryPositionM": 1240.0,
     "realtime": {"url": "wss://example.com/rt", "token": "stub-rt-token"},
 }
@@ -104,8 +86,8 @@ RUNS = [
     {
         "runId": "run_01HZX",
         "startedAt": "2026-11-05T11:02:00Z",
-        "courseId": "crs_island_loop",
-        "courseName": "섬 루프 코스(가칭)",
+        "courseId": "crs_lake_loop",
+        "courseName": "노을 호수 한 바퀴",
         "distanceM": 3120,
         "durationS": 1080,
         "avgPaceSPerKm": 346,
@@ -115,8 +97,8 @@ RUNS = [
     {
         "runId": "run_01HZW",
         "startedAt": "2026-11-03T10:40:00Z",
-        "courseId": "crs_island_loop",
-        "courseName": "섬 루프 코스(가칭)",
+        "courseId": "crs_lake_loop",
+        "courseName": "노을 호수 한 바퀴",
         "distanceM": 2450,
         "durationS": 900,
         "avgPaceSPerKm": 367,
@@ -249,8 +231,8 @@ RUNNING_FRIENDS = [
     {
         "userId": "usr_f1",
         "nickname": "바닷바람",
-        "courseId": "crs_island_loop",
-        "courseName": "섬 루프 코스(가칭)",
+        "courseId": "crs_lake_loop",
+        "courseName": "노을 호수 한 바퀴",
         "distanceM": 1800,
         "paceSPerKm": 330,
     },

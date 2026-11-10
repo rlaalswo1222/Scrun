@@ -3,7 +3,7 @@
 서버(FastAPI)와 Unity 앱이 함께 따르는 규칙. 계획 [0014](../plans/0014-api-spec.md).
 
 - **API 목록·진행판**: 노션 SCRUN > 문서 > [API 명세](https://app.notion.com/p/52fe88346253480692c492c862982087) (한 줄 = API 하나, 화면 ID·백로그 연결)
-- **요청·응답 세부 필드**: 서버 코드 [`backend/`](../../backend/README.md)(로그인·닉네임 확인은 진짜, 나머지는 스텁)가 만드는 `/docs`(Swagger)와 [`openapi.json`](openapi.json). 예시 응답은 [`examples/`](examples/)(`python -m scripts.export_openapi`로 다시 만듦). 노션이나 이 문서에 필드를 손으로 적지 않는다(코드와 어긋남)
+- **요청·응답 세부 필드**: 서버 코드 [`backend/`](../../backend/README.md)(로그인·닉네임 확인·코스는 진짜, 나머지는 스텁)가 만드는 `/docs`(Swagger)와 [`openapi.json`](openapi.json). 예시 응답은 [`examples/`](examples/)(`python -m scripts.export_openapi`로 다시 만듦). 노션이나 이 문서에 필드를 손으로 적지 않는다(코드와 어긋남)
 - **DB 테이블(서버가 저장하는 구조)**: [data_model.md](data_model.md)
 - **이 문서**: 모든 API에 공통인 것만
 
@@ -38,7 +38,7 @@
 - **코스 하나 = 맵 하나**. 가득 차면 입장 불가 → 다른 코스를 고른다(백로그 BL-7 ⑤). 같은 코스에 맵을 여러 개 열지 않음
 - 최대 인원 **20명은 기획 목표**(BL-7 ⑦, BL-21 ②)이고 실측 근거는 아직 없음 → BL-25 실험(아이폰에서 아바타 수별 프레임, 실시간 메시지 양)으로 확정(BL-25 ⑥)
 - 입장 API는 인원을 셀 때 그 코스를 잠가서, 동시에 들어와도 최대 인원을 넘지 않는다
-- "지금 달리는 사람 수"(`runnersNow`)는 **실시간 서버의 연결 수**로 센다(ADR-0010, 11/10 FastAPI WebSocket으로 결정). 실시간 서버가 생기기 전(S3)까지만 `runs.status = ACTIVE` + 최근 10분(임시). 샘플 올릴 때 `runs.updated_at`을 갱신하는 방식은 쓰지 않음
+- "지금 달리는 사람 수"(`runnersNow`)는 **실시간 서버의 연결 수**로 센다(ADR-0010, 11/10 FastAPI WebSocket으로 결정). 실시간 서버가 생기기 전(S3)까지만 임시로 "최근 10분 안에 입장(`course_entries`)했거나 달리는 중(`runs.status = ACTIVE` + 최근 10분)인 사람"(입장한 사람도 자리를 차지해야 동시 입장에 최대 인원이 지켜짐, 계획 0021). 샘플 올릴 때 `runs.updated_at`을 갱신하는 방식은 쓰지 않음
 - `mapInstanceId`(입장 응답·러닝 시작 요청)는 실시간 서버의 방 ID로 쓴다
 
 ## 응답 껍데기

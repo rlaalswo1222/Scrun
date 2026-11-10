@@ -21,6 +21,9 @@ namespace Scrun.App
         {
             kakao = Q<Button>("kakao");
             kakao.clicked += Login;
+            var dev = Q<Button>("dev-native");
+            if (Debug.isDebugBuild) dev.clicked += () => Nav.Push(new NativeCheckScreen());
+            else dev.style.display = DisplayStyle.None;
             var n = Q<Label>("notice");
             n.text = notice ?? "";
             n.style.display = string.IsNullOrEmpty(notice) ? DisplayStyle.None : DisplayStyle.Flex;

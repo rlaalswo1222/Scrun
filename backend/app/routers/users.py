@@ -1,12 +1,17 @@
+from datetime import timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request, Response
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import stub_data as d
 from ..core import nickname as nick
 from ..core.auth import Principal, stub_user
-from ..core.security import signup_or_user_id
+from ..core.security import current_user, signup_or_user_id
+from ..db.ids import new_id
+from ..db.models import Calibration as CalibrationRow
+from ..db.models import User
 from ..db.session import get_db
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
@@ -88,25 +93,44 @@ def patch_settings(body: SettingsUpdate, request: Request, _: Principal = Depend
 @router.get(
     "/users/me/calibration",
     summary="내 보정값",
-    description="화면 A-11, D-07, H-09 · BL-4, BL-10. 없으면 data=null → 맵 입장 전에 보정 화면으로",
+    description="화면 A-11, D-07, H-09 · BL-4, BL-10. 가장 최근에 올린 보정. 없으면 data=null → 맵 입장 전에 보정 화면으로",
     response_model=Envelope[Optional[Calibration]],
     responses=AUTH,
 )
-def get_calibration(request: Request, _: Principal = Depends(stub_user)):
-    return ok(request, d.CALIBRATION)
+def get_calibration(request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    row = _latest_calibration(db, user.id)
+    return ok(request, _calibration_out(row) if row else None)
 
 
 @router.put(
     "/users/me/calibration",
     summary="보정값 올리기",
-    description="화면 A-15, H-09 · BL-4. 계산은 폰, 서버는 보관만. OCR 값은 받지 않음(독립성 원칙). "
+    description="화면 A-15, H-09 · BL-4. 계산은 폰, 서버는 보관만(model은 해석하지 않음). 이력으로 쌓이고 가장 최근 것이 현재 보정. "
+    "올린 뒤부터 맵 입장(CALIBRATION_REQUIRED 해제). OCR 값은 받지 않음(독립성 원칙). "
     "보정 단계(6·8·10 km/h vs 걷기 1 + 달리기 3점)는 PRD 검토 대기",
     response_model=Envelope[Calibration],
     responses={**AUTH, **error_responses(E.VALIDATION_ERROR)},
 )
-def put_calibration(body: CalibrationUpload, request: Request, _: Principal = Depends(stub_user)):
-    # 스텁: 예시가 다시 내보낼 때마다 바뀌지 않게 고정 시각. 진짜 서버는 저장 시각
-    return ok(request, {**body.model_dump(by_alias=True, mode="json"), "createdAt": d.CALIBRATION["createdAt"]})
+def put_calibration(body: CalibrationUpload, request: Request, user: User = Depends(current_user),
+                    db: Session = Depends(get_db)):
+    # 이력으로 쌓는다(가장 최근 것이 현재 보정, docs/api/data_model.md). 덮어쓰지 않음
+    up = body.model_dump(by_alias=True, mode="json")
+    row = CalibrationRow(id=new_id(), user_id=user.id, points=up["points"], model=up["model"], device=up["device"])
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return ok(request, _calibration_out(row))
+
+
+def _latest_calibration(db: Session, user_id: str) -> Optional[CalibrationRow]:
+    # ID가 시간순(ULID)이라 같은 시각에 두 번 올려도 나중 것이 위
+    return db.scalar(select(CalibrationRow).where(CalibrationRow.user_id == user_id)
+                     .order_by(CalibrationRow.created_at.desc(), CalibrationRow.id.desc()).limit(1))
+
+
+def _calibration_out(row: CalibrationRow) -> dict:
+    return {"points": row.points, "model": row.model, "device": row.device,
+            "createdAt": row.created_at.astimezone(timezone.utc)}  # API 시각은 UTC(Z), DB 연결 시간대와 상관없이
 
 
 @router.get(

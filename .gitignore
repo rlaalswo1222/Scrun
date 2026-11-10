@@ -54,3 +54,10 @@ backend/build/
 # 서버 접속 정보·키(예시는 backend/.env.example)
 backend/.env
 backend/deploy/.env
+
+# 사람마다 다른 iOS 빌드 값(Apple 팀 ID·카카오 앱 키). 예시는 unity/TestRun/ScrunLocal.example.json
+unity/TestRun/ScrunLocal.json
+
+# 맥·개인 편집기
+.DS_Store
+unity/TestRun/.vscode/
