@@ -1,6 +1,6 @@
 # 계획 0021: 코스 API 3개를 DB와 연결 — BL-7 (S1 지환)
 
-- 상태: **구현 완료 · PR 리뷰 대기** (11/08 지환 승인 → 구현 → `/code-review` 반영 → 11/10 민재 답변 반영(아래 "11/10 바뀐 것"). 테스트 170개 통과)
+- 상태: **구현 완료 · PR 리뷰 반영** (11/08 지환 승인 → 구현 → `/code-review` 반영 → 11/10 민재 답변 반영(아래 "11/10 바뀐 것") → 11/10 민재 PR 리뷰 반영(아래 "PR #30 리뷰 반영"). 테스트 173개 통과)
 - 담당: 지환. 리뷰는 민재(서버 PR 리뷰)
 - 번호: 처음엔 0019로 썼으나 develop에 0019(공용 개발 서버)·0020(속도 센서, PR)이 먼저 생겨 0021로 바꿈
 - 왜: 코스 API가 고정 예시(`crs_island_loop` 한 개, 러너 7명)만 돌려줬다. 코스 화면(C-01, C-02)과 맵 입장(I-10, I-11)을 실제 데이터로 만들려면 DB에서 읽어야 한다
@@ -34,9 +34,18 @@
 - `thumbnailUrl`은 `null`(앱은 null이면 기본 그림)
 - 입장 때 코스를 잠가 동시 입장에도 최대 인원을 넘지 않게
 
+## PR #30 리뷰 반영 (11/10 민재)
+- **보정값 API(BL-4, 원래 지환 S2)를 이 PR에서 DB와 연결**: 입장이 `calibrations`를 보는데 `PUT /v1/users/me/calibration`이 스텁이라 저장이 안 되고 스텁 GET은 늘 "있음"이라, 개발 서버에서 보정을 마쳐도 입장이 계속 `CALIBRATION_REQUIRED`(앱은 보정 ↔ 코스를 오감). 이제 PUT은 이력으로 한 줄 쌓고(가장 최근 것이 현재 보정, `docs/api/data_model.md`), GET은 가장 최근 것 또는 null. 요청 모양은 그대로(points·model·device, model은 폰 SpeedEstimator 값을 해석하지 않고 보관 — 민재 보정 화면이 `{"version":1,"points":[{v,limp,cad,amp,running}]}`를 넣음). 응답 시각은 UTC(Z). 테스트 7개(없음 → null, 그대로 돌려줌, 가장 최근 것, 남의 것 안 보임, 형식 틀림 400, 로그인 없음 401, 올리면 입장 가능)
+- 입장 잠금을 `FOR NO KEY UPDATE`로(입장끼리만 줄 세움, 이 코스를 가리키는 `runs`·`course_entries` 삽입의 외래 키 확인은 막지 않음)
+- 인원 세기 인덱스: `course_entries(course_id, entered_at)`(기존 course_id 인덱스 대신), `runs(course_id, status, updated_at)`. 마이그레이션 `5b7e2d9c4a13`
+- `runnersNow` 설명을 실제대로("그 맵에 지금 있는 사람 수, 임시: 최근 10분 안에 입장했거나 달리는 중"), `data_model.md` ID 예시 `crs_island_loop` → `crs_lake_loop`
+- `scripts/real_examples.py`: 보정을 DB에 직접 넣던 것 → PUT으로(사용자를 아무나 집던 문제도 없어짐), 실패 응답이 오면 멈춤, 저장 시각을 고정 값으로(다시 만들어도 예시가 안 바뀜). 가입 도우미를 `tests/helpers.py`로
+- 안 고친 것: `real_key` 경로 틀 매칭이 `test_contract.py`·`notion_pages.py`에도 따로 있는 것(세 벌 → 하나로, 다음에), `export_openapi`만 CRLF 고정(`.gitattributes`는 팀 결정, 11/06엔 안 하기로)
+
 ## 남은 것
+- **20명 제한이 실제로는 10분 뒤 풀린다(임시 방식의 한계)**: 인원은 입장 뒤 10분(FRESH)만 세고, 달리는 중 기록(`runs.updated_at`)을 갱신하는 곳이 아직 없다(runs API 스텁). 그래서 20명이 30분 달리면 10분 뒤 0명으로 보이고 20명이 더 들어올 수 있다. 실시간 서버(S3, ADR-0010)의 연결 수로 바꾸면 풀림
 - 입장 기록은 10분 동안 자리를 차지한다. 달리기를 끝내도(`runs` 종료) 10분 안에는 인원에 남으므로, 러닝 종료 API(BL-14, 민재)에서 그 사람의 `course_entries`를 지우면 정확해진다. 실시간 서버로 바뀌면 이 표는 다시 본다
 - 노션 API 명세 페이지(코스 3개) 다시 생성(`scripts.notion_pages`)
 
 ## 완료 확인
-pytest 170개 통과. `/docs`에서 코스 목록·상세가 위 4개 코스로 나오고, 21번째 입장은 거절된다
+pytest 173개 통과(보정 포함). `/docs`에서 코스 목록·상세가 위 4개 코스로 나오고, 21번째 입장은 거절된다
