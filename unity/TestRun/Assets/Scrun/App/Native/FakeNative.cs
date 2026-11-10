@@ -182,6 +182,14 @@ namespace Scrun.App
         public string kakaoToken = "k_123"; // 로컬 서버 가짜 카카오: k_ 뒤 숫자가 카카오 회원번호(새 사람이면 다른 숫자)
         public bool kakaoCancels;           // 카카오 로그인 화면에서 사용자가 취소한 것처럼
 
+        // 속도 센서(FakeSpeedSensor)
+        public bool phoneData = true;       // 폰 가속도가 들어옴. 끄면 2초 뒤 끊김
+        public bool airPodsData = true;     // 에어팟 데이터가 들어옴(에어팟 연결 + 헤드폰 모션 허용일 때만 의미)
+        public bool hasCalibration = true;  // 보정값 있음
+        public float sensorStartSec = 0.5f; // 센서를 켜고 데이터가 들어오기까지
+        public float detectDelaySec = 2.5f; // 걸음 상태가 바뀌고 Gait가 따라 바뀌기까지(SpeedEstimator holdS, 실제 지연은 아이폰에서 잼)
+        public float startKmh;              // 센서를 켤 때 사람의 속도(0 = 벨트 옆에 서 있음)
+
         static bool[] AllTrue(int n)
         {
             var a = new bool[n];
@@ -202,6 +210,9 @@ namespace Scrun.App
             if (requestDelaySec < 0f) requestDelaySec = 0f;
             if (string.IsNullOrEmpty(headphoneName)) headphoneName = "AirPods Pro";
             if (string.IsNullOrEmpty(kakaoToken)) kakaoToken = "k_123";
+            sensorStartSec = Mathf.Max(0f, sensorStartSec);
+            detectDelaySec = Mathf.Max(0f, detectDelaySec);
+            startKmh = Mathf.Clamp(startKmh, 0f, 20f);
         }
     }
 }

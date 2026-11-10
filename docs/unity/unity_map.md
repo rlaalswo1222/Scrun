@@ -150,6 +150,18 @@
   - 아이폰 확인(11/10): 카카오톡 없을 때 웹 로그인 창 → 취소 두 번 모두 로그인 버튼이 다시 눌림, 카카오톡 설치 뒤 카카오톡 앱으로 넘어가 동의 → 앱으로 돌아와 토큰 받음 → 공용 서버 로그인(오류 없음)
   - 개발(Debug) 빌드에서는 카카오 SDK가 카카오 토큰·인가 코드를 콘솔에 찍는다(SDK의 `#if DEBUG`, 출시 Release 빌드는 안 찍음) → 개발 빌드 로그를 남과 공유하지 않기
   - Xcode 경고 "KakaoSDK… was not compiled with library evolution support"는 UnityFramework를 따로 배포할 때만 의미가 있어 무시
+- **속도 센서는 `Native.Speed`**(11/10, 계획 0020, `App/Native/SpeedSensor.cs`): 센서 준비(D-07)·대기·카운트다운(D-08·09)·보정·달리기 화면이 쓴다. Swift가 속도까지 계산하고 C#은 **한 프레임에 한 번** 읽는다(다른 Update보다 먼저 갱신돼 같은 프레임엔 모든 화면이 같은 값)
+  ```csharp
+  Native.Speed.Start();                                   // 센서 준비 화면에 들어올 때. 끝·취소 때 Stop(이벤트 없이 꺼짐). 센서는 하나라 켠 쪽이 끈다
+  Native.Speed.FlowChanged += Refresh;                    // Phone·AirPods: 꺼짐/기다림/정상/끊김(2초 넘게 안 옴)
+  Native.Speed.GaitChanged += g => { if (g != Gait.None) StartCountdown(); else BackToWaiting(); };
+  var r = Native.Speed.Current;                           // r.HasSpeed, r.SpeedKmh, r.Gait, r.Steps(감지 지연 없이 바로 늘어남), r.UsingAirPods
+  if (!Native.Speed.HasCalibration) Nav.Push(new CalibrationScreen());
+  ```
+  - 판정(계획 0020, 숫자는 가설 → 아이폰에서 잼): 폰은 1초에 80개 이상이면 정상, 에어팟은 연결 + 헤드폰 모션 허용 + 1초에 20개 이상(아니면 꺼짐 = "이어폰 없이 진행", 실패 아님). `Gait`는 걸음 상태가 2.5초 유지되면 바뀜. 네트워크는 여기 없음(S3 실시간)
+  - **에디터 가짜**: Fake Native 창 "속도 센서" 칸. 폰·에어팟 데이터 들어옴(끄면 2초 뒤 끊김, Play 중에도 바로), 보정값 있음, 켜고 들어오기까지·걸음 감지 지연. Play 중엔 사람 속도 슬라이더·"서 있음/걷기 4/달리기 8"·시나리오(3초 뒤 걷기 → 10초 뒤 달리기)와 화면이 읽는 값이 보이고, 키보드 ↑/↓(±0.5)·Space(정지). 7 km/h 미만은 걷기(흉내 경계). 에어팟은 위 이어폰·헤드폰 모션 권한을 따름
+  - 섬 씬 아바타에 꽂기: `Scripts/NativeSpeedSource`(`ISpeedSource`)를 `RunnerController`의 속도 소스로(그 씬의 `FakeSpeedSource`는 빼기: 키가 둘 다 먹음). 센서가 꺼져 있으면 켜고, 자기가 켠 경우에만 끔
+  - 아이폰 진짜 구현은 S2 Swift 속도 플러그인(BL-5). 그 전 아이폰 빌드에서 `Native.Speed`는 예외(`NativeSpeedSource`는 한 번 알리고 속도 0)
 - **아이폰 빌드**(11/10, 맥): 메뉴 **Scrun → iOS → Xcode 만들기**(아이폰 개발 / 시뮬레이터 개발 / 아이폰 출시) → `unity/Builds/iOS-*`. 빌드 대상이 iOS가 아니면 먼저 전환(끝나면 메뉴 한 번 더)
   - 빌드 직후 `IosPostprocess`가 Info.plist 권한 문구(모션·카메라)·`CFBundleDevelopmentRegion ko`·암호화 신고 면제, UnityFramework에 Swift 5·CoreMotion 등 프레임워크, 서명 팀을 채운다
   - 사람마다 다른 값은 git 밖 `unity/TestRun/ScrunLocal.json`(예시 `ScrunLocal.example.json`, 메뉴 Scrun → iOS → 로컬 설정 파일 열기): `appleTeamId`(비우면 Xcode Signing에서 고름), `kakaoNativeAppKey`(6번)
