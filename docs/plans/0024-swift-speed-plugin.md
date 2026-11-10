@@ -3,7 +3,7 @@
 - 상태: **승인 · 구현 중** (11/10 민재, 결정 1–4 추천안 그대로. 11/10 밤 맥·Windows 동시 진행 시작, 아래 "Swift ↔ C# 약속")
 - 진행
   - Windows 1번 끝(11/10 밤): `fusion_live.py`에 `measure_stage`(TooShort·SensorLost·NoSteps·Irregular·Ok), 누적 걸음(봉우리), 걷기 절편(`WALK_OWN`, **꺼 둠**: 10/29 두 사람에서 나아지지 않음). 숫자: 걸음 없음 문턱 0.12, 걸음 수 215 이상은 벨트 진동, 4 km/h 이하 달리기 판정은 다시 잼(근거·수치 `docs/speed/README.md` 11/10 줄). **맥은 Swift를 이 파일에 맞춘 뒤** `speedlab/golden/replay_20261029-040156.csv`(Python 재생, 열에 `steps` 추가)와 비교
-  - Windows 4번: C# `IosSpeedSensor`(칸 → SpeedReading, 단계 JSON, 보정 넘기기) + `IosSpeedNative`(DllImport) + `Native.cs` iOS 줄 + 테스트 `IosSpeedSensorTests`. 에디터 컴파일·테스트 확인 남음
+  - Windows 4번 끝(11/10 밤): C# `IosSpeedSensor`(칸 → SpeedReading, 단계 JSON, 보정 넘기기) + `IosSpeedNative`(DllImport) + `Native.cs` iOS 줄 + 테스트 `IosSpeedSensorTests`, EditMode 131개 통과. 아이폰 빌드는 Swift `ScrunSpeed.swift`가 들어와야 링크됨(맥)
   - 맥: 2번 앞부분(파일 옮기기·Swift 재생 도구로 그날 `estimate.csv` 다시 만들기), 3번(`ScrunSpeed.swift`·C 함수·헤드폰 manager), 5번 점검 화면 칸, 아이폰 책상 확인 시작 전
 - 담당: 민재. 기간 S2 뒤쪽(11/11)에서 S3 앞(11/12), 11/13 시연에 들어감. Python·C# 일부는 Windows, Swift·아이폰은 맥
 - 근거: 계획 0020(`ISpeedSensor` 모양 + 가짜, 진짜는 이 계획), 계획 0023 6번(단계 재기·걷기 절편·실패 판정을 Swift에), ADR-0009(센서는 JSON 통로를 쓰지 않음), 계획 0010·[live_iphone.md](../speed/live_iphone.md)(SpeedRecorder 안 실시간 추정, 달리기 5구간 0.16 km/h, 1명·같은 날 보정이라 낙관적)
