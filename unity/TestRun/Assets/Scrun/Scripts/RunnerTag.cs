@@ -5,10 +5,10 @@ using UnityEngine;
 
 namespace Scrun
 {
-    // 함께 달리는 러너 표시용 정보(플레이어·페이스 봇·고스트). 이름표와 "근처 러너" 목록이 이 목록을 본다.
+    // 함께 달리는 러너 표시용 정보(플레이어·페이스 봇·고스트·실시간 다른 사람). 이름표와 "근처 러너" 목록이 이 목록을 본다.
     public class RunnerTag : MonoBehaviour
     {
-        public enum Kind { Player, Bot, Ghost }
+        public enum Kind { Player, Bot, Ghost, Remote }
 
         public string displayName;
         public Color color = Color.white;

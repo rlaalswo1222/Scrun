@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 
 namespace Scrun
 {
-    // 앱 맵 화면이 섬 씬을 불러올 때 남긴 코스·입장 위치(Scrun.App.MapLaunch)를 적용한다(계획 0022).
+    // 앱 맵 화면이 섬 씬을 불러올 때 남긴 코스·입장 위치(Scrun.App.MapLaunch)를 적용한다(계획 0022). 달리기 연결은 AppRunBridge(계획 0029).
     // 씬 파일을 고치지 않도록(섬 씬은 각자 Build Island Scene으로 다시 만듦) 씬이 불릴 때 코드로 붙는다.
     // 앱 없이 섬 씬만 Play하면 남긴 것이 없어서 아무것도 안 함(씬의 기본 코스 그대로).
     public sealed class MapLaunchApplier : MonoBehaviour
@@ -26,6 +26,7 @@ namespace Scrun
             SceneManager.MoveGameObjectToScene(go, scene);
             go.AddComponent<MapLaunchApplier>().request = MapLaunch.Take();
             HideDevTools(scene);
+            AppRunBridge.Attach(scene); // 진짜 속도 → 내 아바타, 가짜 봇 끄기, 다른 사람 그리기(계획 0029)
         }
 
         // 섬 씬만 Play할 때 쓰는 개발 도구(왼쪽 위 속도판, 아래 단축키 안내·순간이동, 폰 테스트 버튼, 오른쪽 위 근처 러너 목록)는

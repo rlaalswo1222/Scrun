@@ -18,7 +18,7 @@
    - 처음: `isNewUser: true` + 가입용 토큰(30분) → `POST /v1/auth/signup`(약관 동의·닉네임·키·몸무게·시간대) → 우리 토큰. 같은 가입을 다시 보내면(응답 유실·두 번 누름) 새 계정 없이 그 계정 토큰
    - 로그인·가입에 `deviceId`(iOS `identifierForVendor`)를 같이 보낸다. 같은 기기의 예전 로그인은 폐기, 살아 있는 로그인은 사용자당 5개까지(넘으면 오래된 것부터 폐기)
 3. 이후 요청 헤더: `Authorization: Bearer {accessToken}`
-- 로그인 없이 되는 API: `POST /v1/auth/kakao`, `GET /v1/agreements`, `POST /v1/auth/refresh`. 가입용 토큰으로 되는 API: `POST /v1/auth/signup`, `GET /v1/users/nickname/check`. 나머지는 전부 `accessToken` 필요(실시간 메시지 포함)
+- 로그인 없이 되는 API: `POST /v1/auth/kakao`, `GET /v1/agreements`, `POST /v1/auth/refresh`. 가입용 토큰으로 되는 API: `POST /v1/auth/signup`, `GET /v1/users/nickname/check`. 나머지는 전부 `accessToken` 필요. 실시간 방(WebSocket)은 맵 입장 때 받는 그 맵 전용 토큰(`realtime.token`, [realtime.md](realtime.md))
 4. 401 `TOKEN_EXPIRED`를 받으면 앱이 `POST /v1/auth/refresh`로 새 토큰을 받고 원래 요청을 한 번 다시 보낸다. **재발급은 한 번에 하나만**(여러 요청이 동시에 만료돼도 재발급 요청은 하나, 나머지는 그 결과를 기다림)
    - refresh 토큰은 한 번만 쓸 수 있다(쓰면 새 것이 나옴)
    - 응답을 못 받았으면 30초 안에 같은 refresh 토큰으로 다시 보내도 된다(새 토큰을 다시 줌)
@@ -38,7 +38,7 @@
 - **코스 하나 = 맵 하나**. 가득 차면 입장 불가 → 다른 코스를 고른다(백로그 BL-7 ⑤). 같은 코스에 맵을 여러 개 열지 않음
 - 최대 인원 **20명은 기획 목표**(BL-7 ⑦, BL-21 ②)이고 실측 근거는 아직 없음 → BL-25 실험(아이폰에서 아바타 수별 프레임, 실시간 메시지 양)으로 확정(BL-25 ⑥)
 - 입장 API는 인원을 셀 때 그 코스를 잠가서, 동시에 들어와도 최대 인원을 넘지 않는다
-- "지금 달리는 사람 수"(`runnersNow`)는 **실시간 서버의 연결 수**로 센다(ADR-0010, 11/10 FastAPI WebSocket으로 결정). 실시간 서버가 생기기 전(S3)까지만 임시로 "최근 10분 안에 입장(`course_entries`)했거나 달리는 중(`runs.status = ACTIVE` + 최근 10분)인 사람"(입장한 사람도 자리를 차지해야 동시 입장에 최대 인원이 지켜짐, 계획 0021). 샘플 올릴 때 `runs.updated_at`을 갱신하는 방식은 쓰지 않음
+- "지금 달리는 사람 수"(`runnersNow`)는 **실시간 방에 붙어 있는 사람(끊긴 지 30초 안 포함) + 입장했지만 2분 안에 아직 안 붙은 사람**(ADR-0010, 계획 0029, 11/11부터. 그 전 임시 계산 "최근 10분 입장·달리는 중 기록"은 없앰). 입장한 사람도 자리를 차지해야 동시 입장에 최대 인원이 지켜진다. 실시간 규칙은 [realtime.md](realtime.md)
 - `mapInstanceId`(입장 응답·러닝 시작 요청)는 실시간 서버의 방 ID로 쓴다
 
 ## 응답 껍데기
@@ -129,5 +129,5 @@
 ## 미정 (정해지면 이 문서와 노션 표 갱신)
 - OCR을 서버에서 할지 앱에서 할지 → `verification/photo`와 `verification/reading` 둘 다 자리만
 - 오프라인 달리기 허용 여부
-- 실시간 공동 맵 메시지 모양·재접속 규칙: 전송 방식은 FastAPI WebSocket으로 결정(ADR-0010, 11/10), 메시지·입장 응답의 `realtime` 모양은 S3 계획에서. 노션 표의 Realtime 줄은 메시지 이름·필드만
+- (정함) 실시간 공동 맵 메시지 모양·재접속 규칙: 11/11 계획 0029: [realtime.md](realtime.md). 노션 표의 Realtime 줄은 메시지 이름·필드만 맞추면 됨
 - 실사 영상 코스는 최하위 → 코스 `type` 필드만 열어 둠

@@ -1,4 +1,4 @@
-# 민재 인수인계 (2026-11-11 새벽, Windows)
+# 민재 인수인계 (2026-11-11 저녁, Windows)
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만 하고 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/api/README.md`, `docs/adr/`, `docs/plans/`)에 있다. 옛 전체본: `docs/log/HANDOFF_minjae_20261110.md`(11/10 정리 전), `_20261109.md`, `_20261107.md`, `_20261106.md`
 
@@ -9,9 +9,16 @@
 - **노션 개발 계획 11/11 최신화**: 작업 표 11줄(민재 보정 계산·보정 화면·속도 플러그인 완료, 지환 에어팟·권한 화면·보정값 API·거치 안내·러닝 설정 완료, 메모에 11/11 덧붙임), 기능 보드 3장(코스 선택·맵 입장, 보정 완료 / 러닝 설정·거치 안내 진행 중: 센서 준비로 넘어가기는 S3). S1 진행 중 2줄은 아이폰 확인만 남음(아래 "민재가 직접 할 것"). 상준 UI Kit 줄은 "시작 전"인데 지환이 Figma UI Kit 값을 이미 `App.uss`에 옮김 → 상준에게 상태 물어보기
 - PR 합치기: 남의 PR·리뷰 없는 문서 PR은 자동 권한 검사가 막음 → 민재가 "ㄱ"으로 허락
 
+## 지금 하던 일: S3 계획 0029 (브랜치 `feat/run-together`, **PR #40** 리뷰·머지 대기)
+- 11/11 지환 PR #39(아바타 발 속도 표, 계획 0027) 리뷰·머지 → 내 계획이 0027과 겹쳐 0029로 옮김(0028은 지환 BL-36). PR 올리기 전에 develop 합치기(#39가 `unity_map.md` 캐릭터 절을 고침, 충돌은 없을 것). 같이 뛰기 다른 러너도 봇 복제라 #39 애니메이션이 그대로 적용됨
+- 11/11 승인(페이스 봇은 S4 이후로 미룸) → 같은 날 구현 + `/code-review` 10건 반영. 진짜 속도 → 내 아바타(`AppRunBridge`), 실시간 방 서버(`backend/app/realtime/`, 규칙 `docs/api/realtime.md`), 앱 연결(`App/Realtime/`, `RunLink`), 기본 HUD(`RunHudView`), "지금 N명" = 실시간 인원. 서버 pytest 198·Unity EditMode 212(develop #39 합친 뒤) 통과, 가짜 러너 둘로 로컬 확인. 자세한 건 계획 0029 "진행"
+- 시험 도구 `backend/scripts/fake_runner.py`(가짜 카카오 서버에 가짜 계정으로 달림, 들어옴·나감·왕복 지연 찍음)
+- 로컬 8001 서버는 11/11 새 코드로 다시 켬(Claude 세션 백그라운드, 세션 끝나면 꺼짐 → 그땐 `cd backend; ../.venv/Scripts/python -m uvicorn app.main:app --port 8001`)
+- **오라클 배포 안 됨**: Claude의 ssh 배포가 자동 권한 검사(운영 배포)에 막힘 → 민재가 직접 `ssh -i ~/.ssh/oracle_key ubuntu@161.118.211.155 '~/scrun/backend/deploy/update.sh'`(#40 머지 뒤 develop, 먼저 보려면 `feat/run-together`). 서버는 uvicorn 하나라 메모리 방이 안 나뉨, Caddy가 WebSocket 그대로 넘김
+
 ## 다음
-1. **아바타를 진짜 속도 센서에** (S3, 11/13 시연 필수): 섬 아바타가 아직 키보드 가짜(`FakeSpeedSource`, `RunnerRigBuilder`가 만듦)라 아이폰에서 안 움직임 → `NativeSpeedSource`로. 지환 BL-42(Y Bot 애니메이션 속도 맞춤, `RunnerAnimator`)와 겹치지 않게 속도 소스만
-2. **S3 실시간 방 서버 계획 0027**(ADR-0010 다음): 메시지 모양(입장·상태·들어옴/나감·봇), 입장 응답 `realtime.url`·`token`, 재접속, 앱 연결 인터페이스(나중에 바꿀 수 있게), 아이폰 2대로 지연 실측, 지금 인원("지금 N명"을 실시간 인원으로, 지환 제안 (나)·민재 추천)
+1. **0029 마무리**: 에디터 Play 전체 흐름(8001 다시 켠 뒤 상세 → 입장 → "시작할게요" → HUD, ↑/↓로 아바타, `fake_runner`로 다른 사람·토스트·간격) → #40 머지 → 오라클 서버 배포(마이그레이션 없음, 위 명령) → 아이폰: `ClientWebSocket`이 IL2CPP에서 붙는지(가설), 손에 들고 걸어 아바타, 왕복 지연 와이파이·LTE 기록(`docs/api/realtime.md` "지연 실측", ADR-0010 결과)
+2. **지환에게**: 카운트다운 끝에서 `MapScreen.StartRunning()`(지금은 `OnSetupDone`이 임시로 바로 부름, 그 줄 지우기), `RunnerController`에 `Driven`·`SetSpeedSource`, `RunnerTag.Kind.Remote`를 넣음(#39 `RunnerAnimator`와는 안 겹침). 상준에게 HUD·토스트 모양(D-10·D-11)
 3. 계획 0024 6번 러닝머신 확인(헬스장 날짜 정하기) + 미룬 책상 확인 2개(권한 거부 뒤 가속도, 10분 발열). 헬스장에서: 걷기 절편 "2 포함 대 4 이상"·키로 조정 비교(키가 다른 사람), 걸음 없음 문턱 0.12(S22 값) 아이폰으로 다시
 - 시연 흐름(에디터)은 민재가 직접 돌려 봄(Claude가 제안하지 않음)
 - **S3 메모(11/11 지환)**: 카운트다운·달리기 목표는 `MapScreen.Setup.Goal`, `POST /runs` goal에 `Setup.Goal.ToRequest()`(m·초). D-06 "시작할게요" 뒤엔 지금 맵만 → S3에서 D-07 센서 준비. 섬 `MapLaunchApplier`가 입장 위치 적용 뒤 `MapLaunch.MarkApplied()`(맵 화면이 기다렸다 흐린 배경, 고칠 때 이 줄 남기기), `RunnerLabels`는 카메라가 꺼져 있으면 안 그림, 러닝 설정 중엔 섬 카메라 꺼짐·그리기 3프레임에 한 번

@@ -229,6 +229,13 @@
   - 흐린 배경은 섬 쪽이 입장 위치를 다 적용했다고 알린 뒤(`MapLaunch.Applied` ← `MapLaunchApplier`, 2초 안에 안 오면 경고 후 진행) 2프레임 더 기다려(식생·LOD가 새 자리로 바뀌게) 찍는다
   - 맵 화면을 떠날 때는 흐린 배경을 먼저 걷고(섬 카메라·그리기 간격 복구) 섬 씬을 내림(`CloseSetup` → `ReleaseIsland`). 안내 화면을 만들다 예외가 나면 반쯤 만든 층을 붙이지 않고 흐림·윗줄을 되돌린 뒤 I-11 카드
   - 확인(11/11, 에디터 Play·로컬 서버): D-01 거리·시간 탭, +, 직접 입력(200 → 범위 안내, 4.5 → 4.5 km), D-05 → D-06 → 맵(목표 `DISTANCE/4500`), D-05 뒤로 → D-01, 다시 들어오면 4.5 km·"다시 보지 않기"로 D-05 다음 바로 맵, D-01 X → 홈·섬 씬 내려감·앱 카메라 복구. 안내 중 Live Reload로 화면이 다시 만들어져도 섬 씬·카메라 정리됨. 아직: 아이폰 노치·키보드, D-05·D-06 그림(출처 확인 중)
+- **달리기·같이 뛰기 기본**(11/11, 계획 0029, 규칙 `docs/api/realtime.md`): "시작할게요" 뒤 HUD가 뜨고 내 아바타가 센서 속도로 달리며, 같은 맵의 다른 사람이 보인다
+  - **앱 ↔ 섬은 `RunLink`**(앱 `App/Map/RunLink.cs`, `MapLaunch`와 같은 정적 이음매). 앱 → 섬: `Moving`(달리는 중, 꺼져 있으면 내 아바타 속도 0), `Together`(다른 러너). 섬 → 앱: 내 누적 거리·속도·코스 길이(`ReportPlayer`, 입장 위치 적용 뒤부터)
+  - **섬 쪽 `AppRunBridge`**(`Scripts/`, `MapLaunchApplier`가 앱에서 불릴 때만 붙임): 플레이어 속도 소스를 키보드 → `NativeSpeedSource`(에디터는 가짜 센서: Fake Native 창·키보드 ↑/↓)로 바꾸고 `Moving`으로 막음, 섬의 가짜 봇 5명·무리 12명은 끔(기기마다 위치가 달라서), 다른 사람은 꺼 둔 봇 몸을 복제해 그림(`RunnerController.Driven` + 매 프레임 `Teleport`, 옷 색은 MaterialPropertyBlock, `RunnerTag.Kind.Remote`라 이름표에 닉네임)
+  - **앱 쪽 `App/Realtime/`**: 화면은 `IRunTogether`만 봄(진짜 구현 `WsRunTogether` = .NET `ClientWebSocket`, 토큰은 헤더). 메시지 처리는 `RunTogetherRoom`, 다른 사람 위치는 `RemoteRunner`(받은 d에서 속도로 내다보고 새 값은 0.5초에 걸쳐 맞춤, 25m 넘게 다르면 바로 옮김), 고리 코스 계산 `LoopMath`. 맵 입장 응답을 받자마자 붙고(섬 불러오는 동안), 섬이 열려 입장 위치에 선 뒤부터 내 상태를 보냄. 맵을 나가면 `leave`
+  - **HUD `RunHudView`**(`RunHud.uxml/uss`, 맵 화면 안의 층): 거리·시간·목표 진행 막대, 왼쪽 아래 앞뒤 가장 가까운 사람 간격, 위 가운데 들어옴·나감 토스트(3초, 하나씩)·연결 상태. 속도·페이스는 안 보임(BL-12 ②), 개발 빌드만 오른쪽 아래 속도·왕복 지연. 시간·거리는 `RunSession`(카운트다운 끝 `MapScreen.StartRunning()`, 지금은 `OnSetupDone`이 임시로 바로 부름)
+  - 다른 사람 없이 확인: `backend/scripts/fake_runner.py`(로컬 가짜 카카오 서버에 가짜 계정으로 들어가 일정한 속도로 달림)
+  - 아직: 에디터 Play 전체 흐름, 아이폰(`ClientWebSocket` IL2CPP·왕복 지연), 상준 모양 다듬기, 미니맵·멈춤·종료(S5), 페이스 봇(S4 이후)
 - **아래 탭 바**(11/10, UI Kit Tab Bar): 아이콘 24 + 글자 12, 홈·친구·기록·마이 순서, 고른 탭은 파란 아이콘(`tab-*-on.svg`)·굵은 글자. 탭 버튼 이름(`tab-home` 등)은 그대로라 `Navigator`는 안 바뀜
 - 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
 

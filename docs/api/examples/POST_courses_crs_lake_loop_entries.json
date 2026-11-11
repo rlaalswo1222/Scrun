@@ -13,7 +13,10 @@
         "mapInstanceId": "map_crs_lake_loop",
         "courseId": "crs_lake_loop",
         "entryPositionM": 1100.4,
-        "realtime": null
+        "realtime": {
+          "url": "ws://testserver/v1/realtime",
+          "token": "eyJhbGciOi...(realtime)"
+        }
       }
     },
     "error": null,

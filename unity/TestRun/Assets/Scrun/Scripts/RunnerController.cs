@@ -20,12 +20,22 @@ namespace Scrun
         public Track Track => track;
         public float LateralOffset { get => lateralOffset; set => lateralOffset = value; }
 
+        // 밖에서 매 프레임 Teleport로 자리를 정함(실시간 다른 러너). 속도는 애니메이션에만 씀
+        public bool Driven { get; set; }
+
         public void Setup(MonoBehaviour speed, Track t, float lateral, float start)
         {
             speedSourceBehaviour = speed;
             track = t;
             lateralOffset = lateral;
             startDistance = start;
+        }
+
+        // 실행 중에 속도 소스 바꾸기(앱에서 들어오면 키보드 → 진짜 센서, 계획 0029)
+        public void SetSpeedSource(ISpeedSource source)
+        {
+            speedSource = source;
+            speedSourceBehaviour = source as MonoBehaviour;
         }
 
         void Awake()
@@ -47,6 +57,7 @@ namespace Scrun
 
         void Update()
         {
+            if (Driven) return;
             Distance += SpeedKmh / 3.6f * Time.deltaTime;
             Place();
         }

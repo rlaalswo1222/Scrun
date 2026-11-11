@@ -2,7 +2,8 @@
 
 코스 하나 = 맵 하나(docs/api/README.md "코스와 맵 인원"). 인원은 core/occupancy.count_present 한 곳에서 센다.
 입장은 코스 줄을 잠그고(SELECT FOR NO KEY UPDATE) 세서, 동시에 들어와도 최대 인원을 넘지 않는다.
-입장 위치는 러너 위치를 모르므로 코스 위 랜덤, 실시간 접속 정보는 null. 실시간 서버(BL-25) 뒤에 바꾼다.
+입장 응답에 실시간 방(계획 0029, ADR-0010) 접속 주소·토큰을 준다. 입장 위치는 방에 달리는 사람이 있으면
+그중 한 명의 20–40m 뒤(앞사람이 보이게, BL-25 ②), 없으면 코스 위 랜덤.
 """
 import random
 
@@ -14,10 +15,13 @@ from sqlalchemy.orm import Session
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
 from ..core.occupancy import count_present
+from ..core import tokens
 from ..core.security import current_user
 from ..db.models import Calibration, CourseEntry, User
 from ..db.models import Course as CourseRow
 from ..db.session import get_db
+from ..realtime.hub import hub
+from ..realtime.router import map_id_of
 from ..schemas.course import Course, CourseDetail, MapEntry
 
 router = APIRouter(prefix="/v1", tags=["Course"])
@@ -25,6 +29,9 @@ E = ErrorCode
 AUTH = error_responses(E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)
 
 _rng = random.Random()
+
+
+BEHIND_M = (20.0, 40.0)  # 달리는 사람 뒤 이만큼에 입장
 
 
 def get_rng() -> random.Random:
@@ -48,7 +55,7 @@ def _active_course(db: Session, course_id: str, lock: bool = False) -> CourseRow
 
 @router.get("/courses", summary="코스 목록",
             description="화면 C-01 · BL-7, BL-43. 짧은 코스부터. runnersNow는 그 맵에 지금 있는 사람 수"
-            "(실시간 서버 전까지 임시: 최근 10분 안에 입장했거나 달리는 중인 사람). 실사 영상 코스는 최하위라 type만 열어 둠",
+            "(실시간 방에 붙어 있는 사람 + 입장 2분 안에 아직 안 붙은 사람). 실사 영상 코스는 최하위라 type만 열어 둠",
             response_model=Envelope[list[Course]], responses=AUTH)
 def list_courses(request: Request, _: User = Depends(current_user), db: Session = Depends(get_db)):
     courses = db.scalars(select(CourseRow).where(CourseRow.active).order_by(CourseRow.length_m, CourseRow.id)).all()
@@ -72,7 +79,8 @@ def get_course(courseId: str, request: Request, _: User = Depends(current_user),
     description="화면 C-02, D-01, I-10, I-11 · BL-7, BL-21. 판정 순서: 코스 없음 → 보정 없음(CALIBRATION_REQUIRED) → "
     "나 말고 그 맵에 있는 사람이 maxRunnersPerMap 이상(COURSE_FULL). 통과하면 자리를 잡는다(다른 코스에 있던 자리는 옮겨짐). "
     "코스를 잠그고 세므로 동시에 들어와도 최대 인원을 넘지 않는다. 코스 하나 = 맵 하나(mapInstanceId = map_{courseId}). "
-    "실시간 서버(BL-25) 전이라 입장 위치는 코스 위 랜덤, realtime은 null",
+    "realtime은 그 맵의 실시간 방 접속 주소·토큰(6시간, docs/api/realtime.md). "
+    "입장 위치는 그 맵에 달리는 사람이 있으면 한 명의 20–40m 뒤, 없으면 코스 위 랜덤",
     response_model=Envelope[MapEntry],
     responses={**AUTH, **error_responses(E.COURSE_NOT_FOUND, E.COURSE_FULL, E.CALIBRATION_REQUIRED)},
 )
@@ -87,5 +95,22 @@ def enter_map(courseId: str, request: Request, user: User = Depends(current_user
                .on_conflict_do_update(index_elements=[CourseEntry.user_id],
                                       set_={"course_id": course.id, "entered_at": func.now()}))
     db.commit()
-    return ok(request, {"mapInstanceId": f"map_{course.id}", "courseId": course.id,
-                        "entryPositionM": round(rng.uniform(0, course.length_m), 1), "realtime": None})
+    map_id = map_id_of(course.id)
+    return ok(request, {"mapInstanceId": map_id, "courseId": course.id,
+                        "entryPositionM": _entry_position(course, user.id, rng),
+                        "realtime": {"url": _realtime_url(request), "token": tokens.issue_realtime(user.id, map_id)}})
+
+
+def _entry_position(course: CourseRow, user_id: str, rng: random.Random) -> float:
+    runners = hub.running_positions(course.id, except_user=user_id)
+    if not runners:
+        return round(rng.uniform(0, course.length_m), 1)
+    ahead = rng.choice(sorted(runners))  # 정렬: 같은 시드면 같은 결과(예시 만들기)
+    return round((ahead - rng.uniform(*BEHIND_M)) % course.length_m, 1)
+
+
+def _realtime_url(request: Request) -> str:
+    """이 API를 부른 주소 그대로(Caddy 뒤에선 프록시 헤더로 https → wss)."""
+    base = str(request.base_url).rstrip("/")
+    scheme, rest = base.split("://", 1)
+    return f"{'wss' if scheme == 'https' else 'ws'}://{rest}/v1/realtime"
