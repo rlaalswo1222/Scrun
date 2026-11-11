@@ -4,7 +4,7 @@
 가짜 카카오 서버에서만 된다(진짜 카카오 서버는 k_ 토큰을 거절). 처음이면 가입·보정(가짜 값)까지 한다.
 
 실행(backend 폴더):
-  ../.venv/Scripts/python -m scripts.fake_runner --base http://localhost:8001 --kakao k_901 --kmh 9
+  ../.venv/Scripts/python -m scripts.fake_runner --base http://127.0.0.1:8001 --kakao k_901 --kmh 9
   ../.venv/Scripts/python -m scripts.fake_runner --kakao k_902 --kmh 11 --course crs_island_tour --seconds 120
 끝내기: Ctrl+C 또는 --seconds가 지나면 leave를 보내고 나감
 """
@@ -93,7 +93,7 @@ async def run(entry: dict, kmh: float, seconds: float) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--base", default="http://localhost:8001", help="API 주소(가짜 카카오 서버)")
+    p.add_argument("--base", default="http://127.0.0.1:8001", help="API 주소(가짜 카카오 서버)")
     p.add_argument("--kakao", default="k_901", help="가짜 카카오 토큰(k_숫자). 숫자가 다르면 다른 사람")
     p.add_argument("--course", default="crs_lake_loop")
     p.add_argument("--kmh", type=float, default=9.0)
