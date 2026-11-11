@@ -11,6 +11,7 @@ import logging
 import time
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from sqlalchemy import delete
 from sqlalchemy.orm import sessionmaker
 from starlette.concurrency import run_in_threadpool
 
@@ -42,7 +43,7 @@ def map_id_of(course_id: str) -> str:
 
 
 def _seat(make_session: sessionmaker, user_id: str, map_id: str):
-    """(닉네임, 코스 ID, 코스 길이) 또는 None(사용자 없음·이 맵에 자리 없음)."""
+    """(닉네임, 코스 ID, 코스 길이, 입장 시각) 또는 None(사용자 없음·이 맵에 자리 없음)."""
     with make_session() as db:
         user = db.get(User, user_id)
         entry = db.get(CourseEntry, user_id)
@@ -51,7 +52,16 @@ def _seat(make_session: sessionmaker, user_id: str, map_id: str):
         course = db.get(Course, entry.course_id)
         if course is None or not course.active:
             return None
-        return user.nickname, course.id, course.length_m
+        return user.nickname, course.id, course.length_m, entry.entered_at
+
+
+def _free_seat(make_session: sessionmaker, user_id: str, course_id: str, entered_at) -> None:
+    """leave로 나간 사람의 자리를 지운다(안 지우면 입장 2분이 지날 때까지 "지금 N명"에 남음).
+    연결할 때 본 그 자리일 때만: 나간 사이 다른 코스나 같은 코스에 다시 입장했으면 새 자리라 그대로 둔다."""
+    with make_session() as db:
+        db.execute(delete(CourseEntry).where(CourseEntry.user_id == user_id, CourseEntry.course_id == course_id,
+                                             CourseEntry.entered_at == entered_at))
+        db.commit()
 
 
 def _bearer(ws: WebSocket) -> str:
@@ -72,7 +82,7 @@ async def realtime(ws: WebSocket, make_session: sessionmaker = Depends(get_sessi
     if seat is None:
         await ws.close(CLOSE_NOT_IN_MAP)
         return
-    nickname, course_id, length_m = seat
+    nickname, course_id, length_m, entered_at = seat
 
     loop = asyncio.get_running_loop()
     wake = asyncio.Event()
@@ -88,7 +98,12 @@ async def realtime(ws: WebSocket, make_session: sessionmaker = Depends(get_sessi
     except (WebSocketDisconnect, RuntimeError):
         pass  # 폰이 먼저 끊음(RuntimeError: 닫힌 소켓에 보내기)
     finally:
-        hub.leave(conn, intentional=left)
+        left = hub.leave(conn, intentional=left)
+    if left:
+        try:
+            await run_in_threadpool(_free_seat, make_session, user_id, course_id, entered_at)
+        except Exception:  # 자리 지우기를 못 해도 입장 2분 뒤엔 안 세어짐(인원만 잠깐 많게 보임)
+            log.exception("leave 뒤 자리 지우기 실패 user=%s", user_id)
 
 
 async def _serve(ws: WebSocket, conn: Conn, wake: asyncio.Event):
