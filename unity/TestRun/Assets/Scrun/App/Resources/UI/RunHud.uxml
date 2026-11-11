@@ -1,0 +1,48 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- 달리는 중 기본 HUD(가로, D-10 자리, 계획 0027 · BL-12 ②④⑤, BL-21 ⑤).
+         속도·페이스는 보여 주지 않는다(BL-12 ②: 정확한 값은 계기판 인증 결과에서). 미니맵·구간 알림·멈춤은 S5.
+         모양은 UI Kit 값으로 먼저 만들고 상준이 Figma D-10·D-11과 맞춰 다듬는다 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/RunHud.uss" />
+    <ui:VisualElement name="run-hud" class="course run-hud" picking-mode="Ignore">
+        <!-- 왼쪽 위: 거리·시간·목표 진행 -->
+        <ui:VisualElement class="hud-card hud-stats" picking-mode="Ignore">
+            <ui:VisualElement class="hud-row" picking-mode="Ignore">
+                <ui:VisualElement class="hud-stat" picking-mode="Ignore">
+                    <ui:Label name="hud-distance" text="0.00" class="hud-big" picking-mode="Ignore" />
+                    <ui:Label text="km" class="hud-unit" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:VisualElement class="hud-stat hud-stat--time" picking-mode="Ignore">
+                    <ui:Label name="hud-time" text="00:00" class="hud-big" picking-mode="Ignore" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="hud-goal-bar" picking-mode="Ignore">
+                <ui:VisualElement name="hud-goal-fill" class="hud-goal-fill" picking-mode="Ignore" />
+            </ui:VisualElement>
+            <ui:Label name="hud-goal" class="hud-goal-label" picking-mode="Ignore" />
+        </ui:VisualElement>
+
+        <!-- 왼쪽 아래: 앞뒤 가장 가까운 러너 간격(BL-12 ④, BL-21 ④) -->
+        <ui:VisualElement name="hud-gaps" class="hud-card hud-gaps" picking-mode="Ignore">
+            <ui:VisualElement name="hud-ahead" class="hud-gap-row" picking-mode="Ignore">
+                <ui:Label text="앞" class="hud-gap-side" picking-mode="Ignore" />
+                <ui:Label name="hud-ahead-name" class="hud-gap-name" picking-mode="Ignore" />
+                <ui:Label name="hud-ahead-gap" class="hud-gap-value" picking-mode="Ignore" />
+            </ui:VisualElement>
+            <ui:VisualElement name="hud-behind" class="hud-gap-row" picking-mode="Ignore">
+                <ui:Label text="뒤" class="hud-gap-side" picking-mode="Ignore" />
+                <ui:Label name="hud-behind-name" class="hud-gap-name" picking-mode="Ignore" />
+                <ui:Label name="hud-behind-gap" class="hud-gap-value" picking-mode="Ignore" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- 위 가운데: 들어옴·나감 토스트(BL-21 ⑤), 연결 상태 -->
+        <ui:VisualElement class="hud-top-center" picking-mode="Ignore">
+            <ui:Label name="hud-toast" class="hud-toast" picking-mode="Ignore" />
+            <ui:Label name="hud-net" class="hud-net" picking-mode="Ignore" />
+        </ui:VisualElement>
+
+        <!-- 오른쪽 아래: 개발 빌드에서만(시연·실측용 속도·왕복 지연) -->
+        <ui:Label name="hud-dev" class="hud-dev" picking-mode="Ignore" />
+    </ui:VisualElement>
+</ui:UXML>
