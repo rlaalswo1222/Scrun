@@ -27,14 +27,14 @@ class CourseDetail(Course):
 
 
 class RealtimeAccess(CamelModel):
-    """실시간 접속 정보. 모양은 BL-25(FastAPI WebSocket vs Photon) 뒤에 확정(미정)."""
+    """그 맵의 실시간 방 접속 정보(ADR-0010 FastAPI WebSocket, 메시지 모양은 docs/api/realtime.md)."""
 
-    url: str
-    token: str
+    url: str = Field(description="WebSocket 주소(wss://…/v1/realtime). 토큰은 Authorization: Bearer 헤더로")
+    token: str = Field(description="이 맵에만 붙는 토큰(6시간). 만료되면 다시 입장")
 
 
 class MapEntry(CamelModel):
     map_instance_id: str
     course_id: str
-    entry_position_m: float = Field(description="입장 위치(코스 시작점부터 m). 실시간 서버(BL-25) 전에는 코스 위 랜덤, 뒤에 러너 많은 구간 근처로")
-    realtime: Optional[RealtimeAccess] = None
+    entry_position_m: float = Field(description="입장 위치(코스 시작점부터 m). 그 맵에 달리는 사람이 있으면 한 명의 20–40m 뒤, 없으면 랜덤")
+    realtime: Optional[RealtimeAccess] = Field(None, description="실시간 방 접속 정보. 진짜 서버는 늘 줌(스텁 예시에도 있음)")
