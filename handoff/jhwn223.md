@@ -3,7 +3,7 @@
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
 ## 지금 (11/12)
-- **내 정보·설정 API 끝, PR 준비**: 브랜치 `feat/user-me-settings-api`(develop fb38898에서), 계획 [0028](../docs/plans/0028-user-me-settings-api.md). `GET·PATCH /users/me`·`/users/me/settings`를 DB와 연결, 가입·수정 시간대는 IANA 이름만(`tzdata` 추가), pytest 193/193
+- **내 정보·설정 API PR #47**(민재 리뷰 대기): 브랜치 `feat/user-me-settings-api`(develop fb38898에서), 계획 [0028](../docs/plans/0028-user-me-settings-api.md). `GET·PATCH /users/me`·`/users/me/settings`를 DB와 연결, 가입·수정 시간대는 IANA 이름만(`tzdata` 추가), pytest 193/193
   - 민재에게: 가입 시간대 검사·tzdata 알림(11/12 지환이 (가)로 승인), 노션 API 명세 상태 바꿔 달라고, 공용 서버 배포 때 requirements 다시 설치
   - 이 handoff는 #39 브랜치에도 있음 → 합칠 때 나중 내용을 고른다
 - **아바타 속도 맞춤 PR #39**(민재 리뷰 대기): 브랜치 `feat/avatar-run-speed`(develop 681f47a에서), 계획 [0027](../docs/plans/0027-avatar-run-speed.md). 실행 중 Animator의 실제 발 속도 표(`App/Resources/RunnerGait.asset`)로 `RunnerAnimator` 재생 속도를 맞춤 → 1에서 20 km/h 미끄러짐 5% 이내(전 최대 80%). 멈추면 동작을 세움. `/code-review` 반영, EditMode 117/117. 원본 `data/avatar/`, 바뀐 동작은 `unity_map.md` 캐릭터 절
