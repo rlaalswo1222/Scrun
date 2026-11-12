@@ -1,0 +1,25 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- A-19 로그인 실패(카카오)(Figma 698:2350, 계획 0031). 취소·오류 → 같은 화면에서 다시 시도. 성공하면 A-18 약관 또는 홈 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+    <ui:VisualElement class="onb">
+        <ui:VisualElement class="nav-bar" />
+        <ui:Label text="SCRUN" class="onb-logo" />
+        <ui:Label text="로그인하지 못했어요" class="onb-lead gap" />
+        <ui:VisualElement class="illust illust--failed">
+            <ui:VisualElement class="char-stand" />
+        </ui:VisualElement>
+        <ui:VisualElement class="spacer" />
+        <ui:VisualElement class="err-banner">
+            <ui:VisualElement class="err-icon">
+                <ui:Label text="!" class="err-icon-text" />
+            </ui:VisualElement>
+            <ui:VisualElement class="err-text">
+                <ui:Label text="카카오 로그인이 취소되었거나 연결에 문제가 있어요" class="err-title" />
+                <ui:Label text="네트워크를 확인하고 다시 시도해 주세요" class="err-body" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:Button name="kakao" text="카카오로 다시 시도" class="btn btn-kakao btn-fig" />
+        <ui:Label text="문제가 계속되면 잠시 후 다시 시도해 주세요" class="onb-caption" />
+    </ui:VisualElement>
+</ui:UXML>

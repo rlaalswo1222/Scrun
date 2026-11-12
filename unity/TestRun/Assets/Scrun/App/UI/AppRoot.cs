@@ -91,12 +91,18 @@ namespace Scrun.App
             catch (Exception e) { Debug.LogException(e); return false; }
         }
 
-        // 스플래시 다음: 로그인됨 → 권한 안내(모션을 아직 안 물어봤으면, 계획 0025) 또는 홈, 아니면 로그인.
-        // 서비스 소개(A-02–A-04)가 생기면 첫 이용(로그인 안 됨)은 그쪽으로
-        internal static void AfterSplash(Navigator nav, bool loggedIn)
+        // 스플래시 다음: 로그인됨 → 권한 안내(모션을 아직 안 물어봤으면, 계획 0025)·주간 목표(가입 직후) 또는 홈,
+        // 로그인 없음 → 이 기기에서 처음이면 서비스 소개(A-02–A-04, 계획 0031), 아니면 로그인
+        internal static void AfterSplash(Navigator nav, bool loggedIn) => AfterSplash(nav, loggedIn, Onboarding.IntroSeen);
+
+        internal static void AfterSplash(Navigator nav, bool loggedIn, bool introSeen)
         {
-            if (loggedIn) Onboarding.Begin(nav);
-            else nav.StartFlow(new LoginScreen());
+            switch (Onboarding.AfterSplash(loggedIn, introSeen))
+            {
+                case StartStep.Onboarding: Onboarding.Begin(nav); break;
+                case StartStep.Intro: nav.StartFlow(new IntroScreen()); break;
+                default: nav.StartFlow(new LoginScreen()); break;
+            }
         }
 
         void OnDisable()
@@ -117,6 +123,7 @@ namespace Scrun.App
             if (Nav == null) return;
             Feedback.HideError();
             try { Api.Session.Clear(); } catch (Exception e) { Debug.LogException(e); } // 만료된 가입용 토큰까지 정리. 실패해도 로그인 화면으로는 간다
+            Onboarding.ForgetNewUser(); // 가입 직후 주간 목표는 그 사람 것. 다음에 로그인하는 사람이 이어받지 않게
             if (!Nav.InTabs && Nav.Current is LoginScreen) return;
             Nav.StartFlow(new LoginScreen(notice));
         }

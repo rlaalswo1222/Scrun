@@ -1,19 +1,33 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- A-06 약관 동의. 목록은 서버 약관(GET /v1/agreements)으로 채움 -->
-    <ui:VisualElement class="screen">
-        <ui:VisualElement class="top-bar">
-            <ui:Button name="back" text="‹" class="back-button" />
+    <!-- A-18 약관·개인정보 동의(Figma 698:2233, 계획 0031). 목록은 서버 약관(GET /v1/agreements)으로 채움(TermsScreen) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+    <ui:VisualElement class="onb">
+        <ui:VisualElement class="nav-bar">
+            <ui:VisualElement class="nav-side">
+                <ui:Button name="back" class="nav-back" />
+            </ui:VisualElement>
+            <ui:Label text="약관 동의" class="nav-title" />
+            <ui:VisualElement class="nav-side nav-side--right" />
         </ui:VisualElement>
-        <ui:Label text="약관에 동의해 주세요" class="screen-title" />
-        <ui:Toggle name="all" text="모두 동의" class="terms-all" />
-        <ui:ScrollView class="screen-body">
-            <ui:VisualElement name="list" />
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+            <ui:VisualElement class="head">
+                <ui:Label text="약관에 동의해 주세요" class="onb-title" />
+                <ui:Label text="SCRUN을 시작하기 전에 확인해 주세요" class="onb-lead" />
+            </ui:VisualElement>
+            <ui:VisualElement name="all" class="agree-all">
+                <ui:VisualElement name="all-check" class="check">
+                    <ui:Label text="✓" class="check-mark" />
+                </ui:VisualElement>
+                <ui:Label text="전체 동의하기" class="agree-all-text" />
+            </ui:VisualElement>
+            <ui:VisualElement name="list" class="agree-list" />
             <!-- 불러오기에 실패하고 안내창을 닫았을 때 -->
             <ui:VisualElement name="load-failed" class="empty-state">
                 <ui:Label text="약관을 불러오지 못했어요" class="hint-text" />
                 <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
             </ui:VisualElement>
         </ui:ScrollView>
-        <ui:Button name="next" text="다음" class="btn btn-primary" />
+        <ui:Button name="next" text="동의하고 계속하기" class="btn btn-primary btn-fig" />
     </ui:VisualElement>
 </ui:UXML>

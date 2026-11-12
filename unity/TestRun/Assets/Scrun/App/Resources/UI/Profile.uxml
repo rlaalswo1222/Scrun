@@ -1,30 +1,41 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- A-06 다음 프로필: 닉네임·키·몸무게 → 가입 -->
-    <ui:VisualElement class="screen">
-        <ui:VisualElement class="top-bar">
-            <ui:Button name="back" text="‹" class="back-button" />
-        </ui:VisualElement>
-        <ui:Label text="프로필" class="screen-title" />
-        <ui:ScrollView class="screen-body">
-            <ui:Label text="닉네임" class="field-label" />
-            <ui:Label text="같이 달리는 사람들의 이름표에 보여요" class="hint-text" />
-            <ui:TextField name="nickname" class="input" />
-            <ui:Label name="nickname-status" class="status-text" />
-
-            <ui:VisualElement class="field-row">
-                <ui:VisualElement class="field-col">
-                    <ui:Label text="키(cm)" class="field-label" />
-                    <ui:TextField name="height" class="input" />
-                </ui:VisualElement>
-                <ui:VisualElement class="field-col">
-                    <ui:Label text="몸무게(kg)" class="field-label" />
-                    <ui:TextField name="weight" class="input" />
-                </ui:VisualElement>
+    <!-- A-06 프로필 입력(Figma 596:232, 계획 0031): 닉네임·키·몸무게 → 가입. 셋 다 맞게 채워야 "다음" -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+    <ui:VisualElement class="onb">
+        <ui:VisualElement class="nav-bar">
+            <ui:VisualElement class="nav-side">
+                <ui:Button name="back" class="nav-back" />
             </ui:VisualElement>
-            <!-- 몸무게를 어디에 쓰는지는 아직 미정(서버: 속도 추정엔 안 씀, 용도는 개인정보처리방침에 적음) → 상준 문구 확정 때 안내 추가 -->
-            <ui:Label text="키는 아바타 크기에 써요" class="hint-text" />
-            <ui:Label name="body-status" class="status-text error-text" />
+            <ui:Label text="프로필" class="nav-title" />
+            <ui:VisualElement class="nav-side nav-side--right" />
+        </ui:VisualElement>
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+            <ui:VisualElement class="head">
+                <ui:Label text="나를 알려주세요" class="onb-title" />
+                <!-- 사실대로(계획 0031 정할 것 2): 지금은 서버에 저장만 하고 속도·아바타엔 안 씀. 상준과 문구 확정 -->
+                <ui:Label name="lead" class="onb-lead" />
+            </ui:VisualElement>
+
+            <ui:Label text="닉네임 (친구에게 보여요)" class="fig-label" />
+            <ui:VisualElement name="nickname-box" class="fig-field">
+                <ui:TextField name="nickname" />
+            </ui:VisualElement>
+            <ui:Label name="nickname-status" class="fig-status" />
+
+            <ui:Label text="키" class="fig-label" />
+            <ui:VisualElement name="height-box" class="fig-field">
+                <ui:TextField name="height" />
+                <ui:Label text="cm" class="fig-unit" />
+            </ui:VisualElement>
+
+            <ui:Label text="몸무게" class="fig-label" />
+            <ui:VisualElement name="weight-box" class="fig-field">
+                <ui:TextField name="weight" />
+                <ui:Label text="kg" class="fig-unit" />
+            </ui:VisualElement>
+            <ui:Label name="body-status" class="fig-status error-text" />
         </ui:ScrollView>
-        <ui:Button name="submit" text="시작하기" class="btn btn-primary" />
+        <ui:Button name="submit" text="다음" class="btn btn-primary btn-fig" />
     </ui:VisualElement>
 </ui:UXML>

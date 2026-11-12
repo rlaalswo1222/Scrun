@@ -47,7 +47,7 @@ namespace Scrun.App.Editor
             }
             EnsureOrientationSettings();
             EnsureFontAssets();
-            EnsureSplashImages();
+            EnsureAppImages();
             EnsureLaunchScreen();
             var theme = EnsureTheme();
             EnsurePanelSettings(theme);
@@ -91,12 +91,15 @@ namespace Scrun.App.Editor
             AssetDatabase.ImportAsset(assetPath);
         }
 
-        // 스플래시 그림(계획 0030): 그라데이션은 압축하면 띠가 보여 무압축·늘릴 때 가장자리 번짐 없게 Clamp,
+        // 앱 그림(스플래시 계획 0030, 온보딩 0031): 그라데이션은 압축하면 띠가 보여 무압축·늘릴 때 가장자리 번짐 없게 Clamp,
         // 캐릭터는 투명 배경 그대로. 둘 다 UI에 원래 크기 근처로만 그려서 밉맵 없음
-        public static void EnsureSplashImages()
+        public static void EnsureAppImages()
         {
             SetImage($"{ImageDir}/SplashGradient.png", uncompressed: true);
             SetImage($"{ImageDir}/CharacterRun.png", uncompressed: false);
+            // 온보딩 그림(계획 0031): 소개 3장(그림 칸 전체)·서 있는·스트레칭 캐릭터
+            foreach (var name in new[] { "IntroRun", "IntroTogether", "IntroRecord", "CharacterStand", "CharacterStretch" })
+                SetImage($"{ImageDir}/{name}.png", uncompressed: false);
         }
 
         static void SetImage(string path, bool uncompressed)

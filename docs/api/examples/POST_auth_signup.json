@@ -6,7 +6,8 @@
     "body": {
       "agreedIds": [
         "terms",
-        "privacy"
+        "privacy",
+        "age14"
       ],
       "nickname": "새벽러너",
       "heightCm": 175,

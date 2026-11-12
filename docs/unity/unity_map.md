@@ -219,7 +219,12 @@
   - 앱 → 섬 씬은 `MapLaunch.Store`(앱이 남김) → `MapLaunchApplier`(섬 씬이 읽어 `RouteTrack.HasRoute` 확인 뒤 코스·입장 위치 적용). 섬 씬을 혼자 Play하면 기본 코스. 앱에서 들어오면 섬 개발 도구(속도판·순간이동·폰 테스트 버튼·근처 러너 목록)는 끄고 머리 위 이름표는 남김(`RunnerLabels.showNearbyList`)
   - 확인(11/10, 로컬 서버, 에디터 Play·Game 창 390×844와 852×393): 위 흐름, 코스 4개 각각 그 도로망 코스·서버 입장 위치, 불러오는 도중 나갔다 재입장, 서버 연결 끊김 → 복구 뒤 다시 입장하기, 없는 코스 상세. 가득 참·보정 없음은 실패를 직접 넣어 확인. Figma에서 뺀 것: 코스 사진(서버 썸네일이 아직 null → 하늘색 칸 + 첫 글자), "친구가 있는 코스" 칩·"친구" 칸(친구 API 전), [모션] 3D 프리뷰·로딩 아바타(에셋 필요), 배경 흐림
   - 에디터에서 MCP로 버튼을 누를 때(`NavigationSubmitEvent`) Game 창에 포커스를 주면 앞서 누른 버튼이 다시 눌리는 일이 있었다(가설: 포커스 받은 버튼에 제출이 다시 들어감). 자동 확인 때는 포커스를 주지 않는다
-- **스플래시**(11/12, 계획 0030, Figma A-01 596:26): 앱을 켜면 `AppRoot.Init` → `SplashScreen`(파란 세로 그라데이션 위 "SCRUN" 로고·문구·메인 캐릭터, 0.4초 페이드인) → 1.4초 뒤 `AppRoot.AfterSplash`(그때 저장된 로그인을 읽어 로그인됨 → `Onboarding.Begin`, 아니면 `LoginScreen`). 서버는 기다리지 않음(토큰 재발급은 첫 서버 호출 때). 서비스 소개 A-02–A-04는 아직 없어 첫 이용도 로그인으로
+- **온보딩 A-02–A-19 Figma대로**(11/12, 계획 0031, Figma A 섹션 596:22): 스플래시 → (로그인 없고 이 기기에서 처음) `IntroScreen` A-02–A-04 → `LoginScreen` A-05(카카오 취소·오류면 `LoginScreen(failed)` A-19) → 새 회원: `TermsScreen` A-18 → `ProfileScreen` A-06 → 권한·이어폰(계획 0025) → `WeeklyGoalScreen` A-16 → `OnboardingDoneScreen` A-17 → 홈. 기존 회원·다시 실행은 지금처럼(가입 직후 표시가 남아 있으면 A-16부터)
+  - 판단은 `Onboarding.AfterSplash`·`Onboarding.Step`(순수 함수), 기기 저장은 `PlayerPrefs` `scrun.intro.seen`·`scrun.onboarding.goal`. "가입 직후"는 기존 회원 로그인·로그인이 끝날 때 지움(다음 사람이 이어받지 않게)
+  - 모양 `Resources/UI/OnboardingFig.uss`(Onboarding.uss 다음에 붙임): Body 간격 16 → 요소마다 위 간격, 그림 칸·점·Figma 입력 칸(단위 칸 안, 고른 칸 파랑 2)·동그란 체크·주간 목표 카드·오류 배너. 그림은 `UI/Images/`(소개 3장은 그림 칸째, 캐릭터 서 있는·스트레칭)
+  - 약관 목록은 서버(`GET /v1/agreements`, 필수 이용약관·개인정보·만 14세, 선택 알림)를 그대로 그림. 개인정보 줄 아래 설명은 앱(`TermsText.Detail`)
+  - 주간 목표 저장 `PUT /v1/users/me/weekly-goal`은 서버가 아직 예시 응답(지환 BL-30)
+- **스플래시**(11/12, 계획 0030, Figma A-01 596:26): 앱을 켜면 `AppRoot.Init` → `SplashScreen`(파란 세로 그라데이션 위 "SCRUN" 로고·문구·메인 캐릭터, 0.4초 페이드인) → 1.4초 뒤 `AppRoot.AfterSplash`(그때 저장된 로그인을 읽어 로그인됨 → `Onboarding.Begin`, 아니면 이 기기에서 처음이면 서비스 소개, 아니면 `LoginScreen`, 계획 0031). 서버는 기다리지 않음(토큰 재발급은 첫 서버 호출 때)
   - 배경은 노치·홈 바 여백까지 칠하려고 app-root에: 화면이 `AppScreen.RootClass`("app-root--splash")를 주면 `AppRoot`가 붙였다 뗀다. **규칙은 `App.uss`에**(화면 UXML의 USS는 그 화면 안쪽에만 닿아 app-root에 안 먹음). USS에 그라데이션이 없어 4×512 그림(`UI/Images/SplashGradient.png`, 무압축)을 늘림
   - 페이드인은 첫 `GeometryChangedEvent` 뒤에 클래스를 붙여야 돈다(같은 패널 갱신 안에서 붙이면 처음부터 불투명). 시간은 페이드 시작부터
   - 로고 글꼴 Paytone One(Google Fonts, OFL, `UI/Fonts/PaytoneOne-*`), 글꼴 에셋은 다섯 글자뿐이라 256 지도. 캐릭터 그림은 Figma에서 3배(648×900) 내보냄

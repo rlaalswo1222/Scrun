@@ -1,0 +1,32 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- A-16 주간 목표 설정(Figma 599:351, 계획 0031). 칩·날짜는 코드가 채움(WeeklyGoalScreen) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+    <ui:VisualElement class="onb">
+        <ui:VisualElement class="nav-bar">
+            <ui:VisualElement class="nav-side">
+                <ui:Button name="back" class="nav-back" />
+            </ui:VisualElement>
+            <ui:Label text="주간 목표" class="nav-title" />
+            <ui:VisualElement class="nav-side nav-side--right">
+                <ui:Button name="skip" text="건너뛰기" class="nav-action" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+            <ui:VisualElement class="head">
+                <ui:Label text="한 주에 몇 번&#10;달릴까요?" class="onb-title" />
+                <ui:Label text="매일 달리지 않아도 괜찮아요. 내 일정에 맞게 정해요" class="onb-lead" />
+            </ui:VisualElement>
+            <ui:VisualElement class="goal-card">
+                <ui:VisualElement class="goal-value">
+                    <ui:Label name="count" text="3" class="goal-number" />
+                    <ui:Label text="회 / 주" class="goal-unit" />
+                </ui:VisualElement>
+                <ui:VisualElement name="chips" class="goal-chips" />
+                <ui:VisualElement name="days" class="goal-days" />
+            </ui:VisualElement>
+            <ui:Label text="목표를 정한 날부터 7일이 한 주예요. 목표는 마이에서 언제든 바꿀 수 있고, 변경은 이번 주가 끝난 뒤부터 적용돼요." class="goal-note" />
+        </ui:ScrollView>
+        <ui:Button name="save" text="목표 정하기" class="btn btn-primary btn-fig" />
+    </ui:VisualElement>
+</ui:UXML>
