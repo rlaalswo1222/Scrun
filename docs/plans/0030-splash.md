@@ -38,7 +38,7 @@
 - 메인 캐릭터가 정해졌으므로 섬 아바타(지금 Y Bot 임시)도 이 캐릭터로 바꿀지는 따로(3D 모델·리깅 필요, 지환·상준과)
 
 ## 진행
-- 11/12 민재 Windows: 구현. `SplashScreen`·`Splash.uxml/uss`, `AppScreen.RootClass`(app-root 배경 클래스), `AppRoot.AfterSplash`, 글꼴·그림·실행 화면은 `AppSceneBuilder`(`EnsureFontAssets`·`EnsureSplashImages`·`EnsureLaunchScreen`)가 다시 만들 수 있게. 캐릭터 그림은 Figma에서 3배 PNG로 내보냄
+- 11/12 민재 Windows: 구현. `SplashScreen`·`Splash.uxml/uss`, `AppScreen.RootClass`(app-root 배경 클래스), `AppRoot.AfterSplash`, 글꼴·그림·실행 화면은 `AppSceneBuilder`(`EnsureFontAssets`·`EnsureSplashImages`(0031에서 `EnsureAppImages`로)·`EnsureLaunchScreen`)가 다시 만들 수 있게. 캐릭터 그림은 Figma에서 3배 PNG로 내보냄
 - 테스트: Unity EditMode 231개 통과(새 `SplashTests` 7개: 한 번만 넘어감, 그 사이 다른 화면이면 안 넘어감, Figma 문구, 로그인 안 됨 → 로그인, 로그인됨 → 로그인 아님, 시간)
 - 에디터 Play: Figma와 나란히 같음, 페이드 진행, 1.4초 뒤 다음 화면, 로그인된 계정은 홈까지
 - `/code-review`(medium) 10건 중 7건 반영: 페이드가 안 돌 수 있음 → 첫 배치 뒤 클래스, 다 보이는 시간 0.6초 → 1.4초, 로그인을 시작 때 읽음 → 끝날 때, 아이패드 실행 화면, 분기 테스트, 색 변수, 로고 지도 256. 안 고친 것: 설정 저장이 전체 저장(값이 다를 때 한 번만, 실행 뒤 git 확인), 관련 없는 파일(커밋 안 함)

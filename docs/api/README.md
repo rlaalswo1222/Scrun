@@ -15,7 +15,7 @@
 1. 앱이 카카오 iOS SDK로 로그인해 카카오 토큰을 받는다
 2. `POST /v1/auth/kakao`로 보내면 서버가 카카오 "액세스 토큰 정보 조회"로 확인한다(우리 앱(`KAKAO_APP_ID`)에서 발급된 토큰만 받음. 로컬 개발·테스트 서버는 가짜 카카오: `k_123` → 카카오 회원번호 123)
    - 이미 가입한 사람: `accessToken`(1시간) + `refreshToken`(30일)
-   - 처음: `isNewUser: true` + 가입용 토큰(30분) → `POST /v1/auth/signup`(약관 동의·닉네임·키·몸무게·시간대) → 우리 토큰. 같은 가입을 다시 보내면(응답 유실·두 번 누름) 새 계정 없이 그 계정 토큰
+   - 처음: `isNewUser: true` + 가입용 토큰(30분) → `POST /v1/auth/signup`(약관 동의 — 필수는 이용약관·개인정보·만 14세(11/12 계획 0031), 목록은 `GET /v1/agreements` — ·닉네임·키·몸무게·시간대) → 우리 토큰. 같은 가입을 다시 보내면(응답 유실·두 번 누름) 새 계정 없이 그 계정 토큰
    - 로그인·가입에 `deviceId`(iOS `identifierForVendor`)를 같이 보낸다. 같은 기기의 예전 로그인은 폐기, 살아 있는 로그인은 사용자당 5개까지(넘으면 오래된 것부터 폐기)
 3. 이후 요청 헤더: `Authorization: Bearer {accessToken}`
 - 로그인 없이 되는 API: `POST /v1/auth/kakao`, `GET /v1/agreements`, `POST /v1/auth/refresh`. 가입용 토큰으로 되는 API: `POST /v1/auth/signup`, `GET /v1/users/nickname/check`. 나머지는 전부 `accessToken` 필요. 실시간 방(WebSocket)은 맵 입장 때 받는 그 맵 전용 토큰(`realtime.token`, [realtime.md](realtime.md))
