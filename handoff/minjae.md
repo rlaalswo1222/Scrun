@@ -15,13 +15,13 @@
 - 시험 도구 `backend/scripts/fake_runner.py`(가짜 카카오 서버에 가짜 계정으로 달림, 들어옴·나감·왕복 지연 찍음)
 - 로컬 8001 서버는 11/11 새 코드로 다시 켬(Claude 세션 백그라운드, 세션 끝나면 꺼짐 → 그땐 `cd backend; ../.venv/Scripts/python -m uvicorn app.main:app --port 8001`)
 - **오라클 서버 11/11 develop(8b7468f) 배포**: 그전엔 11/09 #20에 멈춰 있었음 → 마이그레이션 3개(course_entries·seed_courses·occupancy_indexes) 함께 돎. `wss://161-118-211-155.sslip.io/v1/realtime` 토큰 없이 붙으면 4401(Caddy가 WebSocket 넘김 확인), uvicorn 하나라 메모리 방이 안 나뉨. Claude 배포는 민재가 "해 줘"라고 해야 권한 검사 통과
-- **11/11 에디터 Play 전체 흐름**(Claude가 UI를 직접 눌러 봄): 보정 → 입장 → 설정 → HUD → 가짜 센서로 아바타 → 다른 러너·간격·나감 알림까지 됨(계획 0029 "진행"). 나온 것 4개를 `fix/run-together-editor`(PR, #41 브랜치 위에)에서 고침: 에디터 `localhost` 실시간 안 붙음(한글 컴퓨터 이름 Mono 버그 → `127.0.0.1`, 이 PC 저장값도 `127.0.0.1:8001`), `leave` 뒤 2분 동안 인원에 남음(→ 자리 지움), 맵에서 나온 직후 상세가 나를 셈(→ 목록·상세는 나 빼고), 섬 시험용 고스트(→ 고스트·녹화기 끔). 서버 202·EditMode 224 통과, `/code-review` 3건 반영. **오라클 서버에도 다시 배포해야 인원 고친 게 들어감**(머지 뒤)
+- **11/11 에디터 Play 전체 흐름**(Claude가 UI를 직접 눌러 봄): 보정 → 입장 → 설정 → HUD → 가짜 센서로 아바타 → 다른 러너·간격·나감 알림까지 됨(계획 0029 "진행"). 나온 것 4개를 `fix/run-together-editor`(PR, #41 브랜치 위에)에서 고침: 에디터 `localhost` 실시간 안 붙음(한글 컴퓨터 이름 Mono 버그 → `127.0.0.1`, 이 PC 저장값도 `127.0.0.1:8001`), `leave` 뒤 2분 동안 인원에 남음(→ 자리 지움), 맵에서 나온 직후 상세가 나를 셈(→ 목록·상세는 나 빼고), 섬 시험용 고스트(→ 고스트·녹화기 끔). 서버 202·EditMode 224 통과, `/code-review` 3건 반영. #41·#42 머지, **11/12 오라클 develop(5bc0a6a) 다시 배포**(openapi `runnersNow` 새 설명, `wss` 토큰 없이 4401 확인)
 - 에디터에 로그인된 로컬 계정 닉네임이 테스트로 넣은 욕설이라 다른 러너 화면에 그대로 뜸(로컬 DB에만) → 시연 전에 바꾸거나 API 서버 창 "저장된 로그인 지우기" 뒤 k_123으로
 - 에디터 UI를 코드로 누를 땐 `NavigationSubmitEvent`를 `panel.visualTree.SendEvent`로(`e.target = 버튼`). 버튼에 바로 `SendEvent`는 가끔 안 먹음
 - 같은 날 서버에서 개인 프로젝트 `system-server`(8100, `~/code_assist`, Caddy 블록)를 걷어 냄 → 서버 `~/scrun` git 깨끗, 다음 `update.sh`가 Caddyfile을 덮어써도 문제없음
 
 ## 다음
-1. **0029 마무리**: ~~에디터 Play~~(11/11 됨) → `fix/run-together-editor` PR 머지 → 오라클 다시 배포 → 아이폰: `ClientWebSocket`이 IL2CPP에서 붙는지(가설), 손에 들고 걸어 아바타, 왕복 지연 와이파이·LTE 기록(`docs/api/realtime.md` "지연 실측", ADR-0010 결과)
+1. **0029 마무리**: ~~에디터 Play~~(11/11 됨) → ~~#42 머지·오라클 다시 배포~~(11/12) → 아이폰: `ClientWebSocket`이 IL2CPP에서 붙는지(가설), 손에 들고 걸어 아바타, 왕복 지연 와이파이·LTE 기록(`docs/api/realtime.md` "지연 실측", ADR-0010 결과)
 2. **지환에게**: 카운트다운 끝에서 `MapScreen.StartRunning()`(지금은 `OnSetupDone`이 임시로 바로 부름, 그 줄 지우기), `RunnerController`에 `Driven`·`SetSpeedSource`, `RunnerTag.Kind.Remote`를 넣음(#39 `RunnerAnimator`와는 안 겹침). 상준에게 HUD·토스트 모양(D-10·D-11)
 3. 계획 0024 6번 러닝머신 확인(헬스장 날짜 정하기) + 미룬 책상 확인 2개(권한 거부 뒤 가속도, 10분 발열). 헬스장에서: 걷기 절편 "2 포함 대 4 이상"·키로 조정 비교(키가 다른 사람), 걸음 없음 문턱 0.12(S22 값) 아이폰으로 다시
 - 시연 흐름(에디터)은 민재가 직접 돌려 봄(Claude가 제안하지 않음)
