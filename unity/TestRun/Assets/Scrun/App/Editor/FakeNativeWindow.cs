@@ -14,6 +14,8 @@ namespace Scrun.App.Editor
         static readonly string[] StatusLabels = { "안 물어봄", "허용", "거부", "제한(못 바꿈)" };
         static readonly string[] AnswerLabels = { "허용", "거부" };
         static readonly string[] HeadphoneLabels = { "없음", "모션 없는 이어폰", "에어팟(모션 있음)" };
+        // CameraOutcome 순서
+        static readonly string[] CameraLabels = { "찍음", "닫음(X)", "시간 초과", "권한 없음(권한 상태가 우선)", "카메라 없음" };
 
         static string KindLabel(PermissionKind k) => k switch
         {
@@ -125,6 +127,12 @@ namespace Scrun.App.Editor
             }
             cfg.kakaoCancels = EditorGUILayout.Toggle("취소한 것처럼", cfg.kakaoCancels);
             EditorGUILayout.HelpBox("로컬 서버(가짜 카카오)에서 k_ 뒤 숫자가 카카오 회원번호. 처음 보는 숫자면 가입 화면으로 갑니다.", MessageType.None);
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("계기판 카메라 (E-03)", EditorStyles.boldLabel);
+            cfg.cameraResult = (CameraOutcome)EditorGUILayout.Popup("셔터 결과", (int)cfg.cameraResult, CameraLabels);
+            cfg.cameraDelaySec = EditorGUILayout.Slider("누르기까지(초)", cfg.cameraDelaySec, 0f, 10f);
+            EditorGUILayout.HelpBox("권한 거부는 위 '카메라' 권한 상태로 흉내 냅니다. 찍음이면 노출만 다른 예시 사진을 임시 폴더에 씁니다(설명용 그림).", MessageType.None);
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("속도 센서", EditorStyles.boldLabel);

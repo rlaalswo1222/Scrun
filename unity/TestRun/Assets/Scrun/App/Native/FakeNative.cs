@@ -182,6 +182,10 @@ namespace Scrun.App
         public string kakaoToken = "k_123"; // 로컬 서버 가짜 카카오: k_ 뒤 숫자가 카카오 회원번호(새 사람이면 다른 숫자)
         public bool kakaoCancels;           // 카카오 로그인 화면에서 사용자가 취소한 것처럼
 
+        // 계기판 카메라(FakeCamera, 계획 0033)
+        public CameraOutcome cameraResult = CameraOutcome.Taken; // E-03에서 사용자가 한 일(권한 거부는 카메라 권한 상태로)
+        public float cameraDelaySec = 1.5f; // 화면을 보고 셔터를 누르기까지
+
         // 속도 센서(FakeSpeedSensor)
         public bool phoneData = true;       // 폰 가속도가 들어옴. 끄면 2초 뒤 끊김
         public bool airPodsData = true;     // 에어팟 데이터가 들어옴(에어팟 연결 + 헤드폰 모션 허용일 때만 의미)
@@ -210,6 +214,7 @@ namespace Scrun.App
             if (requestDelaySec < 0f) requestDelaySec = 0f;
             if (string.IsNullOrEmpty(headphoneName)) headphoneName = "AirPods Pro";
             if (string.IsNullOrEmpty(kakaoToken)) kakaoToken = "k_123";
+            cameraDelaySec = Mathf.Max(0f, cameraDelaySec);
             sensorStartSec = Mathf.Max(0f, sensorStartSec);
             detectDelaySec = Mathf.Max(0f, detectDelaySec);
             startKmh = Mathf.Clamp(startKmh, 0f, 20f);

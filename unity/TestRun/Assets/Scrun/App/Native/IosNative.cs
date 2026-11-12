@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
@@ -7,7 +8,7 @@ namespace Scrun.App
     // 아이폰 진짜 구현. 실제 일은 Swift(Assets/Plugins/iOS/Scrun*.swift)가 하고, 여기서는 이름·JSON만 오간다.
     // 통로(INativeChannel)만 바꿔 끼우면 에디터 테스트에서도 같은 코드가 돈다(IosNativeTests).
     // 이름·값 문자열은 Swift ScrunBridge.swift와 짝이다. 바꾸면 양쪽을 같이 고친다.
-    internal sealed class IosNative : IPermissions, IHeadphones, ISecureStore, IKakaoLogin
+    internal sealed class IosNative : IPermissions, IHeadphones, ISecureStore, IKakaoLogin, ICamera
     {
         readonly NativeBridge bridge;
 
@@ -82,6 +83,29 @@ namespace Scrun.App
         // 카카오 access 토큰, 사용자가 취소하면 null(Swift가 null을 줌)
         public async Awaitable<string> LoginAsync() => (string)await bridge.CallAsync("kakao.login");
 
+        // ---- ICamera (계기판 촬영 E-03, 계획 0033) ----
+
+        public async Awaitable<CameraShot> ShootAsync(CameraShootOptions options = null)
+        {
+            options ??= new CameraShootOptions();
+            var v = await bridge.CallAsync("camera.shoot", new
+            {
+                timeLimitSec = options.TimeLimitSec,
+                guideLabel = options.GuideLabel,
+                hint = options.Hint,
+                biases = options.ExposureBiases,
+            });
+            return ParseShot(v);
+        }
+
+        // Swift는 자기 카메라 폴더 안의 파일만 지운다
+        public void Discard(CameraShot shot)
+        {
+            var paths = shot?.Photos.Where(p => !string.IsNullOrEmpty(p?.Path)).Select(p => p.Path).ToArray();
+            if (paths == null || paths.Length == 0) return;
+            bridge.Query("camera.discard", new { paths });
+        }
+
         // ---- 이벤트 ----
 
         void OnEvent(string name, JObject e)
@@ -127,6 +151,29 @@ namespace Scrun.App
             "denied" => PermissionStatus.Denied,
             "restricted" => PermissionStatus.Restricted,
             _ => throw new NativeException("모르는 권한 상태: " + s),
+        };
+
+        // {"outcome": "taken", "photos": [{"path": "...", "bias": -1.5}, ...]}
+        internal static CameraShot ParseShot(JToken v)
+        {
+            if (v is not JObject o) throw new NativeException("카메라 답 모양이 다릅니다: " + v);
+            var shot = new CameraShot { Outcome = ParseOutcome((string)o["outcome"]) };
+            if (o["photos"] is JArray photos)
+                foreach (var p in photos)
+                    shot.Photos.Add(new CameraPhoto { Path = (string)p["path"], ExposureBias = (float?)p["bias"] ?? 0f });
+            if (shot.Outcome == CameraOutcome.Taken && shot.Photos.Count == 0)
+                throw new NativeException("찍었다는데 사진이 없습니다.");
+            return shot;
+        }
+
+        internal static CameraOutcome ParseOutcome(string s) => s switch
+        {
+            "taken" => CameraOutcome.Taken,
+            "cancelled" => CameraOutcome.Cancelled,
+            "timedOut" => CameraOutcome.TimedOut,
+            "noPermission" => CameraOutcome.NoPermission,
+            "unavailable" => CameraOutcome.Unavailable,
+            _ => throw new NativeException("모르는 촬영 결과: " + s),
         };
 
         internal static HeadphoneStatus ParseHeadphones(string s) => s switch
