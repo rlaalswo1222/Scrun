@@ -17,13 +17,32 @@ namespace Scrun.App
         Earphone,     // A-09·A-10
     }
 
+    // 스플래시(A-01) 다음 화면
+    public enum StartStep
+    {
+        Onboarding, // 로그인됨 → Onboarding.Begin
+        Intro,      // 로그인 없고 이 기기에서 소개를 안 봄 → A-02–A-04
+        Login,      // 로그인 없음 → A-05
+    }
+
+    // Onboarding.Begin이 보여 줄 곳
+    public enum OnboardingStep
+    {
+        Permissions, // A-07부터
+        WeeklyGoal,  // 새로 가입했고 권한·이어폰은 끝남 → A-16 → A-17
+        Home,
+    }
+
     // 가입 뒤·앱 시작 때의 권한 안내(A-07) → (모션 거부면 I-05) → 이어폰(A-09·A-10) → 홈 흐름(계획 0025).
+    // 새로 가입한 사람은 이어폰 다음에 주간 목표(A-16) → 온보딩 완료(A-17) → 홈(계획 0031). 가입 직후만이라 그 표시도 기기에 저장
     // 이어폰 화면까지 끝냈는지는 이 기기에 저장한다(중간에 앱을 끄거나 설정 앱을 다녀오며 앱이 다시 켜져도 이어지게).
     // 끝낸 뒤에는 권한을 "나중에" 미뤘어도 다시 보여 주지 않는다(사용자가 고른 것). 빠진 모션 권한은 맵 입장 때 BeforeMap이 잡는다.
     // 판단은 순수 함수로 두고 화면과 떼어 테스트한다.
     public static class Onboarding
     {
         const string DoneKey = "scrun.onboarding.done";
+        const string IntroKey = "scrun.intro.seen";             // 서비스 소개(A-02–A-04)를 이 기기에서 봤는지
+        const string GoalPendingKey = "scrun.onboarding.goal";  // 가입 직후라 주간 목표·완료가 남았는지
 
         // A-07 "권한 설정하기"가 묻는 순서(Figma: 4개를 한 번에, 계획 0025 정한 것 1)
         public static readonly PermissionKind[] AskOrder =
@@ -48,22 +67,65 @@ namespace Scrun.App
             _ => MotionGate.Blocked,
         };
 
-        // 가입이 끝났을 때·로그인된 채 앱을 켰을 때: 권한 안내부터 또는 바로 홈
-        public static void Begin(Navigator nav)
+        // 스플래시 다음(계획 0030·0031): 로그인됨 → 온보딩·홈, 처음 켠 기기 → 소개, 아니면 로그인
+        public static StartStep AfterSplash(bool loggedIn, bool introSeen) =>
+            loggedIn ? StartStep.Onboarding : introSeen ? StartStep.Login : StartStep.Intro;
+
+        // 권한·이어폰을 안 끝냈으면 A-07부터, 끝냈고 가입 직후면 A-16부터, 아니면 홈
+        public static OnboardingStep Step(bool done, bool goalPending) =>
+            NeedsOnboarding(done) ? OnboardingStep.Permissions
+            : goalPending ? OnboardingStep.WeeklyGoal
+            : OnboardingStep.Home;
+
+        public static bool IntroSeen => PlayerPrefs.GetInt(IntroKey, 0) == 1;
+
+        // 소개를 끝까지 보거나 건너뜀 → 다음부터는 로그인부터
+        public static void MarkIntroSeen()
         {
-            if (NeedsOnboarding(IsDone)) nav.StartFlow(new PermissionsScreen());
-            else nav.ShowTabs(AppTab.Home);
+            PlayerPrefs.SetInt(IntroKey, 1);
+            PlayerPrefs.Save();
         }
 
-        // 이어폰 화면이 끝나면
+        // 가입이 끝났을 때(newUser)·로그인된 채 앱을 켰을 때·기존 회원 로그인: 권한 안내부터, 주간 목표부터 또는 바로 홈
+        public static void Begin(Navigator nav, bool newUser = false)
+        {
+            if (newUser) SetGoalPending(true);
+            switch (Step(IsDone, GoalPending))
+            {
+                case OnboardingStep.Permissions: nav.StartFlow(new PermissionsScreen()); break;
+                case OnboardingStep.WeeklyGoal: nav.StartFlow(new WeeklyGoalScreen()); break;
+                default: nav.ShowTabs(AppTab.Home); break;
+            }
+        }
+
+        // 이어폰 화면이 끝나면: 가입 직후면 주간 목표(A-16), 아니면 홈
         public static void Finish(Navigator nav)
         {
             PlayerPrefs.SetInt(DoneKey, 1);
             PlayerPrefs.Save();
+            if (GoalPending) nav.Push(new WeeklyGoalScreen());
+            else nav.ShowTabs(AppTab.Home);
+        }
+
+        // "가입 직후" 표시는 기기에 남으므로 다른 사람이 이어받지 않게 지운다:
+        // 기존 회원이 로그인할 때(LoginScreen)·로그인이 끝났을 때(로그아웃·만료, AppRoot.GoToLogin)
+        public static void ForgetNewUser() => SetGoalPending(false);
+
+        // 온보딩 완료(A-17) "홈으로"
+        public static void FinishGoal(Navigator nav)
+        {
+            SetGoalPending(false);
             nav.ShowTabs(AppTab.Home);
         }
 
         static bool IsDone => PlayerPrefs.GetInt(DoneKey, 0) == 1;
+        static bool GoalPending => PlayerPrefs.GetInt(GoalPendingKey, 0) == 1;
+
+        static void SetGoalPending(bool on)
+        {
+            PlayerPrefs.SetInt(GoalPendingKey, on ? 1 : 0);
+            PlayerPrefs.Save();
+        }
 
         // 지금 모션 권한. 아이폰 구현이 없는 빌드(계획 0018의 5번 전)에서는 Native가 예외를 던진다 —
         // 허용으로 보고 넘어가지 않는다(Native.cs: 몰래 허용을 주면 권한 없이 달리기까지 가 버림)

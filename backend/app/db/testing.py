@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker
 
 from ..core.config import settings  # noqa: F401  (.env 읽기)
 from ..core.kakao import FakeKakao, get_kakao
-from .session import get_db
+from .session import get_db, get_sessionmaker
 
 BACKEND = Path(__file__).resolve().parents[2]
 TEST_DATABASE_URL = os.environ.get(
@@ -42,6 +42,7 @@ class TestDatabase:
                 db.close()
 
         self.app.dependency_overrides[get_db] = _get_db
+        self.app.dependency_overrides[get_sessionmaker] = lambda: self.Session
         self.app.dependency_overrides[get_kakao] = FakeKakao
         return self
 
@@ -65,5 +66,6 @@ class TestDatabase:
 
     def stop(self) -> None:
         self.app.dependency_overrides.pop(get_db, None)
+        self.app.dependency_overrides.pop(get_sessionmaker, None)
         self.app.dependency_overrides.pop(get_kakao, None)
         self.engine.dispose()

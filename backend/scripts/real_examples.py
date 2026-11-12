@@ -31,6 +31,9 @@ def _clean(j):
         for k, v in PLACEHOLDER.items():
             if data.get(k):
                 data[k] = v
+        rt = data.get("realtime")
+        if isinstance(rt, dict) and rt.get("token"):  # 실시간 토큰도 다시 만들 때마다 바뀜
+            rt["token"] = "eyJhbGciOi...(realtime)"
         if data.get("createdAt"):  # 저장 시각(보정 등)도 다시 만들 때마다 바뀌지 않게
             data["createdAt"] = FIXED_META["timestamp"]
     return j
@@ -57,7 +60,7 @@ def collect() -> dict:
         rec("GET", "/v1/users/nickname/check", None, "Bearer {accessToken 또는 signupToken}",
             c.get("/v1/users/nickname/check", params={"nickname": "새벽러너"},
                   headers={"Authorization": f"Bearer {first['signupToken']}"}))
-        body = {"agreedIds": ["terms", "privacy"], "nickname": "새벽러너", "heightCm": 175, "weightKg": 70,
+        body = {"agreedIds": ["terms", "privacy", "age14"], "nickname": "새벽러너", "heightCm": 175, "weightKg": 70,
                 "timezone": "Asia/Seoul", "deviceId": DEVICE_ID}
         tok = rec("POST", "/v1/auth/signup", body, "Bearer {signupToken}",
                   c.post("/v1/auth/signup", json=body, headers={"Authorization": f"Bearer {first['signupToken']}"}))

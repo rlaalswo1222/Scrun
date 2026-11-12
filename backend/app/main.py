@@ -17,6 +17,7 @@ from .core.envelope import (
 )
 from .core.errors import ApiError
 from .core.kakao import close_client as close_kakao_client
+from .realtime import router as realtime
 from .routers import auth, courses, events, friends, progress, runs, users, verification
 
 DESCRIPTION = """
@@ -44,3 +45,4 @@ app.add_exception_handler(Exception, unhandled_error_handler)
 
 for r in (auth, users, courses, runs, verification, progress, friends, events):
     app.include_router(r.router)
+app.include_router(realtime.router)  # WebSocket /v1/realtime(계획 0029)

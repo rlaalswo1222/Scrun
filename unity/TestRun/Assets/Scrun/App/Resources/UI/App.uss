@@ -46,6 +46,14 @@
     background-color: rgba(0, 0, 0, 0);
 }
 
+/* 스플래시(A-01, 계획 0030, AppScreen.RootClass): 위 #2F6FE4(sky/700) → 아래 #9CC8FD. USS에 그라데이션이 없어
+   세로 그라데이션 그림(4×512)을 늘려 깐다. app-root에 칠해 노치·홈 바 여백까지(화면 USS 규칙은 app-root에 안 닿아 여기 둠) */
+.app-root--splash {
+    background-color: var(--color-primary); /* 그림을 못 불러와도 위쪽 색. 아이폰 실행 화면 색(AppSceneBuilder.LaunchColor)도 이 값 */
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/SplashGradient.png");
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
 .safe-area {
     flex-grow: 1;
 }

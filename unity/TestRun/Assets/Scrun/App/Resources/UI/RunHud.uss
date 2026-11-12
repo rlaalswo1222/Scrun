@@ -1,0 +1,145 @@
+/* 달리는 중 기본 HUD(가로). 계획 0027. 색·글자 크기는 App.uss 변수. 상준이 Figma D-10·D-11과 맞춰 다듬을 자리 */
+
+.run-hud {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.hud-card {
+    position: absolute;
+    padding: var(--space-2) var(--space-3);
+    border-radius: 14px;
+    background-color: var(--color-glass-dark);
+}
+
+/* 윗줄(코스 이름) 아래 */
+.hud-stats {
+    left: var(--space-6);
+    top: 40px;
+    min-width: 168px;
+}
+
+.hud-row {
+    flex-direction: row;
+    align-items: flex-end;
+}
+
+.hud-stat {
+    flex-direction: row;
+    align-items: flex-end;
+}
+
+.hud-stat--time {
+    margin-left: var(--space-4);
+}
+
+.course .hud-big {
+    font-size: var(--font-size-heading);
+    color: var(--color-surface);
+    padding: 0;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course .hud-unit {
+    font-size: var(--font-size-caption);
+    color: var(--color-surface);
+    margin: 0 0 3px 2px;
+    padding: 0;
+}
+
+.hud-goal-bar {
+    height: 4px;
+    margin-top: 6px;
+    border-radius: 2px;
+    background-color: rgba(255, 255, 255, 0.25);
+    overflow: hidden;
+}
+
+.hud-goal-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 2px;
+    background-color: var(--color-lime);
+}
+
+.course .hud-goal-label {
+    font-size: var(--font-size-caption);
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 4px;
+    padding: 0;
+}
+
+.hud-gaps {
+    left: var(--space-6);
+    bottom: var(--space-4);
+    min-width: 168px;
+}
+
+.hud-gap-row {
+    flex-direction: row;
+    align-items: center;
+    height: 22px;
+}
+
+.course .hud-gap-side {
+    font-size: var(--font-size-caption);
+    color: var(--color-lime);
+    width: 18px;
+    padding: 0;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.course .hud-gap-name {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-surface);
+    flex-grow: 1;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0;
+}
+
+.course .hud-gap-value {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-surface);
+    margin-left: var(--space-3);
+    padding: 0;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.hud-top-center {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--space-3);
+    align-items: center;
+}
+
+.course .hud-toast,
+.course .hud-net {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-surface);
+    padding: 6px var(--space-3);
+    border-radius: 16px;
+    background-color: var(--color-glass-dark);
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: 0.25s;
+}
+
+.course .hud-net {
+    margin-top: var(--space-2);
+    color: var(--color-warn);
+}
+
+.course .hud-dev {
+    position: absolute;
+    right: var(--space-6);
+    bottom: var(--space-2);
+    font-size: var(--font-size-caption);
+    color: rgba(255, 255, 255, 0.75);
+    padding: 0;
+}

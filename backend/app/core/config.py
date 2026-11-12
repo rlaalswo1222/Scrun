@@ -35,6 +35,7 @@ class Settings:
     kakao_app_id: Optional[int]
     access_token_ttl_s: int = 3600
     signup_token_ttl_s: int = 1800
+    realtime_token_ttl_s: int = 6 * 3600  # 맵 하나에 붙는 실시간 토큰(계획 0029)
     refresh_token_ttl_s: int = 30 * 24 * 3600
     refresh_reuse_grace_s: int = 30  # 교체 직후 같은 refresh 토큰 재시도 허용(응답 유실)
     max_sessions_per_user: int = 5  # 살아 있는 로그인(기기) 수 상한

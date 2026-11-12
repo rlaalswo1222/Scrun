@@ -12,14 +12,15 @@
      - 받는 법: Claude in Chrome(VS Code 패널에서 연결) → mixamo.com 페이지에서 JS로 내부 API(`/api/v1/products`, `/animations/export`, `/characters/{id}/monitor`, 헤더 `X-Api-Key: mixamo2` + localStorage 토큰) 호출 → a 태그 클릭으로 다운로드. Chrome "자동 다운로드" 허용 필요. 결과에 서명 URL이 나오면 차단되니 URL은 출력하지 말 것
      - Y Bot id `4f5d21e1-4ccc-41f1-b35b-fb2547bd8493`. 계정 기본 캐릭터는 Remy(안 바꿈). Downloads에 사용자가 받은 `Remy.fbx` 있음
      - Mixamo In Place가 Sprint엔 적용 안 됨 → `MixamoImportSetup`(AssetPostprocessor)에서 XZ를 루트 모션으로 빼고 `applyRootMotion=false`로 버림. 모든 동작 제자리 확인(엉덩이 ±4cm)
-     - Blend Tree 기준점은 `GaitAnalysis`가 클립을 240Hz로 샘플링해 "디딘 발의 엉덩이 대비 속도 중앙값"으로 자동 측정(몸통 이동량 기준은 틀렸음). 현재 Walking 3.4 / Jogging 5.2 / Slow Run 9.3 / Standard Run 13.6 / Fast Run 17.6 / Sprint 18.2 km/h. 최고 기준점 초과 시 재생 속도 배율(`RunnerAnimator`)
+     - Blend Tree 기준점은 `GaitAnalysis`가 클립을 240Hz로 샘플링해 "디딘 발의 엉덩이 대비 속도 중앙값"으로 자동 측정(몸통 이동량 기준은 틀렸음). 현재(11/11) Walking 3.5 / Jogging 6.0 / Slow Run 11.4 / Standard Run 15.6 / Fast Run 18.2 / Sprint 18.8 km/h. 단, 실행 중 Animator의 실제 발 속도는 이와 다르다(걷기 6.2 km/h, 아래 발 속도 표)
      - Jogging 원본엔 걸음 주기 3번 → 왼발 착지~다음 왼발 착지 1주기로 자동 자름. 모든 클립 cycleOffset = 왼발 착지(박자 맞춤)
      - 메뉴: Scrun → Build Test Track Scene 하나로 Animator까지 생성 (캐릭터 새로 넣었을 땐 먼저 Reimport Mixamo Characters)
      - 바닥 기준 무늬: 트랙 1m 가로줄·흰 차선, 잔디 1m 체커, 5m 기둥(50m마다 높게). 텍스처는 빌더가 절차 생성(`Assets/Scrun/Textures`)
-     - `FootSlipProbe`(개발용): 디딘 발 미끄러짐 중앙값/평균. 결과(중앙값): 기준점에서 ±6% 이내, 기준점 사이 4.5 km/h 19%·7 km/h 21% (조깅~Slow Run 사이 간격이 넓음 — 러닝머신 주 사용 구간). 평균은 조깅·Slow Run 클립 자체가 디딤 중 미끄러져 큼
-     - **남은 개선**: ① 기준점 사이 속도 보정 곡선(파라미터→실제 발 속도 측정 후 역보정) 또는 6~8 km/h 동작 추가 ② 발 IK 고정(Animation Rigging)으로 클립 자체 미끄러짐 제거
+     - `FootSlipProbe`(개발용): 땅에 닿은 점(발목·발끝 네 점 중 가장 낮은 것, 11/11부터. 그전엔 발목만이라 구르는 동작을 미끄러짐으로 셌다)의 땅 기준 앞뒤 속도 중앙값/평균
+     - **발 속도 표(11/11, 계획 0027)**: 블렌드 값마다 실행 중 Animator의 실제 발 속도를 재서 `Assets/Scrun/App/Resources/RunnerGait.asset`에 두고, `RunnerAnimator`가 재생 속도 = 속도 / 그 블렌드의 발 속도로 맞춘다. 걷는 동안엔 서 있기와 섞지 않고(0.5 km/h 넘으면 걷기, 0.3 아래면 서 있기) 느리면 걷기를 느리게 튼다(0.05배까지). 멈추면 블렌드가 서 있기로 내려오는 동안 동작을 그 자리에 세운다(다리만 달리지 않게, 플레이어·봇·고스트 모두). 미끄러짐 1에서 20 km/h 모두 5% 이내(전: 1 km/h 80%, 8 km/h 28%). 표는 Play 중 메뉴 Scrun → Measure Runner Gait(몇 초, Build Runner Animator로 기준점이 바뀌면 다시). 원본 `data/avatar/`
+     - **남은 개선**: 발 IK 고정(Animation Rigging)으로 클립 자체 미끄러짐 제거, 1 km/h 근처는 걷기를 0.16배로 트는 것이라 느린 화면처럼 보임(새 아바타 때 느린 걷기 동작), 클립 분석값과 실행 중 발 속도가 다른 원인(미확인)
      - Unity `PlayerSettings.runInBackground = true`로 바꿈(꺼져 있으면 Unity 창이 비활성일 때 Play가 멈춰 MCP 테스트 불가). 모바일 빌드엔 영향 없음
-   - **마지막에 고칠 것(사용자 요청)**: ① 0~3 km/h(Idle↔Walk 블렌드)에서 발이 심하게 미끄러져 보임 ② 20 km/h에서 발 동작이 이상함(최고 기준점 Sprint 18.2 초과 구간 — 재생 배율·Fast Run/Sprint 블렌드 확인)
+   - **마지막에 고칠 것(사용자 요청)**: ① 0에서 3 km/h 발 미끄러짐 → 11/11 발 속도 표로 고침(서 있기와 안 섞음) ② 20 km/h 발 동작 → 미끄러짐은 0%, Fast Run·Sprint가 섞이는 모양은 눈으로 다시 확인
    - **맵 1단계 완료 (2026-10-26)**: 가상 코스 "노을 호수 코스"(사용자 선택: 가상 코스 직접 제작 + 세미 리얼). 설계 미리보기 `docs/unity/course_preview.html` (아티팩트 https://claude.ai/artifact/2ASihiWwj1VehRnZyqCoBo, 사용자 브라우저에선 안 열렸음)
      - 메뉴 Scrun → Build Course Scene → `Assets/Scrun/Scenes/Course01_SunsetLake.unity` (3000 m 루프, 반시계)
      - `Track`(추상) ← `CircleTrack`, `SplineTrack`(자체 centripetal Catmull-Rom + 0.5m 누적거리표). Unity Splines 패키지는 비활성 창에서 임포트가 안 돼 제거하고 자체 구현
@@ -218,6 +219,17 @@
   - 앱 → 섬 씬은 `MapLaunch.Store`(앱이 남김) → `MapLaunchApplier`(섬 씬이 읽어 `RouteTrack.HasRoute` 확인 뒤 코스·입장 위치 적용). 섬 씬을 혼자 Play하면 기본 코스. 앱에서 들어오면 섬 개발 도구(속도판·순간이동·폰 테스트 버튼·근처 러너 목록)는 끄고 머리 위 이름표는 남김(`RunnerLabels.showNearbyList`)
   - 확인(11/10, 로컬 서버, 에디터 Play·Game 창 390×844와 852×393): 위 흐름, 코스 4개 각각 그 도로망 코스·서버 입장 위치, 불러오는 도중 나갔다 재입장, 서버 연결 끊김 → 복구 뒤 다시 입장하기, 없는 코스 상세. 가득 참·보정 없음은 실패를 직접 넣어 확인. Figma에서 뺀 것: 코스 사진(서버 썸네일이 아직 null → 하늘색 칸 + 첫 글자), "친구가 있는 코스" 칩·"친구" 칸(친구 API 전), [모션] 3D 프리뷰·로딩 아바타(에셋 필요), 배경 흐림
   - 에디터에서 MCP로 버튼을 누를 때(`NavigationSubmitEvent`) Game 창에 포커스를 주면 앞서 누른 버튼이 다시 눌리는 일이 있었다(가설: 포커스 받은 버튼에 제출이 다시 들어감). 자동 확인 때는 포커스를 주지 않는다
+- **온보딩 A-02–A-19 Figma대로**(11/12, 계획 0031, Figma A 섹션 596:22): 스플래시 → (로그인 없고 이 기기에서 처음) `IntroScreen` A-02–A-04 → `LoginScreen` A-05(카카오 취소·오류면 `LoginScreen(failed)` A-19) → 새 회원: `TermsScreen` A-18 → `ProfileScreen` A-06 → 권한·이어폰(계획 0025) → `WeeklyGoalScreen` A-16 → `OnboardingDoneScreen` A-17 → 홈. 기존 회원·다시 실행은 지금처럼(가입 직후 표시가 남아 있으면 A-16부터)
+  - 판단은 `Onboarding.AfterSplash`·`Onboarding.Step`(순수 함수), 기기 저장은 `PlayerPrefs` `scrun.intro.seen`·`scrun.onboarding.goal`. "가입 직후"는 기존 회원 로그인·로그인이 끝날 때 지움(다음 사람이 이어받지 않게)
+  - 모양 `Resources/UI/OnboardingFig.uss`(Onboarding.uss 다음에 붙임): Body 간격 16 → 요소마다 위 간격, 그림 칸·점·Figma 입력 칸(단위 칸 안, 고른 칸 파랑 2)·동그란 체크·주간 목표 카드·오류 배너. 그림은 `UI/Images/`(소개 3장은 그림 칸째, 캐릭터 서 있는·스트레칭)
+  - 약관 목록은 서버(`GET /v1/agreements`, 필수 이용약관·개인정보·만 14세, 선택 알림)를 그대로 그림. 개인정보 줄 아래 설명은 앱(`TermsText.Detail`)
+  - 주간 목표 저장 `PUT /v1/users/me/weekly-goal`은 서버가 아직 예시 응답(지환 BL-30)
+- **스플래시**(11/12, 계획 0030, Figma A-01 596:26): 앱을 켜면 `AppRoot.Init` → `SplashScreen`(파란 세로 그라데이션 위 "SCRUN" 로고·문구·메인 캐릭터, 0.4초 페이드인) → 1.4초 뒤 `AppRoot.AfterSplash`(그때 저장된 로그인을 읽어 로그인됨 → `Onboarding.Begin`, 아니면 이 기기에서 처음이면 서비스 소개, 아니면 `LoginScreen`, 계획 0031). 서버는 기다리지 않음(토큰 재발급은 첫 서버 호출 때)
+  - 배경은 노치·홈 바 여백까지 칠하려고 app-root에: 화면이 `AppScreen.RootClass`("app-root--splash")를 주면 `AppRoot`가 붙였다 뗀다. **규칙은 `App.uss`에**(화면 UXML의 USS는 그 화면 안쪽에만 닿아 app-root에 안 먹음). USS에 그라데이션이 없어 4×512 그림(`UI/Images/SplashGradient.png`, 무압축)을 늘림
+  - 페이드인은 첫 `GeometryChangedEvent` 뒤에 클래스를 붙여야 돈다(같은 패널 갱신 안에서 붙이면 처음부터 불투명). 시간은 페이드 시작부터
+  - 로고 글꼴 Paytone One(Google Fonts, OFL, `UI/Fonts/PaytoneOne-*`), 글꼴 에셋은 다섯 글자뿐이라 256 지도. 캐릭터 그림은 Figma에서 3배(648×900) 내보냄
+  - 아이폰·아이패드 실행 화면(Unity가 뜨기 전)은 "그림 + 배경" 종류에 그림 없이 `#2F6FE4`만(`AppSceneBuilder.EnsureLaunchScreen`) → 검은 화면 번쩍임 없게(가설, 아이폰에서 확인). 프로젝트 설정 파일은 `SaveAssetIfDirty`로 안 써져서 `AssetDatabase.SaveAssets`(처음 한 번만 돎)
+  - 확인(11/12, 에디터 Play 482×797): Figma와 나란히 위치·색·글자 같음, 페이드 진행, 1.4초 뒤 다음 화면, 로그인된 계정은 홈까지. 아직: 아이폰 실행 화면 → 스플래시
 - **권한 안내·이어폰 연결**(11/10, 계획 0025, Figma A-07·A-09·A-10·I-05): 가입 끝·로그인된 채 앱 시작 → `Onboarding.Begin(Nav)`: 모션 권한을 아직 안 물어봤으면 `PermissionsScreen`(A-07, "권한 설정하기" = 모션 → 헤드폰 모션 → 카메라 → 알림 팝업 차례로) → 모션 거부면 `MotionDeniedScreen`(I-05, 설정 앱에서 켜고 오면 저절로 다음) → `EarphoneScreen`(A-09 미연결·A-10 연결됨, 끼고 빼면 저절로 바뀜, 연결됐는데 헤드폰 모션을 안 물어봤으면 여기서 물음) → 홈. 이어폰 화면까지 끝냈는지는 이 기기에 저장(`PlayerPrefs` `scrun.onboarding.done`), 끝내기 전에 앱을 꺼도 A-07부터 이어지고 끝낸 뒤엔 권한을 미뤘어도 다시 안 보여 줌. 가입 끝·로그인된 채 시작·기존 회원 로그인 모두 `Onboarding.Begin`. 권한 요청은 `Onboarding.Ask`(10초 안에 답이 없으면 지금 상태로 진행, 버튼이 잠기지 않게). 헤드폰 모션은 A-10 "다음"을 누를 때만 물음
   - 맵 입장 전 모션 확인: `Onboarding.BeforeMap` → 허용이면 맵, 안 물어봤으면 팝업, 거부·제한이면 I-05. 아이폰 구현 전 빌드에서는 `Native` 예외를 그대로 둔다(허용으로 보지 않음)
   - 모양은 `Onboarding.uss`(UI Kit Nav Bar: 뒤로 가기 28·가운데 제목·오른쪽 글자 버튼, 정보 줄: 아이콘 칸 44 + 글 + 칩). 에디터 확인은 Fake Native 창의 처음 상태·팝업 답, Play 중엔 `FakeNative.Instance.SimulateStatus`·`SimulateHeadphones`
@@ -228,6 +240,13 @@
   - 흐린 배경은 섬 쪽이 입장 위치를 다 적용했다고 알린 뒤(`MapLaunch.Applied` ← `MapLaunchApplier`, 2초 안에 안 오면 경고 후 진행) 2프레임 더 기다려(식생·LOD가 새 자리로 바뀌게) 찍는다
   - 맵 화면을 떠날 때는 흐린 배경을 먼저 걷고(섬 카메라·그리기 간격 복구) 섬 씬을 내림(`CloseSetup` → `ReleaseIsland`). 안내 화면을 만들다 예외가 나면 반쯤 만든 층을 붙이지 않고 흐림·윗줄을 되돌린 뒤 I-11 카드
   - 확인(11/11, 에디터 Play·로컬 서버): D-01 거리·시간 탭, +, 직접 입력(200 → 범위 안내, 4.5 → 4.5 km), D-05 → D-06 → 맵(목표 `DISTANCE/4500`), D-05 뒤로 → D-01, 다시 들어오면 4.5 km·"다시 보지 않기"로 D-05 다음 바로 맵, D-01 X → 홈·섬 씬 내려감·앱 카메라 복구. 안내 중 Live Reload로 화면이 다시 만들어져도 섬 씬·카메라 정리됨. 아직: 아이폰 노치·키보드, D-05·D-06 그림(출처 확인 중)
+- **달리기·같이 뛰기 기본**(11/11, 계획 0029, 규칙 `docs/api/realtime.md`): "시작할게요" 뒤 HUD가 뜨고 내 아바타가 센서 속도로 달리며, 같은 맵의 다른 사람이 보인다
+  - **앱 ↔ 섬은 `RunLink`**(앱 `App/Map/RunLink.cs`, `MapLaunch`와 같은 정적 이음매). 앱 → 섬: `Moving`(달리는 중, 꺼져 있으면 내 아바타 속도 0), `Together`(다른 러너). 섬 → 앱: 내 누적 거리·속도·코스 길이(`ReportPlayer`, 입장 위치 적용 뒤부터)
+  - **섬 쪽 `AppRunBridge`**(`Scripts/`, `MapLaunchApplier`가 앱에서 불릴 때만 붙임): 플레이어 속도 소스를 키보드 → `NativeSpeedSource`(에디터는 가짜 센서: Fake Native 창·키보드 ↑/↓)로 바꾸고 `Moving`으로 막음, 섬의 가짜 봇 5명·무리 12명과 시험용 고스트 "지난번의 나"(이 기기의 섬 단독 기록을 씬이 열리자마자 재생)는 끔(기기마다 위치가 달라서. 진짜 고스트가 들어오면 그쪽이 켬), 다른 사람은 꺼 둔 봇 몸을 복제해 그림(`RunnerController.Driven` + 매 프레임 `Teleport`, 옷 색은 MaterialPropertyBlock, `RunnerTag.Kind.Remote`라 이름표에 닉네임)
+  - **앱 쪽 `App/Realtime/`**: 화면은 `IRunTogether`만 봄(진짜 구현 `WsRunTogether` = .NET `ClientWebSocket`, 토큰은 헤더). 메시지 처리는 `RunTogetherRoom`, 다른 사람 위치는 `RemoteRunner`(받은 d에서 속도로 내다보고 새 값은 0.5초에 걸쳐 맞춤, 25m 넘게 다르면 바로 옮김), 고리 코스 계산 `LoopMath`. 맵 입장 응답을 받자마자 붙고(섬 불러오는 동안), 섬이 열려 입장 위치에 선 뒤부터 내 상태를 보냄. 맵을 나가면 `leave`
+  - **HUD `RunHudView`**(`RunHud.uxml/uss`, 맵 화면 안의 층): 거리·시간·목표 진행 막대, 왼쪽 아래 앞뒤 가장 가까운 사람 간격, 위 가운데 들어옴·나감 토스트(3초, 하나씩)·연결 상태. 속도·페이스는 안 보임(BL-12 ②), 개발 빌드만 오른쪽 아래 속도·왕복 지연. 시간·거리는 `RunSession`(카운트다운 끝 `MapScreen.StartRunning()`, 지금은 `OnSetupDone`이 임시로 바로 부름)
+  - 다른 사람 없이 확인: `backend/scripts/fake_runner.py`(로컬 가짜 카카오 서버에 가짜 계정으로 들어가 일정한 속도로 달림)
+  - 아직: 에디터 Play 전체 흐름, 아이폰(`ClientWebSocket` IL2CPP·왕복 지연), 상준 모양 다듬기, 미니맵·멈춤·종료(S5), 페이스 봇(S4 이후)
 - **아래 탭 바**(11/10, UI Kit Tab Bar): 아이콘 24 + 글자 12, 홈·친구·기록·마이 순서, 고른 탭은 파란 아이콘(`tab-*-on.svg`)·굵은 글자. 탭 버튼 이름(`tab-home` 등)은 그대로라 `Navigator`는 안 바뀜
 - 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
 

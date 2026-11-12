@@ -4,8 +4,9 @@ using UnityEngine.UIElements;
 
 namespace Scrun.App
 {
-    // A-06 다음 프로필: 닉네임(다른 러너 이름표에 보임)·키·몸무게 → 가입 → 홈.
+    // A-06 프로필 입력(Figma 596:232, 계획 0031): 닉네임(다른 러너 이름표에 보임)·키·몸무게 → 가입 → 권한 안내(A-07).
     // 닉네임은 입력을 멈추면 서버에 확인하고(가입과 같은 판정), 서버가 정리한 값(정규화)을 보여 주고 그 값으로 가입한다.
+    // 셋 다 맞게 채워야 "다음"이 켜진다(Figma 노트).
     public sealed class ProfileScreen : AppScreen
     {
         const long CheckDelayMs = 400;   // 입력을 멈추고 이만큼 지나면 확인
@@ -24,14 +25,17 @@ namespace Scrun.App
         public ProfileScreen(List<string> agreedIds) => this.agreedIds = agreedIds;
 
         protected override string Uxml => "UI/Profile";
+        public override bool HidesTabBar => true;
 
         protected override void OnCreate()
         {
-            Q<Button>("back").clicked += () => Nav.Pop();
+            Q<Button>("back").clicked += () => { if (Nav.Current == this) Nav.Pop(); };
+            Q<Label>("lead").text = ProfileForm.Lead;
             nickname = Q<TextField>("nickname");
+            nicknameStatus = Q<Label>("nickname-status");
+            SetNickStatus("", false);
             height = Q<TextField>("height");
             weight = Q<TextField>("weight");
-            nicknameStatus = Q<Label>("nickname-status");
             bodyStatus = Q<Label>("body-status");
             submit = Q<Button>("submit");
 
@@ -39,6 +43,16 @@ namespace Scrun.App
             height.keyboardType = TouchScreenKeyboardType.NumberPad;
             weight.keyboardType = TouchScreenKeyboardType.NumberPad;
             height.maxLength = weight.maxLength = 3;
+            nickname.textEdition.placeholder = "예: 러너123";
+            height.textEdition.placeholder = "예: 170";
+            weight.textEdition.placeholder = "예: 65";
+            // 고른 칸은 테두리 2 파랑(Figma 닉네임 칸)
+            foreach (var (field, box) in new[] { (nickname, "nickname-box"), (height, "height-box"), (weight, "weight-box") })
+            {
+                var b = Q<VisualElement>(box);
+                field.RegisterCallback<FocusInEvent>(_ => b.AddToClassList("fig-field--focus"));
+                field.RegisterCallback<FocusOutEvent>(_ => b.RemoveFromClassList("fig-field--focus"));
+            }
 
             nickname.RegisterValueChangedCallback(_ => OnNicknameChanged());
             height.RegisterValueChangedCallback(_ => Refresh());
@@ -94,6 +108,7 @@ namespace Scrun.App
         void SetNickStatus(string text, bool isError)
         {
             nicknameStatus.text = text;
+            nicknameStatus.style.display = string.IsNullOrEmpty(text) ? DisplayStyle.None : DisplayStyle.Flex;
             nicknameStatus.EnableInClassList("error-text", isError);
         }
 
@@ -102,6 +117,7 @@ namespace Scrun.App
             var bodyProblem = ProfileForm.CheckBody(height.value, weight.value, out _, out _);
             if (bodyProblem == null) showBodyError = false; // 고치면 바로 지움
             bodyStatus.text = showBodyError ? bodyProblem ?? "" : "";
+            bodyStatus.style.display = string.IsNullOrEmpty(bodyStatus.text) ? DisplayStyle.None : DisplayStyle.Flex;
             submit.SetEnabled(!submitting && checkedNick != null && checkedNick.Available && bodyProblem == null
                               && !string.IsNullOrEmpty(height.value) && !string.IsNullOrEmpty(weight.value));
         }
@@ -125,7 +141,7 @@ namespace Scrun.App
             submitting = false;
             if (Root.panel == null) return; // 그사이 로그인 화면 등으로
             Refresh();
-            if (ok) Onboarding.Begin(Nav); // 권한 안내 → 이어폰 → 홈(계획 0025). 모션 권한을 이미 정했으면 바로 홈
+            if (ok) Onboarding.Begin(Nav, newUser: true); // 권한 안내 → 이어폰 → 주간 목표 → 완료 → 홈(계획 0025·0031)
         }
     }
 
@@ -135,6 +151,10 @@ namespace Scrun.App
         public const int NicknameInputMax = 20; // 서버가 정규화한 뒤 2–12자로 판정. 입력 칸은 조금 넉넉히
         public const int HeightMin = 100, HeightMax = 230;
         public const int WeightMin = 20, WeightMax = 250;
+
+        // A-06 설명. Figma "키와 몸무게는 속도 추정 보정에만 사용돼요"와 옛 "키는 아바타 크기에 써요"는 둘 다 사실이 아님
+        // (11/12 코드 기준 키·몸무게는 서버에 저장만 하고 속도·아바타 어디에도 안 씀). 개인정보 안내라 사실대로, 상준과 확정(계획 0031)
+        public const string Lead = "키와 몸무게는 앞으로 속도 추정에 쓸 예정이에요";
 
         // 문제가 없으면 null. 비어 있으면 아직 안 적은 것이라 null(가입 버튼만 꺼짐)
         public static string CheckBody(string heightText, string weightText, out int heightCm, out int weightKg)

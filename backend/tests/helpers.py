@@ -27,7 +27,7 @@ def signup(client, kakao) -> dict:
     """진짜 가입(가짜 카카오 k_숫자) → Authorization 헤더."""
     first = data(client.post("/v1/auth/kakao", json={"kakaoAccessToken": kakao}))
     r = client.post("/v1/auth/signup", headers=bearer(first["signupToken"]),
-                    json={"agreedIds": ["terms", "privacy"], "nickname": f"러너{kakao[2:]}", "heightCm": 175, "weightKg": 70})
+                    json={"agreedIds": ["terms", "privacy", "age14"], "nickname": f"러너{kakao[2:]}", "heightCm": 175, "weightKg": 70})
     assert r.status_code == 201, r.text
     return bearer(data(r)["accessToken"])
 

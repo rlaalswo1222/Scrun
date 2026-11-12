@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- A-01 스플래시(Figma 596:26, 계획 0030). 배경 그라데이션은 노치·홈 바까지 칠하려고 app-root에(AppScreen.RootClass) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Splash.uss" />
+    <ui:VisualElement name="splash" class="splash">
+        <ui:Label text="SCRUN" class="splash-logo" />
+        <ui:Label text="지루했던 러닝머신을,&#10;계속하고 싶은 러닝으로" class="splash-tagline" />
+        <ui:VisualElement class="splash-spacer" />
+        <ui:VisualElement name="character" class="splash-character" />
+        <ui:VisualElement class="splash-spacer" />
+    </ui:VisualElement>
+</ui:UXML>

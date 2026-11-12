@@ -27,6 +27,7 @@ namespace Scrun.App
         bool subscribed;
         bool landscape;
         bool orientationApplied;
+        string rootClass; // 지금 app-root에 붙어 있는 화면 배경 클래스(AppScreen.RootClass)
         // 안전 영역을 마지막으로 맞춘 조건(화면 크기·안전 영역·패널 크기·탭 바 보임 중 하나라도 바뀌면 다시)
         Rect lastSafe;
         Vector2Int lastScreen;
@@ -63,25 +64,45 @@ namespace Scrun.App
             Nav = new Navigator(root.Q("screen-host"), tabBar, TabRoot);
             Nav.Changed += OnScreenChanged;
             orientationApplied = false;
+            rootClass = null;
             lastPanelSize = default;
             Feedback.Attach(root);
             Feedback.OnNotLoggedIn = GoToLogin;
 
-            // 저장된 로그인이 있으면 바로 홈, 없으면 로그인부터(토큰이 실제로 살아 있는지는 첫 서버 호출 때 재발급으로 확인)
-            bool loggedIn = false;
             try
             {
                 Api.Session.Expired += OnSessionExpired;
                 subscribed = true;
-                loggedIn = Api.Session.IsLoggedIn;
             }
             catch (Exception e)
             {
                 // 기기 기능이 없는 빌드(PlatformNotSupportedException)·네이티브 초기화 실패: 빈 화면 대신 로그인 화면을 띄우고, 누르면 안내가 뜬다
                 Debug.LogException(e);
             }
-            if (loggedIn) Onboarding.Begin(Nav); // 모션 권한을 아직 안 물어봤으면 권한 안내부터(계획 0025)
-            else Nav.StartFlow(new LoginScreen());
+            // A-01 스플래시(계획 0030) 뒤에 넘어감. 로그인 상태는 스플래시가 끝날 때 읽음(그 사이 로그아웃·만료 대비)
+            Nav.StartFlow(new SplashScreen(() => AfterSplash(Nav, ReadLoggedIn())));
+        }
+
+        // 저장된 로그인이 있는지(토큰이 실제로 살아 있는지는 첫 서버 호출 때 재발급으로 확인).
+        // 기기 기능이 없는 빌드 등으로 읽지 못하면 로그인 화면(누르면 안내)
+        static bool ReadLoggedIn()
+        {
+            try { return Api.Session.IsLoggedIn; }
+            catch (Exception e) { Debug.LogException(e); return false; }
+        }
+
+        // 스플래시 다음: 로그인됨 → 권한 안내(모션을 아직 안 물어봤으면, 계획 0025)·주간 목표(가입 직후) 또는 홈,
+        // 로그인 없음 → 이 기기에서 처음이면 서비스 소개(A-02–A-04, 계획 0031), 아니면 로그인
+        internal static void AfterSplash(Navigator nav, bool loggedIn) => AfterSplash(nav, loggedIn, Onboarding.IntroSeen);
+
+        internal static void AfterSplash(Navigator nav, bool loggedIn, bool introSeen)
+        {
+            switch (Onboarding.AfterSplash(loggedIn, introSeen))
+            {
+                case StartStep.Onboarding: Onboarding.Begin(nav); break;
+                case StartStep.Intro: nav.StartFlow(new IntroScreen()); break;
+                default: nav.StartFlow(new LoginScreen()); break;
+            }
         }
 
         void OnDisable()
@@ -102,6 +123,7 @@ namespace Scrun.App
             if (Nav == null) return;
             Feedback.HideError();
             try { Api.Session.Clear(); } catch (Exception e) { Debug.LogException(e); } // 만료된 가입용 토큰까지 정리. 실패해도 로그인 화면으로는 간다
+            Onboarding.ForgetNewUser(); // 가입 직후 주간 목표는 그 사람 것. 다음에 로그인하는 사람이 이어받지 않게
             if (!Nav.InTabs && Nav.Current is LoginScreen) return;
             Nav.StartFlow(new LoginScreen(notice));
         }
@@ -123,6 +145,12 @@ namespace Scrun.App
         {
             Feedback.HideError(); // 오류창은 그 화면 것 → 화면이 바뀌면 닫음(다시 시도가 사라진 화면을 부르지 않게)
             appRoot?.EnableInClassList("app-root--world", screen.ShowsWorld); // 맵: 앱 배경을 투명하게
+            if (appRoot != null && screen.RootClass != rootClass) // 스플래시 그라데이션처럼 노치·홈 바까지 칠하는 배경
+            {
+                if (rootClass != null) appRoot.RemoveFromClassList(rootClass);
+                rootClass = screen.RootClass;
+                if (rootClass != null) appRoot.AddToClassList(rootClass);
+            }
             if (orientationApplied && screen.Landscape == landscape) return;
             orientationApplied = true;
             landscape = screen.Landscape;

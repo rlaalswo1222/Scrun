@@ -19,7 +19,8 @@ namespace Scrun.App
     // 섬 씬(Island01)은 앱 위에 겹쳐 불러오고(additive: 앱 화면·로그인은 그대로), 이 화면을 떠나면 내린다.
     // 고른 코스·입장 위치는 MapLaunch로 넘기고 섬 쪽 MapLaunchApplier가 적용한다. 앱 배경은 투명(ShowsWorld).
     // 섬이 열리면 흐린 맵 위에 러닝 설정 → 거치 안내 → 달리는 매뉴얼(RunSetupView, 계획 0026)을 띄우고, 끝나면 맵을 보여 준다.
-    // S3에 센서 준비·카운트다운·HUD·멈춤이 이 화면 위에 들어간다(고른 목표는 Setup).
+    // 입장 응답의 realtime으로 같은 맵 실시간 방에 붙고(계획 0029, 화면은 IRunTogether만 봄), 달리기를 시작하면 HUD(RunHudView)를 띄운다.
+    // 섬과는 RunLink로 주고받는다(내 거리·속도, 달리는 중 스위치, 다른 러너). 센서 준비·카운트다운(지환 BL-10·11)은 이 화면 위에 들어간다.
     public sealed class MapScreen : AppScreen
     {
         const float EntryShare = 0.15f; // 진행 막대에서 입장 요청 몫(나머지는 씬 불러오기)
@@ -50,9 +51,15 @@ namespace Scrun.App
         VisualElement mapTop;
         RunSetupView setupView;
         MapBackdrop backdrop;
+        IRunTogether together;
+        RunSession session;
+        RunHudView hud;
 
         // 러닝 설정에서 고른 것(안내를 끝내기 전에는 null). S3 센서 준비·카운트다운이 쓴다
         public RunSetup Setup { get; private set; }
+
+        // 이번 달리기(안내를 끝내야 생김). 카운트다운이 끝나면 StartRunning()
+        public RunSession Session => session;
 
         public MapScreen(CourseDetail course, Action<MapExit, ApiException> onExit)
         {
@@ -102,6 +109,7 @@ namespace Scrun.App
             leaving = true;
             MapLaunch.Clear();
             CloseSetup();
+            EndRun();
             ReleaseIsland();
             if (appCamera != null) appCamera.backgroundColor = appCameraColor;
         }
@@ -124,6 +132,7 @@ namespace Scrun.App
                 Debug.LogException(e);
                 MapLaunch.Clear();
                 CloseSetup();
+                EndRun();
                 ReleaseIsland();
                 if (!leaving) ShowUnavailable("맵을 열지 못했어요", "잠시 후 다시 시도해 주세요.", canRetry: true);
             }
@@ -170,6 +179,7 @@ namespace Scrun.App
             // 섬 씬이 깨어나는 동안 Camera.main이 섬 카메라를 가리키게(ScrunQuality·이름표가 앱 카메라를 잡지 않게) 미리 비켜 둔다
             YieldAppCamera();
             MapLaunch.Store(entry);
+            JoinRoom(entry); // 섬을 불러오는 동안 붙어서, 맵이 열릴 때 다른 러너가 이미 보이게
 
             sceneLoading = true;
             try
@@ -247,6 +257,42 @@ namespace Scrun.App
             backdrop?.Dispose(); // 섬 카메라 다시 켬
             backdrop = null;
             mapTop.SetVisible(true);
+            hud?.Dispose();
+            session = new RunSession(setup.Goal);
+            hud = new RunHudView(Root, session, together);
+            // 임시(계획 0029 2번): 센서 준비·카운트다운(지환 BL-10·11)이 들어오면 카운트다운 끝에서 StartRunning()을 부르고 이 줄은 지운다
+            StartRunning();
+        }
+
+        // 카운트다운이 끝남 → 시간·거리 기록 시작, 내 아바타가 센서 속도로 움직임(BL-11 ③)
+        public void StartRunning()
+        {
+            if (session == null || session.Started) return;
+            session.Start(RunLink.PlayerDistanceM);
+            RunLink.Moving = true;
+        }
+
+        // 같은 맵 실시간 방(ADR-0010). 서버가 realtime을 안 주면(옛 스텁) 혼자 달림
+        void JoinRoom(MapEntry entry)
+        {
+            EndRun();
+            if (entry.Realtime != null && !string.IsNullOrEmpty(entry.Realtime.Url))
+            {
+                together = new WsRunTogether(entry.Realtime, RunLink.MyState);
+                together.Start();
+            }
+            else Debug.LogWarning("[같이 뛰기] 입장 응답에 realtime이 없음 → 혼자 달림");
+            RunLink.Begin(together);
+        }
+
+        void EndRun()
+        {
+            hud?.Dispose();
+            hud = null;
+            together?.Dispose();
+            together = null;
+            session = null;
+            RunLink.End();
         }
 
         // 섬 씬을 내리기 전에: 흐린 배경이 끈 섬 카메라·바꾼 그리기 간격을 먼저 되돌린다

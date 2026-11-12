@@ -8,7 +8,7 @@ from app.db.models import AuthIdentity, RefreshToken, User, UserAgreement, UserP
 from app.routers import auth as auth_router
 from tests.helpers import bearer, data, fail, run_together
 
-SIGNUP_BODY = {"agreedIds": ["terms", "privacy"], "nickname": "새벽러너", "heightCm": 175, "weightKg": 70}
+SIGNUP_BODY = {"agreedIds": ["terms", "privacy", "age14"], "nickname": "새벽러너", "heightCm": 175, "weightKg": 70}
 
 
 def signup_token(client, kakao="k_1") -> str:
@@ -39,8 +39,11 @@ def refresh(client, t):
 
 def test_agreements_from_db(db_client):
     items = data(db_client.get("/v1/agreements"))
-    assert [a["agreementId"] for a in items] == ["terms", "privacy", "notice"]
-    assert [a["required"] for a in items] == [True, True, False]
+    assert [a["agreementId"] for a in items] == ["terms", "privacy", "age14", "notice"]
+    assert [a["required"] for a in items] == [True, True, True, False]
+    # 화면 문구 그대로(Figma A-18, 계획 0031). 만 14세는 본문이 없어 주소가 비어 있음(앱이 "보기"를 숨김)
+    assert [a["title"] for a in items[:3]] == ["서비스 이용약관 동의", "개인정보 수집·이용 동의", "만 14세 이상입니다"]
+    assert items[2]["url"] == ""
 
 
 def test_first_login_signup_then_login_again(db_client, test_db):
@@ -54,7 +57,7 @@ def test_first_login_signup_then_login_again(db_client, test_db):
         user = db.scalar(select(User))
         assert user.nickname == "새벽러너" and user.friend_code.startswith("SCR-")
         assert db.scalar(select(AuthIdentity.provider_user_id)) == "1"
-        assert db.scalar(select(func.count()).select_from(UserAgreement)) == 2
+        assert db.scalar(select(func.count()).select_from(UserAgreement)) == 3  # 이용약관·개인정보·만 14세
         assert db.get(UserProgress, user.id).level == 1
         # refresh 토큰은 해시만 저장
         assert db.scalar(select(func.count()).select_from(RefreshToken).where(
@@ -79,6 +82,8 @@ def test_signup_validation(db_client):
     h = bearer(token)
     fail(db_client.post("/v1/auth/signup", headers=h, json={**SIGNUP_BODY, "agreedIds": ["terms"], "nickname": "다른"}),
          400, "VALIDATION_ERROR")
+    fail(db_client.post("/v1/auth/signup", headers=h, json={**SIGNUP_BODY, "agreedIds": ["terms", "privacy"], "nickname": "다른"}),
+         400, "VALIDATION_ERROR")  # 만 14세(필수) 빠짐
     fail(db_client.post("/v1/auth/signup", headers=h, json={**SIGNUP_BODY, "agreedIds": ["terms", "privacy", "nope"],
                                                             "nickname": "다른"}), 400, "VALIDATION_ERROR")
     fail(db_client.post("/v1/auth/signup", headers=h, json={**SIGNUP_BODY, "nickname": "새벽러너"}), 409, "NICKNAME_DUPLICATED")

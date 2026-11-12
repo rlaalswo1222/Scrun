@@ -1,12 +1,19 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- A-05 로그인. 모양은 임시(상준 UI Kit·Figma로 다듬음) -->
-    <ui:VisualElement class="screen login">
-        <ui:VisualElement class="login-hero">
-            <ui:Label text="SCRUN" class="login-logo" />
-            <ui:Label text="러닝머신 위에서, 가상 섬을 같이 달려요" class="login-lead" />
+    <!-- A-05 로그인(Figma 596:190, 계획 0031). 실패·취소는 A-19(LoginFailed.uxml) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+    <ui:VisualElement class="onb">
+        <ui:VisualElement class="nav-bar" />
+        <ui:Label text="SCRUN" class="onb-logo" />
+        <ui:Label text="로그인하고 내 러닝을 시작해요" class="onb-lead gap" />
+        <ui:VisualElement class="illust illust--login">
+            <ui:VisualElement class="char-stand" />
         </ui:VisualElement>
-        <ui:Label name="notice" class="notice-text" />
-        <ui:Button name="kakao" text="카카오 로그인" class="btn btn-kakao" />
+        <ui:VisualElement class="spacer" />
+        <!-- 로그인 화면으로 돌아온 이유(예: "다시 로그인해 주세요."). Figma에 없음, 있을 때만 -->
+        <ui:Label name="notice" class="notice-text gap" />
+        <ui:Button name="kakao" text="카카오로 계속하기" class="btn btn-kakao btn-fig" />
+        <ui:Label text="로그인 후 약관 동의 단계가 이어져요" class="onb-caption" />
         <!-- 개발 빌드에서만 보임(LoginScreen) -->
         <ui:Button name="dev-native" text="네이티브 점검 (개발 빌드)" class="link-button" />
     </ui:VisualElement>
