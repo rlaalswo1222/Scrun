@@ -1,37 +1,39 @@
-# 민재 인수인계 (2026-11-11 저녁, Windows)
+# 민재 인수인계 (2026-11-12 저녁, Windows)
 
-민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만 하고 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/api/README.md`, `docs/adr/`, `docs/plans/`)에 있다. 옛 전체본: `docs/log/HANDOFF_minjae_20261110.md`(11/10 정리 전), `_20261109.md`, `_20261107.md`, `_20261106.md`
+민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만 하고 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/api/README.md`·`realtime.md`, `docs/adr/`, `docs/plans/`)에 있다. 옛 전체본: `docs/log/HANDOFF_minjae_20261110.md`(11/10 정리 전), `_20261109.md`, `_20261107.md`, `_20261106.md`
 
-## 지금 (11/11 새벽 기준 develop에 다 들어감)
-- **develop에 합친 것(11/10–11)**: #30 코스·보정 API, #32 코스 화면, #33 처음 보정(계획 0023, 409 → 보정 → 다시 입장, 리뷰 10건), #34 권한·이어폰(지환 0025), #36 Swift 속도 플러그인(계획 0024, 맥·Windows 동시, 리뷰 C# 5·Swift 4), #35 러닝 설정·거치 안내(지환 0026), #37 문서. develop 기준 흐름: 로그인 → 권한·이어폰 → 홈 → 코스 → (보정 없으면 보정) → 맵 입장 → 러닝 설정·거치 안내, 아이폰 빌드에서 진짜 속도 센서
-- 계획 0024 결과: Python 기준 구현에 단계 판정·누적 걸음·걸음 없음 규칙(실시간도)·걷기 절편(켬, 4 km/h 이상 걷기 점), Swift = Python 정답 CSV 셋 차 0(`speedlab/golden/`), 아이폰 책상 확인(폰 100/초·에어팟 49/초, 가만히 둔 폰 걸음 없음). 맵 입장 때 센서에 보정이 없으면 서버에서 불러오고 로그아웃하면 지움(0023 4번). 수치 `docs/speed/README.md` 11/10 줄
+## 지금 (11/12 밤, develop·오라클 서버 둘 다 e14a16b)
+- **11/11–12 develop에 합친 것**: #39 아바타 발 속도(지환 0027), #40 같이 뛰기 기본(계획 0029: 진짜 속도 → 아바타, 실시간 방 `backend/app/realtime/`, 기본 HUD, "지금 N명" = 실시간 인원), #41·#43 문서, #42 에디터 흐름에서 나온 것(에디터 서버 `127.0.0.1`, `leave`면 자리 지움, 목록·상세는 나 빼고, 앱에선 섬 시험용 고스트·녹화기 끔), #44 스플래시(계획 0030, A-01), #45 온보딩 A-02–A-19(계획 0031), #47 지환 내 정보·설정 API DB 연결(계획 0028, BL-36: `GET`·`PATCH /users/me`·`/users/me/settings`, 가입 `timezone`은 IANA 이름만, pytest 222 통과 확인 후 머지). 열린 PR: **#46**(이 인수인계, "머지해"면 머지)
+- **앱 흐름(develop)**: 스플래시 → (처음 켠 기기) 소개 A-02–A-04 → 로그인 A-05(카카오 취소·오류면 A-19) → 새 회원: 약관 A-18 → 프로필 A-06 → 권한·이어폰 → 주간 목표 A-16 → 완료 A-17 → 홈 → 코스 → (보정 없으면 보정) → 맵 입장 → 러닝 설정·거치 안내 → "시작할게요" → HUD·같이 뛰기
+- **오라클 서버**: 11/12 밤 e14a16b 배포(#47, 마이그레이션 없음, 컨테이너 안 시간대 목록 598개·`Asia/Seoul` 있음 확인. DB는 `7a1d4e2b9c30` 만 14세 약관까지). 서버는 Docker Compose 3개(api 직접 빌드·db Postgres 16·caddy HTTPS), `update.sh`가 api 이미지를 다시 빌드하므로 requirements는 따로 설치 안 해도 됨. 배포 명령 `ssh -i ~/.ssh/oracle_key ubuntu@161.118.211.155 '~/scrun/backend/deploy/update.sh develop'`. Claude 배포·남의 PR 머지는 민재가 "배포해"·"머지해"처럼 직접 말해야 권한 검사 통과("ㄱㄱ"는 막힘). 11/11 개인 프로젝트 `system-server`는 걷어 냄
+- **메인 캐릭터** = 팀이 직접 만든 흰 모자 캐릭터(11/12, CLAUDE.md "이미 정한 방향"). 섬 아바타(Y Bot 임시)를 바꿀지는 지환·상준과 따로
+- **노션 개발 계획 11/12 최신화**: 실시간 방 서버 완료, 다른 러너·속도 → 아바타·HUD 진행 중(아이폰 확인 남음), 페이스 봇 S4, 지환 BL-42 완료, 지환 설정·내 정보 API 진행 중(계획 0028, 저장소엔 아직 없음), 운영 서버 메모. 기능 보드 "함께 달리기" 진행 중. 스플래시·온보딩 줄은 아직 안 넣음(로그인·온보딩 줄 메모에 덧붙이기)
 - 맥에 일 넘기기: 계획 문서 맨 위 "맥 할 일"에 적고 푸시 → 맥에 "NNNN 맥 할 일 해 줘" 한 줄(맥은 이 파일 안 고침, 결과는 계획 "진행"의 맥 줄)
-- **노션 개발 계획 11/11 최신화**: 작업 표 11줄(민재 보정 계산·보정 화면·속도 플러그인 완료, 지환 에어팟·권한 화면·보정값 API·거치 안내·러닝 설정 완료, 메모에 11/11 덧붙임), 기능 보드 3장(코스 선택·맵 입장, 보정 완료 / 러닝 설정·거치 안내 진행 중: 센서 준비로 넘어가기는 S3). S1 진행 중 2줄은 아이폰 확인만 남음(아래 "민재가 직접 할 것"). 상준 UI Kit 줄은 "시작 전"인데 지환이 Figma UI Kit 값을 이미 `App.uss`에 옮김 → 상준에게 상태 물어보기
 - PR 합치기: 남의 PR·리뷰 없는 문서 PR은 자동 권한 검사가 막음 → 민재가 "ㄱ"으로 허락
-- **11/12 온보딩 A-02–A-19(계획 0031, `feat/onboarding-figma`, PR #44 위)**: 소개·로그인 실패·주간 목표·완료 새로, 로그인·약관·프로필을 Figma대로, 서버 만 14세 약관(마이그레이션). 서버 202·EditMode 245, 리뷰 7건. 남은 것: 아이폰 확인, 머지 뒤 오라클 배포(마이그레이션), 지환(주간 목표 API는 예시 응답)·상준(프로필 문구) 알리기. Figma 그림은 새 탭에서 한 번에 받기(같은 탭 두 번째 다운로드는 Chrome이 막음)
-- **11/12 스플래시(계획 0030, `feat/splash`)**: Figma A-01 그대로 구현(로고 Paytone One, 메인 캐릭터 그림 = 팀이 직접 만든 캐릭터, 아이폰·아이패드 실행 화면 파랑). EditMode 231 통과, 리뷰 7건 반영. 남은 것: 아이폰에서 실행 화면 → 스플래시. Figma는 이 PC Chrome(Claude 확장 연결, Figma 로그인됨)에서 `figma` 전역으로 읽음 — 맥 Chrome도 연결돼 있어 처음엔 맥으로 갔음(`list_connected_browsers`로 확인)
 
-## 지금 하던 일: S3 계획 0029 (**PR #40 develop에 머지, 오라클 배포 11/11**)
-- 11/11 지환 PR #39(아바타 발 속도 표, 계획 0027) 리뷰·머지 → 내 계획이 0027과 겹쳐 0029로 옮김(0028은 지환 BL-36). PR 올리기 전에 develop 합치기(#39가 `unity_map.md` 캐릭터 절을 고침, 충돌은 없을 것). 같이 뛰기 다른 러너도 봇 복제라 #39 애니메이션이 그대로 적용됨
-- 11/11 승인(페이스 봇은 S4 이후로 미룸) → 같은 날 구현 + `/code-review` 10건 반영. 진짜 속도 → 내 아바타(`AppRunBridge`), 실시간 방 서버(`backend/app/realtime/`, 규칙 `docs/api/realtime.md`), 앱 연결(`App/Realtime/`, `RunLink`), 기본 HUD(`RunHudView`), "지금 N명" = 실시간 인원. 서버 pytest 198·Unity EditMode 212(develop #39 합친 뒤) 통과, 가짜 러너 둘로 로컬 확인. 자세한 건 계획 0029 "진행"
-- 시험 도구 `backend/scripts/fake_runner.py`(가짜 카카오 서버에 가짜 계정으로 달림, 들어옴·나감·왕복 지연 찍음)
-- 로컬 8001 서버는 11/11 새 코드로 다시 켬(Claude 세션 백그라운드, 세션 끝나면 꺼짐 → 그땐 `cd backend; ../.venv/Scripts/python -m uvicorn app.main:app --port 8001`)
-- **오라클 서버 11/11 develop(8b7468f) 배포**: 그전엔 11/09 #20에 멈춰 있었음 → 마이그레이션 3개(course_entries·seed_courses·occupancy_indexes) 함께 돎. `wss://161-118-211-155.sslip.io/v1/realtime` 토큰 없이 붙으면 4401(Caddy가 WebSocket 넘김 확인), uvicorn 하나라 메모리 방이 안 나뉨. Claude 배포는 민재가 "해 줘"라고 해야 권한 검사 통과
-- **11/11 에디터 Play 전체 흐름**(Claude가 UI를 직접 눌러 봄): 보정 → 입장 → 설정 → HUD → 가짜 센서로 아바타 → 다른 러너·간격·나감 알림까지 됨(계획 0029 "진행"). 나온 것 4개를 `fix/run-together-editor`(PR, #41 브랜치 위에)에서 고침: 에디터 `localhost` 실시간 안 붙음(한글 컴퓨터 이름 Mono 버그 → `127.0.0.1`, 이 PC 저장값도 `127.0.0.1:8001`), `leave` 뒤 2분 동안 인원에 남음(→ 자리 지움), 맵에서 나온 직후 상세가 나를 셈(→ 목록·상세는 나 빼고), 섬 시험용 고스트(→ 고스트·녹화기 끔). 서버 202·EditMode 224 통과, `/code-review` 3건 반영. #41·#42 머지, **11/12 오라클 develop(5bc0a6a) 다시 배포**(openapi `runnersNow` 새 설명, `wss` 토큰 없이 4401 확인)
-- 에디터에 로그인된 로컬 계정 닉네임이 테스트로 넣은 욕설이라 다른 러너 화면에 그대로 뜸(로컬 DB에만) → 시연 전에 바꾸거나 API 서버 창 "저장된 로그인 지우기" 뒤 k_123으로
-- 에디터 UI를 코드로 누를 땐 `NavigationSubmitEvent`를 `panel.visualTree.SendEvent`로(`e.target = 버튼`). 버튼에 바로 `SendEvent`는 가끔 안 먹음
-- 같은 날 서버에서 개인 프로젝트 `system-server`(8100, `~/code_assist`, Caddy 블록)를 걷어 냄 → 서버 `~/scrun` git 깨끗, 다음 `update.sh`가 Caddyfile을 덮어써도 문제없음
-
-## 다음
-1. **0029 마무리**: ~~에디터 Play~~(11/11 됨) → ~~#42 머지·오라클 다시 배포~~(11/12) → 아이폰: `ClientWebSocket`이 IL2CPP에서 붙는지(가설), 손에 들고 걸어 아바타, 왕복 지연 와이파이·LTE 기록(`docs/api/realtime.md` "지연 실측", ADR-0010 결과)
-2. **지환에게**: 카운트다운 끝에서 `MapScreen.StartRunning()`(지금은 `OnSetupDone`이 임시로 바로 부름, 그 줄 지우기), `RunnerController`에 `Driven`·`SetSpeedSource`, `RunnerTag.Kind.Remote`를 넣음(#39 `RunnerAnimator`와는 안 겹침). 상준에게 HUD·토스트 모양(D-10·D-11)
-3. 계획 0024 6번 러닝머신 확인(헬스장 날짜 정하기) + 미룬 책상 확인 2개(권한 거부 뒤 가속도, 10분 발열). 헬스장에서: 걷기 절편 "2 포함 대 4 이상"·키로 조정 비교(키가 다른 사람), 걸음 없음 문턱 0.12(S22 값) 아이폰으로 다시
+## 다음 (11/13 시연이 S3 마지막 날)
+- **홈 B-01–B-04 Figma대로(계획 0032, 작성·대기)**: 11/12 Figma B 섹션(601:317) 읽고 계획만 씀. 파일은 이 PC에만(커밋 안 함, 로컬 브랜치 `feat/home-figma`). 정할 것 5개(누가 — 홈은 지환 담당, `/home` 예시 응답을 "없음"으로 바꿀지, 달리는 친구 없을 때, 코스 그림, 시연 뒤 머지) 민재 답 대기
+1. **시연 구성 정하기(가장 급함)**: 아이폰 빌드는 오라클(진짜 카카오), 에디터는 로컬(가짜 카카오)이라 그대로면 같은 방에 못 붙음(가설). 아이폰 2대가 오라클로 / 노트북 서버를 진짜 카카오로 + 아이폰 주소 바꾸기 / 에디터도 오라클(진짜 카카오) 중 고르기. 11/12 채팅에서 제안만 함
+2. **아이폰 확인(맥 + 아이폰)**: 실시간 `ClientWebSocket`이 IL2CPP에서 붙는지(가설, 안 되면 NativeWebSocket) → 책상에서 붙는지만 + 책상 두드려 아바타. 손에 들고 걷기는 안 함(속도 추정은 계기판 충격 + 에어팟 공중 시간이라 의미 없음, 11/12) — 계획 0029 확인 기준 문구 고치기 제안함(미반영). 같이: 스플래시 실행 화면(검은 번쩍임 없는지), 온보딩(손가락 넘기기·카카오 취소 → A-19·키보드가 프로필 칸 가림), 왕복 지연 와이파이·LTE 1분씩(`realtime.md` "지연 실측"·ADR-0010)
+3. **러닝머신 시연 리허설**(민재 직접): 시연 전 에디터 로컬 계정 닉네임(테스트 욕설) 바꾸거나 API 서버 창 "저장된 로그인 지우기"
+4. 계획 0029 확인 기준 중 안 한 것: 서버를 껐다 켜면 다시 붙음(에디터 + 로컬 서버로 Claude가 할 수 있음)
+5. 계획 0024 6번 러닝머신 확인(헬스장 날짜) + 미룬 책상 확인 2개(권한 거부 뒤 가속도, 10분 발열). 헬스장에서: 걷기 절편 "2 포함 대 4 이상"·키로 조정 비교, 걸음 없음 문턱 0.12(S22 값) 아이폰으로 다시
+- 남은 작은 것: 기존 계정의 만 14세 동의 기록 없음(출시 전 다시 동의 받기 흐름), A-17 "[모션] 환호 + 컨페티"·스플래시 "아바타가 달려 들어옴"은 에셋 생기면, 서비스 소개 그림은 Figma 그림
 - 시연 흐름(에디터)은 민재가 직접 돌려 봄(Claude가 제안하지 않음)
-- **S3 메모(11/11 지환)**: 카운트다운·달리기 목표는 `MapScreen.Setup.Goal`, `POST /runs` goal에 `Setup.Goal.ToRequest()`(m·초). D-06 "시작할게요" 뒤엔 지금 맵만 → S3에서 D-07 센서 준비. 섬 `MapLaunchApplier`가 입장 위치 적용 뒤 `MapLaunch.MarkApplied()`(맵 화면이 기다렸다 흐린 배경, 고칠 때 이 줄 남기기), `RunnerLabels`는 카메라가 꺼져 있으면 안 그림, 러닝 설정 중엔 섬 카메라 꺼짐·그리기 3프레임에 한 번
-- 확인 못 한 것: 처음 Play 때 안내 → 보정 화면이 버튼을 안 눌렀는데 넘어간 적 한 번(재현 안 됨, Submit 입력 의심 가설). 보정 화면 가로 모양은 Device Simulator·아이폰에서
+- **S3 메모(11/11 지환)**: 카운트다운·달리기 목표는 `MapScreen.Setup.Goal`, `POST /runs` goal에 `Setup.Goal.ToRequest()`(m·초). 섬 `MapLaunchApplier`가 입장 위치 적용 뒤 `MapLaunch.MarkApplied()`(고칠 때 이 줄 남기기), `RunnerLabels`는 카메라가 꺼져 있으면 안 그림
+- 확인 못 한 것: 처음 Play 때 안내 → 보정 화면이 버튼을 안 눌렀는데 넘어간 적 한 번(재현 안 됨, Submit 입력 의심 가설)
 - 헬스장 실험에 넣을 것: 0023 "데이터가 없는 곳"(1–15 km/h 1 간격 여러 명, 단계 20초 이상, 2 km/h 걸음 감지율, "속도 안 올림" 기준)과 아래 "속도 추정 다음 실험"
 
+## Claude 작업 요령 (이번 세션에서 배운 것)
+- **Figma 읽기**: 이 PC Chrome(Claude 확장 연결, Figma 로그인됨)에서 파일을 열고 `javascript_tool`로 `figma` 전역(플러그인 API). 맥 Chrome도 연결돼 있어 `list_connected_browsers`로 Windows(`Browser 1`)를 `select_browser`. 출력에 `@`·`=`이 많으면 "Cookie/query string data"로 막힐 수 있음(형식 바꾸기), 출력은 1500자쯤에서 잘림(프레임 하나씩)
+- **Figma 그림 받기**: `exportAsync({format:'PNG', constraint:{type:'SCALE', value:3}})` → blob 다운로드. Chrome은 같은 탭의 두 번째 자동 다운로드부터 막음 → **새 탭에서 여러 장을 한 파일로 묶어 한 번에**(길이 머리 + 이름 + 바이트) 받고 Python으로 나눔
+- **에디터 UI 누르기**: `NavigationSubmitEvent`를 `panel.visualTree.SendEvent`로(`e.target = 버튼`). 화면을 직접 띄우려면 `Scrun.App.AppRoot.Nav.StartFlow(new XxxScreen())` 뒤 `manage_camera` screenshot(파일은 `Assets/Screenshots`, 끝나면 지우기)
+- **USS 주의**: 화면 UXML의 USS 규칙은 그 화면 안쪽에만 닿음(app-root 배경은 `App.uss`에). 페이드인 클래스는 첫 `GeometryChangedEvent` 뒤에 붙여야 transition이 돎
+- **프로젝트 설정 저장**: `ProjectSettings.asset`은 `SaveAssetIfDirty`로 안 써짐 → `AssetDatabase.SaveAssets()`(다른 에셋도 써질 수 있으니 git 확인)
+- **한글 컴퓨터 이름**: Mono가 `localhost`를 못 풀어 ClientWebSocket 실패 → 에디터 서버 주소는 `127.0.0.1`(코드 기본값·저장값 자동 변환)
+
 ## 팀원에게 전할 것
+- **11/12 보낼 것(초안은 11/12 채팅)**: 지환 — A-16 주간 목표가 `PUT weekly-goal`을 부르는데 서버가 예시 응답이라 저장 안 남음(BL-30 DB 연결), 가입 필수 약관에 `age14` 추가(테스트 `agreedIds`), 계획 0028(가입 timezone IANA 검사·tzdata) (가)로 OK 답장, 카운트다운 끝에서 `MapScreen.StartRunning()`(지금은 `OnSetupDone`이 임시로 바로 부름). 상준 — 프로필 A-06 안내 문구 확정(Figma 문구가 사실과 달라 임시 "키와 몸무게는 앞으로 속도 추정에 쓸 예정이에요"), 약관 화면에 Figma에 없는 선택 "운동 알림 받기"가 서버 목록에 있음, HUD·간격 카드·토스트 모양(D-10·D-11)
 - **상준**: Figma 보정 화면 고칠 곳은 0023 "Figma와 다른 점"(문구는 `CalibrationCopy.cs`, 녹음 문구 목록은 `CalibrationVoice` 주석). 탭 아이콘 4개(홈·기록·친구·내 정보)를 UI Kit에. PRD v0.5·유스케이스 v0.2·백로그 v0.2 검토 `docs/product/prd_v05_review.md` 전달(결정: 실사 영상 최하위, 몸무게 필드 둠, 오프라인 달리기 미정). 노션 Front-End의 "API를 Query hook으로 연동하기"는 다른 프로젝트(displayu, React) 템플릿. 문서 형식 논의(11/02, `docs/log/team_discussions.md`)의 3종 문서 방향 답 확인
 - **지환**: (보정 API·#34·#35는 11/11 develop에 합침) "지금 N명"은 (나) S3 실시간 인원으로 하자는 답장(민재가 카톡으로). BL-42 끝나면 알려 달라고. `data/runs/20261029-004604/note.md`·`docs/speed/airpods_flight.md`의 실명 동의(없으면 "팀원 J", 그 전엔 커밋 안 함). 브랜치 `feat/airpods-flight`·`feat/airpods-flight-analysis`를 지워도 되는지
 - **둘 다**: 아이폰 유무(시연 2대), 각자 iOS 빌드 환경(맥·Xcode·Unity iOS 모듈), Apple Developer 계정 공유 방식, `shape-0218`이 상준인지
@@ -55,7 +57,7 @@
 
 ## 환경 메모 (영역 문서에 없는 것만)
 - **공용 개발 서버**(0019, ADR-0008, 주소·배포는 `docs/api/README.md`·`backend/README.md`): SSH `ubuntu@161.118.211.155` 키 `~/.ssh/oracle_key`는 Windows 노트북에만. 매일 KST 4:30 DB 백업(`~/scrun-backups`). 남은 것은 0019(429·서버 밖 백업·진짜 도메인 BL-51·유휴 회수 확인). BL-44 판단(11/07)은 "진행 중"(저장·조회 API는 로그인 5개뿐, 개발·테스트 DB 분리까지, 운영은 BL-51, 실시간 연동은 BL-25 뒤). 공통 규칙 "미정"에 "OCR 서버/앱 미정"이 남아 있음(11/06 서버 처리로 확정, BL-17) → OCR API 만들 때 고침
-- **Windows 노트북**: 로컬 Scrun 서버는 8001(`unity_map.md`, 에디터 API 주소도 EditorPrefs `Scrun.ApiBaseUrl` = 8001로 맞춰 둠, 기본값 8000은 옛 실험 서버), 개발 DB는 11/11 `5b7e2d9c4a13`까지 올림, 에디터 가짜 로그인은 로그아웃 상태(다음 Play 때 로그인), `backend/.env`(`KAKAO_MODE=fake`), 개발 DB는 `alembic upgrade head`. 노트북 `server.py`(8000, 옛 속도 실험)가 켜져 있을 수 있음
+- **Windows 노트북**: 로컬 Scrun 서버는 8001(`unity_map.md`, 에디터 API 주소도 EditorPrefs `Scrun.ApiBaseUrl` = 8001로 맞춰 둠, 기본값 8000은 옛 실험 서버), 개발 DB는 11/12 `7a1d4e2b9c30`(만 14세 약관)까지 올림, 에디터 API 주소 `http://127.0.0.1:8001`. 로컬 8001 서버는 Claude 세션 백그라운드라 세션이 끝나면 꺼짐 → `cd backend; ../.venv/Scripts/python -m uvicorn app.main:app --port 8001`. 에디터 로그인 계정은 보정 있음·닉네임이 테스트 욕설. 이 PC `PlayerPrefs`에 소개 봄(`scrun.intro.seen`)·온보딩 끝남이 남아 있어 처음 실행 흐름을 보려면 지우기, `backend/.env`(`KAKAO_MODE=fake`), 개발 DB는 `alembic upgrade head`. 노트북 `server.py`(8000, 옛 속도 실험)가 켜져 있을 수 있음
 - **맥**: `uv`·Python 3.12·`gh`는 `~/.local/bin`(셸 PATH엔 없음, 필요하면 `~/.local/bin/uv python update-shell`). Homebrew 없음. 시뮬레이터 키보드는 Mac 입력기를 영어로 바꿔야 영어가 쳐짐. Claude in Chrome 연결: VS Code에 전체 디스크 접근 권한 → 확장 안 CLI(`~/.vscode/extensions/anthropic.claude-code-*/resources/native-binary/claude --chrome`)를 한 번 실행 → `/chrome`에서 Enabled by default → 새 대화
 - **맥에서 커밋하지 말 것**: Mixamo 파일이 없어 Unity가 지운 `Characters/YBot` `.meta` 7개(받은 뒤 `git checkout -- unity/TestRun/Assets/Scrun/Characters/YBot`), iOS 전환 때 Unity가 Poly Haven `.meta`에 쓴 iOS 칸·`materialImportMode`, URP 전역 설정·ProjectSettings(시뮬레이터 SDK 값). 그 밖은 `unity_map.md` 171–172줄
 - `unity/Builds/device-console.log`(git 밖)에 카카오 토큰이 찍혀 있음 → 공유 금지
