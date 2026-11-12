@@ -2,9 +2,10 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Any, Optional
 
-from pydantic import Field, field_validator
+from pydantic import Field, StrictBool, field_validator
 
 from ..core import nickname as nick
+from ..core import timezones as tz
 from ..core.model import CamelModel
 
 
@@ -24,12 +25,17 @@ class MeUpdate(CamelModel):
     nickname: Optional[str] = Field(default=None, min_length=1, max_length=nick.RAW_MAX_LEN, description=nick.FORMAT_RULE)
     height_cm: Optional[int] = Field(default=None, ge=100, le=230)
     weight_kg: Optional[int] = Field(default=None, ge=20, le=250)
-    timezone: Optional[str] = None
+    timezone: Optional[str] = Field(default=None, max_length=tz.MAX_LEN, description=tz.RULE)
 
     @field_validator("nickname")
     @classmethod
     def _nickname(cls, v: Optional[str]) -> Optional[str]:
         return None if v is None else nick.validate_field(v)
+
+    @field_validator("timezone")
+    @classmethod
+    def _timezone(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None else tz.validate_field(v)
 
 
 class NicknameReason(str, Enum):
@@ -49,7 +55,9 @@ class Settings(CamelModel):
 
 
 class SettingsUpdate(CamelModel):
-    feed_share_default: Optional[bool] = None
+    """보낸 칸만 바뀜."""
+
+    feed_share_default: Optional[StrictBool] = Field(default=None, description="true/false만(\"yes\"·1 같은 값은 400)")
 
 
 class Gait(str, Enum):

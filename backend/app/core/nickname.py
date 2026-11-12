@@ -15,6 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..db.models import User
+from .errors import ApiError, ErrorCode
 
 MIN_LEN, MAX_LEN = 2, 12
 RAW_MAX_LEN = 40  # 정규화 전 입력 상한(요청 크기 제한용)
@@ -67,4 +68,18 @@ def validate_field(raw: str) -> str:
     name = normalize(raw)
     if not format_ok(name):
         raise ValueError(f"닉네임은 {FORMAT_RULE}")
+    return name
+
+
+def require_usable(db: Session, raw: str, exclude_user_id: Optional[str] = None) -> str:
+    """가입·내 정보 수정의 최종 판정: 쓸 수 있으면 정규화된 이름, 아니면 ApiError
+    (형식 400 VALIDATION_ERROR fields, 금칙어 400 NICKNAME_NOT_ALLOWED, 중복 409 NICKNAME_DUPLICATED)."""
+    name, problem = check(db, raw, exclude_user_id)
+    if problem is Problem.INVALID:
+        raise ApiError(ErrorCode.VALIDATION_ERROR, "닉네임 형식을 확인하세요.",
+                       {"fields": [{"field": "nickname", "reason": f"닉네임은 {FORMAT_RULE}"}]})
+    if problem is Problem.NOT_ALLOWED:
+        raise ApiError(ErrorCode.NICKNAME_NOT_ALLOWED)
+    if problem is Problem.DUPLICATED:
+        raise ApiError(ErrorCode.NICKNAME_DUPLICATED)
     return name

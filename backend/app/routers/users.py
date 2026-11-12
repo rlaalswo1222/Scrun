@@ -3,10 +3,12 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .. import stub_data as d
 from ..core import nickname as nick
+from ..core import timezones as tz
 from ..core.auth import Principal, stub_user
 from ..core.security import current_user, signup_or_user_id
 from ..db.ids import new_id
@@ -50,21 +52,37 @@ def nickname_check(request: Request, nickname: str = Query(min_length=1, max_len
 
 @router.get("/users/me", summary="내 정보", description="화면 B-01, H-01 · BL-36",
             response_model=Envelope[Me], responses=AUTH)
-def get_me(request: Request, _: Principal = Depends(stub_user)):
-    return ok(request, d.ME)
+def get_me(request: Request, user: User = Depends(current_user)):
+    return ok(request, _me_out(user))
 
 
 @router.patch(
     "/users/me",
     summary="내 정보 수정",
-    description="화면 H-01 · BL-36. 보낸 칸만 바뀜.\n\n스텁: 닉네임 `taken` → NICKNAME_DUPLICATED",
+    description="화면 H-01 · BL-36 · 계획 0028. 보낸 칸만 바뀜(빈 본문이면 그대로, null은 안 보낸 것과 같음). "
+    "닉네임은 가입·닉네임 확인과 같은 판정(정규화 → 형식 400 → 금칙어 400 → 중복 409), 지금 내 닉네임은 사용 가능. "
+    f"시간대는 {tz.RULE}(주간 목표 주기 계산용)",
     response_model=Envelope[Me],
     responses={**AUTH, **error_responses(E.VALIDATION_ERROR, E.NICKNAME_DUPLICATED, E.NICKNAME_NOT_ALLOWED)},
 )
-def patch_me(body: MeUpdate, request: Request, _: Principal = Depends(stub_user)):
-    if body.nickname == "taken":
-        raise ApiError(E.NICKNAME_DUPLICATED)
-    return ok(request, {**d.ME, **body.model_dump(by_alias=True, exclude_none=True)})
+def patch_me(body: MeUpdate, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    if body.nickname is not None:
+        user.nickname = nick.require_usable(db, body.nickname, exclude_user_id=user.id)  # 가입과 같은 최종 판정
+    if body.height_cm is not None:
+        user.height_cm = body.height_cm
+    if body.weight_kg is not None:
+        user.weight_kg = body.weight_kg
+    if body.timezone is not None:
+        user.timezone = body.timezone
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        # 검사와 저장 사이에 다른 사람이 같은 닉네임을 가져감(lower(nickname) 유일 인덱스). 다른 제약이면 그대로 500
+        if body.nickname is not None and nick.is_taken(db, nick.normalize(body.nickname), exclude_user_id=user.id):
+            raise ApiError(E.NICKNAME_DUPLICATED)
+        raise
+    return ok(request, _me_out(user))
 
 
 @router.delete(
@@ -80,14 +98,19 @@ def delete_me(_: Principal = Depends(stub_user)):
 
 @router.get("/users/me/settings", summary="설정 보기", description="화면 H-10 · BL-36. 알림은 폰 로컬이라 서버에 없음",
             response_model=Envelope[Settings], responses=AUTH)
-def get_settings(request: Request, _: Principal = Depends(stub_user)):
-    return ok(request, d.SETTINGS)
+def get_settings(request: Request, user: User = Depends(current_user)):
+    return ok(request, _settings_out(user))
 
 
-@router.patch("/users/me/settings", summary="설정 바꾸기", description="화면 H-10 · BL-36, BL-40",
+@router.patch("/users/me/settings", summary="설정 바꾸기",
+              description="화면 H-10 · BL-36, BL-40 · 계획 0028. 보낸 칸만 바뀜(빈 본문이면 그대로, null은 안 보낸 것과 같음)",
               response_model=Envelope[Settings], responses={**AUTH, **error_responses(E.VALIDATION_ERROR)})
-def patch_settings(body: SettingsUpdate, request: Request, _: Principal = Depends(stub_user)):
-    return ok(request, {**d.SETTINGS, **body.model_dump(by_alias=True, exclude_none=True)})
+def patch_settings(body: SettingsUpdate, request: Request, user: User = Depends(current_user),
+                   db: Session = Depends(get_db)):
+    if body.feed_share_default is not None:
+        user.feed_share_default = body.feed_share_default
+    db.commit()
+    return ok(request, _settings_out(user))
 
 
 @router.get(
@@ -126,6 +149,16 @@ def _latest_calibration(db: Session, user_id: str) -> Optional[CalibrationRow]:
     # ID가 시간순(ULID)이라 같은 시각에 두 번 올려도 나중 것이 위
     return db.scalar(select(CalibrationRow).where(CalibrationRow.user_id == user_id)
                      .order_by(CalibrationRow.created_at.desc(), CalibrationRow.id.desc()).limit(1))
+
+
+def _me_out(user: User) -> dict:
+    return {"userId": user.id, "nickname": user.nickname, "heightCm": user.height_cm, "weightKg": user.weight_kg,
+            "friendCode": user.friend_code, "timezone": user.timezone,
+            "createdAt": user.created_at.astimezone(timezone.utc)}  # API 시각은 UTC(Z)
+
+
+def _settings_out(user: User) -> dict:
+    return {"feedShareDefault": user.feed_share_default}
 
 
 def _calibration_out(row: CalibrationRow) -> dict:

@@ -65,6 +65,10 @@ REAL = {
     ("POST", "/v1/courses/{courseId}/entries"),
     ("GET", "/v1/users/me/calibration"),
     ("PUT", "/v1/users/me/calibration"),
+    ("GET", "/v1/users/me"),
+    ("PATCH", "/v1/users/me"),
+    ("GET", "/v1/users/me/settings"),
+    ("PATCH", "/v1/users/me/settings"),
 }
 
 

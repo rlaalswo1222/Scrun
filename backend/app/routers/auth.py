@@ -125,14 +125,7 @@ def _create_user(db: Session, body: SignupRequest, provider: str, provider_user_
         reason = f"없는 약관: {unknown}" if unknown else f"필수 약관 빠짐: {missing}"
         raise ApiError(E.VALIDATION_ERROR, "약관 동의를 확인하세요.", {"fields": [{"field": "agreedIds", "reason": reason}]})
 
-    name, problem = nick.check(db, body.nickname)  # 요청 모델에서도 검사하지만, 여기가 최종 판정
-    if problem is nick.Problem.INVALID:
-        raise ApiError(E.VALIDATION_ERROR, "닉네임 형식을 확인하세요.",
-                       {"fields": [{"field": "nickname", "reason": f"닉네임은 {nick.FORMAT_RULE}"}]})
-    if problem is nick.Problem.NOT_ALLOWED:
-        raise ApiError(E.NICKNAME_NOT_ALLOWED)
-    if problem is nick.Problem.DUPLICATED:
-        raise ApiError(E.NICKNAME_DUPLICATED)
+    name = nick.require_usable(db, body.nickname)  # 요청 모델에서도 형식을 보지만, 여기가 최종 판정(내 정보 수정과 같은 함수)
 
     user = User(id=new_id(), nickname=name, height_cm=body.height_cm, weight_kg=body.weight_kg,
                 timezone=body.timezone, friend_code=_new_friend_code(db))
