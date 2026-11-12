@@ -26,6 +26,9 @@ namespace Scrun.App
         // 맵처럼 뒤의 3D 화면이 보이게 앱 배경을 투명하게 할지
         public virtual bool ShowsWorld => false;
 
+        // 이 화면이 보이는 동안 app-root에 붙일 USS 클래스(노치·홈 바 여백까지 칠하는 배경, 예: 스플래시 그라데이션). 없으면 null
+        public virtual string RootClass => null;
+
         internal void Create(Navigator nav)
         {
             Nav = nav;

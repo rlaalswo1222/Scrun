@@ -12,6 +12,7 @@ namespace Scrun.App.Editor
 {
     // 메뉴 Scrun → Build App Scene: 앱 화면에 필요한 에셋과 앱 씬을 코드로 다시 만든다(손으로 만든 설정이 없게).
     //  - Pretendard 글꼴 4종(Medium은 Figma UI Kit 본문) → UI Toolkit 글꼴 에셋(동적: 쓰는 글자만 그때그때 그림, 한글 11,172자를 미리 굽지 않음)
+    //  - 로고 글꼴 Paytone One(스플래시 "SCRUN", 계획 0030, OFL) → 같은 방식의 글꼴 에셋. 스플래시 그림 가져오기 설정
     //  - 테마(AppTheme.tss: 기본 테마 + 기본 글꼴 Pretendard), 패널 설정(390×844 기준 크기 맞춤)
     //  - 씬 Assets/Scrun/Scenes/App/App.unity(UIDocument + AppRoot), 빌드 씬 목록 맨 앞
     public static class AppSceneBuilder
@@ -24,9 +25,15 @@ namespace Scrun.App.Editor
         const string SceneDir = "Assets/Scrun/Scenes/App";
         const string ScenePath = SceneDir + "/App.unity";
         static readonly string[] Weights = { "Regular", "Medium", "SemiBold", "Bold" };
+        const string ImageDir = UiDir + "/Images";
+
+        // 글꼴 파일(확장자 포함) → 같은 이름의 글꼴 에셋. Pretendard 4종 + 로고 Paytone One
+        static readonly string[] FontFiles =
+            Weights.Select(w => $"Pretendard-{w}.otf").Append("PaytoneOne-Regular.ttf").ToArray();
 
         // 글꼴 에셋 경로(AppFontReset도 이 목록을 씀)
-        public static readonly string[] FontAssetPaths = System.Array.ConvertAll(Weights, w => $"{FontDir}/Pretendard-{w}.asset");
+        public static readonly string[] FontAssetPaths =
+            FontFiles.Select(f => $"{FontDir}/{Path.GetFileNameWithoutExtension(f)}.asset").ToArray();
 
         [MenuItem("Scrun/Build App Scene")]
         public static void Build()
@@ -39,7 +46,9 @@ namespace Scrun.App.Editor
                 return;
             }
             EnsureOrientationSettings();
-            foreach (var w in Weights) EnsureFontAsset(w);
+            EnsureFontAssets();
+            EnsureSplashImages();
+            EnsureLaunchScreen();
             var theme = EnsureTheme();
             EnsurePanelSettings(theme);
             // USS가 글꼴 에셋보다 먼저 읽혔으면 글꼴 연결이 비므로 다시 읽힌다
@@ -48,19 +57,27 @@ namespace Scrun.App.Editor
             Debug.Log($"[AppScene] 완료: {ScenePath} (빌드 씬 목록 맨 앞). Play로 확인, 기기 모양은 Window → General → Device Simulator");
         }
 
-        static void EnsureFontAsset(string weight)
+        public static void EnsureFontAssets()
         {
-            var assetPath = $"{FontDir}/Pretendard-{weight}.asset";
+            foreach (var f in FontFiles) EnsureFontAsset(f);
+        }
+
+        static void EnsureFontAsset(string file)
+        {
+            var name = Path.GetFileNameWithoutExtension(file);
+            var assetPath = $"{FontDir}/{name}.asset";
             if (AssetDatabase.LoadAssetAtPath<FontAsset>(assetPath) != null) return;
-            var font = AssetDatabase.LoadAssetAtPath<Font>($"{FontDir}/Pretendard-{weight}.otf");
+            var font = AssetDatabase.LoadAssetAtPath<Font>($"{FontDir}/{file}");
             if (font == null)
             {
-                Debug.LogError($"[AppScene] 글꼴 파일이 없음: {FontDir}/Pretendard-{weight}.otf");
+                Debug.LogError($"[AppScene] 글꼴 파일이 없음: {FontDir}/{file}");
                 return;
             }
-            var fa = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024,
+            // 로고 글꼴은 "SCRUN" 다섯 글자만 그리므로 지도(아틀라스)를 작게(메모리). 한글 본문 Pretendard는 1024
+            int atlas = name.StartsWith("Pretendard") ? 1024 : 256;
+            var fa = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, atlas, atlas,
                                                AtlasPopulationMode.Dynamic, true);
-            fa.name = $"Pretendard-{weight}";
+            fa.name = name;
             AssetDatabase.CreateAsset(fa, assetPath);
             foreach (var tex in fa.atlasTextures.Where(t => t != null))
             {
@@ -72,6 +89,71 @@ namespace Scrun.App.Editor
             EditorUtility.SetDirty(fa);
             AssetDatabase.SaveAssetIfDirty(fa);
             AssetDatabase.ImportAsset(assetPath);
+        }
+
+        // 스플래시 그림(계획 0030): 그라데이션은 압축하면 띠가 보여 무압축·늘릴 때 가장자리 번짐 없게 Clamp,
+        // 캐릭터는 투명 배경 그대로. 둘 다 UI에 원래 크기 근처로만 그려서 밉맵 없음
+        public static void EnsureSplashImages()
+        {
+            SetImage($"{ImageDir}/SplashGradient.png", uncompressed: true);
+            SetImage($"{ImageDir}/CharacterRun.png", uncompressed: false);
+        }
+
+        static void SetImage(string path, bool uncompressed)
+        {
+            if (AssetImporter.GetAtPath(path) is not TextureImporter ti)
+            {
+                Debug.LogError($"[AppScene] 그림이 없음: {path}");
+                return;
+            }
+            var compression = uncompressed ? TextureImporterCompression.Uncompressed : TextureImporterCompression.CompressedHQ;
+            if (ti.textureType == TextureImporterType.Default && !ti.mipmapEnabled && ti.alphaIsTransparency &&
+                ti.wrapMode == TextureWrapMode.Clamp && ti.npotScale == TextureImporterNPOTScale.None &&
+                ti.textureCompression == compression)
+                return;
+            ti.textureType = TextureImporterType.Default;
+            ti.mipmapEnabled = false;
+            ti.alphaIsTransparency = true;
+            ti.wrapMode = TextureWrapMode.Clamp;
+            ti.npotScale = TextureImporterNPOTScale.None;
+            ti.textureCompression = compression;
+            ti.SaveAndReimport();
+        }
+
+        // 아이폰 실행 화면(Unity가 뜨기 전 iOS가 그리는 화면)을 스플래시 위쪽 색으로(계획 0030):
+        // 기본값이면 검은 화면 → 파란 스플래시로 번쩍임. "그림 + 배경(상대 크기)"에 그림 없이 배경색만.
+        // Unity 시작 화면 배경색도 같게(Unity 로고 화면은 꺼져 있음)
+        static readonly Color LaunchColor = new Color32(0x2F, 0x6F, 0xE4, 0xFF); // App.uss --color-primary(sky/700)와 같게
+
+        public static void EnsureLaunchScreen()
+        {
+            var settings = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset").FirstOrDefault();
+            if (settings == null) return;
+            var so = new SerializedObject(settings);
+            bool changed = false;
+            void SetInt(string prop, int v)
+            {
+                var p = so.FindProperty(prop);
+                if (p == null) { Debug.LogWarning($"[AppScene] 설정 없음: {prop}"); return; }
+                if (p.intValue != v) { p.intValue = v; changed = true; }
+            }
+            void SetColor(string prop, Color v)
+            {
+                var p = so.FindProperty(prop);
+                if (p == null) { Debug.LogWarning($"[AppScene] 설정 없음: {prop}"); return; }
+                if (p.colorValue != v) { p.colorValue = v; changed = true; }
+            }
+            SetInt("iOSLaunchScreenType", 1); // iOSLaunchScreenType.ImageAndBackgroundRelative
+            SetColor("iOSLaunchScreenBackgroundColor", LaunchColor);
+            SetInt("iOSLaunchScreeniPadType", 1); // 대상 기기가 아이폰·아이패드(targetDevice 2)라 아이패드도
+            SetColor("iOSLaunchScreeniPadBackgroundColor", LaunchColor);
+            SetColor("m_SplashScreenBackgroundColor", LaunchColor);
+            if (!changed) return;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            // 프로젝트 설정 파일은 SaveAssetIfDirty·SaveToSerializedFileAndForget로는 안 써짐(11/12 확인) → 전체 저장.
+            // 값이 다를 때(처음 한 번)만 돈다. 그때 편집 중이던 다른 에셋이 함께 써질 수 있으니 실행 뒤 git 변경을 확인
+            AssetDatabase.SaveAssets();
+            Debug.Log("[AppScene] 아이폰 실행 화면: 스플래시 파랑(#2F6FE4)");
         }
 
         // 앱은 세로 고정 + 달리기 화면만 가로. 아이폰은 Info.plist에 적힌 방향으로만 돌 수 있으므로

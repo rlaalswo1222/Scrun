@@ -1,0 +1,63 @@
+/* A-01 스플래시(Figma 596:26, 계획 0030). Figma Body: 세로 자동 배치, 간격 12, 안쪽 여백 8/20/16/20, 가운데 정렬 */
+
+/* 배경 그라데이션은 App.uss의 .app-root--splash(app-root는 이 화면 바깥이라 여기 규칙이 안 닿음) */
+
+.splash {
+    flex-grow: 1;
+    align-items: center;
+    padding: 8px 20px 16px 20px;
+}
+
+/* 첫 프레임엔 투명 → SplashScreen이 splash--shown을 붙이면 0.4초에 걸쳐 나타남 */
+.splash-logo,
+.splash-tagline,
+.splash-character {
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.4s;
+    transition-timing-function: ease-out;
+}
+
+.splash--shown .splash-logo,
+.splash--shown .splash-tagline,
+.splash--shown .splash-character {
+    opacity: 1;
+}
+
+/* Figma: Paytone One 22, 흰색 */
+.splash-logo {
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/PaytoneOne-Regular.asset");
+    font-size: 22px;
+    color: #FFFFFF;
+    margin: 0;
+    padding: 0;
+    -unity-text-align: middle-center;
+}
+
+/* Figma: Pretendard Medium 16, 줄 높이 150%(USS에 없음), 자간 −1% = −0.16px, 흰색, 가운데 */
+.splash-tagline {
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+    font-size: 16px;
+    letter-spacing: -0.16px;
+    color: #FFFFFF;
+    white-space: normal;
+    -unity-text-align: middle-center;
+    margin: 12px 0 0 0;
+    padding: 0;
+}
+
+/* 위아래 빈 칸이 같아서 캐릭터가 남은 공간 가운데에 옴(Figma Spacer 둘) */
+.splash-spacer {
+    flex-grow: 1;
+    margin-top: 12px;
+}
+
+/* Figma: 216×300. 그림은 3배(648×900) */
+.splash-character {
+    width: 216px;
+    height: 300px;
+    flex-shrink: 0;
+    margin-top: 12px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/CharacterRun.png");
+    -unity-background-scale-mode: scale-to-fit;
+}
