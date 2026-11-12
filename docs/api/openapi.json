@@ -478,7 +478,7 @@
           "User"
         ],
         "summary": "내 정보 수정",
-        "description": "화면 H-01 · BL-36. 보낸 칸만 바뀜.\n\n스텁: 닉네임 `taken` → NICKNAME_DUPLICATED",
+        "description": "화면 H-01 · BL-36 · 계획 0028. 보낸 칸만 바뀜(빈 본문이면 그대로, null은 안 보낸 것과 같음). 닉네임은 가입·닉네임 확인과 같은 판정(정규화 → 형식 400 → 금칙어 400 → 중복 409), 지금 내 닉네임은 사용 가능. 시간대는 IANA 시간대 이름(예: Asia/Seoul)(주간 목표 주기 계산용)",
         "operationId": "patch_me_v1_users_me_patch",
         "requestBody": {
           "content": {
@@ -610,7 +610,7 @@
           "User"
         ],
         "summary": "설정 바꾸기",
-        "description": "화면 H-10 · BL-36, BL-40",
+        "description": "화면 H-10 · BL-36, BL-40 · 계획 0028. 보낸 칸만 바뀜(빈 본문이면 그대로, null은 안 보낸 것과 같음)",
         "operationId": "patch_settings_v1_users_me_settings_patch",
         "requestBody": {
           "content": {
@@ -4929,13 +4929,15 @@
           "timezone": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 64
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Timezone"
+            "title": "Timezone",
+            "description": "IANA 시간대 이름(예: Asia/Seoul)"
           }
         },
         "type": "object",
@@ -5569,11 +5571,13 @@
                 "type": "null"
               }
             ],
-            "title": "Feedsharedefault"
+            "title": "Feedsharedefault",
+            "description": "true/false만(\"yes\"·1 같은 값은 400)"
           }
         },
         "type": "object",
-        "title": "SettingsUpdate"
+        "title": "SettingsUpdate",
+        "description": "보낸 칸만 바뀜."
       },
       "SignupRequest": {
         "properties": {
@@ -5608,8 +5612,9 @@
           },
           "timezone": {
             "type": "string",
+            "maxLength": 64,
             "title": "Timezone",
-            "description": "주간 목표 주기 계산용",
+            "description": "주간 목표 주기 계산용. IANA 시간대 이름(예: Asia/Seoul)",
             "default": "Asia/Seoul"
           },
           "deviceId": {

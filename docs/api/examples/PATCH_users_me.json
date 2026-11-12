@@ -2,8 +2,10 @@
   "request": {
     "method": "PATCH",
     "path": "/v1/users/me",
+    "auth": "Bearer {accessToken}",
     "body": {
-      "heightCm": 180
+      "nickname": "아침러너",
+      "weightKg": 68
     }
   },
   "status": 200,
@@ -11,13 +13,13 @@
     "resultType": "SUCCESS",
     "success": {
       "data": {
-        "userId": "usr_demo",
-        "nickname": "새벽러너",
-        "heightCm": 180,
-        "weightKg": 70,
+        "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000",
+        "nickname": "아침러너",
+        "heightCm": 175,
+        "weightKg": 68,
         "friendCode": "SCR-7K2Q",
         "timezone": "Asia/Seoul",
-        "createdAt": "2026-11-01T09:00:00Z"
+        "createdAt": "2026-11-06T00:00:00Z"
       }
     },
     "error": null,
