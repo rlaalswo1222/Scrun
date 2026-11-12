@@ -978,7 +978,7 @@
           "Course"
         ],
         "summary": "코스 목록",
-        "description": "화면 C-01 · BL-7, BL-43. 짧은 코스부터. runnersNow는 그 맵에 지금 있는 사람 수(실시간 방에 붙어 있는 사람 + 입장 2분 안에 아직 안 붙은 사람). 실사 영상 코스는 최하위라 type만 열어 둠",
+        "description": "화면 C-01 · BL-7, BL-43. 짧은 코스부터. runnersNow는 그 맵에 지금 있는 사람 수(나 빼고)(실시간 방에 붙어 있는 사람 + 입장 2분 안에 아직 안 붙은 사람). 실사 영상 코스는 최하위라 type만 열어 둠",
         "operationId": "list_courses_v1_courses_get",
         "responses": {
           "200": {
@@ -3345,7 +3345,7 @@
           "runnersNow": {
             "type": "integer",
             "title": "Runnersnow",
-            "description": "그 맵에 지금 있는 사람 수(봇 제외). 실시간 서버 전까지 임시: 최근 10분 안에 입장했거나 달리는 중인 사람"
+            "description": "그 맵에 지금 있는 사람 수(봇·묻는 사람 제외). 실시간 방에 붙은 사람(끊긴 지 30초 안 포함) + 입장 2분 안에 아직 안 붙은 사람"
           },
           "thumbnailUrl": {
             "anyOf": [
@@ -3392,7 +3392,7 @@
           "runnersNow": {
             "type": "integer",
             "title": "Runnersnow",
-            "description": "그 맵에 지금 있는 사람 수(봇 제외). 실시간 서버 전까지 임시: 최근 10분 안에 입장했거나 달리는 중인 사람"
+            "description": "그 맵에 지금 있는 사람 수(봇·묻는 사람 제외). 실시간 방에 붙은 사람(끊긴 지 30초 안 포함) + 입장 2분 안에 아직 안 붙은 사람"
           },
           "thumbnailUrl": {
             "anyOf": [

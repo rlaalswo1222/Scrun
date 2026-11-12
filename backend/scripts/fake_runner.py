@@ -32,7 +32,7 @@ def login(api: httpx.Client, kakao: str) -> str:
         return first["accessToken"]
     nickname = f"가짜{kakao.split('_')[-1]}"[:12]
     signed = _data(api.post("/v1/auth/signup", headers={"Authorization": f"Bearer {first['signupToken']}"},
-                            json={"agreedIds": ["terms", "privacy"], "nickname": nickname, "heightCm": 175, "weightKg": 70}))
+                            json={"agreedIds": ["terms", "privacy", "age14"], "nickname": nickname, "heightCm": 175, "weightKg": 70}))
     token = signed["accessToken"]
     _data(api.put("/v1/users/me/calibration", headers={"Authorization": f"Bearer {token}"},
                   json={"points": [{"speedKmh": 8, "gait": "RUN", "durationS": 15}], "model": {"fake": True},

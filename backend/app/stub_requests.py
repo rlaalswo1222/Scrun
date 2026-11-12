@@ -6,7 +6,7 @@ from typing import Optional
 CALLS = [
     ("POST", "/v1/auth/kakao", {"kakaoAccessToken": "k_1", "deviceId": "6F1A2B3C-0000-4000-8000-000000000001"}, 200),
     ("GET", "/v1/agreements", None, 200),
-    ("POST", "/v1/auth/signup", {"agreedIds": ["terms", "privacy"], "nickname": "새벽러너", "heightCm": 175, "weightKg": 70}, 201),
+    ("POST", "/v1/auth/signup", {"agreedIds": ["terms", "privacy", "age14"], "nickname": "새벽러너", "heightCm": 175, "weightKg": 70}, 201),
     ("POST", "/v1/auth/refresh", {"refreshToken": "r"}, 200),
     ("POST", "/v1/auth/logout", {"refreshToken": "r"}, 204),
     ("GET", "/v1/users/nickname/check?nickname=새벽러너", None, 200),
