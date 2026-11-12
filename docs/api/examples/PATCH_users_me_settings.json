@@ -2,6 +2,7 @@
   "request": {
     "method": "PATCH",
     "path": "/v1/users/me/settings",
+    "auth": "Bearer {accessToken}",
     "body": {
       "feedShareDefault": false
     }

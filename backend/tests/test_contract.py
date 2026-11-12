@@ -78,15 +78,16 @@ def test_requires_login(method, path, body, status):
     assert_fail(call(method, path, body), 401, "UNAUTHORIZED")
 
 
+# 아직 스텁인 API로 본다(내 정보 /users/me는 계획 0028에서 진짜가 됨 → tests/test_me.py)
 def test_expired_and_signup_tokens():
-    assert_fail(client.get("/v1/users/me", headers={"Authorization": "Bearer expired"}), 401, "TOKEN_EXPIRED")
-    assert_fail(client.get("/v1/users/me", headers={"Authorization": "Bearer signup"}), 403, "SIGNUP_REQUIRED")
+    assert_fail(client.get("/v1/users/me/weekly-goal", headers={"Authorization": "Bearer expired"}), 401, "TOKEN_EXPIRED")
+    assert_fail(client.get("/v1/users/me/weekly-goal", headers={"Authorization": "Bearer signup"}), 403, "SIGNUP_REQUIRED")
 
 
 def test_validation_is_400_with_fields():
-    r = client.patch("/v1/users/me", headers=AUTH, json={"heightCm": 500})
+    r = client.put("/v1/users/me/weekly-goal", headers=AUTH, json={"targetCount": 9})
     assert_fail(r, 400, "VALIDATION_ERROR")
-    assert any(f["field"] == "heightCm" for f in r.json()["error"]["details"]["fields"])
+    assert any(f["field"] == "targetCount" for f in r.json()["error"]["details"]["fields"])
 
 
 def test_unknown_path_and_method():

@@ -1,6 +1,6 @@
 # SCRUN 서버 (`backend/`)
 
-FastAPI + PostgreSQL. API 42개 중 **로그인 5개 + 닉네임 확인**(DB 저장·토큰 발급, 계획 [0016](../docs/plans/0016-server-skeleton.md))과 **코스 3개**(목록·상세·맵 입장, 계획 [0021](../docs/plans/0021-course-api.md))는 진짜, **나머지 33개는 아직 스텁**(고정 예시, 계획 [0014](../docs/plans/0014-api-spec.md)). 스텁은 묶음별로 하나씩 진짜로 바꾼다. 옛 `server.py`(코스 만들기 실험 서버)와는 별개.
+FastAPI + PostgreSQL. API 42개 중 **로그인 5개 + 닉네임 확인**(DB 저장·토큰 발급, 계획 [0016](../docs/plans/0016-server-skeleton.md)), **코스 3개**(목록·상세·맵 입장, 계획 [0021](../docs/plans/0021-course-api.md)), **보정값 2개**(계획 [0023](../docs/plans/0023-calibration.md)), **내 정보·설정 4개**(계획 [0028](../docs/plans/0028-user-me-settings-api.md))는 진짜, **나머지 27개는 아직 스텁**(고정 예시, 계획 [0014](../docs/plans/0014-api-spec.md)). 스텁은 묶음별로 하나씩 진짜로 바꾼다. 옛 `server.py`(코스 만들기 실험 서버)와는 별개.
 
 공통 규칙(응답 껍데기·상태 코드·오류 코드·단위)은 [docs/api/README.md](../docs/api/README.md), DB 테이블은 [docs/api/data_model.md](../docs/api/data_model.md), API 목록·진행은 노션 SCRUN > 문서 > API 명세.
 
@@ -31,14 +31,13 @@ http://localhost:8000/docs 에서 눌러 본다.
 - 실제 카카오로 확인하려면 `.env`에 `KAKAO_MODE=real` + `KAKAO_APP_ID=`(카카오 개발자 > 내 애플리케이션 > 앱 ID). 다른 앱에서 발급된 카카오 토큰은 거절
 - 닉네임은 `GET /v1/users/nickname/check`로 먼저 확인(가입과 같은 판정, 규칙은 [docs/api/README.md "닉네임"](../docs/api/README.md))
 
-### 스텁 API(33개) 규칙 — 오류 화면 확인용
+### 스텁 API(27개) 규칙 — 오류 화면 확인용
 스텁 API는 토큰을 검사하지 않는다(아무 토큰이나 예시 사용자 `usr_demo`). 진짜가 되면 진짜 토큰만 받는다.
 | 넣는 값 | 결과 |
 |---|---|
 | 토큰 없음 | 401 `UNAUTHORIZED` |
 | 토큰 `expired` | 401 `TOKEN_EXPIRED` |
 | 토큰 `signup` | 가입용 토큰 흉내(스텁 API는 403 `SIGNUP_REQUIRED`) |
-| 내 정보 수정 닉네임 `taken` | 409 `NICKNAME_DUPLICATED` |
 | 기록 `run_other` / 없는 ID | 403 `FORBIDDEN` / 404 `RUN_NOT_FOUND` |
 | 계기판 사진 파일 이름에 `blur` | 200 + `RETAKE_REQUIRED` |
 | 친구 코드 `SCR-7K2Q`(내 코드) / `SCR-NONE` / `SCR-FRND` / `SCR-FULL` | 내 코드 / 없음 / 이미 친구 / 50명 초과 |
@@ -55,7 +54,7 @@ app/
                      nickname(정규화·형식·금칙어·중복), model(camelCase)
   db/                models(테이블 21개), session(DB 연결), ids(ULID), testing(테스트 DB로 바꿔 끼우기)
   schemas/           요청·응답 모델(도메인별). Swagger의 Schemas
-  routers/           API 주소(도메인별). auth.py, users.py의 닉네임 확인, courses.py가 진짜, 나머지는 스텁
+  routers/           API 주소(도메인별). auth.py, users.py의 닉네임 확인·내 정보·설정·보정값, courses.py가 진짜, 나머지는 스텁
   testenv.py         테스트·예시 내보내기 전용 설정(임시 서명 키 + 가짜 카카오, app보다 먼저 부름)
   stub_data.py       스텁이 돌려주는 예시 값(실측 아님)
   stub_requests.py   모든 API 예시 요청 표 + 진짜가 된 API 목록(REAL)

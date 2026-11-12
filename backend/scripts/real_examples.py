@@ -1,7 +1,7 @@
 """진짜로 구현된 API의 예시를 실제 흐름으로 만든다(테스트 DB + 가짜 카카오). export_openapi·notion_pages가 쓴다.
 
-흐름: 카카오 로그인(처음) → 약관 → 닉네임 확인 → 가입 → 코스 목록·상세 → 보정 저장·조회 → 맵 입장 → 토큰 재발급 → 로그아웃.
-토큰 값·저장 시각은 매번 바뀌므로 고정 값으로 바꿔 넣는다. 입장 위치(랜덤)는 시드를 고정한 난수로 바꿔 끼워 매번 같게.
+흐름: 카카오 로그인(처음) → 약관 → 닉네임 확인 → 가입 → 내 정보·설정 조회·수정 → 코스 목록·상세 → 보정 저장·조회 → 맵 입장 → 토큰 재발급 → 로그아웃.
+토큰 값·저장 시각·사용자 ID·친구 코드는 매번 바뀌므로 고정 값으로 바꿔 넣는다. 입장 위치(랜덤)는 시드를 고정한 난수로 바꿔 끼워 매번 같게.
 """
 from app.testenv import use_test_settings
 
@@ -18,7 +18,8 @@ from app.stub_requests import REAL
 
 FIXED_META = {"timestamp": "2026-11-06T00:00:00Z", "requestId": "req_example"}
 DEVICE_ID = "6F1A2B3C-0000-4000-8000-000000000001"  # 예시 identifierForVendor
-PLACEHOLDER = {"accessToken": "eyJhbGciOi...(access)", "refreshToken": "(refresh 토큰 원문)", "signupToken": "eyJhbGciOi...(signup)"}
+PLACEHOLDER = {"accessToken": "eyJhbGciOi...(access)", "refreshToken": "(refresh 토큰 원문)", "signupToken": "eyJhbGciOi...(signup)",
+               "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000", "friendCode": "SCR-7K2Q"}
 
 
 def _clean(j):
@@ -65,6 +66,13 @@ def collect() -> dict:
                   c.post("/v1/auth/signup", json=body, headers={"Authorization": f"Bearer {first['signupToken']}"}))
         tok = tok["success"]["data"]
         auth = {"Authorization": f"Bearer {tok['accessToken']}"}
+        rec("GET", "/v1/users/me", None, "Bearer {accessToken}", c.get("/v1/users/me", headers=auth))
+        body = {"nickname": "아침러너", "weightKg": 68}
+        rec("PATCH", "/v1/users/me", body, "Bearer {accessToken}", c.patch("/v1/users/me", json=body, headers=auth))
+        rec("GET", "/v1/users/me/settings", None, "Bearer {accessToken}", c.get("/v1/users/me/settings", headers=auth))
+        body = {"feedShareDefault": False}
+        rec("PATCH", "/v1/users/me/settings", body, "Bearer {accessToken}",
+            c.patch("/v1/users/me/settings", json=body, headers=auth))
         rec("GET", "/v1/courses", None, "Bearer {accessToken}", c.get("/v1/courses", headers=auth))
         rec("GET", "/v1/courses/{courseId}", None, "Bearer {accessToken}", c.get("/v1/courses/crs_lake_loop", headers=auth))
         cal = {  # 예시 값(실측 아님). model은 폰 SpeedEstimator가 만든 것을 서버는 해석하지 않고 보관
