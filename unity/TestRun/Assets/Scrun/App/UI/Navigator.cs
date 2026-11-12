@@ -97,6 +97,9 @@ namespace Scrun.App
             ShowTop();
         }
 
+        // 뒤로 갈 화면이 있는지(지금 화면이 맨 아래가 아님). 화면이 뒤로 버튼을 숨길지 정할 때
+        public bool CanPop => Stack != null && Stack.Count > 1;
+
         // 하나 뒤로. 맨 아래 화면이면 아무것도 안 하고 false
         public bool Pop()
         {

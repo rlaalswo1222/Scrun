@@ -61,10 +61,10 @@ namespace Scrun.App.Tests
         }
 
         [Test]
-        public void 로그인_안_됐으면_스플래시_다음은_로그인()
+        public void 로그인_안_됐고_소개를_봤으면_스플래시_다음은_로그인()
         {
             Show();
-            AppRoot.AfterSplash(nav, loggedIn: false);
+            AppRoot.AfterSplash(nav, loggedIn: false, introSeen: true);
             Assert.IsInstanceOf<LoginScreen>(nav.Current);
         }
 

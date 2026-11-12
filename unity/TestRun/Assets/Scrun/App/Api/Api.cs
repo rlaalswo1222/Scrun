@@ -124,6 +124,10 @@ namespace Scrun.App
         // 주간 목표 진행(D-01 "이번 주 목표까지 N회", 홈 B-01). 목표를 안 정했으면 TargetCount = null. DB 연결은 S6 BL-30
         public Task<WeeklyGoal> GetWeeklyGoalAsync() =>
             c.GetAsync<WeeklyGoal>("/v1/users/me/weekly-goal", AuthMode.User);
+
+        // 주간 목표 정하기(A-16 온보딩, 계획 0031·H-08 마이). 1–7회. 서버 DB 연결은 지환 BL-30(그 전엔 예시 응답만)
+        public Task<WeeklyGoal> PutWeeklyGoalAsync(WeeklyGoalUpdate body) =>
+            c.SendAsync<WeeklyGoal>("PUT", "/v1/users/me/weekly-goal", body, AuthMode.User);
     }
 
     // 코스 목록·상세·맵 입장(계획 0021·PR #30). 셋 다 로그인 필요

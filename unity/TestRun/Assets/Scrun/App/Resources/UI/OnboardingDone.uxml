@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- A-17 온보딩 완료(Figma 599:434, 계획 0031). 배경은 스플래시 그라데이션(AppScreen.RootClass) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+    <ui:VisualElement class="onb onb-done">
+        <ui:Label text="준비 끝!" class="done-title" />
+        <ui:Label text="이제 첫 러닝을 시작해 볼까요?" class="done-lead" />
+        <ui:VisualElement class="spacer" />
+        <ui:VisualElement class="char-stretch" />
+        <ui:VisualElement class="spacer" />
+        <ui:VisualElement class="done-card">
+            <ui:Label text="첫 러닝 전에 속도 보정이 필요해요 (약 3분)" class="done-card-text" />
+        </ui:VisualElement>
+        <ui:Button name="home" text="홈으로" class="btn btn-dark btn-fig" />
+    </ui:VisualElement>
+</ui:UXML>

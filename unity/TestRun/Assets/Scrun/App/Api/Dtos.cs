@@ -105,6 +105,12 @@ namespace Scrun.App
     }
 
     // 주간 목표 진행(GET /v1/users/me/weekly-goal). 1회 = 인증 완료 + 5분 이상(서버 집계)
+    // PUT /v1/users/me/weekly-goal 본문. 1–7회(서버 WeeklyGoalUpdate)
+    public sealed class WeeklyGoalUpdate
+    {
+        public int TargetCount { get; set; }
+    }
+
     public sealed class WeeklyGoal
     {
         public int? TargetCount { get; set; }     // 목표를 안 정했으면 null
