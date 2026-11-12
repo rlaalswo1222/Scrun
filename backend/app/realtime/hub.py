@@ -116,22 +116,23 @@ class Hub:
                        "runners": [r.public() for r in room.runners.values() if r.user_id != user_id and r.placed]}
         return conn, welcome
 
-    def leave(self, conn: Conn, intentional: bool = False) -> None:
+    def leave(self, conn: Conn, intentional: bool = False) -> bool:
         """연결이 끝남. 끊김이면 러너를 GRACE_S 동안 남기고, 앱이 leave로 나갔으면 바로 뺀다.
-        다른 연결로 바뀐 경우(앞 연결)는 아무것도 안 함."""
+        다른 연결로 바뀐 경우(앞 연결)는 아무것도 안 함. 반환: leave로 방에서 뺐는지(그때만 자리를 지움)."""
         with self._lock:
             room = self._rooms.get(conn.map_id)
             runner = room.runners.get(conn.user_id) if room else None
             if runner is None or runner.conn is not conn:
-                return
+                return False
             if intentional:
                 runner.conn = None
                 self._remove_locked(conn.map_id, conn.user_id)
-                return
+                return True
             runner.conn = None
             runner.disconnected_at = self._clock()
             if self._grace_s <= 0:
                 self._sweep_locked()
+            return False
 
     def update(self, conn: Conn, d: float, v: float, running: bool) -> bool:
         """내 상태. 숫자가 아니거나(NaN 등) 이 연결이 이미 바뀌었으면 False. 첫 상태면 다른 사람에게 joined."""

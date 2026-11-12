@@ -13,12 +13,17 @@ namespace Scrun.App.Editor
         static void Open() => GetWindow<ApiServerWindow>("API 서버");
 
         [InitializeOnLoadMethod]
-        static void Load() => ApiConfig.BaseUrl = EditorPrefs.GetString(PrefKey, ApiConfig.LocalServer);
+        static void Load()
+        {
+            string saved = EditorPrefs.GetString(PrefKey, ApiConfig.LocalServer);
+            string url = ApiConfig.Normalize(saved);
+            if (url != saved && EditorPrefs.HasKey(PrefKey)) EditorPrefs.SetString(PrefKey, url); // 예전 localhost 주소 옮기기
+            ApiConfig.BaseUrl = url;
+        }
 
         static void Set(string url)
         {
-            url = (url ?? "").Trim().TrimEnd('/');
-            if (url.Length == 0) url = ApiConfig.LocalServer;
+            url = ApiConfig.Normalize(url);
             ApiConfig.BaseUrl = url;
             EditorPrefs.SetString(PrefKey, url);
         }

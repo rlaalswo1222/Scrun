@@ -16,7 +16,7 @@ class Course(CamelModel):
     name: str
     type: CourseType
     length_m: int = Field(description="한 바퀴(루프) 또는 전체(영상) 길이")
-    runners_now: int = Field(description="그 맵에 지금 있는 사람 수(봇 제외). 실시간 서버 전까지 임시: 최근 10분 안에 입장했거나 달리는 중인 사람")
+    runners_now: int = Field(description="그 맵에 지금 있는 사람 수(봇·묻는 사람 제외). 실시간 방에 붙은 사람(끊긴 지 30초 안 포함) + 입장 2분 안에 아직 안 붙은 사람")
     thumbnail_url: Optional[str] = Field(description="없으면 null(앱 기본 그림)")
 
 

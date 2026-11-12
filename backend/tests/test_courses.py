@@ -159,14 +159,25 @@ def test_entry_takes_a_seat(db_client, me, db):
     claims = tokens.decode_realtime(e["realtime"]["token"])
     assert claims["sub"] == me[1] and claims["map"] == "map_crs_lake_loop"
     assert db.scalar(select(CourseEntry.course_id).where(CourseEntry.user_id == me[1])) == "crs_lake_loop"
-    assert data(db_client.get("/v1/courses/crs_lake_loop", headers=me[0]))["runnersNow"] == 1
+    other = signup(db_client, "k_77")
+    assert data(db_client.get("/v1/courses/crs_lake_loop", headers=other))["runnersNow"] == 1
+
+
+def test_viewer_is_not_counted(db_client, me, db):
+    """목록·상세는 보는 사람을 빼고 셈: 맵에서 막 나와 앱의 leave보다 상세 요청이 먼저 닿아도 나를 1명으로 안 보임."""
+    calibrate(db, me[1])
+    data(enter(db_client, me[0]))
+    assert data(db_client.get("/v1/courses/crs_lake_loop", headers=me[0]))["runnersNow"] == 0
+    listed = {x["courseId"]: x["runnersNow"] for x in data(db_client.get("/v1/courses", headers=me[0]))}
+    assert listed["crs_lake_loop"] == 0
 
 
 def test_entering_another_course_moves_the_seat(db_client, me, db):
     calibrate(db, me[1])
     data(enter(db_client, me[0]))
     data(enter(db_client, me[0], "crs_island_tour"))
-    counts = {x["courseId"]: x["runnersNow"] for x in data(db_client.get("/v1/courses", headers=me[0]))}
+    other = signup(db_client, "k_77")
+    counts = {x["courseId"]: x["runnersNow"] for x in data(db_client.get("/v1/courses", headers=other))}
     assert counts["crs_lake_loop"] == 0 and counts["crs_island_tour"] == 1
 
 

@@ -13,7 +13,7 @@
 |---|---|---|---|
 | 폰 → 서버 | `state` | `d`(코스 시작점부터 m, 한 바퀴 안), `v`(km/h), `running`(bool) | 초당 2번(달리기 전에도: 연결 살아 있음 표시) |
 | 폰 → 서버 | `ping` | `t`(폰 시각 ms, 그대로 돌아옴) | 5초마다(왕복 지연 실측·서버 시각 맞추기). 서버는 기다리지 않고 바로 `pong` |
-| 폰 → 서버 | `leave` | 없음 | 맵을 나갈 때. 서버가 바로 `left`를 알리고 1000으로 닫음 |
+| 폰 → 서버 | `leave` | 없음 | 맵을 나갈 때. 서버가 바로 `left`를 알리고 자리를 지운 뒤 1000으로 닫음(다시 붙으려면 다시 입장) |
 | 서버 → 폰 | `welcome` | `you`, `mapInstanceId`, `courseLengthM`, `serverTime`(ms), `runners`[나 빼고 `{userId, nickname, d, v, running}`] | 붙을 때 |
 | 서버 → 폰 | `states` | `serverTime`, `runners`[나 빼고 `{userId, d, v, running}`] | 초당 2번 |
 | 서버 → 폰 | `joined` | `runner{userId, nickname, d, v, running}` | 새 사람이 첫 `state`를 보냄 |
@@ -40,7 +40,7 @@
 | 4403 | 이 맵에 자리가 없음(다른 코스로 옮김) | 다시 입장해야 함 |
 
 ## 인원
-`runnersNow`와 입장 인원 검사는 "방에 붙어 있는 사람(끊긴 지 30초 안 포함) + 입장했지만 2분 안에 아직 안 붙은 사람"(`core/occupancy.py`). 어느 코스로 셀지는 자리(`course_entries`)가 정한다(앱이 꺼져 옛 방에 남은 사람도 옮긴 코스로 셈 → 목록·상세·입장 검사가 같은 수). 방 상태는 서버 메모리에만 있어서 서버를 다시 켜면 비고, 폰들이 다시 붙으면 채워진다.
+`runnersNow`와 입장 인원 검사는 "방에 붙어 있는 사람(끊긴 지 30초 안 포함) + 입장했지만 2분 안에 아직 안 붙은 사람"(`core/occupancy.py`). 셋 다 **묻는 사람은 빼고** 센다(목록·상세를 보는 동안엔 맵 밖이라서. 맵에서 막 나와 앱의 `leave`보다 상세 요청이 먼저 닿아도 나를 세지 않음). `leave`로 나가면 자리(`course_entries`)도 지워서 바로 빠진다(나간 사이 다시 입장한 새 자리는 그대로). 어느 코스로 셀지는 자리(`course_entries`)가 정한다(앱이 꺼져 옛 방에 남은 사람도 옮긴 코스로 셈 → 목록·상세·입장 검사가 같은 수). 방 상태는 서버 메모리에만 있어서 서버를 다시 켜면 비고, 폰들이 다시 붙으면 채워진다.
 
 ## 입장 위치
 그 맵에 붙어 있고 달리는 사람(`running=true`, 끊긴 사람 제외)이 있으면 한 명을 골라 20–40m 뒤, 없으면 코스 위 랜덤(BL-25 ②).
@@ -51,11 +51,14 @@
 ## 앱에서 그리기
 다른 사람 위치는 받은 `d`에서 `v × 지난 시간`만큼 앞으로 내다보고, 새 값이 오면 0.5초에 걸쳐 맞춘다(1차원·거의 일정한 속도라 지연 버퍼 대신, 가설 → 실측으로 확인).
 
+## 에디터에서 붙기
+에디터 서버 주소는 `localhost`가 아니라 `127.0.0.1`(메뉴 Scrun → API 서버, 기본 `http://127.0.0.1:8000`). 컴퓨터 이름이 한글이면 Unity Mono가 `localhost`를 풀다 "Illegal byte sequence"로 죽어 `ClientWebSocket`이 안 붙는다(HTTP 요청은 괜찮음). 실시간 주소는 서버가 앱이 부른 주소의 호스트로 만들므로 앱 쪽 주소만 바꾸면 된다. 예전에 저장한 `localhost` 주소는 에디터가 열릴 때 바꾼다(`ApiConfig.Normalize`).
+
 ## 시험용 가짜 러너
 `backend/scripts/fake_runner.py`: 가짜 카카오 서버(로컬)에 가짜 계정으로 들어가 일정한 속도로 달리고, 들어옴·나감·왕복 지연을 찍는다. 에디터 하나로 "같은 맵의 다른 사람"을 볼 때, 여러 명 부하를 볼 때 쓴다.
 ```
 cd backend
-../.venv/Scripts/python -m scripts.fake_runner --base http://localhost:8001 --kakao k_901 --kmh 9
+../.venv/Scripts/python -m scripts.fake_runner --base http://127.0.0.1:8001 --kakao k_901 --kmh 9
 ```
 
 ## 지연 실측

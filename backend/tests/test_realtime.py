@@ -1,9 +1,11 @@
 """실시간 같이 뛰기(계획 0029): 방 로직(Hub)과 WebSocket 진짜 흐름(테스트 DB)."""
 import math
+from datetime import timedelta
 
 import pytest
 from starlette.websockets import WebSocketDisconnect
 
+from app.db.models import CourseEntry
 from app.realtime import router as rt
 from app.realtime.hub import Hub, hub
 from tests.helpers import data, signup
@@ -92,6 +94,16 @@ def test_leaving_on_purpose_is_immediate(h):
     h.drain(a)
     h.leave(b, intentional=True)
     assert h.drain(a) == [{"type": "left", "userId": "b"}] and h.present_user_ids() == {"a"}
+
+
+def test_leave_reports_whether_it_removed(h):
+    a1, _ = placed(h, "a")
+    a2, _ = join(h, "a")                         # a1은 새 연결로 바뀜
+    assert h.leave(a1, intentional=True) is False  # 앞 연결의 leave는 새 연결을 안 뺌(자리도 안 지움)
+    assert h.present_user_ids() == {"a"}
+    assert h.leave(a2) is False                  # 끊김은 30초 남김
+    a3, _ = join(h, "a")
+    assert h.leave(a3, intentional=True) is True and h.present_user_ids() == set()
 
 
 def test_unplaced_runner_leaves_silently(h):
@@ -238,6 +250,38 @@ def test_leave_message_is_immediate(db_client, runner):
             wb.send_json({"type": "leave"})
             assert closed_with(wb) == rt.CLOSE_LEFT
         assert recv(wa, "left")["userId"] == you
+
+
+def test_leave_frees_the_seat_right_away(db_client, runner, db):  # noqa: F811
+    """leave로 나가면 "지금 N명"에서 바로 빠짐(입장 2분이 안 지났어도)."""
+    hb, eb = runner("k_2")
+    viewer = signup(db_client, "k_9")
+    count = lambda: data(db_client.get("/v1/courses/crs_lake_loop", headers=viewer))["runnersNow"]  # noqa: E731
+    with connect(db_client, eb) as wb:
+        recv(wb, "welcome")
+        state(wb)
+        assert count() == 1
+        wb.send_json({"type": "leave"})
+        assert closed_with(wb) == rt.CLOSE_LEFT
+    assert count() == 0
+    assert db.get(CourseEntry, user_id_of(hb)) is None
+
+
+def test_freeing_a_seat_keeps_a_newer_entry(db_client, runner, db, test_db):  # noqa: F811
+    """나간 사이 다시 입장했으면(같은 코스라도) 새 자리라 늦게 온 지우기가 안 지움."""
+    headers, _ = runner("k_2")
+    uid = user_id_of(headers)
+    old_at = db.get(CourseEntry, uid).entered_at
+    db.expire_all()
+    db.execute(CourseEntry.__table__.update().where(CourseEntry.user_id == uid)
+               .values(entered_at=old_at + timedelta(seconds=5)))  # 다시 입장(입장 시각이 바뀜)
+    db.commit()
+    rt._free_seat(test_db.Session, uid, "crs_lake_loop", old_at)
+    db.expire_all()
+    assert db.get(CourseEntry, uid) is not None
+    rt._free_seat(test_db.Session, uid, "crs_island_tour", old_at + timedelta(seconds=5))  # 다른 코스 자리도 안 지움
+    db.expire_all()
+    assert db.get(CourseEntry, uid) is not None
 
 
 def test_left_after_grace(db_client, runner, monkeypatch):
