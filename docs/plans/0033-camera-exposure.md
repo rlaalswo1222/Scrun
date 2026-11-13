@@ -1,10 +1,8 @@
 # 계획 0033: 계기판 촬영용 카메라 — 노출 제어 Swift (BL-16 일부, S3 지환 → 민재)
 
-- 상태: **구현 중 · 맥 빌드·아이폰 확인 남음** (2026-11-12 민재 승인: 정할 것 1 (가), 2 브래킷 3장 → ADR-0011. 3은 옵션 값으로 두고 지환·상준이 정함)
+- 상태: **구현 중 · 맥 빌드·아이폰 기능 확인 끝(11/13), 실제 계기판 노출·OCR 시험 남음** (2026-11-12 민재 승인: 정할 것 1 (가), 2 브래킷 3장 → ADR-0011. 3은 옵션 값으로 두고 지환·상준이 정함)
 - **맥 할 일**(Windows가 적고 맥이 읽음. 맥은 `git pull --rebase` 뒤 위에서부터, 끝낸 줄은 지우고 결과는 아래 "진행"의 맥 줄에. 사용자는 맥에 "0033 맥 할 일 해 줘"만 침)
-  1. 브랜치 `feat/camera-exposure` 받아 Unity에서 Xcode 만들기 → `xcodebuild`로 **컴파일만** 확인(`ScrunCamera.swift`는 Windows에서 써서 한 번도 컴파일 안 됨). 오류·경고를 그대로 "진행"에
-  2. 아이폰(케이블 페어링된 기기)에 설치 → 로그인 화면 아래 "네이티브 점검" → "계기판 카메라 (브래킷 촬영)": 미리보기·가이드·남은 시간·X·셔터, 찍으면 몇 장·몇 KB인지 로그 줄, 화면 나간 뒤 초록 점이 사라지는지
-  3. 사진 받기: `xcrun devicectl device copy from --device <UDID> --domain-type appDataContainer --domain-identifier com.scrun.app --source Documents/camera-check --destination ~/camera-check` → 저장소에 올리지 말고 Windows로 옮겨 OCR(`console_ocr.md` 방식)
+  (11/13 맥: 컴파일·아이폰 확인·사진 받기 끝, 결과는 "진행"의 11/13 맥 줄) 지금 남은 맥 할 일 없음
 - 담당: 민재(11/12 지환 S3 줄 "카메라 노출 제어 Swift"를 가져옴 → 지환에게 알림, 0017 표 고치기). 촬영 화면 E-02·E-04와 OCR·인증(BL-16 화면·17·18)은 지환 S4 그대로, 모양은 상준
 - 기준: 공개 백로그 BL-16 ①–⑥, `docs/product/console_ocr.md`(10/29 첫 시험: **병목은 인식기보다 노출**, LED가 하얗게 타고 꺼진 획이 비침), Figma E-02(607:1115)·E-03(607:1174)·E-04(607:1216) 노트, ADR-0009(네이티브 통로), OCR은 서버에서(BL-17 ①, 11/06 확정)
 
@@ -42,3 +40,12 @@
   - C#: `ICamera`·`CameraShot`·`CameraShootOptions`(`Native/Camera.cs`), `IosNative`, 에디터 가짜 `FakeCamera`(권한은 가짜 권한 그대로, 결과·지연은 Fake Native 창, 찍음이면 노출만 다른 설명용 그림 JPEG), 점검 화면 "계기판 카메라"(사진을 Documents/camera-check로 옮김)
   - 테스트: `CameraTests` 새로(이름·JSON 모양, 결과 5종, 사진 없는 찍음·모르는 결과 = 오류, 지우기, 가짜 권한·결과·폴더 밖 안 지움·동시 호출)
   - Figma E-03 세부 수치는 탭이 멈춰 못 읽음 → 화면 캡처와 UI Kit 값으로 그림, 상준이 나란히 놓고 다듬기
+- 11/13 민재 맥: 맥 할 일 끝(컴파일·아이폰 확인·사진 받기)
+  - Swift 타입 검사(iOS 17 대상, 플러그인 전체 + 카카오 대역): 오류 0·경고 0
+  - Unity "Xcode 만들기 (아이폰, 개발)" → Info.plist에 `NSCameraUsageDescription` 들어감, `xcodebuild`(generic iOS, Debug) **BUILD SUCCEEDED**. `ScrunCamera.swift`·`ScrunBridge.swift` 오류·경고 0. 나머지 경고는 원래 있던 것(Unity libc++ 448, 카카오 SDK library evolution 12, Unity 트램펄린 deprecated)
+  - 기기: 새로 쓰는 iPhone 13 mini(TEAM07)가 iOS 16.2였는데 **Xcode 27은 기기 실행·디버그를 iOS 17 이상만 지원**(Xcode 27.1 릴리스 노트) → 맥이 "페어링 지원 안 함"으로 봄. iOS 27.2.1로 올리고 페어링·개발자 모드·개발자 앱 신뢰 뒤 설치
+  - **Windows에 넘길 것**: 앱 최소 iOS가 15.0인데 Xcode 27로 빌드한 앱이 iOS 16에서 실행하자마자 꺼진다는 포럼 보고가 있음(가설, 확인 안 함, developer.apple.com/forums/thread/847531). 출시 전에 최소 버전을 17로 올릴지, iOS 15·16 기기로 확인할지 정하기
+  - 아이폰(iPhone 13 mini, iOS 27.2.1) 점검 화면 "계기판 카메라": 미리보기 끊김 없음, 남은 시간 줄어듦, 점선 가이드·X·셔터 보임, 나간 뒤 초록 점 사라짐(사용자 확인). 결과 값: 시간 초과 → `TimedOut`, X → `Cancelled`, 셔터 2번 → 2번 다 **3장**(4032×3024, 장당 1.8–3.1 MB, 한 번에 6.6–8.0 MB). `[ScrunCamera]` 오류 로그 없음
+  - EXIF: 0 EV 1/120초·ISO 100–125, −1.5 EV 1/120초·ISO 32–40(계산 −1.6 EV), −3 EV 1/473–1/407초·ISO 50(계산 −3.0 EV). 셔터 상한 1/60초 지킴
+  - **노출이 맞는지는 아직 모름**: 이번엔 헬스장이 아니라 인터넷 계기판 사진을 띄운 노트북 화면을 찍음(스스로 빛나는 화면이라 LED와 다름) → OCR 비교에 쓰지 않음. 실제 계기판(또는 LED 시계) 브래킷 → `console_ocr.md` 방식 OCR은 남음
+  - Windows에 넘길 것(추가): 브래킷 한 번이 6.6–8.0 MB라 서버 OCR로 올리기 전에 가이드 영역 자르기·줄이기를 정해야 함(BL-17과 맞추기)
