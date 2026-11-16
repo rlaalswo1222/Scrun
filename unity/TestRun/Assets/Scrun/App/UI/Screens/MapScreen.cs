@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -20,7 +21,8 @@ namespace Scrun.App
     // 고른 코스·입장 위치는 MapLaunch로 넘기고 섬 쪽 MapLaunchApplier가 적용한다. 앱 배경은 투명(ShowsWorld).
     // 섬이 열리면 흐린 맵 위에 러닝 설정 → 거치 안내 → 달리는 매뉴얼(RunSetupView, 계획 0026)을 띄우고, 끝나면 맵을 보여 준다.
     // 입장 응답의 realtime으로 같은 맵 실시간 방에 붙고(계획 0029, 화면은 IRunTogether만 봄), 달리기를 시작하면 HUD(RunHudView)를 띄운다.
-    // 섬과는 RunLink로 주고받는다(내 거리·속도, 달리는 중 스위치, 다른 러너). 센서 준비·카운트다운(지환 BL-10·11)은 이 화면 위에 들어간다.
+    // 섬과는 RunLink로 주고받는다(내 거리·속도, 달리는 중 스위치, 다른 러너).
+    // 안내가 끝나면 센서 준비 → 달림 인식 → 3·2·1(RunReadyView, 계획 0035)을 띄우고, 끝나면 달리기를 시작하고 서버에 알린다(POST /runs).
     public sealed class MapScreen : AppScreen
     {
         const float EntryShare = 0.15f; // 진행 막대에서 입장 요청 몫(나머지는 씬 불러오기)
@@ -50,7 +52,11 @@ namespace Scrun.App
         bool busy, leaving, started;
         VisualElement mapTop;
         RunSetupView setupView;
+        RunReadyView readyView;
         MapBackdrop backdrop;
+        Task<bool> calibrationLoad;  // 입장 뒤 서버 보정 불러오기(센서 준비 D-07의 보정값 줄). 연결 문제로 실패하면 false
+        string mapInstanceId;        // 입장 응답(POST /runs)
+        CancellationTokenSource runStart; // 맵을 나가면 POST /runs 다시 보내기를 그만둠
         IRunTogether together;
         RunSession session;
         RunHudView hud;
@@ -58,7 +64,7 @@ namespace Scrun.App
         // 러닝 설정에서 고른 것(안내를 끝내기 전에는 null). S3 센서 준비·카운트다운이 쓴다
         public RunSetup Setup { get; private set; }
 
-        // 이번 달리기(안내를 끝내야 생김). 카운트다운이 끝나면 StartRunning()
+        // 이번 달리기(3·2·1이 끝나야 생김, 계획 0035)
         public RunSession Session => session;
 
         public MapScreen(CourseDetail course, Action<MapExit, ApiException> onExit)
@@ -96,9 +102,14 @@ namespace Scrun.App
             Begin();
         }
 
-        // 안내가 떠 있으면 한 단계 앞으로(D-01에서는 맵 나가기). 맵만 보이면 그냥 닫힘
+        // 안내가 떠 있으면 한 단계 앞으로(D-01에서는 맵 나가기), 센서 준비·대기·3·2·1이면 D-01로. 맵만 보이면 그냥 닫힘
         protected internal override bool OnBack()
         {
+            if (readyView != null && readyView.Visible)
+            {
+                readyView.Back();
+                return true;
+            }
             if (setupView == null || !setupView.Visible) return false;
             setupView.Back();
             return true;
@@ -108,7 +119,8 @@ namespace Scrun.App
         {
             leaving = true;
             MapLaunch.Clear();
-            CloseSetup();
+            CancelRunStart();
+            CloseSetup(); // 센서 준비 층이 켠 센서도 끔
             EndRun();
             ReleaseIsland();
             if (appCamera != null) appCamera.backgroundColor = appCameraColor;
@@ -143,16 +155,18 @@ namespace Scrun.App
         }
 
         // 입장이 됐다 = 서버에 보정이 있음. 센서에 아직 없으면(앱을 다시 켬) 불러온다(계획 0023 4번).
-        // 실패해도 입장은 계속(속도가 안 나오면 다음 입장 때 다시 불러옴), 기록만 남김
-        static async Task LoadCalibrationQuietly()
+        // 실패해도 입장은 계속하고 기록만 남김 → 센서 준비(D-07) 보정값 줄이 "다시 시도"로 받음(연결 문제면 false)
+        static async Task<bool> LoadCalibrationQuietly()
         {
             try
             {
                 await CalibrationStore.EnsureLoadedAsync(Native.Speed);
+                return true;
             }
             catch (Exception e)
             {
-                Debug.LogWarning("[보정] 서버 보정을 못 불러옴(다음 입장 때 다시): " + e.Message);
+                Debug.LogWarning("[보정] 서버 보정을 못 불러옴: " + e.Message);
+                return false;
             }
         }
 
@@ -169,7 +183,8 @@ namespace Scrun.App
                 return;
             }
             if (leaving) return;
-            _ = LoadCalibrationQuietly(); // 섬 불러오기와 같이(달리기 시작은 카운트다운 뒤라 그 전에 끝남)
+            mapInstanceId = entry.MapInstanceId;
+            calibrationLoad = LoadCalibrationQuietly(); // 섬 불러오기와 같이. 센서 준비(D-07)가 끝나길 기다림
             SetProgress(EntryShare);
 
             await islandFree;
@@ -234,11 +249,9 @@ namespace Scrun.App
                     view.Exit += () => Nav.Pop();
                     setupView = view;
                 }
-                backdrop?.Dispose();
-                backdrop = null;
-                // 앱 카메라는 태그를 비켜 둬서 Camera.main = 섬 카메라. 화면이 패널에서 떨어졌으면(await 사이) 흐림 없이 안내만
-                var panel = Root.panel;
-                if (panel != null) backdrop = MapBackdrop.Show(panel.visualTree, Camera.main);
+                // 센서 준비에서 X로 돌아오면 흐린 배경이 이미 있음 → 그대로 씀(아바타가 서 있어 같은 그림. 지우고 같은 프레임에 다시 찍으면
+                // Camera.main이 아직 섬 카메라를 못 잡아 남색만 남음, 11/16 에디터 확인)
+                SetBackdrop(true);
                 mapTop.SetVisible(false);
                 Setup = null;
                 setupView.Start();
@@ -251,25 +264,106 @@ namespace Scrun.App
             }
         }
 
+        // D-06 "시작할게요" → 흐린 맵 그대로 센서 준비(D-07)
         void OnSetupDone(RunSetup setup)
         {
             Setup = setup;
-            backdrop?.Dispose(); // 섬 카메라 다시 켬
-            backdrop = null;
+            if (readyView == null)
+            {
+                var view = new RunReadyView(Root, course.Name, () => together, CalibrationNow, RetryCalibration);
+                view.Blur += SetBackdrop;
+                view.Started += OnReadyStarted;
+                view.Cancelled += OnReadyCancelled;
+                view.NeedsCalibration += () => onExit?.Invoke(MapExit.NeedsCalibration, null); // 코스 상세가 보정 안내(A-11)
+                readyView = view;
+            }
+            readyView.Start(setup.Goal);
+        }
+
+        // 3·2·1이 끝남
+        void OnReadyStarted()
+        {
             mapTop.SetVisible(true);
             hud?.Dispose();
-            session = new RunSession(setup.Goal);
+            session = new RunSession(Setup.Goal);
             hud = new RunHudView(Root, session, together);
-            // 임시(계획 0029 2번): 센서 준비·카운트다운(지환 BL-10·11)이 들어오면 카운트다운 끝에서 StartRunning()을 부르고 이 줄은 지운다
             StartRunning();
         }
 
-        // 카운트다운이 끝남 → 시간·거리 기록 시작, 내 아바타가 센서 속도로 움직임(BL-11 ③)
+        // D-08 X·뒤로 → D-01 러닝 설정부터 다시(맵·입장 자리 그대로, 정한 것 3)
+        void OnReadyCancelled()
+        {
+            if (leaving) return;
+            StartSetup();
+        }
+
+        // 흐린 배경(D-07·D-08·I-01)과 맵(D-09). 섬 카메라를 찍으므로 섬이 열려 있어야 함
+        void SetBackdrop(bool on)
+        {
+            if (!on)
+            {
+                backdrop?.Dispose(); // 섬 카메라 다시 켬
+                backdrop = null;
+                return;
+            }
+            if (backdrop != null || leaving) return;
+            // 앱 카메라는 태그를 비켜 둬서 Camera.main = 섬 카메라. 화면이 패널에서 떨어졌으면(await 사이) 흐림 없이 안내만
+            var panel = Root.panel;
+            if (panel != null) backdrop = MapBackdrop.Show(panel.visualTree, Camera.main);
+        }
+
+        CalibrationState CalibrationNow()
+        {
+            try
+            {
+                if (Native.Speed.HasCalibration) return CalibrationState.Ready;
+            }
+            catch (Exception)
+            {
+                return CalibrationState.Missing; // 센서가 없는 빌드(폰 센서 줄이 I-01로 감)
+            }
+            if (calibrationLoad == null || !calibrationLoad.IsCompleted) return CalibrationState.Loading;
+            // 불러오기는 끝났는데 센서에 없음: 연결 문제면 다시 시도, 아니면 서버에도 없거나 못 읽는 옛 모양 → 다시 보정
+            return calibrationLoad.Result ? CalibrationState.Unusable : CalibrationState.Missing;
+        }
+
+        void RetryCalibration()
+        {
+            if (calibrationLoad != null && !calibrationLoad.IsCompleted) return;
+            calibrationLoad = LoadCalibrationQuietly();
+        }
+
+        // 3·2·1 끝 → 시간·거리 기록 시작, 내 아바타가 센서 속도로 움직임(BL-11 ③). 서버에는 뒤에서 알림(정한 것 2)
         public void StartRunning()
         {
             if (session == null || session.Started) return;
             session.Start(RunLink.PlayerDistanceM);
             RunLink.Moving = true;
+            SendRunStart(session);
+        }
+
+        async void SendRunStart(RunSession s)
+        {
+            CancelRunStart();
+            runStart = new CancellationTokenSource();
+            var ct = runStart.Token;
+            try
+            {
+                var r = await new RunStartSender().SendAsync(s.StartBody(mapInstanceId), ct);
+                if (r != null && session == s) s.RunId = r.RunId;
+            }
+            catch (OperationCanceledException) { } // 맵을 나감
+            catch (Exception e)
+            {
+                Debug.LogException(e); // async void라 여기서 놓치면 원인을 모름. 달리기는 계속
+            }
+        }
+
+        void CancelRunStart()
+        {
+            runStart?.Cancel();
+            runStart?.Dispose();
+            runStart = null;
         }
 
         // 같은 맵 실시간 방(ADR-0010). 서버가 realtime을 안 주면(옛 스텁) 혼자 달림
@@ -299,6 +393,8 @@ namespace Scrun.App
         void CloseSetup()
         {
             setupView?.Hide();
+            readyView?.Dispose();
+            readyView = null;
             backdrop?.Dispose();
             backdrop = null;
         }
