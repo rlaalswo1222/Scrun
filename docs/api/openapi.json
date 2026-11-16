@@ -1191,7 +1191,7 @@
           "Run"
         ],
         "summary": "러닝 시작",
-        "description": "화면 D-01에서 D-03, D-09 · BL-8, BL-11, BL-24. 카운트다운이 끝나면. 같은 clientRunId가 다시 오면 처음 결과를 돌려줌",
+        "description": "화면 D-09 · BL-11, BL-24. 카운트다운이 끝나면. 같은 clientRunId가 다시 오면 처음 결과를 돌려줌. mapInstanceId는 맵 입장(POST /courses/{courseId}/entries)에서 받은 값이어야 함(마지막으로 들어간 맵), startedAt은 그 입장 뒤. ghostRunId는 내 끝난 기록만. 공유 여부는 내 설정 feedShareDefault로 시작. 끝나지 않은 이전 러닝이 있어도 그대로 두고 새로 만듦(서버가 몰래 버리지 않음, 계획 0037)",
         "operationId": "start_run_v1_runs_post",
         "security": [
           {
@@ -1370,7 +1370,7 @@
           "Run"
         ],
         "summary": "끝나지 않은 러닝 찾기",
-        "description": "화면 I-04 · BL-37. 앱 재실행 때. 앱 종료 후 24시간 안이면 복구 가능. 없으면 run=null",
+        "description": "화면 I-04 · BL-37. 앱 재실행 때. 가장 최근에 시작한 러닝이 끝나지 않았고 마지막 갱신(시작·시계열 올리기)부터 24시간 안이면 그것. 그보다 옛 러닝은 다시 묻지 않음. 거리·시간은 지금까지 올라온 시계열로 셈. 없으면 run=null",
         "operationId": "active_run_v1_runs_active_get",
         "responses": {
           "200": {
@@ -1591,7 +1591,7 @@
           "Run"
         ],
         "summary": "속도 시계열 올리기",
-        "description": "화면 D-10 · BL-12, BL-19. 고스트 재생·인증 대조 근거. 나눠 올리면 offsetS로 이어 붙임. 같은 묶음이 다시 오면 덮어씀\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 D-10 · BL-12 ⑥, BL-19 ④. 고스트 재생·인증 대조 근거. 앱은 60초마다 묶음으로 올림. offsetS는 달린 시간 기준(일시정지 구간은 빠짐). 같은 offsetS 묶음이 다시 오면 덮어씀(다시 보내도 하나). 달리는 중(ACTIVE)인 기록만. 끝났거나 버렸거나 복구 기한(24시간)이 지났으면 RUN_ALREADY_FINISHED",
         "operationId": "put_samples_v1_runs__runId__samples_put",
         "security": [
           {
@@ -1692,7 +1692,7 @@
           "Run"
         ],
         "summary": "러닝 종료",
-        "description": "화면 D-18, D-19 · BL-14. 센서 거리·시간·종료 시각 → 인증 대기(PENDING)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 D-18, D-19 · BL-14 ②. 센서로 잰 거리·시간(일시정지 뺀 달린 시간)·종료 시각 → 인증 대기(PENDING). 공식 값은 인증 전까지 센서 값. 응답이 안 와서 같은 endedAt으로 다시 보내면 처음 결과를 돌려줌. 다른 값으로 다시 끝내거나 버렸거나 복구 기한(24시간)이 지났으면 RUN_ALREADY_FINISHED. 평균 속도가 30 km/h를 넘으면 400",
         "operationId": "finish_run_v1_runs__runId__finish_post",
         "security": [
           {
@@ -1800,7 +1800,7 @@
           "Run"
         ],
         "summary": "복구한 러닝 버리기",
-        "description": "화면 I-04 · BL-37. 끝나지 않은 러닝만. 끝난 기록은 지울 수 없음(PRD)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 I-04 · BL-37 ②. 끝나지 않은 러닝만. 이미 버렸으면 그대로 204. 끝난 기록은 지울 수 없음(PRD) → RUN_ALREADY_FINISHED",
         "operationId": "discard_run_v1_runs__runId__discard_post",
         "security": [
           {
@@ -4573,14 +4573,15 @@
           "value": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "exclusiveMinimum": 0.0
               },
               {
                 "type": "null"
               }
             ],
             "title": "Value",
-            "description": "DISTANCE면 m, TIME이면 초"
+            "description": "DISTANCE면 m, TIME이면 초. NONE이면 비움"
           }
         },
         "type": "object",
@@ -5523,22 +5524,28 @@
         "properties": {
           "intervalS": {
             "type": "number",
+            "maximum": 10.0,
             "exclusiveMinimum": 0.0,
             "title": "Intervals",
-            "description": "칸 간격(초)"
+            "description": "칸 간격(초). 앱은 1초"
           },
           "speedsKmh": {
             "items": {
-              "type": "number"
+              "type": "number",
+              "maximum": 30.0,
+              "minimum": 0.0
             },
             "type": "array",
+            "maxItems": 7200,
+            "minItems": 1,
             "title": "Speedskmh"
           },
           "offsetS": {
             "type": "number",
+            "maximum": 86400.0,
             "minimum": 0.0,
             "title": "Offsets",
-            "description": "이 묶음의 시작 시각(러닝 시작부터 초). 나눠 올릴 때",
+            "description": "이 묶음의 시작 시각(달린 시간 기준 초, 일시정지 구간은 빠짐). 나눠 올릴 때",
             "default": 0
           }
         },

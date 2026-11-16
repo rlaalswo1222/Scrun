@@ -1,7 +1,8 @@
 {
   "request": {
     "method": "POST",
-    "path": "/v1/runs/run_01J00/discard",
+    "path": "/v1/runs/01JC0ZA4R7N2X5EXAMPLERUN00/discard",
+    "auth": "Bearer {accessToken}",
     "body": null
   },
   "status": 204,
