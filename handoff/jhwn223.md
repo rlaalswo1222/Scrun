@@ -1,8 +1,16 @@
-# jhwn223 인수인계 (2026-11-16, S3 센서 준비·카운트다운)
+# jhwn223 인수인계 (2026-11-16, S4 계기판 인증 서버)
 
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
-## 지금 (11/16): 계획 0035 센서 준비·달림 인식·카운트다운(BL-10·11) **PR #49**(11/16 민재 리뷰 1–8 반영, develop(#48) 합침, 다시 리뷰 대기)
+## 지금 (11/16 밤): S4 계획 [0038](../docs/plans/0038-console-verification.md) — 서버 인증 API 끝, 커밋·PR 전
+- 브랜치 `feat/verification-api`(develop efef985에서), **아직 커밋 안 함**. pytest 280/280, `/code-review` 두 축 반영(계획 0038 "진행"), 실제 uvicorn에서 2 MB 사진 2장 → VERIFIED 확인
+- 정한 것(11/16): 거리 15%, 시간 계기판 − 앱 −30초에서 +5분(+ 쉰 시간), 마감 = 서버가 종료를 받은 뒤 10분, 다시 찍기 3번, E-03 0:45. `reading` API 뺌. 값은 `VERIFY_*` 환경 변수
+- 민재 답(11/16): 달리기 API DB #52 머지·오라클 배포, 0033 카메라 PR 연다(C# `ShootAsync`·가짜 그대로), #49·#50 머지·후속은 민재(#51). 계획 번호 0037은 민재 것이라 내 건 0038
+- 로컬: `backend/.env`에 `OCR_ENGINE=fake` 넣음, 개발 DB `alembic upgrade head`(b8e1f0c3d5a7). 오라클 배포 때도 마이그레이션 필요(민재에게)
+- 다음: (1) 커밋·PR(민재 코드 건드린 곳 PR에 표시: runs.py finish 마감 한 줄, `_my_run`·`_invalid` → `core/run_access`) (2) OCR 엔진 비교 설명 HTML(YOLO AGPL vs Apache·MIT 검출기, 라이선스 원문 출처) → ADR-0012 (3) `speedlab/ocr/` 데이터·합성 생성기·채점 다시(10/29 모델 없어짐) (4) 0033 머지 뒤 앱 화면 E-02·E-04–E-10(`feat/verification-screens`) (5) 노션 작업 표 BL-18 줄의 "판독값" API 빼 달라고 민재에게(민재 워크스페이스라 못 고침)
+- 기록 조회 API(S5) 만들 때 인증 상태는 `core/run_access.verification_of`(마감 지난 PENDING = 미인증)
+
+## 그전 (11/16): 계획 0035 센서 준비·달림 인식·카운트다운(BL-10·11) **PR #49**(11/16 민재 리뷰 1–8 반영, develop(#48) 합침, 다시 리뷰 대기)
 - 브랜치 `feat/run-ready-countdown`(develop e14a16b에서). `/code-review` 반영 끝(계획 0035 끝 절, EditMode 268/268). 다음: 민재 리뷰 반영, 머지되면 계획 0035 상태 "완료", 그다음 S4(계기판 촬영 E-02·E-04·서버 OCR, 민재 카메라 0033 위에)
 - 한 것·확인·바뀐 것은 [계획 0035](../docs/plans/0035-run-ready-countdown.md) "진행". EditMode 268/268, 에디터 Play로 D-07 → D-08 → D-09 → HUD, I-01·다시 시도, X → D-01, 카운트다운 중 멈춤 → D-08 확인
 - 민재 코드 건드린 곳(PR에 표시): `MapScreen`(임시 `StartRunning()` 지움, 센서 준비 층 연결), `RunSession`(`ClientRunId`·`RunId`·`StartBody` 추가), `Api.cs`·`Dtos.cs`(`RunsApi.StartAsync`)
