@@ -9,23 +9,18 @@ namespace Scrun.App.Tests
     // 센서 준비·달림 인식·카운트다운(계획 0035): 단계 판단, 줄 문구, POST /runs 다시 보내기
     public class RunReadyFlowTests
     {
-        static ReadyInputs Ok(Gait gait = Gait.None) => new ReadyInputs
+        static ReadyInputs Ok(bool stepping = false) => new ReadyInputs
         {
             Phone = SensorFlow.Ok,
             AirPods = SensorFlow.Off,
             Headphones = HeadphoneStatus.NotConnected,
             Calibration = CalibrationState.Ready,
             Network = RunTogetherStatus.Connected,
-            Gait = gait,
+            Stepping = stepping,
         };
 
-        // 걷거나 달리는 중: 걸음 수가 초당 3번 늘어남
-        static ReadyInputs Step(Gait gait, double now)
-        {
-            var i = Ok(gait);
-            i.Steps = (int)(now * 3);
-            return i;
-        }
+        // 걷는 중(AvatarSpeed.Stepping)
+        static ReadyInputs Walk() => Ok(true);
 
         static RunReadyFlow Begun(double now = 0)
         {
@@ -137,69 +132,31 @@ namespace Scrun.App.Tests
         public void StepsStartCountdownThenRunAfterThreeSeconds()
         {
             var f = AtWaiting();
-            Assert.AreEqual(ReadyStep.Waiting, f.Update(5, Ok(Gait.None)));
-            Assert.AreEqual(ReadyStep.Countdown, f.Update(6, Step(Gait.Walking, 6)), "걷기도 감지(BL-11)");
+            Assert.AreEqual(ReadyStep.Waiting, f.Update(5, Ok()));
+            Assert.AreEqual(ReadyStep.Countdown, f.Update(6, Walk()), "걷기 시작(BL-11)");
             Assert.AreEqual(3, f.CountdownNumber);
-            f.Update(6.5, Step(Gait.Walking, 6.5));
+            f.Update(6.5, Walk());
             Assert.AreEqual(3, f.CountdownNumber);
-            f.Update(7.2, Step(Gait.Running, 7.2));
+            f.Update(7.2, Walk());
             Assert.AreEqual(2, f.CountdownNumber);
-            f.Update(8.9, Step(Gait.Running, 8.9));
+            f.Update(8.9, Walk());
             Assert.AreEqual(1, f.CountdownNumber);
-            Assert.AreEqual(ReadyStep.Started, f.Update(9, Step(Gait.Running, 9)));
+            Assert.AreEqual(ReadyStep.Started, f.Update(9, Walk()));
             Assert.AreEqual(0, f.CountdownNumber);
-            Assert.AreEqual(ReadyStep.Started, f.Update(20, Ok(Gait.None)), "시작한 뒤에는 걸음이 끊겨도 그대로(멈춤은 BL-13)");
+            Assert.AreEqual(ReadyStep.Started, f.Update(20, Ok()), "시작한 뒤에는 걸음이 끊겨도 그대로(멈춤은 BL-13)");
         }
 
         [Test]
         public void SteppingOffDuringCountdownGoesBackToWaiting()
         {
             var f = AtWaiting();
-            f.Update(5, Step(Gait.Walking, 5));
-            Assert.AreEqual(ReadyStep.Waiting, f.Update(6, Ok(Gait.None)));
+            f.Update(5, Walk());
+            Assert.AreEqual(ReadyStep.Waiting, f.Update(6, Ok()));
             Assert.AreEqual(0, f.CountdownNumber);
-            f.Update(7, Step(Gait.Walking, 7));
+            f.Update(7, Walk());
             Assert.AreEqual(3, f.CountdownNumber, "다시 걸으면 처음부터 셈");
-            Assert.AreEqual(ReadyStep.Countdown, f.Update(9.9, Step(Gait.Walking, 9.9)));
-            Assert.AreEqual(ReadyStep.Started, f.Update(10, Step(Gait.Walking, 10)));
-        }
-
-        [Test]
-        public void StepsStoppingDuringCountdownGoBackToWaitingBeforeGaitCatchesUp()
-        {
-            var f = AtWaiting();
-            f.Update(5, Step(Gait.Walking, 5));
-            var stopped = Step(Gait.Walking, 5.5); // 걸음 수가 5.5초 값에서 멈춤, Gait는 아직 Walking(2.5초 늦게 바뀜)
-            Assert.AreEqual(ReadyStep.Countdown, f.Update(5.5, stopped));
-            Assert.AreEqual(ReadyStep.Countdown, f.Update(5.5 + RunReadyFlow.StepGapSec - 0.05, stopped));
-            Assert.AreEqual(ReadyStep.Waiting, f.Update(5.5 + RunReadyFlow.StepGapSec, stopped), "3초가 끝나기 전에 D-08로");
-        }
-
-        [Test]
-        public void AfterSteppingOffStaysWaitingUntilStepsResume()
-        {
-            var f = AtWaiting();
-            f.Update(5, Step(Gait.Walking, 5));
-            var frozen = Step(Gait.Walking, 5.5); // 걸음 수는 멈췄고 Gait는 아직 Walking
-            f.Update(5.5, frozen);
-            Assert.AreEqual(ReadyStep.Waiting, f.Update(5.5 + RunReadyFlow.StepGapSec, frozen));
-            for (double t = 6.8; t < 9; t += 0.1)
-                Assert.AreEqual(ReadyStep.Waiting, f.Update(t, frozen), "Gait가 아직 Walking이어도 다시 세지 않음(깜박임 없음)");
-            Assert.AreEqual(ReadyStep.Countdown, f.Update(9.1, Step(Gait.Walking, 9.1)), "다시 걸으면 셈");
-        }
-
-        [Test]
-        public void StandingStillWithStaleGaitDoesNotStartCountdown()
-        {
-            var f = Begun();
-            var i = Ok(Gait.Walking); // D-08에 들어올 때 이미 Walking이지만 걸음 수가 안 늘어남
-            i.Steps = 40;
-            f.Update(0, i);
-            f.Update(RunReadyFlow.AutoAdvanceSec, i);
-            Assert.AreEqual(ReadyStep.Waiting, f.Step);
-            Assert.AreEqual(ReadyStep.Waiting, f.Update(3, i));
-            i.Steps = 41;
-            Assert.AreEqual(ReadyStep.Countdown, f.Update(3.2, i));
+            Assert.AreEqual(ReadyStep.Countdown, f.Update(9.9, Walk()));
+            Assert.AreEqual(ReadyStep.Started, f.Update(10, Walk()));
         }
 
         [Test]
@@ -313,16 +270,88 @@ namespace Scrun.App.Tests
             Assert.AreEqual(1, calls, "본문 못 읽은 4xx는 다시 안 보냄");
         }
 
+        // ---------- 아바타와 같은 걸음 판단(AvatarSpeed, PR #49 리뷰 3번) ----------
+        // 러닝머신 흉내: 30 fps로 센서 값(누적 걸음)을 만들어 AvatarSpeed → RunReadyFlow 순서로 넣음(RunReadyView와 같은 순서)
+        sealed class Treadmill
+        {
+            public readonly RunReadyFlow Flow = new RunReadyFlow();
+            public readonly AvatarSpeed Walking = new AvatarSpeed();
+            double t, stepAcc;
+            int steps;
+
+            public Treadmill()
+            {
+                Flow.Begin(0);
+                Run(RunReadyFlow.AutoAdvanceSec + 0.1, 0); // D-08까지
+                Assert.AreEqual(ReadyStep.Waiting, Flow.Step);
+            }
+
+            // sec초 동안 spm 빠르기로 걸음(0이면 서 있음). 지나간 단계들을 돌려줌
+            public List<ReadyStep> Run(double sec, double spm)
+            {
+                var seen = new List<ReadyStep>();
+                for (int n = (int)Math.Round(sec * 30); n > 0; n--)
+                {
+                    t += 1 / 30.0;
+                    stepAcc += spm / 60.0 / 30.0;
+                    while (stepAcc >= 1) { steps++; stepAcc -= 1; }
+                    Walking.Update(new SpeedReading { Time = t, Steps = steps }, true);
+                    var i = Ok(Walking.Stepping);
+                    seen.Add(Flow.Update(t, i));
+                }
+                return seen;
+            }
+        }
+
+        [Test]
+        public void WalkingStartsCountdownLikeTheAvatar()
+        {
+            var tm = new Treadmill();
+            var seen = tm.Run(1.2, 120); // 걸음 사이 0.5초, 두 번째 걸음에 출발
+            Assert.Contains(ReadyStep.Countdown, seen);
+            Assert.IsTrue(tm.Walking.Stepping);
+            Assert.Contains(ReadyStep.Started, tm.Run(3.1, 120));
+        }
+
+        [Test]
+        public void SteppingOffDuringCountdownWaitsWithoutFlicker()
+        {
+            var tm = new Treadmill();
+            tm.Run(1.2, 120);
+            Assert.AreEqual(ReadyStep.Countdown, tm.Flow.Step);
+            tm.Run(AvatarSpeed.StopAfterSec + 0.2, 0);
+            Assert.AreEqual(ReadyStep.Waiting, tm.Flow.Step, "1.2초 안에 D-08로(3초 카운트다운이 끝나기 전)");
+            CollectionAssert.DoesNotContain(tm.Run(4, 0), ReadyStep.Countdown, "서 있는 동안 다시 세지 않음(깜박임 없음)");
+            Assert.Contains(ReadyStep.Countdown, tm.Run(1.2, 120), "다시 걸으면 셈");
+        }
+
+        [Test]
+        public void BeltVibrationOnTheSidePlatformNeverStartsCountdown()
+        {
+            var tm = new Treadmill();
+            CollectionAssert.DoesNotContain(tm.Run(10, 222), ReadyStep.Countdown, "가만히 둔 폰이 잡은 222 spm(계획 0024)은 걸음이 아님");
+            Assert.IsFalse(tm.Walking.Stepping, "아바타도 서 있음");
+        }
+
+        [Test]
+        public void OneBumpDoesNotStartCountdown()
+        {
+            var tm = new Treadmill();
+            var seen = tm.Run(0.6, 120); // 걸음 하나
+            seen.AddRange(tm.Run(3, 0));
+            CollectionAssert.DoesNotContain(seen, ReadyStep.Countdown, "걸음 2번이 이어져야 출발(아바타와 같음)");
+        }
+
         [Test]
         public void LostPhoneWhileWaitingOrCountingFails()
         {
-            var lost = Ok(Gait.Walking);
+            var lost = Walk();
             lost.Phone = SensorFlow.Lost;
             var f = AtWaiting();
             Assert.AreEqual(ReadyStep.SensorFailed, f.Update(5, lost));
 
             var g = AtWaiting();
-            g.Update(5, Step(Gait.Walking, 5));
+            g.Update(5, Walk());
             Assert.AreEqual(ReadyStep.SensorFailed, g.Update(6, lost));
         }
 
@@ -330,14 +359,14 @@ namespace Scrun.App.Tests
         public void CancelWorksUntilTheRunStarts()
         {
             var f = AtWaiting();
-            f.Update(5, Step(Gait.Walking, 5));
+            f.Update(5, Walk());
             Assert.IsTrue(f.Cancel());
             Assert.AreEqual(ReadyStep.Cancelled, f.Step);
-            Assert.AreEqual(ReadyStep.Cancelled, f.Update(10, Step(Gait.Running, 10)), "취소한 뒤에는 걸어도 시작 안 함");
+            Assert.AreEqual(ReadyStep.Cancelled, f.Update(10, Walk()), "취소한 뒤에는 걸어도 시작 안 함");
 
             var g = AtWaiting();
-            g.Update(5, Step(Gait.Walking, 5));
-            g.Update(8, Step(Gait.Walking, 8));
+            g.Update(5, Walk());
+            g.Update(8, Walk());
             Assert.IsFalse(g.Cancel(), "이미 시작함");
             Assert.AreEqual(ReadyStep.Started, g.Step);
         }
