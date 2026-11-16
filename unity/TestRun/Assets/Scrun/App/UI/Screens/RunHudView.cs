@@ -15,7 +15,7 @@ namespace Scrun.App
         readonly VisualElement root;
         readonly RunSession session;
         readonly IRunTogether together;
-        readonly Label distance, time, goal, aheadName, aheadGap, behindName, behindGap, toast, net, dev;
+        readonly Label distance, time, goal, aheadName, aheadGap, behindName, behindGap, toast, net, dev, unsteady;
         readonly VisualElement goalFill, gaps, ahead, behind;
         readonly IVisualElementScheduledItem tick;
         readonly Queue<string> toasts = new Queue<string>();
@@ -53,6 +53,9 @@ namespace Scrun.App
             toast = Q<Label>("hud-toast");
             net = Q<Label>("hud-net");
             dev = Q<Label>("hud-dev");
+            unsteady = Q<Label>("hud-unsteady");
+            unsteady.text = RunEndText.Unsteady;
+            unsteady.SetVisible(false);
 
             goal.text = GoalText(session.Goal);
             dev.SetVisible(Debug.isDebugBuild);
@@ -99,6 +102,12 @@ namespace Scrun.App
                 default: return null;
             }
         }
+
+        // 위 가운데 3초 알림(한 번에 하나). 에어팟 끊김 등(계획 0039)
+        public void Notice(string text) => toasts.Enqueue(text);
+
+        // I-03 측정값 이상 띠(계획 0039)
+        public void SetUnsteady(bool on) => unsteady.SetVisible(on);
 
         void OnJoined(RemoteRunner r) => toasts.Enqueue($"{r.Nickname}님이 들어왔어요");
         void OnLeft(RemoteRunner r) => toasts.Enqueue($"{r.Nickname}님이 나갔어요");

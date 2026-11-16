@@ -7,7 +7,7 @@ namespace Scrun.App
     // 에디터에서 쓰는 가짜 권한·이어폰(빌드에서는 쓰지 않음, Native.cs).
     // 처음 상태와 "팝업에서 무엇을 누를지"는 메뉴 Scrun → Fake Native 창에서 정하고,
     // Play 중에 그 창에서 상태를 바꾸면 Changed 이벤트가 진짜처럼 온다.
-    public sealed class FakeNative : IPermissions, IHeadphones, IKakaoLogin
+    public sealed class FakeNative : IPermissions, IHeadphones, IKakaoLogin, IDeviceStatus
     {
         static int KindCount => FakeNativeConfig.KindCount;
 
@@ -27,6 +27,11 @@ namespace Scrun.App
         public event Action<PermissionKind, PermissionStatus> Changed;
         public HeadphoneStatus Status { get; private set; }
         public string DeviceName { get; private set; }
+
+        // 폰 상태(계획 0039): 창에서 바꾸면 바로 반영
+        public ThermalLevel Thermal => Cfg.thermal;
+        public float BatteryLevel => Cfg.batteryLevel;
+        public bool Charging => Cfg.charging;
         event Action<HeadphoneStatus> headphonesChanged;
         event Action<HeadphoneStatus> IHeadphones.Changed
         {
@@ -193,6 +198,11 @@ namespace Scrun.App
         public float sensorStartSec = 0.5f; // 센서를 켜고 데이터가 들어오기까지
         public float detectDelaySec = 2.5f; // 걸음 상태가 바뀌고 Gait가 따라 바뀌기까지(SpeedEstimator holdS, 실제 지연은 아이폰에서 잼)
         public float startKmh;              // 센서를 켤 때 사람의 속도(0 = 벨트 옆에 서 있음)
+
+        // 폰 상태(I-12, 계획 0039)
+        public ThermalLevel thermal = ThermalLevel.Nominal;
+        public float batteryLevel = 0.8f;   // 0에서 1
+        public bool charging;
 
         static bool[] AllTrue(int n)
         {
