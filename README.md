@@ -18,6 +18,7 @@
    - `Y Bot@Walking.fbx`, `Y Bot@Jogging.fbx`, `Y Bot@Slow Run.fbx`, `Y Bot@Standard Run.fbx`, `Y Bot@Fast Run.fbx`, `Y Bot@Sprint.fbx` (Skin: **Without Skin**, In Place 있으면 켜기)
 4. Unity Hub에서 `unity/TestRun` 열기 (Unity 6.6, 6000.6.7f1). 처음엔 Library를 만드느라 오래 걸림
 5. 메뉴 Scrun → Reimport Mixamo Characters → Scrun → Build Island Scene (약 3분, 섬 지형·도로·식생을 다시 만듦)
+   - 씬 파일(`Island01.unity`)·조명 데이터·반사 텍스처가 바뀌지만 각자 다시 만드는 것이라 커밋하지 않는다. 러너 애니메이터(`YBotRunner.controller`)는 이미 있으면 그대로 둔다(계획 0036). 기준점을 다시 재야 할 때만 Scrun → Build Runner Animator → Play 중 Scrun → Measure Runner Gait
 
 빠진 것: `Course/Generated`(섬 메시, 5번에서 생성), APK 빌드, SoundTrackDB 등 공개 데이터(`data/external`), 옛 프로토타입 영상·3D 자료(`run3d/assets`, `run3d/data`), 인증서(`certs`)
 
