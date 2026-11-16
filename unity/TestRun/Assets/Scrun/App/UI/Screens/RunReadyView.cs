@@ -25,6 +25,9 @@ namespace Scrun.App
         readonly Action retryCalibration;
         readonly Func<double> clock;
         readonly RunReadyFlow flow = new RunReadyFlow();
+        // 걷는 중 판단: 섬 아바타(NativeSpeedSource)와 같은 규칙(AvatarSpeed, 계획 0034)으로 같은 센서 값을 따로 셈.
+        // 카운트다운이 도는데 아바타는 서 있는(또는 그 반대) 일이 없게(PR #49 리뷰 3번)
+        readonly AvatarSpeed walking = new AvatarSpeed();
 
         IVisualElementScheduledItem ticking;
         ReadyStep? shown;      // 마지막으로 그린 단계(처음엔 없음)
@@ -88,6 +91,7 @@ namespace Scrun.App
         {
             goalChip.text = RunReadyText.GoalChip(goal);
             StartSensor();
+            walking.Reset(); // 센서를 새로 켜면 걸음 수도 0부터
             flow.Begin(clock());
             shown = null;
             root.SetVisible(true);
@@ -133,6 +137,7 @@ namespace Scrun.App
                 Debug.LogWarning("[센서 준비] 센서를 다시 켜지 못함: " + e.Message);
                 sensorBroken = true;
             }
+            walking.Reset(); // 센서를 새로 켜면 걸음 수도 0부터
             flow.Retry(clock());
             Tick();
         }
@@ -180,8 +185,8 @@ namespace Scrun.App
                     var s = Native.Speed;
                     i.Phone = s.Phone;
                     i.AirPods = s.AirPods;
-                    i.Gait = s.Current.Gait;
-                    i.Steps = s.Current.Steps;
+                    walking.Update(s.Current, s.Phone == SensorFlow.Ok);
+                    i.Stepping = walking.Stepping;
                 }
                 catch (Exception e)
                 {

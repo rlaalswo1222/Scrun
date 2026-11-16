@@ -49,8 +49,9 @@ namespace Scrun.App
         public bool HeadphoneMotionGranted;
         public CalibrationState Calibration;
         public RunTogetherStatus? Network; // 실시간 방이 없으면 null(혼자 달림)
-        public Gait Gait;
-        public int Steps; // 센서를 켠 뒤 누적 걸음(감지 지연 없음)
+        // 걷고 있음 = 내 아바타가 움직이는 판단과 같은 것(AvatarSpeed.Stepping, 계획 0034): 누적 걸음 수로 감지 지연 없이,
+        // 걸음 2번이 이어져야 출발, 200·215 spm 넘는 "걸음"은 벨트 진동으로 버림, 1.2초 안 늘면 멈춤(PR #49 리뷰 3번)
+        public bool Stepping;
     }
 
     // 화면 없이 단계만 정한다 → 테스트(RunReadyFlowTests). 시각은 초(RealtimeClock.Now 등), 밖에서 넣는다.
@@ -65,17 +66,12 @@ namespace Scrun.App
         // 다 정상이면 이만큼 보여 준 뒤 저절로 D-08(정한 것 1). "준비 완료"는 기다리지 않고 바로
         public const double AutoAdvanceSec = 1.5;
         public const int CountdownFrom = 3;
-        // 걸음 수가 이만큼 안 늘면 걷고 있지 않은 것: 카운트다운 중이면 D-08로(정한 것 4), D-08에서는 카운트다운을 시작하지 않음.
-        // Gait만 보면 바뀌는 데 2.5초 넘게 걸려 3초 카운트다운 안에 거의 못 잡고(11/16 에디터 확인),
-        // 돌아온 D-08에서 아직 Walking인 Gait로 바로 다시 세어 D-08·D-09가 번갈아 깜박임(11/16 리뷰).
-        // 1.2초는 민재 계획 0034(멈추면 아바타도 멈춤)와 같은 값: 2 km/h 걷기도 걸음 사이 0.8초 안팎(가설, 아이폰·러닝머신에서 확인)
-        public const double StepGapSec = 1.2;
+        // 걷기 시작·멈춤은 Gait(속도 추정 걸음 상태)로 보지 않는다: 바뀌는 데 2.5초 넘게 걸려 3초 카운트다운 안에 멈춤을 못 잡고(11/16 에디터 확인),
+        // 돌아온 D-08에서 아직 Walking인 Gait로 바로 다시 세어 깜박였음(/code-review). 아바타와 같은 판단(Stepping)을 쓴다
 
         double? phoneBadSince;
         double? readySince;
         double countdownAt;
-        int lastSteps;
-        double lastStepAt;
 
         public ReadyStep Step { get; private set; } = ReadyStep.Checking;
 
@@ -122,7 +118,7 @@ namespace Scrun.App
                         break;
                     }
                     readySince ??= now;
-                    if (now - readySince.Value >= AutoAdvanceSec) EnterWaiting(i.Steps);
+                    if (now - readySince.Value >= AutoAdvanceSec) Step = ReadyStep.Waiting;
                     break;
 
                 case ReadyStep.Waiting:
@@ -131,8 +127,7 @@ namespace Scrun.App
                         Fail();
                         break;
                     }
-                    TrackSteps(now, i.Steps);
-                    if (i.Gait != Gait.None && now - lastStepAt < StepGapSec) StartCountdown(now);
+                    if (i.Stepping) StartCountdown(now);
                     break;
 
                 case ReadyStep.Countdown:
@@ -141,8 +136,7 @@ namespace Scrun.App
                         Fail();
                         break;
                     }
-                    TrackSteps(now, i.Steps);
-                    if (i.Gait == Gait.None || now - lastStepAt >= StepGapSec) // 벨트에서 내려옴 → 다시 기다림(정한 것 4)
+                    if (!i.Stepping) // 벨트에서 내려옴 → 다시 기다림(정한 것 4)
                     {
                         Step = ReadyStep.Waiting;
                         CountdownNumber = 0;
@@ -164,7 +158,7 @@ namespace Scrun.App
         public bool Skip(in ReadyInputs i)
         {
             if (Step != ReadyStep.Checking || !CanProceed(i)) return false;
-            EnterWaiting(i.Steps);
+            Step = ReadyStep.Waiting;
             return true;
         }
 
@@ -184,21 +178,6 @@ namespace Scrun.App
             Step = ReadyStep.Cancelled;
             CountdownNumber = 0;
             return true;
-        }
-
-        // D-08에 들어올 때의 걸음 수부터 센다(그 뒤로 늘어야 걷는 것)
-        void EnterWaiting(int steps)
-        {
-            Step = ReadyStep.Waiting;
-            lastSteps = steps;
-            lastStepAt = double.NegativeInfinity;
-        }
-
-        void TrackSteps(double now, int steps)
-        {
-            if (steps == lastSteps) return;
-            lastSteps = steps;
-            lastStepAt = now;
         }
 
         void StartCountdown(double now)
