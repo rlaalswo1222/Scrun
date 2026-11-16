@@ -102,6 +102,9 @@ public func scrun_call(_ reqId: Int32, _ name: UnsafePointer<CChar>, _ json: Uns
                     case .failure(let e): ScrunBridge.fail(reqId, e.message)
                     }
                 }
+            case "camera.shoot":
+                // 계기판 촬영 E-03(ScrunCamera.swift, 계획 0033). 사용자가 찍거나 닫으면 답
+                try ScrunCamera.shoot(a) { result in ScrunBridge.ok(reqId, result) }
             default:
                 throw ScrunError("모르는 요청: \(n)")
             }
@@ -156,6 +159,9 @@ private func scrunQuery(_ name: String, _ a: [String: Any]) throws -> Any? {
         return nil
     case "secure.delete":
         try ScrunKeychain.delete(try ScrunBridge.string(a, "key"))
+        return nil
+    case "camera.discard":
+        ScrunCamera.discard(a)
         return nil
     default:
         throw ScrunError("모르는 조회: \(name)")

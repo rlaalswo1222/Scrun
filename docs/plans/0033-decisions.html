@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카메라 미리보기 비교</title>
+<style>
+:root{
+  --bg:#F3F8FF; --card:#FFFFFF; --ink:#172036; --body:#4A5468; --mute:#8A93A6; --line:#E3EAF6;
+  --blue:#2F6FE4; --blue-soft:#E4EEFF; --lime:#D8FF3E; --lime-ink:#4A5A00;
+  --unity:#7C5CE0; --unity-soft:#EEE8FF; --swift:#F0743E; --swift-soft:#FFEDE4;
+  --cam:#1E2433; --warn:#C2410C; --good:#15803D;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1420; --card:#171E2E; --ink:#E8EDF7; --body:#B4BDCF; --mute:#7E889C; --line:#2A3347;
+    --blue:#6B9BFF; --blue-soft:#1C2A47; --lime:#D8FF3E; --lime-ink:#D8FF3E;
+    --unity:#A48BFF; --unity-soft:#2A2347; --swift:#FF9A6B; --swift-soft:#3A2418;
+    --cam:#05070C; --warn:#FB923C; --good:#4ADE80;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1420; --card:#171E2E; --ink:#E8EDF7; --body:#B4BDCF; --mute:#7E889C; --line:#2A3347;
+  --blue:#6B9BFF; --blue-soft:#1C2A47; --lime:#D8FF3E; --lime-ink:#D8FF3E;
+  --unity:#A48BFF; --unity-soft:#2A2347; --swift:#FF9A6B; --swift-soft:#3A2418;
+  --cam:#05070C; --warn:#FB923C; --good:#4ADE80;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--body);font:16px/1.6 "Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
+main{max-width:1120px;margin:0 auto;padding:32px 16px 64px}
+h1{color:var(--ink);font-size:28px;margin:0 0 6px;letter-spacing:-0.5px}
+h2{color:var(--ink);font-size:22px;margin:44px 0 12px}
+h3{color:var(--ink);font-size:18px;margin:0 0 4px}
+.lead{margin:0 0 8px}
+.small{font-size:14px;color:var(--mute)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:16px 0 0;font-size:14px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.card.rec{border:2px solid var(--blue)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;margin-bottom:8px}
+.tag.rec{background:var(--blue);color:#fff}
+.tag.alt{background:var(--line);color:var(--body)}
+.tag.no{background:var(--swift-soft);color:var(--warn)}
+svg{width:100%;height:auto;display:block}
+svg text{font-family:inherit}
+ul{padding-left:18px;margin:8px 0}
+li{margin:3px 0}
+.pro{color:var(--good);font-weight:700}
+.con{color:var(--warn);font-weight:700}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:16px;overflow:hidden;border:1px solid var(--line);font-size:15px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--ink);background:var(--blue-soft);font-weight:700}
+tr:last-child td{border-bottom:0}
+.scroll{overflow-x:auto}
+.flow{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:16px}
+.note{background:var(--blue-soft);border-radius:12px;padding:12px 16px;margin-top:16px;color:var(--ink);font-size:15px}
+a{color:var(--blue)}
+code{font-family:ui-monospace,Consolas,monospace;font-size:0.9em;background:var(--line);padding:1px 5px;border-radius:4px;color:var(--ink)}
+</style>
+</head>
+<body>
+<main>
+  <h1>계기판 촬영 카메라 — 미리보기를 어디서 그릴까</h1>
+  <p class="lead">계획 0033 정할 것 1. Figma E-03은 카메라 미리보기 <b>위에</b> X·남은 시간·점선 가이드 프레임·셔터가 겹쳐 있다. 노출 제어는 어느 방식이든 Swift(<code>AVCaptureSession</code>)가 한다. 다른 건 <b>미리보기와 겹친 UI를 누가 그리느냐</b>뿐.</p>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--unity)"></i>Unity가 그림 (C#·UXML·USS)</span>
+    <span><i class="sw" style="background:var(--swift)"></i>Swift가 그림 (iOS 네이티브)</span>
+    <span><i class="sw" style="background:var(--cam)"></i>카메라 영상</span>
+  </div>
+
+  <h2>1. 화면을 옆에서 본 층</h2>
+  <p class="small">아래가 먼저 그려지고 위가 덮는다. 사용자는 맨 위부터 본다.</p>
+  <div class="grid">
+
+    <!-- (가) -->
+    <div class="card rec">
+      <span class="tag rec">(가) 추천</span>
+      <h3>E-03만 Swift 화면</h3>
+      <svg viewBox="0 0 300 250" role="img" aria-label="가 방식 층 그림">
+        <!-- bottom: unity -->
+        <g transform="translate(40,170)">
+          <polygon points="0,30 150,0 220,30 70,60" fill="var(--unity-soft)" stroke="var(--unity)" stroke-width="2"/>
+          <text x="80" y="35" fill="var(--unity)" font-size="12" font-weight="700">Unity 화면 (E-02 등)</text>
+        </g>
+        <!-- middle: swift vc with preview -->
+        <g transform="translate(40,95)">
+          <polygon points="0,30 150,0 220,30 70,60" fill="var(--cam)" stroke="var(--swift)" stroke-width="2"/>
+          <text x="70" y="35" fill="#fff" font-size="12" font-weight="700">미리보기 (PreviewLayer)</text>
+        </g>
+        <!-- top: swift overlay -->
+        <g transform="translate(40,20)">
+          <polygon points="0,30 150,0 220,30 70,60" fill="var(--swift-soft)" fill-opacity="0.85" stroke="var(--swift)" stroke-width="2"/>
+          <polygon points="60,30 150,12 180,30 90,48" fill="none" stroke="var(--swift)" stroke-dasharray="4 3" stroke-width="1.5"/>
+          <text x="12" y="20" fill="var(--swift)" font-size="12" font-weight="700">X · 0:45 · 가이드 · 셔터</text>
+        </g>
+        <text x="270" y="60" fill="var(--swift)" font-size="11" text-anchor="end">Swift</text>
+        <text x="270" y="135" fill="var(--swift)" font-size="11" text-anchor="end">Swift</text>
+        <text x="270" y="210" fill="var(--unity)" font-size="11" text-anchor="end">Unity</text>
+      </svg>
+      <p>카메라 화면 하나를 Swift가 통째로 Unity 위에 띄운다. 찍으면 닫고 사진 경로를 C#에 돌려준다.</p>
+      <ul>
+        <li><span class="pro">+</span> 미리보기가 iOS 카메라 앱처럼 매끄럽고 회전·초점 터치가 기본</li>
+        <li><span class="pro">+</span> 노출 제어·미리보기·찍기가 한 파일, 새로 만들 게 적음</li>
+        <li><span class="con">−</span> E-03 한 화면은 UXML이 아님 → 상준 UI Kit 값(색·글꼴·버튼)을 Swift로 옮겨야 함</li>
+        <li><span class="con">−</span> 에디터에선 진짜 E-03이 안 보임(가짜는 바로 사진 3장을 줌)</li>
+      </ul>
+    </div>
+
+    <!-- (나) -->
+    <div class="card">
+      <span class="tag alt">(나)</span>
+      <h3>프레임을 Unity 텍스처로</h3>
+      <svg viewBox="0 0 300 250" role="img" aria-label="나 방식 층 그림">
+        <g transform="translate(40,170)">
+          <polygon points="0,30 150,0 220,30 70,60" fill="var(--unity-soft)" stroke="var(--unity)" stroke-width="2"/>
+          <text x="80" y="35" fill="var(--unity)" font-size="12" font-weight="700">Unity 화면 바탕</text>
+        </g>
+        <g transform="translate(40,95)">
+          <polygon points="0,30 150,0 220,30 70,60" fill="var(--cam)" stroke="var(--unity)" stroke-width="2"/>
+          <text x="58" y="35" fill="#fff" font-size="12" font-weight="700">미리보기 = UI Toolkit Image</text>
+        </g>
+        <g transform="translate(40,20)">
+          <polygon points="0,30 150,0 220,30 70,60" fill="var(--unity-soft)" fill-opacity="0.85" stroke="var(--unity)" stroke-width="2"/>
+          <polygon points="60,30 150,12 180,30 90,48" fill="none" stroke="var(--unity)" stroke-dasharray="4 3" stroke-width="1.5"/>
+          <text x="12" y="20" fill="var(--unity)" font-size="12" font-weight="700">X · 0:45 · 가이드 · 셔터 (UXML)</text>
+        </g>
+        <text x="270" y="60" fill="var(--unity)" font-size="11" text-anchor="end">Unity</text>
+        <text x="270" y="135" fill="var(--unity)" font-size="11" text-anchor="end">Unity</text>
+        <text x="270" y="210" fill="var(--unity)" font-size="11" text-anchor="end">Unity</text>
+        <!-- arrow from swift -->
+        <path d="M10 140 C 20 120, 30 120, 45 125" stroke="var(--swift)" stroke-width="2" fill="none" marker-end="url(#arrS)"/>
+        <text x="4" y="160" fill="var(--swift)" font-size="10">Swift가</text>
+        <text x="4" y="172" fill="var(--swift)" font-size="10">매 프레임</text>
+        <defs><marker id="arrS" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--swift)"/></marker></defs>
+      </svg>
+      <p>Swift는 카메라만 돌리고, 영상 한 장 한 장을 Metal 텍스처로 Unity에 넘긴다. 화면은 전부 UXML.</p>
+      <ul>
+        <li><span class="pro">+</span> 모든 화면이 UI Toolkit, 상준 USS 그대로, 지환이 E-03까지 UXML로</li>
+        <li><span class="con">−</span> 새로 만들 것: Metal 텍스처 넘기기, 텍스처 수명(앱 백그라운드·화면 나감), 회전·좌우, 매 프레임 갱신</li>
+        <li><span class="con">−</span> 시뮬레이터에 카메라가 없어 이 부분은 <b>실기기 전엔 한 줄도 확인 못 함</b> → S4 안에 끝낼 위험</li>
+        <li><span class="con">−</span> 영상 → Unity → 화면으로 한 단계 더 거쳐 미리보기가 조금 늦을 수 있음(가설)</li>
+      </ul>
+    </div>
+
+    <!-- (다) -->
+    <div class="card">
+      <span class="tag no">(다) 빼는 게 좋음</span>
+      <h3>미리보기를 Unity 뒤에</h3>
+      <svg viewBox="0 0 300 250" role="img" aria-label="다 방식 층 그림">
+        <g transform="translate(40,170)">
+          <polygon points="0,30 150,0 220,30 70,60" fill="var(--cam)" stroke="var(--swift)" stroke-width="2"/>
+          <text x="70" y="35" fill="#fff" font-size="12" font-weight="700">미리보기 (Swift, 맨 아래)</text>
+        </g>
+        <g transform="translate(40,95)">
+          <polygon points="0,30 150,0 220,30 70,60" fill="var(--unity-soft)" fill-opacity="0.25" stroke="var(--unity)" stroke-width="2" stroke-dasharray="6 4"/>
+          <text x="55" y="35" fill="var(--unity)" font-size="12" font-weight="700">Unity 화면 전체를 투명하게</text>
+        </g>
+        <g transform="translate(40,20)">
+          <polygon points="0,30 150,0 220,30 70,60" fill="var(--unity-soft)" fill-opacity="0.85" stroke="var(--unity)" stroke-width="2"/>
+          <polygon points="60,30 150,12 180,30 90,48" fill="none" stroke="var(--unity)" stroke-dasharray="4 3" stroke-width="1.5"/>
+          <text x="12" y="20" fill="var(--unity)" font-size="12" font-weight="700">X · 0:45 · 가이드 · 셔터 (UXML)</text>
+        </g>
+        <text x="270" y="60" fill="var(--unity)" font-size="11" text-anchor="end">Unity</text>
+        <text x="270" y="135" fill="var(--unity)" font-size="11" text-anchor="end">Unity(투명)</text>
+        <text x="270" y="210" fill="var(--swift)" font-size="11" text-anchor="end">Swift</text>
+      </svg>
+      <p>카메라 영상을 Unity 뒤에 깔고, Unity가 그 부분만 뚫어서 보이게 한다.</p>
+      <ul>
+        <li><span class="pro">+</span> UI는 UXML, 미리보기는 네이티브 속도</li>
+        <li><span class="con">−</span> Unity 화면 전체를 투명하게 만드는 설정(프레임버퍼 알파)이 섬·달리기 화면 렌더링에도 영향</li>
+        <li><span class="con">−</span> URP 후처리·배경색이 알파를 덮어써 "검은 화면"이 되기 쉬움, 원인 찾기 어려움</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>2. 셔터를 누르면 무엇이 오가나</h2>
+  <div class="flow">
+    <h3>(가) — 사진 경로만 오간다</h3>
+    <svg viewBox="0 0 1040 150" role="img" aria-label="가 방식 흐름">
+      <defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--mute)"/></marker></defs>
+      <rect x="0" y="40" width="190" height="64" rx="12" fill="var(--unity-soft)" stroke="var(--unity)" stroke-width="2"/>
+      <text x="95" y="68" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="700">E-02 촬영 안내</text>
+      <text x="95" y="88" text-anchor="middle" fill="var(--body)" font-size="12">지환 · UXML</text>
+      <rect x="265" y="40" width="250" height="64" rx="12" fill="var(--swift-soft)" stroke="var(--swift)" stroke-width="2"/>
+      <text x="390" y="68" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="700">E-03 카메라 (Swift 화면)</text>
+      <text x="390" y="88" text-anchor="middle" fill="var(--body)" font-size="12">민재 · 노출 · 브래킷 3장 · 임시 JPEG</text>
+      <rect x="590" y="40" width="190" height="64" rx="12" fill="var(--unity-soft)" stroke="var(--unity)" stroke-width="2"/>
+      <text x="685" y="68" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="700">E-04 촬영 확인</text>
+      <text x="685" y="88" text-anchor="middle" fill="var(--body)" font-size="12">지환 · UXML</text>
+      <rect x="855" y="40" width="185" height="64" rx="12" fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="2"/>
+      <text x="947" y="68" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="700">서버 OCR</text>
+      <text x="947" y="88" text-anchor="middle" fill="var(--body)" font-size="12">지환 · 3장 중 고름</text>
+      <line x1="192" y1="72" x2="262" y2="72" stroke="var(--mute)" stroke-width="2" marker-end="url(#a1)"/>
+      <line x1="517" y1="72" x2="587" y2="72" stroke="var(--mute)" stroke-width="2" marker-end="url(#a1)"/>
+      <line x1="782" y1="72" x2="852" y2="72" stroke="var(--mute)" stroke-width="2" marker-end="url(#a1)"/>
+      <text x="227" y="30" text-anchor="middle" fill="var(--mute)" font-size="12">Shoot()</text>
+      <text x="552" y="30" text-anchor="middle" fill="var(--mute)" font-size="12">경로 3개</text>
+      <text x="817" y="30" text-anchor="middle" fill="var(--mute)" font-size="12">업로드</text>
+      <text x="390" y="130" text-anchor="middle" fill="var(--mute)" font-size="12">취소 · 시간 초과(→ E-10) · 권한 없음(→ I-06)도 같은 답으로 돌아옴</text>
+    </svg>
+    <h3 style="margin-top:20px">(나) — 미리보기 동안 매 프레임 텍스처가 오간다</h3>
+    <svg viewBox="0 0 1040 120" role="img" aria-label="나 방식 흐름">
+      <defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--mute)"/></marker></defs>
+      <rect x="0" y="30" width="230" height="64" rx="12" fill="var(--swift-soft)" stroke="var(--swift)" stroke-width="2"/>
+      <text x="115" y="58" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="700">카메라 (Swift)</text>
+      <text x="115" y="78" text-anchor="middle" fill="var(--body)" font-size="12">초당 30장 영상</text>
+      <rect x="320" y="30" width="250" height="64" rx="12" fill="var(--swift-soft)" stroke="var(--swift)" stroke-width="2"/>
+      <text x="445" y="58" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="700">Metal 텍스처로 바꾸기</text>
+      <text x="445" y="78" text-anchor="middle" fill="var(--body)" font-size="12">새로 만듦 · 수명 관리</text>
+      <rect x="660" y="30" width="380" height="64" rx="12" fill="var(--unity-soft)" stroke="var(--unity)" stroke-width="2"/>
+      <text x="850" y="58" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="700">Unity 텍스처 → UI Toolkit Image + UXML 겹침</text>
+      <text x="850" y="78" text-anchor="middle" fill="var(--body)" font-size="12">매 프레임 포인터 갱신 · 회전 맞추기</text>
+      <line x1="232" y1="62" x2="317" y2="62" stroke="var(--mute)" stroke-width="2" marker-end="url(#a2)"/>
+      <line x1="572" y1="62" x2="657" y2="62" stroke="var(--mute)" stroke-width="2" marker-end="url(#a2)"/>
+      <text x="520" y="114" text-anchor="middle" fill="var(--mute)" font-size="12">찍기·노출은 (가)와 같음. 이 줄 전체가 (가)에 없는 추가 작업</text>
+    </svg>
+  </div>
+
+  <h2>3. 한눈에</h2>
+  <div class="scroll">
+  <table>
+    <tr><th></th><th>(가) E-03만 Swift</th><th>(나) Unity 텍스처</th><th>(다) Unity 뒤에</th></tr>
+    <tr><td>새로 만들 양</td><td>작음 (카메라 화면 1개)</td><td>큼 (텍스처 다리 + 화면)</td><td>중간 + 렌더링 설정</td></tr>
+    <tr><td>실패할 곳</td><td>적음</td><td>텍스처 수명·회전·백그라운드</td><td>투명 설정이 다른 화면에 번짐</td></tr>
+    <tr><td>E-03 모양</td><td>Swift (UI Kit 값 옮김)</td><td>UXML·USS</td><td>UXML·USS</td></tr>
+    <tr><td>미리보기 부드러움</td><td>네이티브 그대로</td><td>한 단계 더 거침(가설)</td><td>네이티브 그대로</td></tr>
+    <tr><td>에디터에서 E-03</td><td>못 봄 (가짜는 사진만 줌)</td><td>웹캠 가짜로 볼 수 있음</td><td>못 봄</td></tr>
+    <tr><td>나중에 바꾸기</td><td>(나)로 옮겨도 C# <code>Shoot()</code> 모양은 같음</td><td>—</td><td>—</td></tr>
+  </table>
+  </div>
+  <div class="note">추천 (가): 촬영은 한 번에 끝나는 짧은 화면이고 겹친 UI가 X·타이머·가이드·셔터 4개뿐이라 Swift로 옮기는 양이 작다. 노출 제어가 핵심인 기능에서 실패할 곳을 줄이는 게 먼저. C#이 보는 모양(<code>Native.Camera.Shoot()</code> → 경로 3개)은 어느 방식이든 같아서, 나중에 (나)로 바꿔도 지환 화면은 그대로.</div>
+
+  <h2>4. 브래킷 3장이란 (정할 것 2)</h2>
+  <p>셔터 한 번에 노출만 다르게 연달아 3장. 10/29 첫 시험에서 같은 계기판을 4초 차이로 찍은 두 장 중 한 장은 LED가 하얗게 타서 숫자가 지워졌다(<code>console_ocr.md</code>). 아래는 그 현상을 설명하려고 그린 그림이고 실제 사진이 아니다.</p>
+  <div class="card">
+    <svg viewBox="0 0 900 220" role="img" aria-label="노출별 LED 숫자 예시 그림">
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+        <filter id="glow2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2"/></filter>
+      </defs>
+      <!-- three panels -->
+      <g transform="translate(0,10)">
+        <rect width="280" height="150" rx="12" fill="#2A2F3A"/>
+        <text x="140" y="100" text-anchor="middle" font-size="64" font-weight="900" fill="#FF6B5A" filter="url(#glow)">3.02</text>
+        <text x="140" y="100" text-anchor="middle" font-size="64" font-weight="900" fill="#FFE9E4" opacity="0.9">3.02</text>
+        <text x="140" y="138" text-anchor="middle" font-size="40" font-weight="900" fill="#FF6B5A" opacity="0.25">888</text>
+      </g>
+      <g transform="translate(310,10)">
+        <rect width="280" height="150" rx="12" fill="#14161C"/>
+        <text x="140" y="100" text-anchor="middle" font-size="64" font-weight="900" fill="#FF3B2E" filter="url(#glow2)" opacity="0.7">3.02</text>
+        <text x="140" y="100" text-anchor="middle" font-size="64" font-weight="900" fill="#FF4A3A">3.02</text>
+      </g>
+      <g transform="translate(620,10)">
+        <rect width="280" height="150" rx="12" fill="#050608"/>
+        <text x="140" y="100" text-anchor="middle" font-size="64" font-weight="900" fill="#7A1A14">3.02</text>
+      </g>
+      <text x="140" y="190" text-anchor="middle" fill="var(--ink)" font-size="15" font-weight="700">자동 노출</text>
+      <text x="140" y="210" text-anchor="middle" fill="var(--body)" font-size="13">LED가 타고 꺼진 "888"이 비침 · LCD엔 맞음</text>
+      <text x="450" y="190" text-anchor="middle" fill="var(--ink)" font-size="15" font-weight="700">조금 어둡게</text>
+      <text x="450" y="210" text-anchor="middle" fill="var(--body)" font-size="13">LED 획만 또렷 (가설: 7세그먼트에 맞음)</text>
+      <text x="760" y="190" text-anchor="middle" fill="var(--ink)" font-size="15" font-weight="700">더 어둡게</text>
+      <text x="760" y="210" text-anchor="middle" fill="var(--body)" font-size="13">아주 밝은 계기판·밝은 헬스장용 예비</text>
+    </svg>
+    <ul>
+      <li><b>3장</b>(추천): 계기판 종류(LED·LCD·터치스크린)와 헬스장 조명이 달라도 한 장은 맞을 가능성이 큼. 서버 OCR이 가장 잘 읽힌 장을 고름. 단 올리는 사진이 3배(장당 수백 KB 수준, 가설)</li>
+      <li><b>1장</b>: 낮은 노출로 고정. 데이터는 적지만 LCD·터치스크린이 어둡게 묻힐 수 있음</li>
+      <li>정확한 EV 값(−1.5·−3 등)은 첫 실기기 시험에서 정함. 지금 값은 출발점</li>
+    </ul>
+  </div>
+
+  <h2>5. 더 읽을 것</h2>
+  <ul>
+    <li>Apple — <a href="https://developer.apple.com/documentation/avfoundation/avcapturevideopreviewlayer">AVCaptureVideoPreviewLayer</a> (가·다의 미리보기)</li>
+    <li>Apple — <a href="https://developer.apple.com/documentation/avfoundation/avcapturephotobracketsettings">AVCapturePhotoBracketSettings</a> (브래킷 촬영)</li>
+    <li>Apple — <a href="https://developer.apple.com/documentation/corevideo/cvmetaltexturecache">CVMetalTextureCache</a> (나의 영상 → Metal 텍스처)</li>
+    <li>Unity — <a href="https://docs.unity3d.com/ScriptReference/Texture2D.CreateExternalTexture.html">Texture2D.CreateExternalTexture</a> (나의 네이티브 텍스처 → Unity)</li>
+    <li>우리 문서 — ADR-0009 네이티브 통로, <code>docs/product/console_ocr.md</code> 10/29 첫 시험, 계획 0033</li>
+  </ul>
+</main>
+</body>
+</html>

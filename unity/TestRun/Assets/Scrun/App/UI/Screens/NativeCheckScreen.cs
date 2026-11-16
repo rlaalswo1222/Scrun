@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -62,6 +63,7 @@ namespace Scrun.App
                 Log("설정 앱 열기");
             };
             Q<Button>("keychain").clicked += CheckKeychain;
+            Q<Button>("camera").clicked += CheckCamera;
 
             speed = Q<Label>("speed");
             speedToggle = Q<Button>("speed-toggle");
@@ -137,6 +139,38 @@ namespace Scrun.App
             catch (Exception e)
             {
                 Log("키체인 실패: " + e.Message);
+            }
+        }
+
+        // ---- 계기판 카메라(계획 0033) ----
+
+        // 진짜 E-03(지환) 전에 노출만 시험: 찍은 브래킷 사진을 앱 Documents/camera-check/로 옮겨 둔다
+        // (맥에서 xcrun devicectl device copy from --domain-type appDataContainer로 받아 OCR 다시 돌림. 사진은 저장소에 안 올림)
+        async void CheckCamera()
+        {
+            try
+            {
+                var shot = await Native.Camera.ShootAsync();
+                if (shot.Outcome != CameraOutcome.Taken)
+                {
+                    Log("카메라: " + shot.Outcome);
+                    return;
+                }
+                var keep = Path.Combine(Application.persistentDataPath, "camera-check");
+                Directory.CreateDirectory(keep);
+                var parts = new List<string>();
+                foreach (var p in shot.Photos)
+                {
+                    var to = Path.Combine(keep, $"{DateTime.Now:HHmmss}_{p.ExposureBias:+0.0;-0.0;0}EV.jpg");
+                    File.Copy(p.Path, to, true);
+                    parts.Add($"{p.ExposureBias:+0.0;-0.0;0} EV {new FileInfo(to).Length / 1024} KB");
+                }
+                Native.Camera.Discard(shot);
+                Log($"카메라: {shot.Photos.Count}장 ({string.Join(", ", parts)}) → Documents/camera-check");
+            }
+            catch (Exception e)
+            {
+                Log("카메라 실패: " + e.Message);
             }
         }
 
