@@ -2,13 +2,15 @@
 
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
-## 지금 (11/16): 계획 0035 센서 준비·달림 인식·카운트다운(BL-10·11) **PR #49**(민재 리뷰 대기)
+## 지금 (11/16): 계획 0035 센서 준비·달림 인식·카운트다운(BL-10·11) **PR #49**(11/16 민재 리뷰 1·2·4–8 반영, 3번은 #48 머지 뒤 `AvatarSpeed` 판단을 같이 쓰게)
 - 브랜치 `feat/run-ready-countdown`(develop e14a16b에서). `/code-review` 반영 끝(계획 0035 끝 절, EditMode 268/268). 다음: 민재 리뷰 반영, 머지되면 계획 0035 상태 "완료", 그다음 S4(계기판 촬영 E-02·E-04·서버 OCR, 민재 카메라 0033 위에)
 - 한 것·확인·바뀐 것은 [계획 0035](../docs/plans/0035-run-ready-countdown.md) "진행". EditMode 268/268, 에디터 Play로 D-07 → D-08 → D-09 → HUD, I-01·다시 시도, X → D-01, 카운트다운 중 멈춤 → D-08 확인
 - 민재 코드 건드린 곳(PR에 표시): `MapScreen`(임시 `StartRunning()` 지움, 센서 준비 층 연결), `RunSession`(`ClientRunId`·`RunId`·`StartBody` 추가), `Api.cs`·`Dtos.cs`(`RunsApi.StartAsync`)
 - 남은 확인: 아이폰 책상(폰 센서 Ok·걸음 감지까지 몇 초), 러닝머신(1.2초 걸음 문턱이 2 km/h에서 잘못 멈추지 않는지, 카운트다운 전 계기판 거리)
 - 상준에게: D-07 오른쪽 그림·D-08 고리 움직임·I-01 계속 실패 문구, 백로그 BL-11 ④ "(C-01)" 번호 확인(문구는 러닝 설정, 번호는 코스 목록)
 - 민재에게: 노션 작업 표 정리(내 정보·설정 API 두 줄 "완료", 카메라 노출 줄 → 민재), 홈 B-01–B-04 계획 0032 누가 할지(홈은 지환 S6)
+- 보관 중: `git stash` "0036 러너 애니메이터 덮어쓰기 방지(fix/keep-runner-animator, PR 전)" — 씬 만들기가 `YBotRunner.controller`를 다시 재서 덮어쓰던 것(계획 0036). 브랜치 `fix/keep-runner-animator`에서 `git stash pop` 뒤 커밋·PR
+- 섬 씬: 11/16 Build Island Scene으로 이 맥에 다시 만듦(전엔 메쉬 연결이 끊겨 빈 섬). 씬·조명 파일 변경은 커밋하지 않음
 - 로컬 서버: `backend`에서 `.venv/bin/python -m uvicorn app.main:app --port 8000`(11/16 `alembic upgrade head`로 만 14세 약관 마이그레이션 받음)
 
 ## 지금 (11/12): S2 내 몫 끝
