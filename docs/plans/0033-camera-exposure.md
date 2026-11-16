@@ -2,7 +2,16 @@
 
 - 상태: **구현 중 · 맥 빌드·아이폰 기능 확인 끝(11/13), 실제 계기판 노출·OCR 시험 남음** (2026-11-12 민재 승인: 정할 것 1 (가), 2 브래킷 3장 → ADR-0011. 3은 옵션 값으로 두고 지환·상준이 정함)
 - **맥 할 일**(Windows가 적고 맥이 읽음. 맥은 `git pull --rebase` 뒤 위에서부터, 끝낸 줄은 지우고 결과는 아래 "진행"의 맥 줄에. 사용자는 맥에 "0033 맥 할 일 해 줘"만 침)
-  (11/13 맥: 컴파일·아이폰 확인·사진 받기 끝, 결과는 "진행"의 11/13 맥 줄) 지금 남은 맥 할 일 없음
+  (11/13 맥: 컴파일·아이폰 확인·사진 받기 끝, 결과는 "진행"의 11/13 맥 줄)
+  - **11/16 `/code-review` Swift 8건**(PR 전 리뷰, C#·줄바꿈은 Windows에서 고쳐 PR, 이건 맥에서 고치고 컴파일·아이폰 확인 → 새 브랜치 `fix/camera-swift` PR). `ScrunCamera.swift`:
+    1. 띄우는 중에 닫기: `engine.start` 실패·`RuntimeError`가 present 애니메이션(약 0.3초) 중이면 `dismiss`가 무시돼 `finish`가 안 불림 → `current`가 안 지워져 C# `ShootAsync`가 영원히 기다리고 다음 촬영은 "이미 떠 있습니다". present 완료 뒤에 닫거나, 닫기 실패해도 `finish`는 꼭
+    2. present 실패: `current = vc`를 present 전에 두고 성공을 확인 안 함(위 창이 사라지는 중이거나 이미 무언가 띄우는 중) → 같은 영원히 기다림. present 완료 콜백에서 확인, 안 떴으면 `unavailable`로 끝내고 `current` 비우기
+    3. 권한 묻는 동안 두 번 부름: 둘 다 `current == nil`을 통과 → 두 번째가 `unavailable`("카메라 없음"). ICamera 약속대로 두 번째는 오류(NativeException)로
+    4. 중단: `AVCaptureSessionWasInterrupted`·`InterruptionEnded`를 안 봄 → 전화·다른 앱이 카메라를 쓰면 검은 미리보기로 시간 초과(TimedOut). 중단이면 셔터 막고 안내, 길면 `unavailable`
+    5. 노출 하나만 주면(`ExposureBiases = {-2}`) 아이폰은 자동 노출 한 장·`fallbackBias: 0` — 에디터 가짜는 -2를 씀. 한 장도 요청한 노출로(`AVCapturePhotoBracketSettings` 1장 또는 `setExposureTargetBias` 뒤 찍기)
+    6. 정렬: 같은 브래킷 사진은 `sequenceCount`가 같음 → 브래킷 안 순서는 `photo.photoCount`로 정렬(파일 -0·-1·-2와 `photos`가 요청한 노출 순서 0·−1.5·−3을 지키게)
+    7. 6.6–8.0 MB JPEG 쓰기(`.atomic`)를 메인 스레드에서 → 셔터 직후 끊김. 쓰기는 캡처·백그라운드 큐에서, `close`만 메인
+    8. 셔터 상한 1/60초(`activeMaxExposureDuration`)를 `startRunning` 전에 한 번만 → 세션·프리셋이 형식을 다시 적용하면 풀림. `startRunning` 뒤(그리고 `AVCaptureSessionDidStartRunning` 알림에서) 다시 설정, 어두운 곳에서 1/60초 넘지 않는지 확인(11/13 노트북 화면은 밝아 1/120초라 못 잡았음)
 - 담당: 민재(11/12 지환 S3 줄 "카메라 노출 제어 Swift"를 가져옴 → 지환에게 알림, 0017 표 고치기). 촬영 화면 E-02·E-04와 OCR·인증(BL-16 화면·17·18)은 지환 S4 그대로, 모양은 상준
 - 기준: 공개 백로그 BL-16 ①–⑥, `docs/product/console_ocr.md`(10/29 첫 시험: **병목은 인식기보다 노출**, LED가 하얗게 타고 꺼진 획이 비침), Figma E-02(607:1115)·E-03(607:1174)·E-04(607:1216) 노트, ADR-0009(네이티브 통로), OCR은 서버에서(BL-17 ①, 11/06 확정)
 
@@ -49,3 +58,4 @@
   - EXIF: 0 EV 1/120초·ISO 100–125, −1.5 EV 1/120초·ISO 32–40(계산 −1.6 EV), −3 EV 1/473–1/407초·ISO 50(계산 −3.0 EV). 셔터 상한 1/60초 지킴
   - **노출이 맞는지는 아직 모름**: 이번엔 헬스장이 아니라 인터넷 계기판 사진을 띄운 노트북 화면을 찍음(스스로 빛나는 화면이라 LED와 다름) → OCR 비교에 쓰지 않음. 실제 계기판(또는 LED 시계) 브래킷 → `console_ocr.md` 방식 OCR은 남음
   - Windows에 넘길 것(추가): 브래킷 한 번이 6.6–8.0 MB라 서버 OCR로 올리기 전에 가이드 영역 자르기·줄이기를 정해야 함(BL-17과 맞추기)
+- 11/16 민재 Windows: develop(#48–#52) 합침, EditMode 312 통과. `/code-review` 10건 → C# 1건(`FakeCamera.Discard`가 옆 폴더 `scrun-camera-old/`도 안으로 봄 → 끝에 구분자, 테스트 추가)·줄바꿈 1건(`ScrunBridge.swift`·`ScrunCamera.swift`가 CRLF로 커밋돼 6줄 바꾼 게 332줄로 보임 → LF) 고쳐 PR. Swift 8건은 위 "맥 할 일"(지환 E-02–E-04는 에디터 가짜 카메라 위에서 시작하므로 막지 않음)
