@@ -39,17 +39,26 @@ UNREADABLE = ConsoleRead(ReadStatus.UNREADABLE)
 UNSUPPORTED = ConsoleRead(ReadStatus.UNSUPPORTED)
 
 
+class BadPhoto(Exception):
+    """사진 자체를 열 수 없음(깨진 JPEG 등). 엔진이 이걸 던지면 라우터는 못 읽은 것(다시 찍기, 횟수 셈)으로 본다.
+    그 밖의 예외는 엔진 고장으로 보고 503(횟수 안 셈): 둘을 섞으면 깨진 사진은 503만 받아 마감까지 돌거나(#55 리뷰),
+    엔진이 고장 났을 때 모두 다시 찍기를 다 써서 미인증으로 굳는다."""
+
+
 class OcrEngine(Protocol):
-    def read(self, photos: list[Photo]) -> ConsoleRead: ...
+    def read(self, photos: list[Photo]) -> ConsoleRead: ...  # 사진을 못 열면 BadPhoto
 
 
 class FakeOcr:
     """로컬·테스트용. 사진 내용은 보지 않고 파일 이름으로 값을 정한다(앱 에디터의 가짜 카메라가 이름을 붙임).
-    `d3120_t1080` → 3120 m·1080초, `unsupported` → 읽을 수 없는 계기판, 그 밖(`blur` 등) → 다시 찍기. 여러 장이면 처음 읽힌 것."""
+    `d3120_t1080` → 3120 m·1080초, `unsupported` → 읽을 수 없는 계기판, `corrupt` → 사진을 못 엶(BadPhoto),
+    그 밖(`blur` 등) → 다시 찍기. 여러 장이면 처음 읽힌 것."""
 
     NAME = re.compile(r"d(\d{1,6})_t(\d{1,6})")
 
     def read(self, photos: list[Photo]) -> ConsoleRead:
+        if photos and all("corrupt" in p.filename for p in photos):
+            raise BadPhoto("사진을 열 수 없음")
         for p in photos:
             m = self.NAME.search(p.filename)
             if m:

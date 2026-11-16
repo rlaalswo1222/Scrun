@@ -410,3 +410,42 @@ def test_same_retry_during_ocr_counts_once(db_client, me, db, fresh_ocr):
     outs = run_together([lambda c: photo(c, me, run_id, files=files)] * 2)
     assert [data(r)["retakesLeft"] for r in outs] == [3, 3]
     assert len(db.scalars(select(Verification).where(Verification.run_id == run_id)).all()) == 1
+
+
+# ---------- #55 리뷰 후속(민재) ----------
+def test_finish_resent_after_deadline_reports_closed(db_client, me, db):
+    run_id = started_id(db_client, me, cid="late-finish", started=ago(minutes=20))
+    ended = ago(minutes=1)
+    assert data(finish(db_client, me, run_id, ended=ended, duration=600))["verification"] == "PENDING"
+    db.execute(update(Run).where(Run.id == run_id).values(verification_deadline=ago(seconds=1)))
+    db.commit()
+    assert data(finish(db_client, me, run_id, ended=ended, duration=600))["verification"] == "UNVERIFIED"  # 응답을 못 받아 다시 보냄
+    assert run_row(db, run_id).unverified_reason == "TIMEOUT"
+
+
+def test_corrupt_photo_counts_as_retake(db_client, me):
+    run_id = finished(db_client, me)
+    out = data(photo(db_client, me, run_id, "corrupt.jpg"))
+    assert (out["status"], out["retakesLeft"]) == ("RETAKE_REQUIRED", P.max_retakes)  # 503이 아니라 다시 찍기(횟수 셈)
+    assert data(photo(db_client, me, run_id, "corrupt.jpg"))["retakesLeft"] == P.max_retakes - 1
+
+
+class ClosedByOtherOcr:
+    """읽는 동안 마감이 지나고, 늦게 온 다른 요청(목록 조회 등)이 마감으로 닫음. 이 사진은 마감 전에 왔음."""
+
+    def __init__(self, db, run_id):
+        self.db, self.run_id = db, run_id
+
+    def read(self, photos):
+        time.sleep(0.3)  # 사진은 마감 전에 옴 → 읽는 동안 마감(도착 뒤·지금 앞)이 지나감
+        self.db.execute(update(Run).where(Run.id == self.run_id).values(verification_deadline=ago(seconds=0.1)))
+        close_expired(self.db, run_id=self.run_id)
+        self.db.commit()
+        return FakeOcr().read(photos)
+
+
+def test_photo_in_time_wins_over_close_during_ocr(db_client, me, db, fresh_ocr):
+    run_id = finished(db_client, me)
+    app.dependency_overrides[get_ocr] = lambda: ClosedByOtherOcr(db, run_id)
+    assert data(photo(db_client, me, run_id, "d3000_t1000.jpg"))["status"] == "VERIFIED"
+    assert run_row(db, run_id).official_source == "CONSOLE"

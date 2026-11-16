@@ -26,7 +26,7 @@ from starlette.formparsers import MultiPartException, MultiPartParser
 from ..core.config import settings
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode, invalid
-from ..core.ocr import UNREADABLE, ConsoleRead, OcrEngine, Photo, get_ocr
+from ..core.ocr import UNREADABLE, BadPhoto, ConsoleRead, OcrEngine, Photo, get_ocr
 from ..core.run_access import (ACTIVE, DISCARDED, PENDING, TIMEOUT, UNVERIFIED, close_expired, is_expired, my_run, now_utc,
                                verification_deadline)
 from ..core.security import current_user
@@ -65,7 +65,10 @@ def photo_target(runId: str, request: Request, user: User = Depends(current_user
     """사진 본문을 읽기 전에: 도착 시각(마감 판단 기준), 내 기록·끝난 러닝, 인증 대기인데 엔진이 없으면 503."""
     request.state.arrived = now_utc()
     run = _finished(my_run(db, runId, user))
-    if run.status == PENDING and engine is None and not is_expired(run, request.state.arrived):
+    blocked = run.status == PENDING and engine is None and not is_expired(run, request.state.arrived)
+    # 사진 본문(최대 수 MB, 느린 LTE)을 읽는 동안 DB 연결·트랜잭션을 잡고 있지 않게(#55 리뷰: 동시 업로드 15개면 연결이 바닥남)
+    db.rollback()
+    if blocked:
         raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기를 아직 쓸 수 없습니다.")
 
 
@@ -142,21 +145,26 @@ class _OcrRunner:
             raise
         future.add_done_callback(done)
         try:
-            return future.result(timeout=timeout_s)
-        except FutureTimeout:
-            with self.lock:
-                if not future.done():
-                    state["abandoned"] = True
-                    self.running -= 1
-                    self.abandoned += 1
-            raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기가 시간 안에 끝나지 않았습니다.") from None
+            try:
+                return future.result(timeout=timeout_s)
+            except FutureTimeout:
+                with self.lock:
+                    late = future.done()  # 시간을 막 넘기며 끝났으면 그 결과를 씀(버리면 다시 찍어야 함)
+                    if not late:
+                        state["abandoned"] = True
+                        self.running -= 1
+                        self.abandoned += 1
+                if not late:
+                    raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기가 시간 안에 끝나지 않았습니다.") from None
+                return future.result()
+        except BadPhoto:
+            return UNREADABLE  # 사진을 못 엶 → 다시 찍기(횟수 셈)
         except ApiError:
             raise
         except Exception:
-            # 엔진 오류(깨진 JPEG 등)는 500이 아니라 503: 다시 찍기 횟수를 깎지 않음(엔진이 고장 나도 기록이 미인증으로
-            # 굳지 않게). 원인은 서버 기록으로
+            # 엔진 고장은 503: 다시 찍기 횟수를 깎지 않음(고장 난 동안 기록이 미인증으로 굳지 않게). 원인은 서버 기록으로
             log.exception("OCR 엔진 오류")
-            raise ApiError(E.SERVICE_UNAVAILABLE, "계기판을 읽다가 오류가 났습니다. 다시 보내거나 다시 찍어 주세요.") from None
+            raise ApiError(E.SERVICE_UNAVAILABLE, "계기판을 읽다가 오류가 났습니다. 다시 보내 주세요.") from None
 
 
 _ocr = _OcrRunner()
@@ -295,7 +303,10 @@ def verify_photo(runId: str, request: Request, user: User = Depends(current_user
 
     run = _finished(my_run(db, runId, user, lock=True))  # OCR 동안 다른 요청이 정했을 수 있음
     if _closed_by_deadline(db, run):
-        raise ApiError(E.VERIFICATION_CLOSED)
+        if arrived > verification_deadline(run):
+            raise ApiError(E.VERIFICATION_CLOSED)
+        # 이 사진은 마감 전에 왔는데 OCR 동안 늦게 온 다른 요청·목록 조회가 마감으로 닫음 → 이 사진으로 정함(#55 리뷰)
+        run.status, run.unverified_reason = PENDING, None
     if run.status != PENDING:
         return ok(request, _stored(db, run))
     same, reused = _seen(db, run, hashes)  # 같은 사진이 동시에 온 경우
@@ -321,7 +332,8 @@ def verify_photo(runId: str, request: Request, user: User = Depends(current_user
 )
 def verify_skip(runId: str, body: SkipRequest, request: Request, user: User = Depends(current_user),
                 db: Session = Depends(get_db)):
+    arrived = now_utc()  # 잠금을 기다린 시간 말고 도착한 때로 마감을 봄(사진 API와 같게, #55 리뷰)
     run = _finished(my_run(db, runId, user, lock=True))
-    if run.status == PENDING and not _close_if_expired(db, run, now_utc()):
+    if run.status == PENDING and not _close_if_expired(db, run, arrived):
         return ok(request, _save(db, run, Outcome(S.UNVERIFIED, R(body.reason.value)), SKIP))
     return ok(request, _stored(db, run))
