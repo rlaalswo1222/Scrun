@@ -1,8 +1,9 @@
 # 계획 0036: 섬·코스 씬 만들기가 러너 애니메이터를 덮어쓰지 않게 (BL-42 후속, 지환)
 
-- 상태: **PR #50 · 리뷰 대기** (구현 · 확인 끝) (2026-11-16 지환 승인, 급한 수정이라 5줄)
+- 상태: **머지(11/16 #50) · 섬 Play 눈 확인 남음**, 리뷰 후속은 민재(아래) (2026-11-16 지환 승인, 급한 수정이라 5줄)
 - 문제: Scrun → Build Island Scene(그리고 Build TestTrack·Course 씬)이 매번 `RunnerAnimatorBuilder.Build()`로 `YBotRunner.controller`를 지우고 클립을 다시 재서 만든다. 11/16 이 맥에서 돌리니 블렌드 기준점이 걷기 3.5 → 5.0, 조깅 6.0 → 5.5(순서 뒤바뀜), 11.4 → 9.1, 15.6 → 13.4로 바뀜 → 계획 0027의 발 속도 표(`RunnerGait.asset`, 커밋된 기준점으로 잰 것)와 어긋나 발 미끄러짐이 되살아난다. 컨트롤러는 git이 추적하는 파일이라 모르고 커밋하면 develop까지 퍼진다
 - 고치는 것: 씬 만들기 메뉴들은 `RunnerAnimatorBuilder.EnsureBuilt()`를 부른다 → 컨트롤러가 이미 있으면 그대로 쓰고(가장 빠른 기준점만 읽어 `maxClipKmh`에 넣음), 없을 때만 새로 잰다. 기준점을 다시 재고 싶을 때만 메뉴 Scrun → Build Runner Animator(그 뒤 Measure Runner Gait). README "처음 받았을 때"·`unity_map.md`에 같은 설명
 - 확인: Build Island Scene 뒤 `git status`에 `YBotRunner.controller`·`Y Bot@*.fbx.meta`가 안 바뀜, 씬 `maxClipKmh`가 커밋된 값(18.84)과 같음, 섬 Play에서 아바타 정상
 - 하지 않는 것: 클립 분석값과 실행 중 발 속도가 다른 원인(0027 남은 것), 이 맥에서 기준점이 달리 재지는 원인
 - 진행(11/16 맥): 고친 뒤 Build Island Scene → 콘솔 "있는 것 그대로(가장 빠른 기준점 18.8 km/h)", `git status`에 컨트롤러·Y Bot `.fbx.meta` 변경 없음, 씬 `maxClipKmh` 19곳 모두 18.84(커밋된 값). 섬 Play로 달리는 아바타 눈 확인은 아직(컨트롤러가 커밋된 파일 그대로라 0027 확인 결과가 유지된다고 봄, 가설). 재질 `Course_ArchGlow`·`Lm_Mist`는 빌드마다 직렬화 차이(`_EMISSION` 키워드 등)가 생겨 되돌림(동작과 무관, 이번 범위 밖)
+- 11/16 민재(#50 리뷰 후속, `fix/runner-animator-check`): 그대로 쓰기 전에 확인 — 클립(FBX)이 빠졌으면 `[Scrun] 클립 없음` 오류(빠진 채면 그 속도에서 T자), 클립 지문(이름·길이·커브 수, `YBotRunner.clips.txt`, 같이 커밋)이 만들 때와 다르면 오류(다른 동작 FBX·같은 이름으로 바꾼 캐릭터). 둘 다 커밋된 컨트롤러·표는 안 바꾸고 알리기만. **기준점이 달리 재진 원인**: 11/11 `a7fda83`(동작 5개가 서 있기 파일의 Avatar를 공유)로 클립 분석값이 바뀜 — 11/16 Windows(원래 잰 컴퓨터, 같은 FBX)에서도 조깅 5.2·느린 달리기 9.3·보통 달리기 13.6으로 맥과 같게 재현. 발 속도 표(`RunnerGait.asset`, 11/11 02:24)는 그 뒤 실행 중 발 속도로 쟀으므로 지금 컨트롤러 + 표가 맞고, 다시 재면 오히려 어긋남 → 그래서 발 속도를 다시 재 비교하는 검사는 안 씀(모든 컴퓨터에서 거짓 경보, 처음 구현에서 확인). 러너 블렌드 트리 찾기(레이어 0 기본 상태, 1D, `SpeedKmh`)를 `RunnerAnimatorBuilder.FindLocomotionTree` 하나로(`RunnerGaitMeasure`도 씀). 클립이 하나도 없으면 컨트롤러를 안 만들고 최고 속도는 18(0으로 나누기 막음, `RunnerAnimator`에도 0 막기). 다시 재는 순서에 씬 다시 만들기 추가(`unity_map.md`), README 씬 파일 문장을 "`git restore`로 되돌림"으로

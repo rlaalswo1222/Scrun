@@ -59,7 +59,7 @@ public static class RunnerGaitMeasure
             var points = GridFromController(ctrl);
             if (points == null)
             {
-                Debug.LogError($"[RunnerGait] {RunnerAnimatorBuilder.ControllerPath}의 기본 상태가 1D 블렌드 트리가 아님 → 표를 바꾸지 않음(Build Runner Animator로 다시 만들기)");
+                Debug.LogError($"[RunnerGait] {RunnerAnimatorBuilder.ControllerPath}에 러너 블렌드 트리(레이어 0 기본 상태, 1D, SpeedKmh)가 없음 → 표를 바꾸지 않음(Build Runner Animator로 다시 만들기)");
                 return;
             }
             var feet = new float[points.Count];
@@ -114,7 +114,8 @@ public static class RunnerGaitMeasure
     // 블렌드 트리 기준점(서 있기 0 빼고)과 그 사이 0.5 km/h 간격. 기본 상태가 블렌드 트리가 아니면 null
     static List<float> GridFromController(AnimatorController ctrl)
     {
-        if (ctrl.layers.Length == 0 || !(ctrl.layers[0].stateMachine.defaultState?.motion is BlendTree tree)) return null;
+        var tree = RunnerAnimatorBuilder.FindLocomotionTree(ctrl); // 씬 만들기(EnsureBuilt)와 같은 규칙(#50 리뷰)
+        if (tree == null) return null;
         var set = new SortedSet<float>();
         float lo = float.MaxValue, hi = 0f;
         foreach (var c in tree.children)

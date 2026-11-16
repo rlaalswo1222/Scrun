@@ -46,8 +46,9 @@ namespace Scrun
             float kmh = runner.SpeedKmh;
             if (gait == null)
             {
-                animator.SetFloat(SpeedParam, Mathf.Min(kmh, maxClipKmh), dampTime, Time.deltaTime);
-                animator.speed = kmh > maxClipKmh ? kmh / maxClipKmh : 1f;
+                float top = maxClipKmh > 0f ? maxClipKmh : 18f; // 씬에 0이 구워졌어도(클립 없음) 0으로 나누지 않게
+                animator.SetFloat(SpeedParam, Mathf.Min(kmh, top), dampTime, Time.deltaTime);
+                animator.speed = kmh > top ? kmh / top : 1f;
                 return;
             }
 
