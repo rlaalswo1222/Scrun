@@ -17,11 +17,6 @@ ME = {
 }
 
 
-
-
-
-SETTINGS = {"feedShareDefault": True}
-
 WEEKLY_GOAL = {
     "targetCount": 3,
     "cycleStart": "2026-11-03",

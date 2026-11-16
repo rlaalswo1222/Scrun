@@ -3,6 +3,7 @@ from typing import Optional
 from pydantic import Field, field_validator
 
 from ..core import nickname as nick
+from ..core import timezones as tz
 from ..core.model import CamelModel
 
 
@@ -39,13 +40,18 @@ class SignupRequest(CamelModel):
                           description=f"{nick.FORMAT_RULE}. 서버가 정규화(NFKC·앞뒤 공백 제거)해서 저장")
     height_cm: int = Field(ge=100, le=230, description="아바타 크기에 씀")
     weight_kg: int = Field(ge=20, le=250, description="속도 추정엔 안 씀. 용도는 개인정보처리방침에 명시")
-    timezone: str = Field(default="Asia/Seoul", description="주간 목표 주기 계산용")
+    timezone: str = Field(default=tz.DEFAULT, max_length=tz.MAX_LEN, description=f"주간 목표 주기 계산용. {tz.RULE}")
     device_id: Optional[str] = _device_id()
 
     @field_validator("nickname")
     @classmethod
     def _nickname(cls, v: str) -> str:
         return nick.validate_field(v)
+
+    @field_validator("timezone")
+    @classmethod
+    def _timezone(cls, v: str) -> str:
+        return tz.validate_field(v)
 
 
 class TokenPair(CamelModel):

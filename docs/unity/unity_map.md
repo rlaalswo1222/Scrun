@@ -162,6 +162,7 @@
   - 판정(계획 0020, 숫자는 가설 → 아이폰에서 잼): 폰은 1초에 80개 이상이면 정상, 에어팟은 연결 + 헤드폰 모션 허용 + 1초에 20개 이상(아니면 꺼짐 = "이어폰 없이 진행", 실패 아님). `Gait`는 걸음 상태가 2.5초 유지되면 바뀜. 네트워크는 여기 없음(S3 실시간)
   - **에디터 가짜**: Fake Native 창 "속도 센서" 칸. 폰·에어팟 데이터 들어옴(끄면 2초 뒤 끊김, Play 중에도 바로), 보정값 있음, 켜고 들어오기까지·걸음 감지 지연. Play 중엔 사람 속도 슬라이더·"서 있음/걷기 4/달리기 8"·시나리오(3초 뒤 걷기 → 10초 뒤 달리기)와 화면이 읽는 값이 보이고, 키보드 ↑/↓(±0.5)·Space(정지). 7 km/h 미만은 걷기(흉내 경계). 에어팟은 위 이어폰·헤드폰 모션 권한을 따름
   - 섬 씬 아바타에 꽂기: `Scripts/NativeSpeedSource`(`ISpeedSource`)를 `RunnerController`의 속도 소스로(그 씬의 `FakeSpeedSource`는 빼기: 키가 둘 다 먹음). 센서가 꺼져 있으면 켜고, 자기가 켠 경우에만 끔
+  - **멈춤·출발**(11/12, 계획 0034, BL-13): `NativeSpeedSource`는 센서 속도를 그대로 내지 않고 `App/Run/AvatarSpeed`를 거친다. 걸음 수가 1.2초 안 늘면 바로 부드럽게 0(걸음 상태가 바뀌는 2.5초를 안 기다림), 멈춘 뒤 걸음 2개가 이어지면 출발(추정 전엔 3 km/h, 짧게 멈춰 추정기가 멈추기 전 값을 들고 있으면 3초 뒤부터 추정), 평소 변화는 초당 4 km/h 한도, 215 spm 넘는 "걸음"(벨트 진동)·폰 끊김은 멈춤. 반영 지연은 콘솔 `[아바타 지연]`, 개발 빌드 `Documents/run-log/avatar-delays.csv`
   - **아이폰 진짜**(11/11, 계획 0024): Swift `Plugins/iOS/Scrun/ScrunSpeed.swift`(CoreMotion 100 Hz + 에어팟 헤드폰 모션, `ScrunHeadphones`와 같은 manager) → `SpeedEstimator.swift`(Python `speedlab/fusion_live.py`와 한 쌍, 바꾸면 둘 다) → C 함수 7개·숫자 칸 11개(약속 표는 계획 0024) → C# `App/Native/IosSpeedSensor.cs`. 숫자 칸·함수 이름을 바꾸면 Swift·C# 둘 다
   - 걸음 없음 판정(세기 0.12·걸음 수 215 이상은 벨트 진동)은 실시간 걸음 상태와 보정 단계가 같이 씀. 가만히 둔 폰·벨트만 도는 러닝머신은 None. 숫자는 S22 기록에서 정한 가설(`docs/speed/README.md` 11/10 줄)
   - **Swift = Python 확인**: 맥 `ios/SpeedReplay/run.sh`로 `speedlab/golden/`의 정답 CSV 세 개와 비교(모든 열 차 0이어야). 정답은 Windows `speedlab/exp/replay_live.py`가 만든다. 계산을 고치면 Python → 정답 다시 → Swift 순서
