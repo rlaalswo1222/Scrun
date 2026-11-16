@@ -55,8 +55,9 @@ def main() -> None:
         key = real_key(method, path)
         if key is not None:
             ex = real[key]
+            query = path.partition("?")[2]  # 실제 주소(기록 ID는 예시 값) + 원래 예시의 쿼리
             _write(examples / f"{_slug(method, path)}.json", {
-                "request": {"method": method, "path": path, "auth": ex["auth"], "body": ex["body"]},
+                "request": {"method": method, "path": ex["path"] + (f"?{query}" if query else ""), "auth": ex["auth"], "body": ex["body"]},
                 "status": ex["status"],
                 "response": ex["response"],
             })
