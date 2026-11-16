@@ -1,0 +1,7 @@
+Breathing Idle 9.933 130
+Walking 1.233 130
+Jogging 0.867 130
+Slow Run 0.733 130
+Standard Run 0.733 130
+Sprint 0.533 130
+Fast Run 0.533 130
