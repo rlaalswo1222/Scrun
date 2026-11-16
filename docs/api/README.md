@@ -3,7 +3,7 @@
 서버(FastAPI)와 Unity 앱이 함께 따르는 규칙. 계획 [0014](../plans/0014-api-spec.md).
 
 - **API 목록·진행판**: 노션 SCRUN > 문서 > [API 명세](https://app.notion.com/p/52fe88346253480692c492c862982087) (한 줄 = API 하나, 화면 ID·백로그 연결)
-- **요청·응답 세부 필드**: 서버 코드 [`backend/`](../../backend/README.md)(로그인·닉네임 확인·코스·보정값·내 정보·설정·러닝 시작·시계열·종료·끝나지 않은 러닝·버리기는 진짜, 나머지는 스텁)가 만드는 `/docs`(Swagger)와 [`openapi.json`](openapi.json). 예시 응답은 [`examples/`](examples/)(`python -m scripts.export_openapi`로 다시 만듦). 노션이나 이 문서에 필드를 손으로 적지 않는다(코드와 어긋남)
+- **요청·응답 세부 필드**: 서버 코드 [`backend/`](../../backend/README.md)(로그인·닉네임 확인·코스·보정값·내 정보·설정·러닝 시작·시계열·종료·끝나지 않은 러닝·버리기·계기판 인증(사진·건너뛰기)은 진짜, 나머지는 스텁)가 만드는 `/docs`(Swagger)와 [`openapi.json`](openapi.json). 예시 응답은 [`examples/`](examples/)(`python -m scripts.export_openapi`로 다시 만듦). 노션이나 이 문서에 필드를 손으로 적지 않는다(코드와 어긋남)
 - **DB 테이블(서버가 저장하는 구조)**: [data_model.md](data_model.md)
 - **이 문서**: 모든 API에 공통인 것만
 
@@ -103,7 +103,8 @@
 | `CALIBRATION_REQUIRED` | 409 | 보정 없이 맵 입장 | A-11 | |
 | `COURSE_FULL` | 409 | 그 코스의 맵이 가득 참(최대 인원). 앱은 다른 코스를 고르게 함 | I-11 | |
 | `RUN_ALREADY_FINISHED` | 409 | 이미 끝난 러닝에 종료·시계열 올리기 | | |
-| `VERIFICATION_CLOSED` | 409 | 인증 가능 시간이 지남(운동 직후만) | E-10 | |
+| `RUN_NOT_FINISHED` | 409 | 끝나지 않은 러닝을 인증(종료 먼저) | I-08 | |
+| `VERIFICATION_CLOSED` | 409 | 인증 가능 시간이 지남(종료를 받은 뒤 10분, 서버 설정), 버린 러닝 | E-10 | |
 | `SELF_FRIEND_CODE` | 400 | 내 코드를 입력 | G-08 | |
 | `ALREADY_FRIEND` | 409 | 이미 친구 | G-08 | |
 | `FRIEND_LIMIT_EXCEEDED` | 409 | 친구 50명 초과 | G-08 | |
@@ -127,7 +128,7 @@
 러닝 시작·시계열·종료는 앱이 만든 ID(`clientRunId`)를 같이 보낸다. 같은 ID가 다시 오면 새로 만들지 않고 처음 결과를 돌려준다. 네트워크가 끊겨 다시 보내거나, 오프라인으로 달린 기록을 나중에 올려도(정책 미정) API는 그대로.
 
 ## 미정 (정해지면 이 문서와 노션 표 갱신)
-- OCR을 서버에서 할지 앱에서 할지 → `verification/photo`와 `verification/reading` 둘 다 자리만
+- (정함) OCR은 서버에서(BL-17 ①, 11/06). 11/16 계획 0038: 앱이 읽은 값을 받는 `verification/reading`은 뺌(추출값은 사용자가 고칠 수 없음, BL-17 ④). 판정 규칙·값은 계획 0038, `app/core/verification.py`
 - 오프라인 달리기 허용 여부
 - (정함) 실시간 공동 맵 메시지 모양·재접속 규칙: 11/11 계획 0029: [realtime.md](realtime.md). 노션 표의 Realtime 줄은 메시지 이름·필드만 맞추면 됨
 - 실사 영상 코스는 최하위 → 코스 `type` 필드만 열어 둠

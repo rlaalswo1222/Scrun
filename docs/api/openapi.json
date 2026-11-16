@@ -1959,7 +1959,7 @@
           "Verification"
         ],
         "summary": "계기판 사진으로 인증",
-        "description": "화면 E-04에서 E-09 · BL-16, BL-17, BL-18. **OCR 위치 미정**(서버 vs 앱): 서버에서 하면 이 API, 사진은 OCR 직후 폐기.\n\n재촬영 필요(OCR 실패)·미인증(오차 초과, OCR 불가 계기판)은 오류가 아니라 200 + status. 인증 완료·미인증이면 rewards에 반영 결과(E-11).\n\n스텁: 파일 이름에 `blur` → RETAKE_REQUIRED, 그 밖 → VERIFIED\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 E-04에서 E-09 · BL-16 ⑥, BL-17, BL-18. 앱 카메라로 찍은 계기판 사진(브래킷 1–3장, JPEG, 한 장 4 MB 이하, 가이드 영역만 잘라서)을 multipart `photos`로 여러 번 붙여 보낸다. 서버가 읽고 센서 기록과 대조: 거리 15% 이내·시간(계기판 − 센서) -30초에서 +300초(일시정지가 있었으면 + 쉰 시간)면 VERIFIED, 넘으면 UNVERIFIED(MISMATCH), 못 읽으면 RETAKE_REQUIRED(다시 찍기 3번, 남은 횟수 retakesLeft), 다 써도 못 읽거나 읽을 수 없는 계기판이면 UNVERIFIED(UNSUPPORTED_CONSOLE). 값은 서버 설정. 사진은 메모리에서 읽고 버림(해시만 남김). 다른 기록에 쓴 사진이 섞이면 못 읽은 것으로 봄. 마감(종료를 받은 뒤 10분)이 지나면 VERIFICATION_CLOSED(기록은 UNVERIFIED·TIMEOUT으로 닫힘). OCR 엔진이 없거나 밀렸거나 시간 안에 못 읽으면 503(다시 찍기 횟수에 안 셈).\n\n못 읽음(RETAKE_REQUIRED)·미인증(UNVERIFIED)은 오류가 아니라 200 + status. 이미 정해진 기록에 다시 보내면 처음 결과를 그대로 돌려준다(응답을 못 받은 앱의 재시도).",
         "operationId": "verify_photo_v1_runs__runId__verification_photo_post",
         "security": [
           {
@@ -1977,191 +1977,106 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_VerificationResult_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIGNUP_REQUIRED, FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RUN_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RUN_NOT_FINISHED, VERIFICATION_CLOSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
         "requestBody": {
           "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_verify_photo_v1_runs__runId__verification_photo_post"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope_VerificationResult_"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "RUN_NOT_FOUND",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "VALIDATION_ERROR",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "VERIFICATION_CLOSED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/runs/{runId}/verification/reading": {
-      "post": {
-        "tags": [
-          "Verification"
-        ],
-        "summary": "앱이 읽은 계기판 값으로 인증",
-        "description": "화면 E-05, E-06 · BL-17, BL-18. **OCR 위치 미정**: 앱에서 OCR하면 이 API. 정해지면 photo/reading 중 하나만 남김.\n\n재촬영 필요(OCR 실패)·미인증(오차 초과, OCR 불가 계기판)은 오류가 아니라 200 + status. 인증 완료·미인증이면 rewards에 반영 결과(E-11).\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
-        "operationId": "verify_reading_v1_runs__runId__verification_reading_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "runId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Runid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ConsoleReading"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope_VerificationResult_"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "RUN_NOT_FOUND",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "VALIDATION_ERROR",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "VERIFICATION_CLOSED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                "type": "object",
+                "required": [
+                  "photos"
+                ],
+                "properties": {
+                  "photos": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "description": "계기판 사진(JPEG) 1–3장. 브래킷이면 같은 이름으로 여러 장"
+                  }
                 }
               }
             }
@@ -2175,7 +2090,7 @@
           "Verification"
         ],
         "summary": "인증 없이 마무리",
-        "description": "화면 D-22, E-10 · BL-16, BL-19. 촬영 없이 마무리·시간 초과·재촬영 포기 → 미인증 저장. 나중에 인증 불가\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 D-22, E-09, E-10 · BL-16 ⑤, BL-19. 촬영 없이 마무리(SKIPPED)·촬영 시간 초과(TIMEOUT)·다시 찍기 포기(RETAKE_GIVEN_UP) → UNVERIFIED로 저장, 공식 값은 센서 값. 나중에 인증할 수 없다. 마감이 지났으면 이유는 TIMEOUT.\n\n못 읽음(RETAKE_REQUIRED)·미인증(UNVERIFIED)은 오류가 아니라 200 + status. 이미 정해진 기록에 다시 보내면 처음 결과를 그대로 돌려준다(응답을 못 받은 앱의 재시도).",
         "operationId": "verify_skip_v1_runs__runId__verification_skip_post",
         "security": [
           {
@@ -2225,7 +2140,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN",
+            "description": "SIGNUP_REQUIRED, FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -2255,7 +2170,17 @@
             }
           },
           "409": {
-            "description": "VERIFICATION_CLOSED",
+            "description": "RUN_NOT_FINISHED, VERIFICATION_CLOSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE",
             "content": {
               "application/json": {
                 "schema": {
@@ -3115,21 +3040,6 @@
         ],
         "title": "Agreement"
       },
-      "Body_verify_photo_v1_runs__runId__verification_photo_post": {
-        "properties": {
-          "photo": {
-            "type": "string",
-            "contentMediaType": "application/octet-stream",
-            "title": "Photo",
-            "description": "앱 카메라로 찍은 계기판 사진(JPEG)"
-          }
-        },
-        "type": "object",
-        "required": [
-          "photo"
-        ],
-        "title": "Body_verify_photo_v1_runs__runId__verification_photo_post"
-      },
       "Calibration": {
         "properties": {
           "points": {
@@ -3286,7 +3196,8 @@
           },
           "ok": {
             "type": "boolean",
-            "title": "Ok"
+            "title": "Ok",
+            "description": "허용 범위 안인지. 시간은 일시정지가 있었으면 위쪽을 쉰 만큼 넓혀 봄"
           }
         },
         "type": "object",
@@ -3296,33 +3207,6 @@
           "ok"
         ],
         "title": "ComparisonRow"
-      },
-      "ConsoleReading": {
-        "properties": {
-          "distanceM": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Distancem"
-          },
-          "durationS": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Durations"
-          },
-          "readAt": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Readat"
-          }
-        },
-        "type": "object",
-        "required": [
-          "distanceM",
-          "durationS",
-          "readAt"
-        ],
-        "title": "ConsoleReading",
-        "description": "OCR을 앱에서 할 때의 대안(미정)."
       },
       "Course": {
         "properties": {
@@ -4247,6 +4131,7 @@
           "CALIBRATION_REQUIRED",
           "COURSE_FULL",
           "RUN_ALREADY_FINISHED",
+          "RUN_NOT_FINISHED",
           "VERIFICATION_CLOSED",
           "SELF_FRIEND_CODE",
           "ALREADY_FRIEND",
@@ -6175,6 +6060,18 @@
             "title": "Retakedeadline",
             "description": "재촬영 필요일 때 마감 시각"
           },
+          "retakesLeft": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retakesleft",
+            "description": "재촬영 필요일 때 남은 다시 찍기 횟수(1 이상, 이만큼 더 못 읽으면 UNVERIFIED)"
+          },
           "rewards": {
             "anyOf": [
               {
@@ -6184,7 +6081,7 @@
                 "type": "null"
               }
             ],
-            "description": "저장됐을 때(인증 완료·미인증) 반영 결과"
+            "description": "저장됐을 때(인증 완료·미인증) 반영 결과. 성장 API(BL-32, S8) 전까지 null"
           }
         },
         "type": "object",

@@ -1,6 +1,6 @@
 # SCRUN 서버 (`backend/`)
 
-FastAPI + PostgreSQL. API 42개 중 **로그인 5개 + 닉네임 확인**(DB 저장·토큰 발급, 계획 [0016](../docs/plans/0016-server-skeleton.md)), **코스 3개**(목록·상세·맵 입장, 계획 [0021](../docs/plans/0021-course-api.md)), **보정값 2개**(계획 [0023](../docs/plans/0023-calibration.md)), **내 정보·설정 4개**(계획 [0028](../docs/plans/0028-user-me-settings-api.md))는 진짜, **나머지 27개는 아직 스텁**(고정 예시, 계획 [0014](../docs/plans/0014-api-spec.md)). 스텁은 묶음별로 하나씩 진짜로 바꾼다. 옛 `server.py`(코스 만들기 실험 서버)와는 별개.
+FastAPI + PostgreSQL. API 41개 중 **로그인 5개 + 닉네임 확인**(DB 저장·토큰 발급, 계획 [0016](../docs/plans/0016-server-skeleton.md)), **코스 3개**(목록·상세·맵 입장, 계획 [0021](../docs/plans/0021-course-api.md)), **보정값 2개**(계획 [0023](../docs/plans/0023-calibration.md)), **내 정보·설정 4개**(계획 [0028](../docs/plans/0028-user-me-settings-api.md)), **러닝 5개**(시작·시계열·끝나지 않은 러닝·종료·버리기, 계획 [0037](../docs/plans/0037-run-pause-finish.md)), **계기판 인증 2개**(사진·건너뛰기, 계획 [0038](../docs/plans/0038-console-verification.md))는 진짜, **나머지 19개는 아직 스텁**(고정 예시, 계획 [0014](../docs/plans/0014-api-spec.md)). 스텁은 묶음별로 하나씩 진짜로 바꾼다. 옛 `server.py`(코스 만들기 실험 서버)와는 별개.
 
 공통 규칙(응답 껍데기·상태 코드·오류 코드·단위)은 [docs/api/README.md](../docs/api/README.md), DB 테이블은 [docs/api/data_model.md](../docs/api/data_model.md), API 목록·진행은 노션 SCRUN > 문서 > API 명세.
 
@@ -31,7 +31,11 @@ http://localhost:8000/docs 에서 눌러 본다.
 - 실제 카카오로 확인하려면 `.env`에 `KAKAO_MODE=real` + `KAKAO_APP_ID=`(카카오 개발자 > 내 애플리케이션 > 앱 ID). 다른 앱에서 발급된 카카오 토큰은 거절
 - 닉네임은 `GET /v1/users/nickname/check`로 먼저 확인(가입과 같은 판정, 규칙은 [docs/api/README.md "닉네임"](../docs/api/README.md))
 
-### 스텁 API(27개) 규칙 — 오류 화면 확인용
+### 계기판 인증 해 보기(가짜 OCR)
+- 진짜 OCR 엔진은 아직 없다(ADR-0012 뒤). `.env`의 `OCR_ENGINE`이 `none`(기본)이면 사진 인증은 503, `fake`면 **사진 파일 이름**으로 값을 정한다: `…d3120_t1080…` → 3120 m·1080초, `unsupported` → 읽을 수 없는 계기판, 그 밖(`blur` 등) → 다시 찍기. 운영 서버엔 `fake`를 넣지 않는다
+- 판정 값(거리 15%, 시간 −30초에서 +5분, 마감 10분, 다시 찍기 3번)은 `VERIFY_*` 환경 변수로 바꾼다(`.env.example`, 기본값 `app/core/config.py` `VerificationPolicy`)
+
+### 스텁 API(19개) 규칙 — 오류 화면 확인용
 스텁 API는 토큰을 검사하지 않는다(아무 토큰이나 예시 사용자 `usr_demo`). 진짜가 되면 진짜 토큰만 받는다.
 | 넣는 값 | 결과 |
 |---|---|
@@ -39,7 +43,6 @@ http://localhost:8000/docs 에서 눌러 본다.
 | 토큰 `expired` | 401 `TOKEN_EXPIRED` |
 | 토큰 `signup` | 가입용 토큰 흉내(스텁 API는 403 `SIGNUP_REQUIRED`) |
 | 기록 `run_other` / 없는 ID | 403 `FORBIDDEN` / 404 `RUN_NOT_FOUND` |
-| 계기판 사진 파일 이름에 `blur` | 200 + `RETAKE_REQUIRED` |
 | 친구 코드 `SCR-7K2Q`(내 코드) / `SCR-NONE` / `SCR-FRND` / `SCR-FULL` | 내 코드 / 없음 / 이미 친구 / 50명 초과 |
 | 같이 달리기 `usr_f2` | 409 `FRIEND_NOT_RUNNING` |
 
@@ -51,10 +54,12 @@ app/
                      envfile(.env 읽기·DB 주소만, 마이그레이션용),
                      tokens(access·가입용·refresh 토큰), sessions(refresh 토큰 수명: 재발급·재사용·기기·상한),
                      kakao(카카오 확인, 가짜/진짜), security(진짜 로그인 확인), auth(스텁 API용 로그인 확인), occupancy(코스별 지금 맵에 있는 사람 수, 세는 곳 한 곳),
-                     nickname(정규화·형식·금칙어·중복), model(camelCase)
+                     nickname(정규화·형식·금칙어·중복), model(camelCase),
+                     run_access(러닝 상태 이름·내 기록 찾기·인증 마감), ocr(계기판 사진 읽기 엔진 자리, 가짜/없음),
+                     verification(센서-계기판 대조 판정, 순수 함수)
   db/                models(테이블 21개), session(DB 연결), ids(ULID), testing(테스트 DB로 바꿔 끼우기)
   schemas/           요청·응답 모델(도메인별). Swagger의 Schemas
-  routers/           API 주소(도메인별). auth.py, users.py의 닉네임 확인·내 정보·설정·보정값, courses.py가 진짜, 나머지는 스텁
+  routers/           API 주소(도메인별). auth.py, users.py의 닉네임 확인·내 정보·설정·보정값, courses.py, runs.py의 달리는 쪽, verification.py가 진짜, 나머지는 스텁
   testenv.py         테스트·예시 내보내기 전용 설정(임시 서명 키 + 가짜 카카오, app보다 먼저 부름)
   stub_data.py       스텁이 돌려주는 예시 값(실측 아님)
   stub_requests.py   모든 API 예시 요청 표 + 진짜가 된 API 목록(REAL)
@@ -62,7 +67,8 @@ migrations/          DB 변경 기록(Alembic). 테이블을 바꾸면 여기 �
 scripts/             export_openapi(OpenAPI·예시), notion_pages(노션 본문), real_examples(진짜 API 예시 흐름),
                      purge_refresh_tokens(만료 토큰 정리, 운영에서 하루 한 번)
 tests/               test_contract(스텁 API 계약), test_auth(로그인·닉네임 진짜 흐름, 동시 요청 포함), test_courses(코스·맵 입장 진짜 흐름),
-                     test_config(설정 검사), test_kakao(진짜 카카오 응답 처리), test_nickname(닉네임 규칙)
+                     test_config(설정 검사), test_kakao(진짜 카카오 응답 처리), test_nickname(닉네임 규칙),
+                     test_runs(러닝 시작·종료 진짜 흐름), test_verification(계기판 인증: 판정 경계·재촬영·마감·동시 요청)
 ```
 
 ## 테스트·내보내기 (DB가 떠 있어야 함)
