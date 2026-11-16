@@ -165,5 +165,21 @@ namespace Scrun.App
             if (r == null || string.IsNullOrEmpty(r.RunId)) throw new ApiException(ApiFailure.BadResponse, "러닝 시작 응답이 비었습니다.");
             return r;
         }
+
+        // 달리는 동안 60초마다(계획 0037). 같은 offsetS 묶음을 다시 보내면 덮어씀(다시 보내도 하나)
+        public Task PutSamplesAsync(string runId, RunSamplesBody body) =>
+            c.SendAsync<object>("PUT", $"/v1/runs/{Uri.EscapeDataString(runId)}/samples", body, AuthMode.User);
+
+        // 끝(D-18·D-19 → D-22). 같은 endedAt·값으로 다시 보내면 처음 결과
+        public async Task<RunSummary> FinishAsync(string runId, RunFinishBody body)
+        {
+            var r = await c.PostAsync<RunSummary>($"/v1/runs/{Uri.EscapeDataString(runId)}/finish", body, AuthMode.User);
+            if (r == null || string.IsNullOrEmpty(r.RunId)) throw new ApiException(ApiFailure.BadResponse, "러닝 종료 응답이 비었습니다.");
+            return r;
+        }
+
+        // D-22 "촬영 없이 마무리"(미인증으로 저장, 나중에 인증할 수 없음). 인증 API는 지환 BL-18(지금은 서버 스텁)
+        public Task SkipVerificationAsync(string runId) =>
+            c.PostAsync<object>($"/v1/runs/{Uri.EscapeDataString(runId)}/verification/skip", new { reason = "SKIPPED" }, AuthMode.User);
     }
 }
