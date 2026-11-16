@@ -33,7 +33,7 @@ http://localhost:8000/docs 에서 눌러 본다.
 
 ### 계기판 인증 해 보기(가짜 OCR)
 - 진짜 OCR 엔진은 아직 없다(ADR-0012 뒤). `.env`의 `OCR_ENGINE`이 `none`(기본)이면 사진 인증은 503, `fake`면 **사진 파일 이름**으로 값을 정한다: `…d3120_t1080…` → 3120 m·1080초, `unsupported` → 읽을 수 없는 계기판, 그 밖(`blur` 등) → 다시 찍기. 운영 서버엔 `fake`를 넣지 않는다
-- 판정 값(거리 15%, 시간 −30초에서 +5분, 마감 10분, 다시 찍기 3번)은 `VERIFY_*` 환경 변수로 바꾼다(`.env.example`, 기본값 `app/core/config.py` `VerificationPolicy`)
+- 판정 값(거리 15%, 시간 −30초에서 +5분, 쉰 시간으로 넓히는 폭 최대 10분, 마감 10분, 다시 찍기 3번)은 `VERIFY_*` 환경 변수로 바꾼다(`.env.example`, 기본값 `app/core/config.py` `VerificationPolicy`)
 
 ### 스텁 API(19개) 규칙 — 오류 화면 확인용
 스텁 API는 토큰을 검사하지 않는다(아무 토큰이나 예시 사용자 `usr_demo`). 진짜가 되면 진짜 토큰만 받는다.

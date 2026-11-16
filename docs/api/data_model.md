@@ -143,7 +143,7 @@ erDiagram
 | official_source | text | `CONSOLE`·`SENSOR` |
 | official_distance_m, official_duration_s | int | **공식 값**: 인증 완료면 계기판, 미인증이면 센서. 피드·경험치·주간 목표가 이 값을 씀 |
 | unverified_reason | text | `MISMATCH`·`UNSUPPORTED_CONSOLE`·`SKIPPED`·`TIMEOUT`·`RETAKE_GIVEN_UP` |
-| verification_deadline | timestamptz | 인증 마감 = **서버가 종료를 받은 때** + 설정(10분). 앱이 꺼졌다 복구해 늦게 끝내도 그 직후엔 찍을 수 있게. 지나면 `VERIFICATION_CLOSED`, 기록은 조회에서 미인증으로 보이고 다음 인증 요청 때 `TIMEOUT`으로 닫힘(계획 0038) |
+| verification_deadline | timestamptz | 인증 마감 = **서버가 종료를 받은 때** + 설정(10분). 앱이 꺼졌다 복구해 늦게 끝내도 그 직후엔 찍을 수 있게. 마감은 요청이 도착한 때로 판단. 지나면 `VERIFICATION_CLOSED`, 기록은 `UNVERIFIED`·`TIMEOUT`으로 닫힘: 인증 요청 때, 그리고 기록 목록·상세는 읽기 전에 `run_access.close_expired`로(계획 0038) |
 | shared | bool | 친구 피드 공유(기본값은 `users.feed_share_default`) |
 | updated_at | timestamptz | 세션 복구 24시간은 `status = ACTIVE`와 `updated_at`으로 판단 |
 
@@ -169,7 +169,7 @@ erDiagram
 |---|---|---|
 | **id** | text | |
 | run_id | → runs (CASCADE) | |
-| method | text | `PHOTO`(서버 OCR)·`SKIP`(촬영 없이·시간 초과·포기)·`EXPIRED`(마감 뒤 서버가 닫음). 앱이 읽은 값(`READING`)은 11/16 뺌: OCR은 서버, 추출값은 사용자가 못 고침(BL-17 ①④) |
+| method | text | `PHOTO`(서버 OCR)·`SKIP`(촬영 없이·시간 초과·포기). 마감으로 닫힌 것은 시도가 아니라 줄이 없음(앱의 skip `TIMEOUT`과 이걸로 구분). 앱이 읽은 값(`READING`)은 11/16 뺌: OCR은 서버, 추출값은 사용자가 못 고침(BL-17 ①④) |
 | read_distance_m, read_duration_s | int | 계기판에서 읽은 값(OCR 실패면 비움) |
 | status | text | `VERIFIED`·`UNVERIFIED`·`RETAKE_REQUIRED` |
 | reason | text | 미인증 사유 |
