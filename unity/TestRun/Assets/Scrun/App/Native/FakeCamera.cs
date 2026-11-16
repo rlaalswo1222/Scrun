@@ -69,7 +69,8 @@ namespace Scrun.App
         public void Discard(CameraShot shot)
         {
             if (shot == null) return;
-            var root = Path.GetFullPath(dir);
+            // 끝에 구분자를 붙여 비교: 없으면 옆 폴더(scrun-camera-old 등)도 "안"으로 보임(Swift 쪽과 같게, 리뷰)
+            var root = Path.GetFullPath(dir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
             foreach (var p in shot.Photos)
             {
                 if (string.IsNullOrEmpty(p?.Path)) continue;
