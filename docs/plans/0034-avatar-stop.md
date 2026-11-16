@@ -2,7 +2,7 @@
 
 - 상태: **머지(11/16 #48) · 에디터 앱 흐름 확인 끝, 아이폰·러닝머신 확인 남음** (2026-11-12 민재 승인: 정할 것 1 (가) 3 km/h 출발, 2 1.2초, 3 `RunnerAnimator` 안 건드림. S4를 미리 함, 11/14 시연 전 머지는 에디터 확인이 끝났을 때만)
 - **맥 할 일 (11/17 헬스장 빌드)**(Windows가 적고 맥이 읽음. 사용자는 맥에 "0034 맥 할 일 해 줘". 끝낸 줄은 지우고 결과는 아래 "진행"에 맥 줄로. **1–4가 급함**: 민재가 이 빌드를 들고 헬스장에 감)
-  1. `git fetch` → `git checkout docs/deploy-1112b` → `git pull`(develop 422b441 + 문서뿐이라 코드는 develop과 같음). 맥에서 커밋하지 말 것 목록은 `handoff/minjae.md` "환경 메모 → 맥"
+  1. `git fetch` → **빌드는 `git checkout fix/dev-recalibrate`**(develop 422b441 + 개발 빌드 마이 탭 "보정 다시 하기" 버튼 하나. 이미 보정이 서버에 있는 계정도 헬스장에서 처음 보정부터 하려고). 이 할 일 목록은 `git show origin/docs/deploy-1112b:docs/plans/0034-avatar-stop.md`로 읽음. 맥에서 커밋하지 말 것 목록은 `handoff/minjae.md` "환경 메모 → 맥"
   2. **Y Bot FBX 확인**: `unity/TestRun/Assets/Scrun/Characters/YBot/`에 `Y Bot@*.fbx` 7개가 없으면 아이폰 빌드에 캐릭터가 빠짐(11/13 맥 빌드가 그랬음). Unity를 **열기 전에** 채움: 민재가 Windows에서 보낸 `ybot_fbx.zip`이 있으면 그 폴더에 풀기(Windows가 만든 파일이라 클립 지문 `YBotRunner.clips.txt`와 같음), 없으면 루트 `README.md` "처음 받았을 때" 3번(mixamo.com, 맥 Chrome). Unity가 지운 `.meta`는 `git checkout -- unity/TestRun/Assets/Scrun/Characters/YBot`
   3. Unity → Scrun → Reimport Mixamo Characters → Build Island Scene. 콘솔에 `[Scrun] 클립 없음`·`클립이 … 다름`이 없는지 확인(있으면 2번 다시). 씬 파일 변경은 커밋 안 함
   4. **개발 빌드**로 아이폰 설치(`docs/unity/unity_map.md` "아이폰에 설치" ⑤–⑦, 메뉴 Xcode 만들기(아이폰, 개발)). 개발 빌드여야 HUD 오른쪽 아래 속도와 `Documents/run-log/`(`avatar-delays.csv`·`measure-events.csv`)가 생김. 이 빌드에 0039 Swift `device.thermal`이 들어가므로 **0039 맥 할 일 1번(컴파일)도 여기서 같이 끝남** → 0039 "진행"에 맥 줄
@@ -10,7 +10,7 @@
   6. 헬스장에서 돌아오면: `xcrun devicectl device copy from --device <UDID> --domain-type appDataContainer --domain-identifier com.scrun.app --source Documents/run-log --destination data/gym/20261117-run-log/` 로 CSV 받기 → `data/gym/20261117-run-log/`에 두고(커밋은 Windows가 note와 같이) 결과 요약을 "진행"에 맥 줄로
   7. (헬스장 뒤, 급하지 않음) 0039 맥 할 일 2번(아이폰 발열·D-15·에어팟 알림), 0033 맥 할 일 Swift 8건 → `fix/camera-swift` PR
 - **헬스장 확인 목록 (11/17 민재)**. 시작 전에 메모: 달리는 사람·키·몸무게·신발, 러닝머신 기종, 폰 위치(계기판 위 어디), 이어폰(에어팟 3), 버튼은 누가. 헬스장 와이파이가 없으면 아이폰 핫스팟·LTE(로그인·`POST /runs`가 서버에 감)
-  1. 맵 입장 → 보정(처음이면 2–14 km/h 7단계 × 15초) → **D-08에서 벨트 옆 발판에 서 있을 때 안 넘어가는지**, 걷기 시작 뒤 몇 초에 카운트다운이 뜨는지, 카운트다운 시작 때 계기판 거리(0035)
+  1. 먼저 마이 탭 → "보정 다시 하기 (개발 빌드)" → 2–14 km/h 7단계 × 15초(계정에 보정이 이미 있어도 새로 함, 서버 보정을 덮어씀) → 맵 입장 → **D-08에서 벨트 옆 발판에 서 있을 때 안 넘어가는지**, 걷기 시작 뒤 몇 초에 카운트다운이 뜨는지, 카운트다운 시작 때 계기판 거리(0035)
   2. 6 → 8 → 10 km/h 각 1분: 캐릭터 다리·위치가 자연스러운지, HUD 속도가 계기판과 얼마나 다른지(화면 녹화 추천)
   3. **멈춤·출발 5번씩**(0034): 벨트에서 옆 발판으로 내려옴 → 캐릭터가 멈출 때까지(목표 2초 안, 가설), 다시 올라감 → 출발까지. 시각은 CSV에 남음
   4. 달리는 중 에어팟 하나 빼기 → "이어폰 연결이 끊겨 폰 센서로만 재요" 3초 알림, 폰을 잠깐 들어 보기 → D-15(안 뜰 수 있음, 기록만)(0039)
