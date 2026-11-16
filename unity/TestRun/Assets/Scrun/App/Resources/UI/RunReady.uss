@@ -1,0 +1,271 @@
+/* 센서 확인(D-07)·달림 인식 대기(D-08)·카운트다운(D-09)·센서 실패(I-01) 모양. 계획 0035.
+   Figma "SCRUN" 와이어프레임(가로 852×393) 기준. 색·글자 크기는 App.uss 변수, 칩·동그란 버튼은 Course.uss,
+   단계 틀(.setup-step)·제목(.setup-title)·그림 자리(.art-slot)는 RunSetup.uss. USS에 없는 것: 그림자, 줄 높이, 흐림(MapBackdrop) */
+
+.run-ready {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* ---- D-07 센서 확인 ---- */
+.check-body {
+    flex-grow: 1;
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--space-3);
+}
+
+.check-card {
+    width: 470px;
+    padding: var(--space-3) var(--space-4);
+}
+
+.check-row {
+    flex-direction: row;
+    align-items: center;
+    height: 50px;
+}
+
+.check-icon {
+    width: 36px;
+    height: 36px;
+    margin-right: var(--space-3);
+    border-radius: 18px;
+    background-color: var(--color-primary-soft);
+    align-items: center;
+    justify-content: center;
+}
+
+.check-icon-img {
+    width: 20px;
+    height: 20px;
+}
+
+.icon-motion { background-image: url("project://database/Assets/Scrun/App/UI/Icons/perm-motion.svg"); }
+.icon-headphone { background-image: url("project://database/Assets/Scrun/App/UI/Icons/perm-headphone.svg"); }
+.icon-clock { background-image: url("project://database/Assets/Scrun/App/UI/Icons/icon-clock.svg"); }
+.icon-wifi { background-image: url("project://database/Assets/Scrun/App/UI/Icons/icon-wifi.svg"); }
+
+.check-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.course .check-name {
+    font-size: var(--font-size-body);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course .check-sub {
+    margin-top: 2px;
+    font-size: var(--font-size-caption);
+    color: var(--color-body);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* 상태 칩(Chip/Success·회색·주황). 버튼이지만 "다시 시도"일 때만 눌림 */
+.check-chip {
+    margin: 0;
+    padding: 5px 12px;
+    border-width: 0;
+    border-radius: 14px;
+    font-size: var(--font-size-caption);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.check-chip--ok,
+.check-chip--ok:hover,
+.check-chip--ok:active {
+    background-color: var(--color-success-soft);
+    color: var(--color-success);
+}
+
+.check-chip--pending,
+.check-chip--pending:hover,
+.check-chip--pending:active,
+.check-chip--fallback,
+.check-chip--fallback:hover,
+.check-chip--fallback:active {
+    background-color: var(--color-surface-2);
+    color: var(--color-body);
+}
+
+.check-chip--failed,
+.check-chip--failed:hover,
+.check-chip--failed:active {
+    background-color: rgba(255, 176, 32, 0.18);
+    color: #B26A00;
+}
+
+.check-art-card {
+    width: 190px;
+    height: 230px;
+    margin-left: var(--space-6);
+    padding: 0;
+    border-radius: var(--space-5);
+    background-color: var(--color-surface);
+    overflow: hidden;
+}
+
+.check-art {
+    flex-grow: 1;
+    border-radius: 0;
+}
+
+.check-next {
+    align-self: flex-start;
+}
+
+/* ---- D-08 달림 인식 대기 ---- */
+.wait-chips {
+    position: absolute;
+    left: var(--space-6);
+    top: var(--space-5);
+    align-items: flex-start;
+}
+
+.course Label.wait-chip {
+    margin: 0 0 var(--space-2) 0;
+    padding: 5px 12px;
+}
+
+.wait-center {
+    flex-grow: 1;
+    align-items: center;
+}
+
+.course .wait-title {
+    -unity-text-align: upper-center;
+}
+
+.course .wait-lead {
+    margin-top: var(--space-3);
+    font-size: var(--font-size-body-sm);
+    color: rgba(255, 255, 255, 0.9);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.wait-ring {
+    border-width: 3px;
+    border-color: var(--color-lime);
+    align-items: center;
+    justify-content: center;
+}
+
+.wait-ring--outer {
+    width: 250px;
+    height: 250px;
+    margin-top: var(--space-3);
+    border-radius: 125px;
+}
+
+.wait-ring--inner {
+    width: 190px;
+    height: 190px;
+    border-radius: 95px;
+}
+
+.wait-art {
+    width: 90px;
+    height: 150px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/CharacterStand.png");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* X(D-07·D-08·I-01 → D-01): 오른쪽 위, D-08 Figma 자리 */
+.ready-close {
+    position: absolute;
+    right: var(--space-6);
+    top: var(--space-5);
+}
+
+/* ---- D-09 카운트다운(흐림 없음, 맵 위 글자) ---- */
+.count-step {
+    align-items: center;
+}
+
+.count-chip {
+    align-self: center;
+    margin-top: var(--space-6);
+}
+
+.course .count-number {
+    margin-top: var(--space-2);
+    font-size: 120px;
+    color: var(--color-surface);
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course .count-lead {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-body);
+    color: var(--color-surface);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+/* ---- I-01 센서 연결 실패 ---- */
+.fail-step {
+    align-items: center;
+    justify-content: center;
+}
+
+.fail-card {
+    width: 420px;
+    padding: var(--space-6);
+    border-radius: var(--space-5);
+    background-color: var(--color-bg);
+    align-items: center;
+}
+
+.fail-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 26px;
+    background-color: var(--color-warn);
+    align-items: center;
+    justify-content: center;
+}
+
+.fail-icon-img {
+    width: 26px;
+    height: 26px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/motion-alert.svg");
+}
+
+.course .fail-title {
+    margin-top: var(--space-3);
+    font-size: var(--font-size-sub);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course .fail-body {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-body);
+    white-space: normal;
+    -unity-text-align: upper-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.fail-buttons {
+    flex-direction: row;
+    align-self: stretch;
+    margin-top: var(--space-4);
+}
+
+.fail-btn {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: 0;
+}
+
+.fail-btn.btn-ghost {
+    margin-right: var(--space-3);
+    color: var(--color-primary);
+}

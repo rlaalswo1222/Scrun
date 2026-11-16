@@ -125,4 +125,21 @@ namespace Scrun.App
         public string Type { get; set; }  // DISTANCE / TIME / NONE
         public int? Value { get; set; }   // DISTANCE면 m, TIME이면 초
     }
+
+    // POST /v1/runs 요청(계획 0035). 고스트는 S7 BL-24
+    public sealed class RunStartBody
+    {
+        public string ClientRunId { get; set; }   // 앱이 만든 ID(다시 보내도 기록 하나)
+        public string MapInstanceId { get; set; } // 입장 응답의 mapInstanceId
+        public RunGoalBody Goal { get; set; }
+        public string GhostRunId { get; set; }
+        public DateTime StartedAt { get; set; }   // UTC, 카운트다운이 끝난 시각
+    }
+
+    public sealed class RunStarted
+    {
+        public string RunId { get; set; }
+        public string ClientRunId { get; set; }
+        public DateTime StartedAt { get; set; }
+    }
 }

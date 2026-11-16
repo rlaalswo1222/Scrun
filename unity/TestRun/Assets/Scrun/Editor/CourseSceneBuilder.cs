@@ -33,7 +33,7 @@ public static class CourseSceneBuilder
         EnsureFolder(Root, "Settings");
 
         var runnerController = AssetDatabase.LoadAssetAtPath<GameObject>(RunnerRigBuilder.CharacterModelPath)
-            ? RunnerAnimatorBuilder.Build() : null;
+            ? RunnerAnimatorBuilder.EnsureBuilt() : null;
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 

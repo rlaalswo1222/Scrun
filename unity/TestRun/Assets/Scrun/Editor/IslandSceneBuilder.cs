@@ -30,7 +30,7 @@ public static class IslandSceneBuilder
         float k = layout.TryGetValue("scale", out var sc) ? (float)(double)sc : 1f;
 
         var runnerController = AssetDatabase.LoadAssetAtPath<GameObject>(RunnerRigBuilder.CharacterModelPath)
-            ? RunnerAnimatorBuilder.Build() : null;
+            ? RunnerAnimatorBuilder.EnsureBuilt() : null;
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
