@@ -54,7 +54,8 @@ namespace Scrun.App
         RunSetupView setupView;
         RunReadyView readyView;
         MapBackdrop backdrop;
-        Task<bool> calibrationLoad;  // 입장 뒤 서버 보정 불러오기(센서 준비 D-07의 보정값 줄). 연결 문제로 실패하면 false
+        Task<CalibrationState> calibrationLoad; // 입장 뒤 서버 보정 불러오기 결과(센서 준비 D-07의 보정값 줄)
+        HeadphoneWatch headphones;   // 입장부터 나갈 때까지 에어팟 모션 연결을 지켜보게 함(D-07 이어폰 줄)
         string mapInstanceId;        // 입장 응답(POST /runs)
         CancellationTokenSource runStart; // 맵을 나가면 POST /runs 다시 보내기를 그만둠
         IRunTogether together;
@@ -120,6 +121,8 @@ namespace Scrun.App
             leaving = true;
             MapLaunch.Clear();
             CancelRunStart();
+            headphones?.Dispose();
+            headphones = null;
             CloseSetup(); // 센서 준비 층이 켠 센서도 끔
             EndRun();
             ReleaseIsland();
@@ -155,18 +158,24 @@ namespace Scrun.App
         }
 
         // 입장이 됐다 = 서버에 보정이 있음. 센서에 아직 없으면(앱을 다시 켬) 불러온다(계획 0023 4번).
-        // 실패해도 입장은 계속하고 기록만 남김 → 센서 준비(D-07) 보정값 줄이 "다시 시도"로 받음(연결 문제면 false)
-        static async Task<bool> LoadCalibrationQuietly()
+        // 실패해도 입장은 계속하고, 이유를 센서 준비(D-07) 보정값 줄에 넘긴다(ReadyCalibration, 계획 0035 리뷰):
+        // 일시 실패면 다시 시도, 서버에도 없거나 못 읽으면 보정 안내, 4xx면 넘어갈 수 없음, 로그인 만료면 로그인 화면(맵 입장과 같음)
+        async Task<CalibrationState> LoadCalibrationAsync()
         {
             try
             {
-                await CalibrationStore.EnsureLoadedAsync(Native.Speed);
-                return true;
+                return ReadyCalibration.From(await CalibrationStore.EnsureLoadedAsync(Native.Speed));
+            }
+            catch (ApiException e)
+            {
+                Debug.LogWarning("[보정] 서버 보정을 못 불러옴: " + e);
+                if (e.Failure == ApiFailure.NotLoggedIn && !leaving) Feedback.Handle(e);
+                return ReadyCalibration.From(e);
             }
             catch (Exception e)
             {
-                Debug.LogWarning("[보정] 서버 보정을 못 불러옴: " + e.Message);
-                return false;
+                Debug.LogException(e); // 센서가 없는 빌드 등(폰 센서 줄이 I-01로 감)
+                return CalibrationState.Failed;
             }
         }
 
@@ -184,7 +193,8 @@ namespace Scrun.App
             }
             if (leaving) return;
             mapInstanceId = entry.MapInstanceId;
-            calibrationLoad = LoadCalibrationQuietly(); // 섬 불러오기와 같이. 센서 준비(D-07)가 끝나길 기다림
+            calibrationLoad = LoadCalibrationAsync(); // 섬 불러오기와 같이. 센서 준비(D-07)가 끝나길 기다림
+            headphones ??= new HeadphoneWatch();
             SetProgress(EntryShare);
 
             await islandFree;
@@ -283,6 +293,8 @@ namespace Scrun.App
         // 3·2·1이 끝남
         void OnReadyStarted()
         {
+            backdrop?.Dispose(); // 달리는 동안엔 흐린 그림이 필요 없음(D-01로 돌아올 일 없음) → 텍스처를 놓음
+            backdrop = null;
             mapTop.SetVisible(true);
             hud?.Dispose();
             session = new RunSession(Setup.Goal);
@@ -297,16 +309,17 @@ namespace Scrun.App
             StartSetup();
         }
 
-        // 흐린 배경(D-07·D-08·I-01)과 맵(D-09). 섬 카메라를 찍으므로 섬이 열려 있어야 함
+        // 흐린 배경(D-01–D-08·I-01)과 맵(D-09). 한 번 찍은 흐린 그림은 숨겼다 다시 보이기만 한다(D-08 ↔ D-09, X → D-01):
+        // 다시 찍으면 캡처·흐림·CPU 읽기가 반복돼 아이폰 끊김·발열(리뷰), 그 사이 아바타는 서 있어 같은 그림.
+        // 처음 찍을 땐 섬 카메라를 쓰므로 섬이 열려 있어야 함
         void SetBackdrop(bool on)
         {
-            if (!on)
+            if (backdrop != null)
             {
-                backdrop?.Dispose(); // 섬 카메라 다시 켬
-                backdrop = null;
+                backdrop.SetShown(on); // 숨기면 섬 카메라 다시 켬
                 return;
             }
-            if (backdrop != null || leaving) return;
+            if (!on || leaving) return;
             // 앱 카메라는 태그를 비켜 둬서 Camera.main = 섬 카메라. 화면이 패널에서 떨어졌으면(await 사이) 흐림 없이 안내만
             var panel = Root.panel;
             if (panel != null) backdrop = MapBackdrop.Show(panel.visualTree, Camera.main);
@@ -320,17 +333,18 @@ namespace Scrun.App
             }
             catch (Exception)
             {
-                return CalibrationState.Missing; // 센서가 없는 빌드(폰 센서 줄이 I-01로 감)
+                return CalibrationState.Failed; // 센서가 없는 빌드(폰 센서 줄이 I-01로 감)
             }
             if (calibrationLoad == null || !calibrationLoad.IsCompleted) return CalibrationState.Loading;
-            // 불러오기는 끝났는데 센서에 없음: 연결 문제면 다시 시도, 아니면 서버에도 없거나 못 읽는 옛 모양 → 다시 보정
-            return calibrationLoad.Result ? CalibrationState.Unusable : CalibrationState.Missing;
+            var r = calibrationLoad.Result;
+            // 불러왔다(Ready)는데 센서에 없음 = 그 사이 지워짐(로그아웃) → 다시 보정과 같게
+            return r == CalibrationState.Ready ? CalibrationState.NeedsCalibration : r;
         }
 
         void RetryCalibration()
         {
             if (calibrationLoad != null && !calibrationLoad.IsCompleted) return;
-            calibrationLoad = LoadCalibrationQuietly();
+            calibrationLoad = LoadCalibrationAsync();
         }
 
         // 3·2·1 끝 → 시간·거리 기록 시작, 내 아바타가 센서 속도로 움직임(BL-11 ③). 서버에는 뒤에서 알림(정한 것 2)

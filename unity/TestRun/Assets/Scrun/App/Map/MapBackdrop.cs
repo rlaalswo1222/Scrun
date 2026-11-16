@@ -15,6 +15,7 @@ namespace Scrun.App
     // (켜진 카메라가 하나도 없으면 아이폰은 뒤가 지워지지 않아 깨진 그림, 에디터는 "No cameras rendering").
     // 화면이 멈춰 있어도 되므로 그리기는 3프레임에 한 번(OnDemandRendering, 입력·스크립트는 매 프레임). 거치하며 몇 분 머무는 화면이라 발열·배터리.
     //   var b = MapBackdrop.Show(Root.panel.visualTree, islandCamera);  ...  b.Dispose();  // 섬 카메라·그리기 간격 되돌림
+    // 잠깐 걷었다 다시 깔 때(D-08 ↔ D-09)는 SetShown: 찍은 그림을 그대로 두고 다시 찍지 않는다(계획 0035 리뷰: 캡처·흐림·CPU 읽기 반복은 아이폰 끊김·발열)
     public sealed class MapBackdrop : IDisposable
     {
         const int FirstDivisor = 4; // 섬 카메라로 찍는 크기(화면의 1/4)
@@ -27,6 +28,7 @@ namespace Scrun.App
         readonly Camera island;
         readonly bool islandWasOn;
         readonly GameObject clearCamera;
+        readonly Camera clear;
         readonly int renderIntervalBefore;
         Texture2D image;
         bool disposed;
@@ -56,7 +58,7 @@ namespace Scrun.App
 
             // 지우기만 하는 카메라를 먼저 켜고 섬 카메라를 끈다(그 사이에도 켜진 카메라가 늘 하나 있게)
             clearCamera = new GameObject("MapBackdropClear") { hideFlags = HideFlags.DontSave };
-            var c = clearCamera.AddComponent<Camera>();
+            var c = clear = clearCamera.AddComponent<Camera>();
             c.clearFlags = CameraClearFlags.SolidColor;
             c.backgroundColor = MapScreen.Night;
             c.cullingMask = 0;
@@ -77,6 +79,29 @@ namespace Scrun.App
         {
             if (panelRoot == null) throw new ArgumentNullException(nameof(panelRoot));
             return new MapBackdrop(panelRoot, island);
+        }
+
+        public bool Shown { get; private set; } = true;
+
+        // 흐린 그림을 숨기면 섬 카메라·그리기 간격을 되돌리고, 다시 보이면 처음 찍은 그림으로 덮는다(그 사이 아바타가 서 있어 같은 그림).
+        // 켜진 카메라가 늘 하나 있게: 켤 쪽을 먼저 켜고 끈다
+        public void SetShown(bool on)
+        {
+            if (disposed || on == Shown) return;
+            Shown = on;
+            element.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
+            if (on)
+            {
+                if (clear != null) clear.enabled = true;
+                if (island != null) island.enabled = false;
+                OnDemandRendering.renderFrameInterval = RenderInterval;
+            }
+            else
+            {
+                if (island != null) island.enabled = islandWasOn;
+                if (clear != null) clear.enabled = false;
+                OnDemandRendering.renderFrameInterval = renderIntervalBefore;
+            }
         }
 
         public void Dispose()

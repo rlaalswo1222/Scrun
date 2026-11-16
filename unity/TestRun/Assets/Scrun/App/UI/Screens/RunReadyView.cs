@@ -28,7 +28,7 @@ namespace Scrun.App
 
         IVisualElementScheduledItem ticking;
         ReadyStep? shown;      // 마지막으로 그린 단계(처음엔 없음)
-        bool sensorStartedHere, sensorBroken, watchingHeadphones;
+        bool sensorStartedHere, sensorBroken;
         ReadyInputs last;
 
         // together: 지금 실시간 방(없으면 null). calibration: 보정값 상태, retryCalibration: 보정 다시 불러오기(MapScreen)
@@ -68,10 +68,12 @@ namespace Scrun.App
             };
             calibrationRow.Chip.clicked += () =>
             {
-                var c = calibration();
-                if (c == CalibrationState.Missing) retryCalibration?.Invoke();
+                if (RunReadyFlow.CanRetryCalibration(calibration())) retryCalibration?.Invoke();
             };
+            // 나가는 길: D-07·D-08·I-01 모두 X → D-01(아이폰엔 뒤로 키가 없음, 리뷰). D-09는 3초라 X 없음(뒤로 가기는 됨)
+            Q<Button>("check-close").clicked += Cancel;
             Q<Button>("wait-close").clicked += Cancel;
+            Q<Button>("fail-close").clicked += Cancel;
             Q<Button>("open-settings").clicked += () => Native.Permissions.OpenSettings();
             Q<Button>("retry").clicked += Retry;
 
@@ -86,7 +88,6 @@ namespace Scrun.App
         {
             goalChip.text = RunReadyText.GoalChip(goal);
             StartSensor();
-            WatchHeadphones(true);
             flow.Begin(clock());
             shown = null;
             root.SetVisible(true);
@@ -101,7 +102,6 @@ namespace Scrun.App
         public void Dispose()
         {
             ticking?.Pause();
-            WatchHeadphones(false);
             StopSensor();
             root.RemoveFromHierarchy();
         }
@@ -114,25 +114,6 @@ namespace Scrun.App
             StopSensor();
             Cancelled?.Invoke();
         }
-
-        // 에어팟 모션 연결은 누군가 Headphones.Changed를 구독하는 동안에만 iOS가 지켜본다(구독자가 없으면 에어팟도
-        // ConnectedNoMotion으로 보임, unity_map.md "앱 코드 묶음"). 값은 Read()에서 읽으므로 구독은 지켜보게 하는 용도
-        void WatchHeadphones(bool on)
-        {
-            if (on == watchingHeadphones) return;
-            try
-            {
-                if (on) Native.Headphones.Changed += OnHeadphonesChanged;
-                else Native.Headphones.Changed -= OnHeadphonesChanged;
-                watchingHeadphones = on;
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning("[센서 준비] 이어폰 상태를 지켜보지 못함(이어폰 없이 진행으로 보임): " + e.Message);
-            }
-        }
-
-        static void OnHeadphonesChanged(HeadphoneStatus _) { }
 
         // I-01 "다시 시도": 센서를 껐다 켜고 D-07부터. 섬 쪽이 켜서 빌려 쓰던 센서라도 다시 켜 둔 채로 끝나므로
         // "켠 쪽이 끈다"(계획 0020)와 어긋나지 않는다: 끈 채로 두지 않고, 끄는 일은 여전히 섬 쪽(NativeSpeedSource)이 함
@@ -185,7 +166,6 @@ namespace Scrun.App
         void Close(bool blurOff = true)
         {
             ticking?.Pause();
-            WatchHeadphones(false);
             root.SetVisible(false);
             if (blurOff) Blur?.Invoke(false);
         }
@@ -260,7 +240,7 @@ namespace Scrun.App
             {
                 phoneRow.Show(RunReadyText.Phone(last.Phone));
                 earphoneRow.Show(RunReadyText.Earphone(last.Headphones, last.HeadphoneMotionGranted, last.AirPods));
-                calibrationRow.Show(RunReadyText.Calibration(last.Calibration));
+                calibrationRow.Show(RunReadyText.Calibration(last.Calibration), RunReadyFlow.CanRetryCalibration(last.Calibration));
                 networkRow.Show(RunReadyText.Network(last.Network));
                 ready.SetEnabled(RunReadyFlow.CanProceed(last));
             }
@@ -286,12 +266,12 @@ namespace Scrun.App
                 Chip = row.Q<Button>("chip") ?? throw new InvalidOperationException($"{row.name}에 chip이 없음");
             }
 
-            public void Show(ReadyRow r)
+            public void Show(ReadyRow r, bool clickable = false)
             {
                 sub.text = r.Sub;
                 Chip.text = r.Chip;
                 for (int t = 0; t < Tones.Length; t++) Chip.EnableInClassList(Tones[t], t == (int)r.Tone);
-                Chip.pickingMode = r.Tone == RowTone.Failed ? PickingMode.Position : PickingMode.Ignore;
+                Chip.pickingMode = clickable ? PickingMode.Position : PickingMode.Ignore;
             }
         }
     }

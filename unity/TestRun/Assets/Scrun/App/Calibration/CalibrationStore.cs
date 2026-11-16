@@ -9,6 +9,15 @@ namespace Scrun.App
     // 다시 올리는 곳: 코스 입장이 "보정 없음"(409)일 때(CourseDetailScreen).
     // 불러오는 곳: 맵 입장이 된 직후 센서에 보정이 없으면(앱을 다시 켜면 센서 보정은 비어 있음, MapScreen) EnsureLoadedAsync.
     // 로그인이 끝나면(로그아웃·다른 계정 가입·재로그인 필요) 남긴 보정과 센서의 보정을 지운다: 다음 사람이 앞 사람 보정으로 달리거나 올리지 않게.
+    // EnsureLoadedAsync 결과(계획 0035 리뷰: 센서 준비 화면이 "다시 시도"와 "다시 보정"을 가르는 데 씀)
+    public enum CalibrationLoad
+    {
+        Loaded,      // 센서에 보정이 있음(원래 있었거나 이 폰·서버에서 넣음)
+        NotOnServer, // 서버에도 없음 → 다시 보정
+        Unreadable,  // 서버 보정을 이 앱이 못 읽음(옛 모양) → 다시 보정
+        Cancelled,   // 기다리는 사이 로그인이 바뀜(넣지 않음, 로그인 쪽이 화면을 옮김)
+    }
+
     public static class CalibrationStore
     {
         const string PendingKey = "Scrun.Calibration.Pending";
@@ -28,20 +37,22 @@ namespace Scrun.App
         }
 
         // 센서에 보정이 없으면 채운다: 이 폰에 못 올린 보정이 있으면 그게 가장 새것이라 그것, 아니면 서버(GET).
-        // 서버에도 없거나 모양이 다르면(옛 버전) 그대로 둔다. 서버 오류는 ApiException 그대로
-        public static async Task EnsureLoadedAsync(ISpeedSensor sensor)
+        // 서버에도 없거나 모양이 다르면(옛 버전) 그대로 두고 그 이유를 돌려준다. 서버 오류는 ApiException 그대로
+        public static async Task<CalibrationLoad> EnsureLoadedAsync(ISpeedSensor sensor)
         {
-            if (sensor.HasCalibration) return;
+            if (sensor.HasCalibration) return CalibrationLoad.Loaded;
             var pending = Pending;
-            if (pending != null && sensor.LoadCalibration(pending)) return;
+            if (pending != null && sensor.LoadCalibration(pending)) return CalibrationLoad.Loaded;
             int epoch = Api.Session.Epoch;
             var rec = await Api.Users.GetCalibrationAsync();
-            // 기다리는 사이 로그아웃·다른 계정으로 바뀌었거나 다른 곳에서 이미 채웠으면 넣지 않음(앞 사람 보정이 되살아나지 않게)
-            if (Api.Session.Epoch != epoch || sensor.HasCalibration) return;
-            if (rec?.Model == null || rec.Model.Type == JTokenType.Null) return; // 서버에도 보정 없음
+            // 기다리는 사이 로그아웃·다른 계정으로 바뀌었으면 넣지 않음(앞 사람 보정이 되살아나지 않게)
+            if (Api.Session.Epoch != epoch) return CalibrationLoad.Cancelled;
+            if (sensor.HasCalibration) return CalibrationLoad.Loaded; // 다른 곳에서 이미 채움
+            if (rec?.Model == null || rec.Model.Type == JTokenType.Null) return CalibrationLoad.NotOnServer;
             var model = rec.Model.ToString(Newtonsoft.Json.Formatting.None);
-            if (!sensor.LoadCalibration(model))
-                Debug.LogWarning("[보정] 서버 보정을 이 앱이 읽을 수 없음(버전이 다름) → 다시 보정해야 함");
+            if (sensor.LoadCalibration(model)) return CalibrationLoad.Loaded;
+            Debug.LogWarning("[보정] 서버 보정을 이 앱이 읽을 수 없음(버전이 다름) → 다시 보정해야 함");
+            return CalibrationLoad.Unreadable;
         }
 
         // 보정 흐름이 끝나면 부른다. 실패하면 이 폰에 남기고 예외를 그대로 던진다(화면은 "서버에 아직 못 올렸어요")

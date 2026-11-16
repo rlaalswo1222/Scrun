@@ -14,13 +14,30 @@ namespace Scrun.App
         NeedsCalibration, // 서버에도 쓸 수 있는 보정이 없음 → 맵을 나가 보정 안내(A-11, 코스 상세가 받음)
     }
 
-    // 보정값 줄
+    // 보정값 줄. 불러오기 결과(CalibrationLoad)·서버 오류에서 정한다(ReadyCalibration, 계획 0035 리뷰)
     public enum CalibrationState
     {
-        Ready,   // 센서에 보정이 있음
-        Loading, // 서버에서 불러오는 중(맵 입장 직후)
-        Missing, // 연결 문제로 불러오지 못함 → 그 줄에서 다시 시도
-        Unusable, // 불러왔지만 서버에도 없거나 이 앱이 못 읽는 옛 모양 → 다시 보정해야 함
+        Ready,            // 센서에 보정이 있음
+        Loading,          // 서버에서 불러오는 중(맵 입장 직후)
+        RetryLater,       // 일시 실패(연결 안 됨·5xx) → 그 줄에서 다시 시도
+        NeedsCalibration, // 서버에도 없거나 이 앱이 못 읽는 옛 모양 → 맵을 나가 보정 안내
+        Failed,           // 다시 보내도 같은 실패(4xx) → 넘어갈 수 없음, X로 나감
+        Cancelled,        // 불러오는 사이 로그인이 바뀜 → 로그인 쪽이 화면을 옮기므로 아무것도 안 함
+    }
+
+    public static class ReadyCalibration
+    {
+        public static CalibrationState From(CalibrationLoad r) => r switch
+        {
+            CalibrationLoad.Loaded => CalibrationState.Ready,
+            CalibrationLoad.Cancelled => CalibrationState.Cancelled,
+            _ => CalibrationState.NeedsCalibration, // NotOnServer·Unreadable
+        };
+
+        public static CalibrationState From(ApiException e) =>
+            e.Failure == ApiFailure.NotLoggedIn ? CalibrationState.Cancelled
+            : e.IsTransient ? CalibrationState.RetryLater
+            : CalibrationState.Failed;
     }
 
     // 한 프레임의 입력. 화면(RunReadyView)이 Native.Speed·Headphones·Permissions·실시간 방에서 모아 넘긴다
@@ -39,10 +56,11 @@ namespace Scrun.App
     // 화면 없이 단계만 정한다 → 테스트(RunReadyFlowTests). 시각은 초(RealtimeClock.Now 등), 밖에서 넣는다.
     // 막는 것은 폰 센서뿐: 이어폰·네트워크는 안 되면 "없이 진행"으로 보여 주고 넘어간다(BL-10 ②).
     // 보정값은 입장할 때 서버에 있다고 확인됐으므로(409 CALIBRATION_REQUIRED) 센서에 다 들어올 때까지 기다린다.
-    // 그래도 쓸 수 없으면(서버 보정이 옛 모양 등) D-07에 가두지 않고 보정 안내로 보낸다(11/16 리뷰).
+    // 그래도 쓸 수 없으면(서버 보정이 옛 모양 등) D-07에 가두지 않고 보정 안내로 보낸다. 넘어갈 수 없는 경우(4xx)엔 X로 D-01(11/16 리뷰).
     public sealed class RunReadyFlow
     {
-        // 폰 센서가 이 시간 안에 Ok가 안 되면 I-01(요청 100 Hz라 보통 1초 안, 가설 → 아이폰에서 잼)
+        // 폰 센서가 이 시간 동안 이어서 Ok가 아니면 I-01(요청 100 Hz라 보통 1초 안, 가설 → 아이폰에서 잼).
+        // D-07에 들어온 때가 아니라 Ok가 아니게 된 때부터 잰다(보정이 늦게 와 D-07이 길어져도 한 프레임 Waiting으로 I-01이 되지 않게, 리뷰)
         public const double CheckTimeoutSec = 5.0;
         // 다 정상이면 이만큼 보여 준 뒤 저절로 D-08(정한 것 1). "준비 완료"는 기다리지 않고 바로
         public const double AutoAdvanceSec = 1.5;
@@ -53,7 +71,7 @@ namespace Scrun.App
         // 1.2초는 민재 계획 0034(멈추면 아바타도 멈춤)와 같은 값: 2 km/h 걷기도 걸음 사이 0.8초 안팎(가설, 아이폰·러닝머신에서 확인)
         public const double StepGapSec = 1.2;
 
-        double enteredAt;
+        double? phoneBadSince;
         double? readySince;
         double countdownAt;
         int lastSteps;
@@ -67,7 +85,7 @@ namespace Scrun.App
         public void Begin(double now)
         {
             Step = ReadyStep.Checking;
-            enteredAt = now;
+            phoneBadSince = null;
             readySince = null;
             CountdownNumber = 0;
         }
@@ -86,12 +104,14 @@ namespace Scrun.App
             switch (Step)
             {
                 case ReadyStep.Checking:
-                    if (i.Phone == SensorFlow.Lost || (i.Phone != SensorFlow.Ok && now - enteredAt >= CheckTimeoutSec))
+                    if (i.Phone == SensorFlow.Ok) phoneBadSince = null;
+                    else phoneBadSince ??= now;
+                    if (i.Phone == SensorFlow.Lost || (phoneBadSince.HasValue && now - phoneBadSince.Value >= CheckTimeoutSec))
                     {
                         Fail();
                         break;
                     }
-                    if (i.Calibration == CalibrationState.Unusable)
+                    if (i.Calibration == CalibrationState.NeedsCalibration)
                     {
                         Step = ReadyStep.NeedsCalibration;
                         break;
@@ -153,6 +173,9 @@ namespace Scrun.App
         {
             if (Step == ReadyStep.SensorFailed) Begin(now);
         }
+
+        // 보정값 줄의 칩을 눌러 다시 불러올 수 있음
+        public static bool CanRetryCalibration(CalibrationState c) => c == CalibrationState.RetryLater;
 
         // X·뒤로 가기. 이미 시작했으면 아무것도 안 함
         public bool Cancel()
@@ -246,8 +269,10 @@ namespace Scrun.App
         {
             CalibrationState.Ready => new ReadyRow("내 걸음에 맞춘 속도 공식", "정상", RowTone.Ok),
             CalibrationState.Loading => new ReadyRow("내 걸음에 맞춘 속도 공식", "불러오는 중", RowTone.Pending),
-            CalibrationState.Unusable => new ReadyRow("다시 보정이 필요해요", "다시 보정", RowTone.Failed),
-            _ => new ReadyRow("서버에서 못 불러왔어요", "다시 시도", RowTone.Failed),
+            CalibrationState.RetryLater => new ReadyRow("서버에서 못 불러왔어요", "다시 시도", RowTone.Failed),
+            CalibrationState.NeedsCalibration => new ReadyRow("다시 보정이 필요해요", "다시 보정", RowTone.Failed),
+            CalibrationState.Failed => new ReadyRow("보정값을 읽을 수 없어요", "불러올 수 없어요", RowTone.Failed),
+            _ => new ReadyRow("내 걸음에 맞춘 속도 공식", "불러오는 중", RowTone.Pending), // Cancelled: 로그인 화면으로 가는 중
         };
 
         // 실시간 방(같이 뛰기). 안 되면 혼자 달린다(막지 않음)

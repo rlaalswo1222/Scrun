@@ -9,6 +9,11 @@
         <!-- D-07 센서 확인 -->
         <ui:VisualElement name="check-step" class="setup-step check-step">
             <ui:Label text="센서를 확인하고 있어요" class="setup-title" />
+            <!-- 러닝 설정(D-01)으로. Figma엔 없지만 아이폰엔 뒤로 키가 없어 넣음(계획 0035 리뷰) -->
+            <ui:Button name="check-close" class="map-round-btn ready-close">
+                <ui:VisualElement class="map-x-bar" picking-mode="Ignore" />
+                <ui:VisualElement class="map-x-bar map-x-bar--2" picking-mode="Ignore" />
+            </ui:Button>
             <ui:VisualElement class="check-body">
                 <ui:VisualElement class="setup-card check-card">
                     <ui:VisualElement name="row-phone" class="check-row">
@@ -71,7 +76,7 @@
                 </ui:VisualElement>
             </ui:VisualElement>
             <!-- 러닝 설정(D-01)으로(계획 0035 정한 것 3) -->
-            <ui:Button name="wait-close" class="map-round-btn wait-close">
+            <ui:Button name="wait-close" class="map-round-btn ready-close">
                 <ui:VisualElement class="map-x-bar" picking-mode="Ignore" />
                 <ui:VisualElement class="map-x-bar map-x-bar--2" picking-mode="Ignore" />
             </ui:Button>
@@ -89,6 +94,11 @@
 
         <!-- I-01 센서 연결 실패 -->
         <ui:VisualElement name="fail-step" class="setup-step fail-step">
+            <!-- 러닝 설정(D-01)으로. 모션 권한을 거부하면 "설정 열기"·"다시 시도"만으론 못 나감(계획 0035 리뷰) -->
+            <ui:Button name="fail-close" class="map-round-btn ready-close">
+                <ui:VisualElement class="map-x-bar" picking-mode="Ignore" />
+                <ui:VisualElement class="map-x-bar map-x-bar--2" picking-mode="Ignore" />
+            </ui:Button>
             <ui:VisualElement class="fail-card">
                 <ui:VisualElement class="fail-icon"><ui:VisualElement class="fail-icon-img" /></ui:VisualElement>
                 <ui:Label text="모션 센서를 읽을 수 없어요" class="fail-title" />

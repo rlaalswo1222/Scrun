@@ -176,7 +176,8 @@
     -unity-background-scale-mode: scale-to-fit;
 }
 
-.wait-close {
+/* X(D-07·D-08·I-01 → D-01): 오른쪽 위, D-08 Figma 자리 */
+.ready-close {
     position: absolute;
     right: var(--space-6);
     top: var(--space-5);
