@@ -1,3 +1,4 @@
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Scrun.App
@@ -14,6 +15,7 @@ namespace Scrun.App
         Button enter, reload;
         VisualElement hero, content, loadFailed;
         bool loading, skipReload, notFound, gating, fromCalibration;
+        MapScreen map; // 띄운 맵(돌아올 때 끝낸 기록 ID를 받음)
 
         public CourseDetailScreen(string courseId) => this.courseId = courseId;
 
@@ -140,14 +142,18 @@ namespace Scrun.App
 
         void PushMap()
         {
-            if (Nav.Current == this) Nav.Push(new MapScreen(course, ReturnFromMap));
+            if (Nav.Current != this) return;
+            map = new MapScreen(course, ReturnFromMap);
+            Nav.Push(map);
         }
 
-        // 맵 화면이 입장하지 못하고 돌려보낼 때. 맵을 내리면 이 화면이 다시 보이지만 곧 안내·목록으로 가므로 다시 불러오지 않는다
-        // (불러오기 로딩·오류창이 안내를 덮지 않게)
+        // 맵 화면이 돌려보낼 때. 입장 실패면 맵을 내리고 곧 안내·목록으로 가므로 다시 불러오지 않는다
+        // (불러오기 로딩·오류창이 안내를 덮지 않게). 달리기를 끝내고 나오면 다시 불러옴(인원이 바뀜)
         void ReturnFromMap(MapExit exit, ApiException error)
         {
-            skipReload = true;
+            string finishedRunId = map?.FinishedRunId; // 인증 화면에 넘길 기록(지환 E-02)
+            map = null;
+            skipReload = exit != MapExit.Finished; // 끝내고 나오면 인원이 바뀌어 다시 불러옴. 인증 안내 때는 안내창이 로딩에 덮이지 않게
             try { Nav.Pop(); }
             finally { skipReload = false; }
             if (Nav.Current != this) return;
@@ -166,6 +172,12 @@ namespace Scrun.App
                     // 보정 없음(409) → A-11 보정 안내(계획 0023). 끝나면 바로 다시 입장, 그만두면 이 화면에 머묾
                     fromCalibration = true;
                     Nav.Push(new CalibrationIntroScreen(onDone: AfterCalibration));
+                    break;
+                case MapExit.VerifyConsole:
+                    // 임시(계획 0037 정할 것 3): 계기판 촬영·인증 화면(지환 E-02, S4)이 생기면 여기서
+                    // finishedRunId로 그 화면을 연다. 그 전엔 기록이 인증 대기로 남았다고만 알림
+                    Debug.Log("[기록] 인증할 기록: " + (finishedRunId ?? "(서버에 못 보냄)"));
+                    Feedback.ShowError("계기판 인증 화면은 준비 중이에요", "이번 기록은 인증 대기로 저장됐어요.");
                     break;
             }
         }

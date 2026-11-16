@@ -18,7 +18,7 @@
      - 바닥 기준 무늬: 트랙 1m 가로줄·흰 차선, 잔디 1m 체커, 5m 기둥(50m마다 높게). 텍스처는 빌더가 절차 생성(`Assets/Scrun/Textures`)
      - `FootSlipProbe`(개발용): 땅에 닿은 점(발목·발끝 네 점 중 가장 낮은 것, 11/11부터. 그전엔 발목만이라 구르는 동작을 미끄러짐으로 셌다)의 땅 기준 앞뒤 속도 중앙값/평균
      - **발 속도 표(11/11, 계획 0027)**: 블렌드 값마다 실행 중 Animator의 실제 발 속도를 재서 `Assets/Scrun/App/Resources/RunnerGait.asset`에 두고, `RunnerAnimator`가 재생 속도 = 속도 / 그 블렌드의 발 속도로 맞춘다. 걷는 동안엔 서 있기와 섞지 않고(0.5 km/h 넘으면 걷기, 0.3 아래면 서 있기) 느리면 걷기를 느리게 튼다(0.05배까지). 멈추면 블렌드가 서 있기로 내려오는 동안 동작을 그 자리에 세운다(다리만 달리지 않게, 플레이어·봇·고스트 모두). 미끄러짐 1에서 20 km/h 모두 5% 이내(전: 1 km/h 80%, 8 km/h 28%). 표는 Play 중 메뉴 Scrun → Measure Runner Gait(몇 초, Build Runner Animator로 기준점이 바뀌면 다시). 원본 `data/avatar/`
-     - **씬 만들기는 러너 애니메이터를 덮어쓰지 않음**(11/16, 계획 0036): Build Island·TestTrack·Course Scene은 `RunnerAnimatorBuilder.EnsureBuilt()` → `YBotRunner.controller`가 있으면 그대로 쓰고 가장 빠른 기준점만 읽어 `maxClipKmh`에 넣는다. 예전엔 매번 클립을 다시 재서 만들었는데, 11/16 맥에서 기준점이 걷기 3.5 → 5.0·조깅 6.0 → 5.5(순서 뒤바뀜)·11.4 → 9.1·15.6 → 13.4로 달리 나와 발 속도 표와 어긋났다(원인 미확인). 기준점을 일부러 다시 잴 때만 메뉴 Build Runner Animator → Measure Runner Gait, 둘을 같이 커밋
+     - **씬 만들기는 러너 애니메이터를 덮어쓰지 않음**(11/16, 계획 0036): Build Island·TestTrack·Course Scene은 `RunnerAnimatorBuilder.EnsureBuilt()` → `YBotRunner.controller`가 있으면 그대로 쓰고 가장 빠른 기준점만 읽어 `maxClipKmh`에 넣는다. 예전엔 매번 클립을 다시 재서 만들었는데, 11/16 맥에서 기준점이 걷기 3.5 → 5.0·조깅 6.0 → 5.5(순서 뒤바뀜)·11.4 → 9.1·15.6 → 13.4로 달리 나와 발 속도 표와 어긋났다(원인: 11/11 `a7fda83` 동작 5개가 서 있기 Avatar를 공유하게 바꾼 뒤 클립 분석값이 바뀜, Windows에서도 같은 값으로 재현. 표는 그 뒤에 재서 지금 컨트롤러 + 표가 맞음). 기준점을 일부러 다시 잴 때만 메뉴 Build Runner Animator → Play 중 Measure Runner Gait → 씬 다시 만들기(씬에 `maxClipKmh`가 구워짐), 셋을 같이 커밋. 그대로 쓰기 전에 클립을 확인한다(#50 리뷰 후속): FBX가 빠졌으면 `[Scrun] 클립 없음`, 클립 지문(`YBotRunner.clips.txt`: 이름·길이·커브 수)이 만들 때와 다르면 `[Scrun] 이 컴퓨터의 클립이 … 다름` 오류(컨트롤러·표는 안 바꿈)
      - **남은 개선**: 발 IK 고정(Animation Rigging)으로 클립 자체 미끄러짐 제거, 1 km/h 근처는 걷기를 0.16배로 트는 것이라 느린 화면처럼 보임(새 아바타 때 느린 걷기 동작), 클립 분석값과 실행 중 발 속도가 다른 원인(미확인)
      - Unity `PlayerSettings.runInBackground = true`로 바꿈(꺼져 있으면 Unity 창이 비활성일 때 Play가 멈춰 MCP 테스트 불가). 모바일 빌드엔 영향 없음
    - **마지막에 고칠 것(사용자 요청)**: ① 0에서 3 km/h 발 미끄러짐 → 11/11 발 속도 표로 고침(서 있기와 안 섞음) ② 20 km/h 발 동작 → 미끄러짐은 0%, Fast Run·Sprint가 섞이는 모양은 눈으로 다시 확인
@@ -255,6 +255,11 @@
   - **HUD `RunHudView`**(`RunHud.uxml/uss`, 맵 화면 안의 층): 거리·시간·목표 진행 막대, 왼쪽 아래 앞뒤 가장 가까운 사람 간격, 위 가운데 들어옴·나감 토스트(3초, 하나씩)·연결 상태. 속도·페이스는 안 보임(BL-12 ②), 개발 빌드만 오른쪽 아래 속도·왕복 지연. 시간·거리는 `RunSession`(카운트다운 끝 `MapScreen.StartRunning()`, 지금은 `OnSetupDone`이 임시로 바로 부름)
   - 다른 사람 없이 확인: `backend/scripts/fake_runner.py`(로컬 가짜 카카오 서버에 가짜 계정으로 들어가 일정한 속도로 달림)
   - 아직: 에디터 Play 전체 흐름, 아이폰(`ClientWebSocket` IL2CPP·왕복 지연), 상준 모양 다듬기, 미니맵·멈춤·종료(S5), 페이스 봇(S4 이후)
+- **멈춤·끝·기록 올리기**(11/16, 계획 0037, Figma D-17·D-18·D-19·D-22): 달리는 동안 맵 윗줄 오른쪽 버튼이 멈춤 모양(`map-round-btn--pause`) → `RunEndView`(`RunEnd.uxml/uss`, 맵 화면 안의 층)
+  - D-17 일시정지(거리·시간, 종료하기·계속 달리기) → D-18 종료 확인 → D-22 인증 안내(계기판 촬영하기·촬영 없이 마무리). 목표에 처음 닿으면 D-19(계속·마무리하기, 달리기는 안 멈춤). 패널이 뜨면 윗줄 숨김. Esc: 달리는 중 → D-17, D-18 → D-17, D-17·D-19 닫기, D-22는 버튼으로만
+  - `RunSession`: 일시정지면 `RunLink.Moving` 꺼짐(아바타·남의 화면 멈춤), "계속"은 아바타가 1 km/h 이상이 되면(걸음 다시 잡힘) 시간이 다시 흐름. 시간은 달린 시간만, 시계열은 달린 시간 1초마다(일시정지 구간 빼고 이어 붙임)
+  - `RunRecordUploader`: 1분 묶음 `PUT samples`, 끝나면 남은 묶음 + `POST finish`(runId가 없으면 시작부터). 끝내 못 보냈거나 로그인 만료·429면 `PendingRunStore`(앱 데이터 `pending-runs.json`, 계정별)에 남기고 홈(`HomeScreen.OnShow`)에서 다시 보냄. D-22 "계기판 촬영하기"는 상세가 `MapScreen.FinishedRunId`로 인증 화면(지환 E-02)을 열 자리(지금은 임시 안내창)
+  - 에디터에서 서버 주소를 잠깐 바꿀 땐 EditorPrefs뿐 아니라 `ApiConfig.BaseUrl`도(에디터 켤 때 한 번 읽음). UXML 주석에 `--`를 쓰면 XML 오류로 화면 전체가 안 불림
 - **아래 탭 바**(11/10, UI Kit Tab Bar): 아이콘 24 + 글자 12, 홈·친구·기록·마이 순서, 고른 탭은 파란 아이콘(`tab-*-on.svg`)·굵은 글자. 탭 버튼 이름(`tab-home` 등)은 그대로라 `Navigator`는 안 바뀜
 - 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
 
