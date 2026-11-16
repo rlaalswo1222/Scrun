@@ -4,15 +4,18 @@
   요청이 끝나면 버려짐, 해시만 남김
 - 못 읽으면 RETAKE_REQUIRED(저장되는 상태 아님). 다시 찍기를 다 쓰면 UNVERIFIED(UNSUPPORTED_CONSOLE)
 - 건너뛰기: 촬영 없이 마무리·촬영 시간 초과·다시 찍기 포기 → UNVERIFIED
-- 마감(서버가 종료를 받은 뒤 설정 시간, core/run_access)이 지나면 기록은 UNVERIFIED(TIMEOUT)로 닫히고 사진은 계속 VERIFICATION_CLOSED
+- 마감(서버가 종료를 받은 뒤 설정 시간, core/run_access)은 요청이 도착한 때로 판단. 지났으면 기록은 UNVERIFIED(TIMEOUT)로 닫히고
+  사진은 계속 VERIFICATION_CLOSED(앱이 skip TIMEOUT으로 닫은 기록은 처음 결과)
 - 한 번 정해지면 바뀌지 않는다. 응답을 못 받은 앱이 다시 보내면 처음 결과를 돌려준다
 - 동시에 온 요청: OCR은 줄을 잠그지 않고 하고(DB 연결도 놓음), 저장 직전에 줄을 잠가 상태·횟수·같은 사진을 다시 본다
+- 사진 본문은 내 기록·끝난 러닝·엔진 있음을 확인한 뒤에 읽는다
 """
 import hashlib
+import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
@@ -22,9 +25,10 @@ from starlette.formparsers import MultiPartException, MultiPartParser
 
 from ..core.config import settings
 from ..core.envelope import Envelope, error_responses, ok
-from ..core.errors import ApiError, ErrorCode
+from ..core.errors import ApiError, ErrorCode, invalid
 from ..core.ocr import UNREADABLE, ConsoleRead, OcrEngine, Photo, get_ocr
-from ..core.run_access import ACTIVE, DISCARDED, PENDING, UNVERIFIED, invalid, my_run, verification_deadline
+from ..core.run_access import (ACTIVE, DISCARDED, PENDING, TIMEOUT, UNVERIFIED, close_expired, is_expired, my_run, now_utc,
+                               verification_deadline)
 from ..core.security import current_user
 from ..core.verification import Outcome, decide
 from ..db.ids import new_id
@@ -33,6 +37,7 @@ from ..db.session import get_db
 from ..schemas.verification import SkipRequest, UnverifiedReason, VerificationResult, VerificationStatus
 
 router = APIRouter(prefix="/v1", tags=["Verification"])
+log = logging.getLogger("scrun.verification")
 E = ErrorCode
 POLICY = settings.verification
 S, R = VerificationStatus, UnverifiedReason
@@ -40,13 +45,9 @@ ERRS = {**error_responses(E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED, E.
         **error_responses(E.VALIDATION_ERROR, E.RUN_NOT_FINISHED, E.VERIFICATION_CLOSED, E.SERVICE_UNAVAILABLE)}
 OUTCOME = ("\n\n못 읽음(RETAKE_REQUIRED)·미인증(UNVERIFIED)은 오류가 아니라 200 + status. "
            "이미 정해진 기록에 다시 보내면 처음 결과를 그대로 돌려준다(응답을 못 받은 앱의 재시도).")
-PHOTO, SKIP, EXPIRED = "PHOTO", "SKIP", "EXPIRED"  # verifications.method
+PHOTO, SKIP = "PHOTO", "SKIP"  # verifications.method(마감으로 닫힌 것은 시도가 아니라 줄 없음)
 JPEG_MAGIC = b"\xff\xd8\xff"
 MB = 1024 * 1024
-
-
-def _now() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 # ---------- 사진 받기 ----------
@@ -59,7 +60,16 @@ class _InMemoryParser(MultiPartParser):
     spool_max_size = BODY_LIMIT
 
 
-async def read_photos(request: Request) -> list[Photo]:
+def photo_target(runId: str, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db),
+                 engine: Optional[OcrEngine] = Depends(get_ocr)) -> None:
+    """사진 본문을 읽기 전에: 도착 시각(마감 판단 기준), 내 기록·끝난 러닝, 인증 대기인데 엔진이 없으면 503."""
+    request.state.arrived = now_utc()
+    run = _finished(my_run(db, runId, user))
+    if run.status == PENDING and engine is None and not is_expired(run, request.state.arrived):
+        raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기를 아직 쓸 수 없습니다.")
+
+
+async def read_photos(request: Request, _: None = Depends(photo_target)) -> list[Photo]:
     """multipart `photos`(JPEG 1–3장) → 바이트. 크기는 본문을 읽기 전에 Content-Length로 거른다."""
     length = request.headers.get("content-length", "")
     if not length.isascii() or not length.isdigit():
@@ -93,27 +103,63 @@ async def read_photos(request: Request) -> list[Photo]:
 
 
 # ---------- OCR ----------
-# OCR은 CPU를 쓰므로 요청 스레드와 따로, 시간 제한(BL-17 ⑥). 시간을 넘긴 작업은 멈출 수 없어 자리를 계속 차지하므로
-# 자리가 없으면 줄 세우지 않고 바로 503(사용자 잘못이 아니라 다시 찍기 횟수에 안 셈)
-OCR_WORKERS = 2
-_ocr_pool = ThreadPoolExecutor(max_workers=OCR_WORKERS, thread_name_prefix="ocr")
-_ocr_free = threading.BoundedSemaphore(OCR_WORKERS)
+class _OcrRunner:
+    """OCR은 CPU를 쓰므로 요청 스레드와 따로, 시간 제한(BL-17 ⑥). 동시에 WORKERS개까지, 자리가 없으면 줄 세우지 않고 바로 503.
+    시간을 넘긴 작업은 스레드를 멈출 수 없으므로 자리를 돌려주고 "버려진 작업"으로 센다(새 요청이 그 뒤에 줄 서지 않게
+    일꾼을 그만큼 더 둠). 버려진 작업이 ABANDONED_MAX개 쌓이면 엔진이 멈춘 것이라 503 + 오류 기록(재시작 필요).
+    진짜 엔진은 자식 프로세스에서 돌려 시간 초과 때 죽이는 방식으로 바꾼다(엔진 붙일 때, ADR-0012)."""
+
+    WORKERS, ABANDONED_MAX = 2, 2
+
+    def __init__(self):
+        self.pool = ThreadPoolExecutor(max_workers=self.WORKERS + self.ABANDONED_MAX, thread_name_prefix="ocr")
+        self.lock = threading.Lock()
+        self.running = 0
+        self.abandoned = 0
+
+    def read(self, engine: OcrEngine, photos: list[Photo], timeout_s: float) -> ConsoleRead:
+        with self.lock:
+            if self.abandoned >= self.ABANDONED_MAX:
+                log.error("OCR 엔진이 시간을 넘긴 작업 %d개에 멈춰 있음 — 서버 재시작 필요", self.abandoned)
+                raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기를 잠시 쓸 수 없습니다.")
+            if self.running >= self.WORKERS:
+                raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기가 밀려 있습니다. 잠시 뒤 다시 보내세요.")
+            self.running += 1
+        state = {"abandoned": False}
+
+        def done(_):
+            with self.lock:
+                if state["abandoned"]:
+                    self.abandoned -= 1
+                else:
+                    self.running -= 1
+
+        try:
+            future = self.pool.submit(engine.read, photos)
+        except BaseException:
+            with self.lock:
+                self.running -= 1
+            raise
+        future.add_done_callback(done)
+        try:
+            return future.result(timeout=timeout_s)
+        except FutureTimeout:
+            with self.lock:
+                if not future.done():
+                    state["abandoned"] = True
+                    self.running -= 1
+                    self.abandoned += 1
+            raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기가 시간 안에 끝나지 않았습니다.") from None
+        except ApiError:
+            raise
+        except Exception:
+            # 엔진 오류(깨진 JPEG 등)는 500이 아니라 503: 다시 찍기 횟수를 깎지 않음(엔진이 고장 나도 기록이 미인증으로
+            # 굳지 않게). 원인은 서버 기록으로
+            log.exception("OCR 엔진 오류")
+            raise ApiError(E.SERVICE_UNAVAILABLE, "계기판을 읽다가 오류가 났습니다. 다시 보내거나 다시 찍어 주세요.") from None
 
 
-def _ocr(engine: OcrEngine, photos: list[Photo]) -> ConsoleRead:
-    slots = _ocr_free
-    if not slots.acquire(blocking=False):
-        raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기가 밀려 있습니다. 잠시 뒤 다시 보내세요.")
-    try:
-        future = _ocr_pool.submit(engine.read, photos)
-    except BaseException:
-        slots.release()
-        raise
-    future.add_done_callback(lambda _: slots.release())
-    try:
-        return future.result(timeout=POLICY.ocr_timeout_s)
-    except FutureTimeout:
-        raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기가 시간 안에 끝나지 않았습니다.") from None
+_ocr = _OcrRunner()
 
 
 # ---------- 결과 ----------
@@ -162,16 +208,22 @@ def _finished(run: Run) -> Run:
     return run
 
 
-def _closed_by_deadline(run: Run) -> bool:
-    return run.status == UNVERIFIED and run.unverified_reason == R.TIMEOUT.value
+def _closed_by_deadline(db: Session, run: Run) -> bool:
+    """마감으로 닫힌 기록(앱이 skip TIMEOUT으로 닫은 것과 구분: 그건 SKIP 줄이 있음)."""
+    if run.status != UNVERIFIED or run.unverified_reason != TIMEOUT:
+        return False
+    return db.scalar(select(func.count()).select_from(Verification)
+                     .where(Verification.run_id == run.id, Verification.method == SKIP)) == 0
 
 
-def _close_if_expired(db: Session, run: Run) -> bool:
-    """잠근 줄에서: 마감이 지난 PENDING을 UNVERIFIED(TIMEOUT)로 닫음."""
-    if run.status == PENDING and _now() > verification_deadline(run):
-        _save(db, run, Outcome(S.UNVERIFIED, R.TIMEOUT), EXPIRED)
-        return True
-    return False
+def _close_if_expired(db: Session, run: Run, at: datetime) -> bool:
+    """잠근 줄에서: at(요청이 도착한 때)에 마감이 지났으면 UNVERIFIED(TIMEOUT)로 닫음."""
+    if not is_expired(run, at):
+        return False
+    close_expired(db, at, run_id=run.id)
+    db.commit()
+    db.refresh(run)
+    return True
 
 
 def _retakes_used(db: Session, run_id: str, before: Optional[datetime] = None) -> int:
@@ -205,12 +257,12 @@ def _retake_again(db: Session, run: Run, attempt: Verification) -> dict:
         f"{POLICY.max_photos}장, JPEG, 한 장 {POLICY.max_photo_bytes // MB} MB 이하, 가이드 영역만 잘라서)을 multipart "
         "`photos`로 여러 번 붙여 보낸다. 서버가 읽고 센서 기록과 대조: "
         f"거리 {POLICY.distance_tolerance:.0%} 이내·시간(계기판 − 센서) {POLICY.duration_min_s}초에서 "
-        f"+{POLICY.duration_max_s}초(일시정지가 있었으면 + 쉰 시간)면 VERIFIED, 넘으면 UNVERIFIED(MISMATCH), "
+        f"+{POLICY.duration_max_s}초(일시정지가 있었으면 + 쉰 시간, 최대 {POLICY.max_pause_s // 60}분)면 VERIFIED, 넘으면 UNVERIFIED(MISMATCH), "
         f"못 읽으면 RETAKE_REQUIRED(다시 찍기 {POLICY.max_retakes}번, 남은 횟수 retakesLeft), 다 써도 못 읽거나 "
         "읽을 수 없는 계기판이면 UNVERIFIED(UNSUPPORTED_CONSOLE). 값은 서버 설정. 사진은 메모리에서 읽고 버림(해시만 남김). "
         "다른 기록에 쓴 사진이 섞이면 못 읽은 것으로 봄. "
-        f"마감(종료를 받은 뒤 {POLICY.deadline_s // 60}분)이 지나면 VERIFICATION_CLOSED(기록은 UNVERIFIED·TIMEOUT으로 닫힘). "
-        "OCR 엔진이 없거나 밀렸거나 시간 안에 못 읽으면 503(다시 찍기 횟수에 안 셈)." + OUTCOME),
+        f"마감(종료를 받은 뒤 {POLICY.deadline_s // 60}분, 요청이 도착한 때 기준)이 지나면 VERIFICATION_CLOSED"
+        "(기록은 UNVERIFIED·TIMEOUT으로 닫힘). OCR 엔진이 없거나 밀렸거나 오류·시간 초과면 503(다시 찍기 횟수에 안 셈)." + OUTCOME),
     response_model=Envelope[VerificationResult],
     responses=ERRS,
     openapi_extra={"requestBody": {"required": True, "content": {"multipart/form-data": {"schema": {
@@ -220,11 +272,12 @@ def _retake_again(db: Session, run: Run, attempt: Verification) -> dict:
 )
 def verify_photo(runId: str, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db),
                  photos: list[Photo] = Depends(read_photos), engine: Optional[OcrEngine] = Depends(get_ocr)):
+    arrived = request.state.arrived  # 마감은 도착한 때로(OCR이 오래 걸려도 마감 직전 사진이 거절되지 않게)
     run = _finished(my_run(db, runId, user))
-    if run.status == PENDING and _now() > verification_deadline(run):
+    if is_expired(run, arrived):
         run = _finished(my_run(db, runId, user, lock=True))
-        _close_if_expired(db, run)
-    if _closed_by_deadline(run):
+        _close_if_expired(db, run, arrived)
+    if _closed_by_deadline(db, run):
         raise ApiError(E.VERIFICATION_CLOSED)
     if run.status != PENDING:
         return ok(request, _stored(db, run))
@@ -235,13 +288,13 @@ def verify_photo(runId: str, request: Request, user: User = Depends(current_user
         return ok(request, _retake_again(db, run, same))
     read = UNREADABLE
     if not reused:
-        if engine is None:
+        if engine is None:  # photo_target이 먼저 거르지만, 그 사이 상태가 바뀐 경우
             raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기를 아직 쓸 수 없습니다.")
         db.rollback()  # OCR 동안 DB 연결·트랜잭션을 잡지 않게
-        read = _ocr(engine, photos)
+        read = _ocr.read(engine, photos, POLICY.ocr_timeout_s)
 
-    run = _finished(my_run(db, runId, user, lock=True))  # OCR 동안 다른 요청이 정했거나 마감이 지났을 수 있음
-    if _close_if_expired(db, run) or _closed_by_deadline(run):
+    run = _finished(my_run(db, runId, user, lock=True))  # OCR 동안 다른 요청이 정했을 수 있음
+    if _closed_by_deadline(db, run):
         raise ApiError(E.VERIFICATION_CLOSED)
     if run.status != PENDING:
         return ok(request, _stored(db, run))
@@ -269,6 +322,6 @@ def verify_photo(runId: str, request: Request, user: User = Depends(current_user
 def verify_skip(runId: str, body: SkipRequest, request: Request, user: User = Depends(current_user),
                 db: Session = Depends(get_db)):
     run = _finished(my_run(db, runId, user, lock=True))
-    if run.status == PENDING and not _close_if_expired(db, run):
+    if run.status == PENDING and not _close_if_expired(db, run, now_utc()):
         return ok(request, _save(db, run, Outcome(S.UNVERIFIED, R(body.reason.value)), SKIP))
     return ok(request, _stored(db, run))

@@ -2,7 +2,7 @@
 
 판정은 서버 한 곳에서(docs/api/README.md "판정은 서버"). 값은 설정(config.VerificationPolicy)에서 받는다.
 - 거리: |계기판 − 센서| / 계기판 ≤ 허용 오차
-- 시간: 계기판 − 센서가 [최소, 최대 + 쉰 시간] 안. 계기판은 카운트다운 전 걷기부터 재므로 보통 앱보다 길고,
+- 시간: 계기판 − 센서가 [최소, 최대 + 쉰 시간(상한 있음)] 안. 계기판은 카운트다운 전 걷기부터 재므로 보통 앱보다 길고,
   앱 시간은 일시정지를 뺀 값인데 계기판은 기종마다 일시정지 중 시간이 흐르거나 멈춘다(Q-33 조사 전, 정할 것 5)
 - BL-18 ① "종료 시각": 계기판에는 종료 시각이 뜨지 않으므로 "종료 직후에 찍었는가"는 서버 마감으로 지킨다(run_access)
 - 계기판 값이 달릴 수 없는 속도(평균 30 km/h 초과)거나 0이면 잘못 읽은 것으로 보고 다시 찍기
@@ -41,7 +41,8 @@ def compare(policy: VerificationPolicy, read: ConsoleRead, sensor_m: int, sensor
     """읽은 값(READ, 그럴듯함 확인 뒤)과 센서 값 → VERIFIED 또는 UNVERIFIED(MISMATCH)."""
     d_ratio = _ratio(read.distance_m, sensor_m)
     d_ok = d_ratio is not None and abs(d_ratio) <= policy.distance_tolerance
-    t_ok = policy.duration_min_s <= read.duration_s - sensor_s <= policy.duration_max_s + max(paused_s, 0)
+    widen = min(max(paused_s, 0), policy.max_pause_s)  # 기기 시계로 센 쉰 시간이라 상한을 둠
+    t_ok = policy.duration_min_s <= read.duration_s - sensor_s <= policy.duration_max_s + widen
     rows = (ComparisonRow(item="distance", console=read.distance_m, sensor=sensor_m, diff_ratio=d_ratio, ok=d_ok),
             ComparisonRow(item="duration", console=read.duration_s, sensor=sensor_s,
                           diff_ratio=_ratio(read.duration_s, sensor_s), ok=t_ok))

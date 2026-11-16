@@ -63,6 +63,11 @@ ERRORS: dict[ErrorCode, tuple[int, str]] = {
 }
 
 
+def invalid(field: str, reason: str) -> "ApiError":
+    """값 하나가 틀림 → 400 VALIDATION_ERROR, details에 그 칸."""
+    return ApiError(ErrorCode.VALIDATION_ERROR, details={"fields": [{"field": field, "reason": reason}]})
+
+
 class ApiError(Exception):
     """라우터에서 raise ApiError(ErrorCode.X) → 공통 껍데기 + 맞는 상태 코드로 응답."""
 

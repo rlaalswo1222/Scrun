@@ -113,3 +113,10 @@ def test_error_codes_match_readme():
     """docs/api/README.md 오류 코드 표와 ErrorCode가 같아야 한다."""
     documented = set(re.findall(r"^\| `([A-Z_]+)` \|", README.read_text(encoding="utf-8"), re.M))
     assert documented == {c.value for c in ErrorCode}
+
+
+def test_notion_pages_match_api():
+    """노션 명세 페이지 표(scripts/notion_pages.py)와 실제 API가 같아야 한다(지운 API가 남으면 페이지 만들기가 깨짐)."""
+    from scripts.notion_pages import NOTION_PAGE_IDS
+    ops = {(m.upper(), p) for p, item in app.openapi()["paths"].items() for m in item}
+    assert set(NOTION_PAGE_IDS) - ops == set(), "노션 표에만 있는 API"

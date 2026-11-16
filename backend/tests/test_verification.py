@@ -1,6 +1,5 @@
 """계기판 인증 API 진짜 흐름(계획 0038, BL-18 완료 기준: 인증 완료·미인증·재촬영 세 경우). OCR은 가짜(파일 이름으로 값)."""
 import dataclasses
-import threading
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -10,7 +9,7 @@ from sqlalchemy import select, update
 from app.core.config import ConfigError, VerificationPolicy, load_settings, load_verification
 from app.core.ocr import FakeOcr, get_ocr
 from app.core.ocr import ConsoleRead
-from app.core.run_access import verification_of
+from app.core.run_access import close_expired
 from app.core.verification import compare, plausible
 from app.db.models import Run, Verification
 from app.main import app
@@ -229,15 +228,12 @@ def test_photo_after_deadline_closes_run(db_client, me, db):
     run_id = finished(db_client, me)
     db.execute(update(Run).where(Run.id == run_id).values(verification_deadline=ago(seconds=1)))
     db.commit()
-    run = run_row(db, run_id)
-    assert verification_of(run) == "UNVERIFIED" and run.status == "PENDING"  # 아무것도 안 보내도 조회엔 미인증
     fail(photo(db_client, me, run_id, "d3000_t1000.jpg"), 409, "VERIFICATION_CLOSED")
     run = run_row(db, run_id)
     assert (run.status, run.unverified_reason) == ("UNVERIFIED", "TIMEOUT")
     fail(photo(db_client, me, run_id, "d3000_t1000.jpg"), 409, "VERIFICATION_CLOSED")  # 다시 보내도 같은 답
     assert data(skip(db_client, me, run_id))["reason"] == "TIMEOUT"
-    method = db.scalars(select(Verification.method).where(Verification.run_id == run_id)).all()
-    assert method == ["EXPIRED"]
+    assert db.scalars(select(Verification.method).where(Verification.run_id == run_id)).all() == []  # 시도가 아님
 
 
 def test_skip_after_deadline_is_timeout(db_client, me, db):
@@ -299,20 +295,103 @@ def test_slow_engine_is_503_and_not_counted(db_client, me, monkeypatch, fresh_oc
     assert data(photo(db_client, me, run_id, "blur.jpg"))["retakesLeft"] == 3
 
 
-def test_busy_engine_is_503_at_once(db_client, me, monkeypatch, fresh_ocr):
+def test_busy_engine_is_503_at_once(db_client, me, fresh_ocr):
     run_id = finished(db_client, me)
-    monkeypatch.setattr(vr, "_ocr_free", threading.BoundedSemaphore(1))
-    vr._ocr_free.acquire()  # 멈춘 작업이 자리를 다 차지함
+    vr._ocr.running = vr._OcrRunner.WORKERS  # 다른 요청이 자리를 다 씀
     fail(photo(db_client, me, run_id, "blur.jpg"), 503, "SERVICE_UNAVAILABLE")
+    vr._ocr.running = 0
+    assert data(photo(db_client, me, run_id, "blur.jpg"))["retakesLeft"] == 3
+
+
+def test_timed_out_job_gives_back_its_slot(db_client, me, monkeypatch, fresh_ocr):
+    run_id = finished(db_client, me)
+    monkeypatch.setattr(vr, "POLICY", dataclasses.replace(vr.POLICY, ocr_timeout_s=0.1))
+    app.dependency_overrides[get_ocr] = SlowOcr
+    for name in ("blur1.jpg", "blur2.jpg"):  # 일꾼 수만큼 시간 초과
+        fail(photo(db_client, me, run_id, name), 503, "SERVICE_UNAVAILABLE")
+    assert vr._ocr.running == 0 and vr._ocr.abandoned == 2
+    fail(photo(db_client, me, run_id, "blur3.jpg"), 503, "SERVICE_UNAVAILABLE")  # 멈춘 작업이 상한 → 바로 503
+    time.sleep(0.6)  # 버려진 작업이 끝나면 다시 받음
+    app.dependency_overrides[get_ocr] = FakeOcr
+    assert vr._ocr.abandoned == 0
+    assert data(photo(db_client, me, run_id, "blur4.jpg"))["retakesLeft"] == 3
+
+
+class BrokenOcr:
+    def read(self, photos):
+        raise ValueError("깨진 JPEG")
+
+
+def test_engine_error_is_503_not_counted(db_client, me, fresh_ocr):
+    run_id = finished(db_client, me)
+    app.dependency_overrides[get_ocr] = BrokenOcr
+    fail(photo(db_client, me, run_id, "blur.jpg"), 503, "SERVICE_UNAVAILABLE")
+    app.dependency_overrides[get_ocr] = FakeOcr
+    assert data(photo(db_client, me, run_id, "blur.jpg"))["retakesLeft"] == 3
+    assert vr._ocr.running == 0
+
+
+class DeadlineOcr:
+    """읽는 동안 마감이 지나감(마감 직전에 보낸 사진)."""
+
+    def __init__(self, db, run_id):
+        self.db, self.run_id = db, run_id
+
+    def read(self, photos):
+        self.db.execute(update(Run).where(Run.id == self.run_id).values(verification_deadline=ago(seconds=1)))
+        self.db.commit()
+        return FakeOcr().read(photos)
+
+
+def test_deadline_is_judged_at_arrival(db_client, me, db, fresh_ocr):
+    run_id = finished(db_client, me)
+    app.dependency_overrides[get_ocr] = lambda: DeadlineOcr(db, run_id)
+    assert data(photo(db_client, me, run_id, "d3000_t1000.jpg"))["status"] == "VERIFIED"
+
+
+def test_pause_widening_is_capped(db_client, me):
+    # 앱이 꺼졌다 2시간 뒤 복구: 쉰 시간은 기기 시계라 10분까지만 넓힘
+    run_id = started_id(db_client, me, cid="late", started=ago(minutes=59))
+    assert finish(db_client, me, run_id, ended=ago(minutes=1), duration=1000).status_code == 200
+    assert data(photo(db_client, me, run_id, "d3000_t1900.jpg"))["status"] == "VERIFIED"   # +5분 + 10분 = +900초
+    other = started_id(db_client, me, cid="late2", started=ago(minutes=59))
+    finish(db_client, me, other, ended=ago(minutes=1), duration=1000)
+    assert data(photo(db_client, me, other, "d3000_t1901.jpg"))["reason"] == "MISMATCH"
+
+
+def test_app_timeout_skip_then_photo_returns_first_result(db_client, me):
+    run_id = finished(db_client, me)
+    first = data(skip(db_client, me, run_id, "TIMEOUT"))  # E-03 촬영 시간 초과(앱)
+    assert data(photo(db_client, me, run_id, "d3000_t1000.jpg")) == first
+
+
+def test_checks_before_reading_body(db_client, me):
+    run_id = finished(db_client, me)
+    other = signup(db_client, "k_2")
+    bad = {"Content-Type": "multipart/form-data; boundary=x"}
+    fail(db_client.post(f"/v1/runs/{run_id}/verification/photo", headers={**other, **bad}, content=b"x"), 403, "FORBIDDEN")
+    fail(db_client.post(f"/v1/runs/01JC0ZA4R7N2X5NOSUCHRUN000/verification/photo", headers={**me, **bad}, content=b"x"),
+         404, "RUN_NOT_FOUND")
+    app.dependency_overrides[get_ocr] = lambda: None
+    fail(db_client.post(f"/v1/runs/{run_id}/verification/photo", headers={**me, **bad}, content=b"x"), 503,
+         "SERVICE_UNAVAILABLE")
+
+
+def test_close_expired_for_lists(db_client, me, db):
+    """기록 목록(BL-19·20)은 읽기 전에 close_expired를 부르면 DB 상태만 보면 됨."""
+    a, b = finished(db_client, me, cid="a"), finished(db_client, me, cid="b")
+    db.execute(update(Run).where(Run.id == a).values(verification_deadline=ago(seconds=1)))
+    db.commit()
+    assert close_expired(db) == 1
+    db.commit()
+    assert (run_row(db, a).status, run_row(db, a).unverified_reason, run_row(db, b).status) == ("UNVERIFIED", "TIMEOUT", "PENDING")
 
 
 # ---------- 동시에 온 요청 ----------
 @pytest.fixture
 def fresh_ocr(monkeypatch):
     """앞 테스트의 느린 작업이 OCR 자리를 잡고 있지 않게 새 자리·새 일꾼."""
-    from concurrent.futures import ThreadPoolExecutor
-    monkeypatch.setattr(vr, "_ocr_free", threading.BoundedSemaphore(vr.OCR_WORKERS))
-    monkeypatch.setattr(vr, "_ocr_pool", ThreadPoolExecutor(vr.OCR_WORKERS))
+    monkeypatch.setattr(vr, "_ocr", vr._OcrRunner())
 
 
 def test_two_photos_at_once_decide_once(db_client, me, db, fresh_ocr):

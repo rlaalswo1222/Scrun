@@ -19,8 +19,8 @@ from sqlalchemy.orm import Session
 from .. import stub_data as d
 from ..core.auth import Principal, stub_user
 from ..core.config import settings
-from ..core.run_access import ACTIVE, DISCARDED, PENDING, verification_of
-from ..core.run_access import invalid as _invalid
+from ..core.errors import invalid as _invalid
+from ..core.run_access import ACTIVE, DISCARDED, PENDING, VERIFIED, UNVERIFIED
 from ..core.run_access import my_run as _my_run
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
@@ -84,7 +84,7 @@ def _course_name(db: Session, course_id: str) -> str:
 
 
 def _finished_summary(db: Session, run: Run) -> dict:
-    verification = verification_of(run)  # 마감이 지난 인증 대기는 미인증(계획 0038)
+    verification = run.status if run.status in (VERIFIED, UNVERIFIED) else PENDING
     return _summary(run, _course_name(db, run.course_id), run.official_distance_m or 0,
                     run.official_duration_s or 0, verification)
 

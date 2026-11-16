@@ -42,6 +42,8 @@ class VerificationPolicy:
     distance_tolerance: float = 0.15   # |계기판 − 센서| / 계기판
     duration_min_s: int = -30           # 계기판 − 센서(초), 이보다 짧으면 어긋남
     duration_max_s: int = 300           # + 쉰 시간
+    max_pause_s: int = 600              # 쉰 시간 상한. 쉰 시간 = (종료 − 시작) − 달린 시간인데 앱이 꺼졌다 몇 시간 뒤 복구하면
+                                        # 종료가 늦게 찍혀 시간 검사가 무의미해짐 → 넘는 만큼은 넓히지 않음(가설, 11/17 민재 리뷰)
     deadline_s: int = 600               # 서버가 종료를 받은 뒤 인증할 수 있는 시간
     max_retakes: int = 3                # 못 읽어 다시 찍기 횟수(첫 장 뒤)
     max_photos: int = 3                 # 한 번에 올리는 사진(브래킷 3장, ADR-0011)
@@ -54,6 +56,7 @@ VERIFY_ENV = (
     ("VERIFY_DISTANCE_TOLERANCE", "distance_tolerance", float, 0.01, 1.0),
     ("VERIFY_DURATION_MIN_S", "duration_min_s", int, -3600, 0),
     ("VERIFY_DURATION_MAX_S", "duration_max_s", int, 0, 3600),
+    ("VERIFY_MAX_PAUSE_S", "max_pause_s", int, 0, 7200),
     ("VERIFY_DEADLINE_S", "deadline_s", int, 60, 24 * 3600),
     ("VERIFY_MAX_RETAKES", "max_retakes", int, 0, 20),
     ("VERIFY_OCR_TIMEOUT_S", "ocr_timeout_s", float, 1.0, 120.0),

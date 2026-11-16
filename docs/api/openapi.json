@@ -1959,7 +1959,7 @@
           "Verification"
         ],
         "summary": "계기판 사진으로 인증",
-        "description": "화면 E-04에서 E-09 · BL-16 ⑥, BL-17, BL-18. 앱 카메라로 찍은 계기판 사진(브래킷 1–3장, JPEG, 한 장 4 MB 이하, 가이드 영역만 잘라서)을 multipart `photos`로 여러 번 붙여 보낸다. 서버가 읽고 센서 기록과 대조: 거리 15% 이내·시간(계기판 − 센서) -30초에서 +300초(일시정지가 있었으면 + 쉰 시간)면 VERIFIED, 넘으면 UNVERIFIED(MISMATCH), 못 읽으면 RETAKE_REQUIRED(다시 찍기 3번, 남은 횟수 retakesLeft), 다 써도 못 읽거나 읽을 수 없는 계기판이면 UNVERIFIED(UNSUPPORTED_CONSOLE). 값은 서버 설정. 사진은 메모리에서 읽고 버림(해시만 남김). 다른 기록에 쓴 사진이 섞이면 못 읽은 것으로 봄. 마감(종료를 받은 뒤 10분)이 지나면 VERIFICATION_CLOSED(기록은 UNVERIFIED·TIMEOUT으로 닫힘). OCR 엔진이 없거나 밀렸거나 시간 안에 못 읽으면 503(다시 찍기 횟수에 안 셈).\n\n못 읽음(RETAKE_REQUIRED)·미인증(UNVERIFIED)은 오류가 아니라 200 + status. 이미 정해진 기록에 다시 보내면 처음 결과를 그대로 돌려준다(응답을 못 받은 앱의 재시도).",
+        "description": "화면 E-04에서 E-09 · BL-16 ⑥, BL-17, BL-18. 앱 카메라로 찍은 계기판 사진(브래킷 1–3장, JPEG, 한 장 4 MB 이하, 가이드 영역만 잘라서)을 multipart `photos`로 여러 번 붙여 보낸다. 서버가 읽고 센서 기록과 대조: 거리 15% 이내·시간(계기판 − 센서) -30초에서 +300초(일시정지가 있었으면 + 쉰 시간, 최대 10분)면 VERIFIED, 넘으면 UNVERIFIED(MISMATCH), 못 읽으면 RETAKE_REQUIRED(다시 찍기 3번, 남은 횟수 retakesLeft), 다 써도 못 읽거나 읽을 수 없는 계기판이면 UNVERIFIED(UNSUPPORTED_CONSOLE). 값은 서버 설정. 사진은 메모리에서 읽고 버림(해시만 남김). 다른 기록에 쓴 사진이 섞이면 못 읽은 것으로 봄. 마감(종료를 받은 뒤 10분, 요청이 도착한 때 기준)이 지나면 VERIFICATION_CLOSED(기록은 UNVERIFIED·TIMEOUT으로 닫힘). OCR 엔진이 없거나 밀렸거나 오류·시간 초과면 503(다시 찍기 횟수에 안 셈).\n\n못 읽음(RETAKE_REQUIRED)·미인증(UNVERIFIED)은 오류가 아니라 200 + status. 이미 정해진 기록에 다시 보내면 처음 결과를 그대로 돌려준다(응답을 못 받은 앱의 재시도).",
         "operationId": "verify_photo_v1_runs__runId__verification_photo_post",
         "security": [
           {
