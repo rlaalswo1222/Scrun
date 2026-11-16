@@ -1,0 +1,265 @@
+/* 달리는 중 멈춤·끝(계획 0037, Figma D-17·D-18·D-19·D-22, 가로 852×393 기준). 상준이 UI Kit과 맞춰 다듬음 */
+
+.run-end {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* 맵 위 옅은 어둠(Figma "Dim" #0F1B3D 12%) */
+.end-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 27, 61, 0.12);
+}
+
+.end-center {
+    align-items: center;
+    justify-content: center;
+}
+
+.end-buttons {
+    flex-direction: row;
+    align-self: stretch;
+}
+
+.end-buttons > .btn {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: 0;
+}
+
+/* 앞 버튼 오른쪽 여백(UI Toolkit은 :first-child를 모름) */
+.end-buttons > .end-btn-gap {
+    margin-right: var(--space-3);
+}
+
+/* Button/Danger: 연한 빨강 바탕·빨강 글자(UI Kit 토큰 없음 → Figma 값) */
+.end-btn-danger {
+    background-color: #FFECEC;
+    color: #C23338;
+}
+
+.end-btn-danger:hover,
+.end-btn-danger:active {
+    background-color: #FFECEC;
+}
+
+/* 글자만 파랑(D-18 "계속 달리기", D-22 "촬영 없이 마무리") */
+.end-btn-text {
+    background-color: rgba(0, 0, 0, 0);
+    color: #2459BC;
+}
+
+.end-btn-text:hover,
+.end-btn-text:active {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/* Button/Secondary(연한 파랑) */
+.end-btn-soft {
+    background-color: var(--color-primary-soft);
+    color: #2459BC;
+}
+
+.end-btn-soft:hover,
+.end-btn-soft:active {
+    background-color: var(--color-primary-soft);
+}
+
+.course .end-card-title {
+    margin-top: var(--space-3);
+    font-size: var(--font-size-heading);
+    letter-spacing: -0.44px;
+    color: var(--color-text);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course .end-card-body {
+    margin-top: var(--space-2);
+    margin-bottom: var(--space-4);
+    font-size: var(--font-size-body-sm);
+    letter-spacing: -0.07px;
+    color: var(--color-body);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* ---- D-17 일시정지 ---- */
+.course .end-pause-title {
+    position: absolute;
+    left: 84px;
+    top: 28px;
+    font-size: var(--font-size-title);
+    letter-spacing: -0.56px;
+    color: var(--color-surface);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.end-pause-card {
+    position: absolute;
+    left: 50%;
+    top: 100px;
+    width: 552px;
+    margin-left: -276px;
+    padding: var(--space-6);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+}
+
+.end-stats {
+    flex-direction: row;
+    justify-content: center;
+    margin-bottom: var(--space-5);
+}
+
+.end-stat {
+    align-items: center;
+    margin: 0 var(--space-6) 0 var(--space-6);
+}
+
+.course .end-stat-label {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.course .end-stat-value {
+    margin-top: 2px;
+    font-size: 36px;
+    letter-spacing: -0.72px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+/* ---- D-18 종료 확인 ---- */
+.end-confirm-card {
+    width: 420px;
+    padding: var(--space-6);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+    align-items: center;
+}
+
+.end-confirm-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 26px;
+    background-color: var(--color-primary);
+    align-items: center;
+    justify-content: center;
+}
+
+/* 멈춤 표시(흰 네모) */
+.end-confirm-icon-img {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background-color: var(--color-surface);
+}
+
+/* ---- D-19 목표 달성 ---- */
+.end-goal {
+    align-items: center;
+}
+
+.course .end-goal-banner {
+    margin-top: 60px;
+    height: 48px;
+    padding: 0 20px 0 20px;
+    border-radius: 24px;
+    background-color: var(--color-lime);
+    font-size: var(--font-size-body);
+    color: var(--color-text);
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.course .end-goal-time {
+    margin-top: 22px;
+    font-size: var(--font-size-heading);
+    color: var(--color-surface);
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.end-goal-character {
+    width: 95px;
+    height: 110px;
+    margin-top: 30px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/CharacterStretch.png");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.end-goal-buttons {
+    position: absolute;
+    left: 50%;
+    bottom: 13px;
+    width: 452px;
+    margin-left: -226px;
+}
+
+/* ---- D-22 종료 → 계기판 인증 안내 ---- */
+.end-done-card {
+    width: 612px;
+    padding: var(--space-6);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+    flex-direction: row;
+}
+
+.end-done-art {
+    width: 170px;
+    border-radius: 20px;
+    background-color: var(--color-primary-soft);
+    align-items: center;
+    justify-content: center;
+}
+
+.end-done-character {
+    width: 129px;
+    height: 150px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/CharacterStretch.png");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.end-done-text {
+    flex-grow: 1;
+    margin-left: var(--space-6);
+}
+
+.course .end-done-title {
+    font-size: var(--font-size-title);
+    letter-spacing: -0.56px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course .end-done-body {
+    -unity-text-align: upper-left;
+}
+
+/* 서버에 보내는 중·못 보냄(기기에 남김) 한 줄 */
+.course .end-done-saving {
+    margin-bottom: var(--space-2);
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.end-done-verify {
+    margin: 0 0 var(--space-2) 0;
+}
+
+.end-done-text > .end-btn-text {
+    margin: 0;
+}

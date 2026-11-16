@@ -1,0 +1,71 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- 달리는 중 멈춤·끝(가로, 계획 0037 · BL-14, Figma D-17·D-18·D-19·D-22). 맵 화면 안의 층(RunSetup·RunReady와 같은 방식).
+         속도·페이스는 보여 주지 않는다(BL-12 ②, D-10 노트 "결과 화면에서"): Figma D-17·D-19의 "평균 페이스"는 뺌 → 상준 확인 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/RunEnd.uss" />
+    <ui:VisualElement name="run-end" class="course run-end">
+
+        <!-- D-17 일시정지 -->
+        <ui:VisualElement name="pause" class="end-layer">
+            <ui:Label text="일시정지" class="end-pause-title" />
+            <ui:VisualElement class="end-pause-card">
+                <ui:VisualElement class="end-stats">
+                    <ui:VisualElement class="end-stat">
+                        <ui:Label text="거리" class="end-stat-label" />
+                        <ui:Label name="pause-distance" text="0.00km" class="end-stat-value" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="end-stat">
+                        <ui:Label text="시간" class="end-stat-label" />
+                        <ui:Label name="pause-time" text="00:00" class="end-stat-value" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="end-buttons">
+                    <ui:Button name="pause-finish" text="종료하기" class="btn end-btn-danger end-btn-gap" />
+                    <ui:Button name="pause-resume" text="계속 달리기" class="btn btn-primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- D-18 종료 확인 -->
+        <ui:VisualElement name="confirm" class="end-layer end-center">
+            <ui:VisualElement class="end-confirm-card">
+                <ui:VisualElement class="end-confirm-icon">
+                    <ui:VisualElement class="end-confirm-icon-img" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:Label text="러닝을 종료할까요?" class="end-card-title" />
+                <ui:Label name="confirm-body" class="end-card-body" />
+                <ui:VisualElement class="end-buttons">
+                    <ui:Button name="confirm-resume" text="계속 달리기" class="btn end-btn-text end-btn-gap" />
+                    <ui:Button name="confirm-finish" text="종료하고 인증" class="btn btn-primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- D-19 목표 달성(달리기는 멈추지 않음) -->
+        <ui:VisualElement name="goal" class="end-layer end-goal">
+            <ui:Label name="goal-banner" class="end-goal-banner" />
+            <ui:Label name="goal-time" text="00:00" class="end-goal-time" />
+            <ui:VisualElement class="end-goal-character" picking-mode="Ignore" />
+            <ui:VisualElement class="end-buttons end-goal-buttons">
+                <ui:Button name="goal-continue" text="계속 달리기" class="btn end-btn-soft end-btn-gap" />
+                <ui:Button name="goal-finish" text="마무리하기" class="btn btn-primary" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- D-22 종료 → 계기판 인증 안내 -->
+        <ui:VisualElement name="done" class="end-layer end-center">
+            <ui:VisualElement class="end-done-card">
+                <ui:VisualElement class="end-done-art">
+                    <ui:VisualElement class="end-done-character" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:VisualElement class="end-done-text">
+                    <ui:Label text="수고했어요!" class="end-done-title" />
+                    <ui:Label name="done-body" class="end-card-body end-done-body" />
+                    <ui:Label name="done-saving" class="end-done-saving" />
+                    <ui:Button name="done-verify" text="계기판 촬영하기" class="btn btn-primary end-done-verify" />
+                    <ui:Button name="done-skip" text="촬영 없이 마무리 (미인증)" class="btn end-btn-text" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
