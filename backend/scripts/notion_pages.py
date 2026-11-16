@@ -210,7 +210,7 @@ def build_page(spec: Spec, method: str, path: str, call, client: TestClient, rea
         m, p, body, _ = call
         if body == "PHOTO":
             r = client.request(m, p, headers={"Authorization": "Bearer demo"},
-                               files={"photo": ("console.jpg", b"\xff\xd8", "image/jpeg")})
+                               files={"photos": ("console.jpg", b"\xff\xd8", "image/jpeg")})
         else:
             r = client.request(m, p, headers={"Authorization": "Bearer demo"}, json=body)
         j = r.json()

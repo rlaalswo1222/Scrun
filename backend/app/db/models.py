@@ -23,7 +23,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 CASCADE = "CASCADE"
@@ -210,12 +210,16 @@ class Verification(_Created, Base):
     __tablename__ = "verifications"
     id: Mapped[str] = mapped_column(Text, primary_key=True)
     run_id: Mapped[str] = mapped_column(Text, ForeignKey("runs.id", ondelete=CASCADE), index=True)
-    method: Mapped[str] = mapped_column(Text)  # PHOTO, READING, SKIP
+    method: Mapped[str] = mapped_column(Text)  # PHOTO, SKIP (READING은 11/16 뺌: OCR은 서버, 계획 0038)
     read_distance_m: Mapped[Optional[int]] = mapped_column(Integer)
     read_duration_s: Mapped[Optional[int]] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(Text)  # VERIFIED, UNVERIFIED, RETAKE_REQUIRED
     reason: Mapped[Optional[str]] = mapped_column(Text)
     comparison: Mapped[Any] = mapped_column(JSONB, server_default=text("'[]'::jsonb"))
+    # 올린 사진의 SHA-256(사진 자체는 저장 안 함, BL-17 ③). 다른 기록에 같은 사진을 다시 쓰는 것 막기
+    photo_hashes: Mapped[list[str]] = mapped_column(PG_ARRAY(Text), server_default=text("'{}'"))
+
+    __table_args__ = (Index("ix_verifications_photo_hashes", "photo_hashes", postgresql_using="gin"),)
 
 
 class RunGhost(Base):

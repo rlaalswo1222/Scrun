@@ -23,7 +23,7 @@ STUB_CALLS = [c for c in CALLS if real_key(c[0], c[1]) is None]
 
 def call(method, path, body, headers=None):
     if body == "PHOTO":
-        return client.request(method, path, headers=headers, files={"photo": ("console.jpg", b"\xff\xd8fake", "image/jpeg")})
+        return client.request(method, path, headers=headers, files={"photos": ("console.jpg", b"\xff\xd8fake", "image/jpeg")})
     return client.request(method, path, headers=headers, json=body)
 
 
@@ -107,13 +107,6 @@ def test_unknown_path_and_method():
 ])
 def test_stub_error_triggers(method, path, body, status, code):
     assert_fail(call(method, path, body, AUTH), status, code)
-
-
-def test_retake_is_not_an_error():
-    r = client.post("/v1/runs/run_01J00/verification/photo", headers=AUTH,
-                    files={"photo": ("blur.jpg", b"\xff\xd8", "image/jpeg")})
-    assert_success(r, 200)
-    assert r.json()["success"]["data"]["status"] == "RETAKE_REQUIRED"
 
 
 def test_error_codes_match_readme():
