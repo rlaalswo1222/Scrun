@@ -2,8 +2,8 @@
 
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
-## 지금 (11/16): 계획 0035 센서 준비·달림 인식·카운트다운(BL-10·11) 구현·리뷰 반영, PR 전
-- 브랜치 `feat/run-ready-countdown`(develop e14a16b에서). **커밋 안 함**. `/code-review` 반영 끝(계획 0035 끝 절, EditMode 268/268). 다음: 커밋 나눠서 → PR(민재 리뷰)
+## 지금 (11/16): 계획 0035 센서 준비·달림 인식·카운트다운(BL-10·11) **PR #49**(민재 리뷰 대기)
+- 브랜치 `feat/run-ready-countdown`(develop e14a16b에서). `/code-review` 반영 끝(계획 0035 끝 절, EditMode 268/268). 다음: 민재 리뷰 반영, 머지되면 계획 0035 상태 "완료", 그다음 S4(계기판 촬영 E-02·E-04·서버 OCR, 민재 카메라 0033 위에)
 - 한 것·확인·바뀐 것은 [계획 0035](../docs/plans/0035-run-ready-countdown.md) "진행". EditMode 268/268, 에디터 Play로 D-07 → D-08 → D-09 → HUD, I-01·다시 시도, X → D-01, 카운트다운 중 멈춤 → D-08 확인
 - 민재 코드 건드린 곳(PR에 표시): `MapScreen`(임시 `StartRunning()` 지움, 센서 준비 층 연결), `RunSession`(`ClientRunId`·`RunId`·`StartBody` 추가), `Api.cs`·`Dtos.cs`(`RunsApi.StartAsync`)
 - 남은 확인: 아이폰 책상(폰 센서 Ok·걸음 감지까지 몇 초), 러닝머신(1.2초 걸음 문턱이 2 km/h에서 잘못 멈추지 않는지, 카운트다운 전 계기판 거리)
