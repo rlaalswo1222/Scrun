@@ -2,7 +2,7 @@
 
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
-## 지금 (11/16): 계획 0035 센서 준비·달림 인식·카운트다운(BL-10·11) **PR #49**(11/16 민재 리뷰 1·2·4–8 반영, 3번은 #48 머지 뒤 `AvatarSpeed` 판단을 같이 쓰게)
+## 지금 (11/16): 계획 0035 센서 준비·달림 인식·카운트다운(BL-10·11) **PR #49**(11/16 민재 리뷰 1–8 반영, develop(#48) 합침, 다시 리뷰 대기)
 - 브랜치 `feat/run-ready-countdown`(develop e14a16b에서). `/code-review` 반영 끝(계획 0035 끝 절, EditMode 268/268). 다음: 민재 리뷰 반영, 머지되면 계획 0035 상태 "완료", 그다음 S4(계기판 촬영 E-02·E-04·서버 OCR, 민재 카메라 0033 위에)
 - 한 것·확인·바뀐 것은 [계획 0035](../docs/plans/0035-run-ready-countdown.md) "진행". EditMode 268/268, 에디터 Play로 D-07 → D-08 → D-09 → HUD, I-01·다시 시도, X → D-01, 카운트다운 중 멈춤 → D-08 확인
 - 민재 코드 건드린 곳(PR에 표시): `MapScreen`(임시 `StartRunning()` 지움, 센서 준비 층 연결), `RunSession`(`ClientRunId`·`RunId`·`StartBody` 추가), `Api.cs`·`Dtos.cs`(`RunsApi.StartAsync`)
