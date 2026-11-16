@@ -18,6 +18,10 @@ from sqlalchemy.orm import Session
 
 from .. import stub_data as d
 from ..core.auth import Principal, stub_user
+from ..core.config import settings
+from ..core.errors import invalid as _invalid
+from ..core.run_access import ACTIVE, DISCARDED, PENDING, VERIFIED, UNVERIFIED
+from ..core.run_access import my_run as _my_run
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
 from ..core.security import current_user
@@ -45,7 +49,6 @@ AUTH = error_responses(E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)
 RUN_ERRORS = error_responses(E.RUN_NOT_FOUND, E.FORBIDDEN)
 STUB_NOTE = "\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND"
 
-ACTIVE, PENDING, DISCARDED = "ACTIVE", "PENDING", "DISCARDED"
 RECOVERABLE = timedelta(hours=24)       # 앱 종료 후 복구 가능 시간(BL-37 ③, 11/06 확정)
 CLOCK_SKEW = timedelta(minutes=5)       # 기기 시계가 이만큼 어긋나도 받아 줌
 DISTANCE_SLACK_M = 50                   # 평균 속도 상한 검사에서 반올림·짧은 러닝 여유
@@ -59,21 +62,6 @@ def _check_run(run_id: str, known: set[str]) -> None:
 
 
 KNOWN = {r["runId"] for r in d.RUNS} | {d.RUN_STARTED["runId"]}
-
-
-def _invalid(field: str, reason: str) -> ApiError:
-    return ApiError(E.VALIDATION_ERROR, details={"fields": [{"field": field, "reason": reason}]})
-
-
-def _my_run(db: Session, run_id: str, user: User, lock: bool = False) -> Run:
-    """내 기록. 없으면 RUN_NOT_FOUND, 남의 것이면 FORBIDDEN. lock이면 이 요청이 끝날 때까지 줄을 잠금(끝내기·버리기와 겹치지 않게)."""
-    q = select(Run).where(Run.id == run_id)
-    run = db.scalar(q.with_for_update() if lock else q)
-    if run is None:
-        raise ApiError(E.RUN_NOT_FOUND)
-    if run.user_id != user.id:
-        raise ApiError(E.FORBIDDEN)
-    return run
 
 
 def _expired(run: Run) -> bool:
@@ -96,7 +84,7 @@ def _course_name(db: Session, course_id: str) -> str:
 
 
 def _finished_summary(db: Session, run: Run) -> dict:
-    verification = run.status if run.status in ("VERIFIED", "UNVERIFIED") else PENDING
+    verification = run.status if run.status in (VERIFIED, UNVERIFIED) else PENDING
     return _summary(run, _course_name(db, run.course_id), run.official_distance_m or 0,
                     run.official_duration_s or 0, verification)
 
@@ -276,6 +264,8 @@ def finish_run(runId: str, body: RunFinishRequest, request: Request, user: User 
     run.official_source = "SENSOR"
     run.official_distance_m = body.sensor.distance_m
     run.official_duration_s = body.sensor.duration_s
+    # 인증 마감은 앱의 endedAt이 아니라 서버가 종료를 받은 때부터(앱이 꺼졌다 복구해 늦게 끝내도 바로 찍을 수 있게, 계획 0038)
+    run.verification_deadline = datetime.now(timezone.utc) + timedelta(seconds=settings.verification.deadline_s)
     db.commit()
     return ok(request, _finished_summary(db, run))
 

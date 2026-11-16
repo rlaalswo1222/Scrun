@@ -9,7 +9,7 @@
 - **계정 삭제**: 사용자에 딸린 모든 행은 `users` 삭제 때 같이 지워진다(`ON DELETE CASCADE`). 다른 사람 기록 안에 남는 내 흔적(함께 달린 러너)도 지운다. 백업에 남는 기간은 개인정보처리방침에 적음(BL-40)
 - **판정은 서버**: 공식 기록 값·레벨·인증 횟수·주간 목표 집계는 서버가 정해 저장. 캐시(`user_progress`)는 기록에서 언제든 다시 계산할 수 있게
 - **저장 안 하는 것**: 계기판 사진(OCR 직후 폐기), 실시간 위치(실시간 서버 메모리), 맵 인스턴스(실시간 서버, BL-25 뒤), 봇 수·페이스·레벨 임계값(서버 설정 파일)
-- **미정은 칸만**: OCR 위치(서버든 앱이든 `verifications`에 읽은 값이 들어감), 오프라인 달리기(`runs.client_run_id`로 나중 업로드 가능), 데이터 보관 기간(Q-27)
+- **미정은 칸만**: 오프라인 달리기(`runs.client_run_id`로 나중 업로드 가능), 데이터 보관 기간(Q-27)
 
 ## 관계 그림
 ```mermaid
@@ -139,11 +139,11 @@ erDiagram
 | status | text | `ACTIVE`(달리는 중) → `PENDING`(끝, 인증 대기) → `VERIFIED`·`UNVERIFIED`. 복구 안 하고 버리면 `DISCARDED` |
 | started_at, ended_at | timestamptz | |
 | sensor_distance_m, sensor_duration_s | int | 센서 값(항상) |
-| console_distance_m, console_duration_s | int | 계기판 값(인증 완료일 때만) |
+| console_distance_m, console_duration_s | int | 계기판에서 읽은 값(인증 완료, 그리고 오차 초과 미인증일 때 대조 표용) |
 | official_source | text | `CONSOLE`·`SENSOR` |
 | official_distance_m, official_duration_s | int | **공식 값**: 인증 완료면 계기판, 미인증이면 센서. 피드·경험치·주간 목표가 이 값을 씀 |
 | unverified_reason | text | `MISMATCH`·`UNSUPPORTED_CONSOLE`·`SKIPPED`·`TIMEOUT`·`RETAKE_GIVEN_UP` |
-| verification_deadline | timestamptz | 운동 직후에만 인증 가능(이후 `VERIFICATION_CLOSED`) |
+| verification_deadline | timestamptz | 인증 마감 = **서버가 종료를 받은 때** + 설정(10분). 앱이 꺼졌다 복구해 늦게 끝내도 그 직후엔 찍을 수 있게. 마감은 요청이 도착한 때로 판단. 지나면 `VERIFICATION_CLOSED`, 기록은 `UNVERIFIED`·`TIMEOUT`으로 닫힘: 인증 요청 때, 그리고 기록 목록·상세는 읽기 전에 `run_access.close_expired`로(계획 0038) |
 | shared | bool | 친구 피드 공유(기본값은 `users.feed_share_default`) |
 | updated_at | timestamptz | 세션 복구 24시간은 `status = ACTIVE`와 `updated_at`으로 판단 |
 
@@ -164,16 +164,17 @@ erDiagram
 | companion_user_id | → users (CASCADE) | 봇이면 비움. 그 사람이 탈퇴하면 이 줄도 지움 |
 | bot_label | text | 봇 이름(`페이스 9`) |
 
-**verifications** — 인증 시도마다 1줄(재촬영 포함). 사진은 저장 안 함
+**verifications** — 인증 시도마다 1줄(재촬영 포함). 사진은 저장 안 함(해시만). 판정은 계획 0038, `app/core/verification.py`
 | 칸 | 형식 | 설명 |
 |---|---|---|
 | **id** | text | |
 | run_id | → runs (CASCADE) | |
-| method | text | `PHOTO`(서버 OCR)·`READING`(앱이 읽은 값)·`SKIP` — OCR 위치 미정이라 둘 다 |
+| method | text | `PHOTO`(서버 OCR)·`SKIP`(촬영 없이·시간 초과·포기). 마감으로 닫힌 것은 시도가 아니라 줄이 없음(앱의 skip `TIMEOUT`과 이걸로 구분). 앱이 읽은 값(`READING`)은 11/16 뺌: OCR은 서버, 추출값은 사용자가 못 고침(BL-17 ①④) |
 | read_distance_m, read_duration_s | int | 계기판에서 읽은 값(OCR 실패면 비움) |
 | status | text | `VERIFIED`·`UNVERIFIED`·`RETAKE_REQUIRED` |
 | reason | text | 미인증 사유 |
 | comparison | jsonb | 대조 표(항목·계기판·센서·차이·통과) |
+| photo_hashes | text[] (GIN) | 올린 사진의 SHA-256. 다른 기록에 같은 사진을 다시 쓰면 못 읽은 것으로 봄, 같은 묶음 재전송은 횟수 안 셈 |
 
 **run_ghosts** — **③ 고스트 선택은 기록과 분리**: "이 러닝에서 어떤 기록을 고스트로 썼나"
 | 칸 | 형식 | 설명 |
@@ -258,7 +259,7 @@ R = 읽기, W = 쓰기. (노션 API 명세 42개)
 | GET /v1/runs/{runId} | R runs, run_samples, run_companions, run_ghosts |
 | PATCH /v1/runs/{runId} | W runs.shared |
 | GET /v1/runs/{runId}/ghost | R runs, run_samples |
-| POST /v1/runs/{runId}/verification/photo·reading·skip | W verifications, runs, run_rewards, user_progress, user_impacts · R weekly_goals |
+| POST /v1/runs/{runId}/verification/photo·skip | W verifications, runs · (BL-32, S8에서) run_rewards, user_progress, user_impacts, R weekly_goals |
 | GET /v1/runs/{runId}/rewards | R run_rewards, impacts |
 | GET /v1/users/me/progress | R user_progress, impacts, user_impacts |
 | PUT /v1/users/me/impact | W user_progress · R user_impacts |

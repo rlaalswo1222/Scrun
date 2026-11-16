@@ -60,7 +60,6 @@ NOTION_PAGE_IDS = {
     ("PATCH", "/v1/runs/{runId}"): "4104ae82f1de819daa35eec86ba82f1b",
     ("GET", "/v1/runs/{runId}/ghost"): "4104ae82f1de812eacdefd526ae35b95",
     ("POST", "/v1/runs/{runId}/verification/photo"): "4104ae82f1de81428f89ddfdf174fd5d",
-    ("POST", "/v1/runs/{runId}/verification/reading"): "4104ae82f1de8168ba52c78bf1d7f0ec",
     ("POST", "/v1/runs/{runId}/verification/skip"): "4104ae82f1de8101ba7cdc98df833a6f",
     ("GET", "/v1/runs/{runId}/rewards"): "4104ae82f1de81b989cacc09a6286375",
     ("GET", "/v1/users/me/progress"): "4104ae82f1de8122bea9dc92f863d4f2",
@@ -210,7 +209,7 @@ def build_page(spec: Spec, method: str, path: str, call, client: TestClient, rea
         m, p, body, _ = call
         if body == "PHOTO":
             r = client.request(m, p, headers={"Authorization": "Bearer demo"},
-                               files={"photo": ("console.jpg", b"\xff\xd8", "image/jpeg")})
+                               files={"photos": ("console.jpg", b"\xff\xd8", "image/jpeg")})
         else:
             r = client.request(m, p, headers={"Authorization": "Bearer demo"}, json=body)
         j = r.json()

@@ -36,8 +36,6 @@ CALLS = [
     ("POST", "/v1/runs/run_01J00/discard", None, 204),
     ("GET", "/v1/runs/run_01HZX/ghost", None, 200),
     ("POST", "/v1/runs/run_01J00/verification/photo", "PHOTO", 200),
-    ("POST", "/v1/runs/run_01J00/verification/reading",
-     {"distanceM": 3120, "durationS": 1080, "readAt": "2026-11-06T10:19:00Z"}, 200),
     ("POST", "/v1/runs/run_01J00/verification/skip", {"reason": "SKIPPED"}, 200),
     ("GET", "/v1/runs/run_01HZX/rewards", None, 200),
     ("GET", "/v1/users/me/progress", None, 200),
@@ -74,6 +72,8 @@ REAL = {
     ("PUT", "/v1/runs/{runId}/samples"),
     ("POST", "/v1/runs/{runId}/finish"),
     ("POST", "/v1/runs/{runId}/discard"),
+    ("POST", "/v1/runs/{runId}/verification/photo"),
+    ("POST", "/v1/runs/{runId}/verification/skip"),
 }
 
 

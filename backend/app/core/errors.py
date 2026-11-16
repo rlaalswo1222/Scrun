@@ -21,6 +21,7 @@ class ErrorCode(str, Enum):
     CALIBRATION_REQUIRED = "CALIBRATION_REQUIRED"
     COURSE_FULL = "COURSE_FULL"
     RUN_ALREADY_FINISHED = "RUN_ALREADY_FINISHED"
+    RUN_NOT_FINISHED = "RUN_NOT_FINISHED"
     VERIFICATION_CLOSED = "VERIFICATION_CLOSED"
     SELF_FRIEND_CODE = "SELF_FRIEND_CODE"
     ALREADY_FRIEND = "ALREADY_FRIEND"
@@ -50,6 +51,7 @@ ERRORS: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.CALIBRATION_REQUIRED: (409, "속도 보정을 먼저 해야 합니다."),
     ErrorCode.COURSE_FULL: (409, "코스가 가득 찼습니다."),
     ErrorCode.RUN_ALREADY_FINISHED: (409, "이미 끝난 러닝입니다."),
+    ErrorCode.RUN_NOT_FINISHED: (409, "아직 끝나지 않은 러닝입니다."),
     ErrorCode.VERIFICATION_CLOSED: (409, "인증 가능 시간이 지났습니다."),
     ErrorCode.SELF_FRIEND_CODE: (400, "내 친구 코드입니다."),
     ErrorCode.ALREADY_FRIEND: (409, "이미 친구입니다."),
@@ -59,6 +61,11 @@ ERRORS: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.INTERNAL_ERROR: (500, "서버 오류가 났습니다."),
     ErrorCode.SERVICE_UNAVAILABLE: (503, "서버를 잠시 쓸 수 없습니다."),
 }
+
+
+def invalid(field: str, reason: str) -> "ApiError":
+    """값 하나가 틀림 → 400 VALIDATION_ERROR, details에 그 칸."""
+    return ApiError(ErrorCode.VALIDATION_ERROR, details={"fields": [{"field": field, "reason": reason}]})
 
 
 class ApiError(Exception):

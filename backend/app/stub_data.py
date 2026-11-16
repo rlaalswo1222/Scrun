@@ -141,49 +141,6 @@ REWARDS = {
     "weeklyGoal": {"counted": True, "doneCount": 2, "targetCount": 3},
 }
 
-VERIFIED = {
-    "status": "VERIFIED",
-    "reason": None,
-    "console": {"distanceM": 3120, "durationS": 1080},
-    "sensor": {"distanceM": 3080, "durationS": 1080},
-    "comparison": [
-        {"item": "distance", "console": 3120, "sensor": 3080, "diffRatio": 0.013, "ok": True},
-        {"item": "duration", "console": 1080, "sensor": 1080, "diffRatio": 0.0, "ok": True},
-    ],
-    "retakeDeadline": None,
-    "rewards": REWARDS,
-}
-
-RETAKE_REQUIRED = {
-    "status": "RETAKE_REQUIRED",
-    "reason": None,
-    "console": None,
-    "sensor": {"distanceM": 3080, "durationS": 1080},
-    "comparison": [],
-    "retakeDeadline": "2026-11-06T10:23:00Z",
-    "rewards": None,
-}
-
-UNVERIFIED_SKIPPED = {
-    "status": "UNVERIFIED",
-    "reason": "SKIPPED",
-    "console": None,
-    "sensor": {"distanceM": 3080, "durationS": 1080},
-    "comparison": [],
-    "retakeDeadline": None,
-    "rewards": {
-        "xpBeforeM": 4120,
-        "xpAfterM": 4120,
-        "levelBefore": 2,
-        "levelAfter": 2,
-        "leveledUp": False,
-        "outfitStageAfter": 2,
-        "nextLevelRemainingM": 5880,
-        "impactsUnlocked": [],
-        "weeklyGoal": {"counted": False, "doneCount": 2, "targetCount": 3},
-    },
-}
-
 FRIENDS = [
     {"userId": "usr_f1", "nickname": "바닷바람", "level": 3, "verifiedCount": 6, "runningNow": True},
     {"userId": "usr_f2", "nickname": "주말러너", "level": 1, "verifiedCount": 1, "runningNow": False},
