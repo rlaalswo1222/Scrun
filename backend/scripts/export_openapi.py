@@ -63,8 +63,8 @@ def main() -> None:
             })
             continue
         if body == "PHOTO":
-            r = client.request(method, path, headers=auth, files={"photo": ("console.jpg", b"\xff\xd8", "image/jpeg")})
-            request_body = "(multipart: photo=계기판 사진 JPEG)"
+            r = client.request(method, path, headers=auth, files={"photos": ("console.jpg", b"\xff\xd8", "image/jpeg")})
+            request_body = "(multipart: photos=계기판 사진 JPEG, 1–3장)"
         else:
             r = client.request(method, path, headers=auth, json=body)
             request_body = body

@@ -23,7 +23,7 @@ STUB_CALLS = [c for c in CALLS if real_key(c[0], c[1]) is None]
 
 def call(method, path, body, headers=None):
     if body == "PHOTO":
-        return client.request(method, path, headers=headers, files={"photo": ("console.jpg", b"\xff\xd8fake", "image/jpeg")})
+        return client.request(method, path, headers=headers, files={"photos": ("console.jpg", b"\xff\xd8fake", "image/jpeg")})
     return client.request(method, path, headers=headers, json=body)
 
 
@@ -109,14 +109,14 @@ def test_stub_error_triggers(method, path, body, status, code):
     assert_fail(call(method, path, body, AUTH), status, code)
 
 
-def test_retake_is_not_an_error():
-    r = client.post("/v1/runs/run_01J00/verification/photo", headers=AUTH,
-                    files={"photo": ("blur.jpg", b"\xff\xd8", "image/jpeg")})
-    assert_success(r, 200)
-    assert r.json()["success"]["data"]["status"] == "RETAKE_REQUIRED"
-
-
 def test_error_codes_match_readme():
     """docs/api/README.md 오류 코드 표와 ErrorCode가 같아야 한다."""
     documented = set(re.findall(r"^\| `([A-Z_]+)` \|", README.read_text(encoding="utf-8"), re.M))
     assert documented == {c.value for c in ErrorCode}
+
+
+def test_notion_pages_match_api():
+    """노션 명세 페이지 표(scripts/notion_pages.py)와 실제 API가 같아야 한다(지운 API가 남으면 페이지 만들기가 깨짐)."""
+    from scripts.notion_pages import NOTION_PAGE_IDS
+    ops = {(m.upper(), p) for p, item in app.openapi()["paths"].items() for m in item}
+    assert set(NOTION_PAGE_IDS) - ops == set(), "노션 표에만 있는 API"

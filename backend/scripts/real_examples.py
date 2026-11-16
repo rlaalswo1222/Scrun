@@ -1,7 +1,8 @@
 """진짜로 구현된 API의 예시를 실제 흐름으로 만든다(테스트 DB + 가짜 카카오). export_openapi·notion_pages가 쓴다.
 
 흐름: 카카오 로그인(처음) → 약관 → 닉네임 확인 → 가입 → 내 정보·설정 조회·수정 → 코스 목록·상세 → 보정 저장·조회 → 맵 입장 →
-러닝 시작 → 시계열 올리기 → 끝나지 않은 러닝 → 종료 → (다른 러닝 시작 → 버리기) → 토큰 재발급 → 로그아웃.
+러닝 시작 → 시계열 올리기 → 끝나지 않은 러닝 → 종료 → 계기판 사진 인증(가짜 OCR) → (다른 러닝 시작 → 버리기) →
+(또 다른 러닝 → 종료 → 인증 없이 마무리) → 토큰 재발급 → 로그아웃.
 토큰 값·저장 시각·사용자 ID·친구 코드는 매번 바뀌므로 고정 값으로 바꿔 넣는다. 입장 위치(랜덤)는 시드를 고정한 난수로 바꿔 끼워 매번 같게.
 """
 from app.testenv import use_test_settings
@@ -16,6 +17,7 @@ from sqlalchemy import update
 
 from fastapi.testclient import TestClient
 
+from app.core.ocr import FakeOcr, get_ocr
 from app.db.models import CourseEntry
 from app.db.testing import TestDatabase
 from app.main import app
@@ -125,10 +127,26 @@ def collect() -> dict:
         body = {"endedAt": "2026-11-06T10:19:30Z", "sensor": {"distanceM": 3120, "durationS": 1080}}
         rec("POST", "/v1/runs/{runId}/finish", body, "Bearer {accessToken}",
             c.post(f"/v1/runs/{run_id}/finish", json=body, headers=auth))
+        # 계기판 사진: 가짜 OCR은 파일 이름(d거리_t시간)으로 값을 정함. 브래킷 3장(노출만 다름)
+        app.dependency_overrides[get_ocr] = FakeOcr
+        try:
+            shots = [("photos", (f"console_{i}_d3150_t1140.jpg", b"\xff\xd8\xff" + bytes([i]), "image/jpeg")) for i in range(3)]
+            rec("POST", "/v1/runs/{runId}/verification/photo", "(multipart: photos=계기판 사진 JPEG, 브래킷 3장)",
+                "Bearer {accessToken}", c.post(f"/v1/runs/{run_id}/verification/photo", files=shots, headers=auth))
+        finally:
+            app.dependency_overrides.pop(get_ocr, None)
         other = c.post("/v1/runs", headers=auth, json={"clientRunId": "c-2026-11-06-002", "mapInstanceId": "map_crs_lake_loop",
                                                         "goal": {"type": "NONE"}, "startedAt": "2026-11-06T11:00:00Z"})
         rec("POST", "/v1/runs/{runId}/discard", None, "Bearer {accessToken}",
             c.post(f"/v1/runs/{other.json()['success']['data']['runId']}/discard", headers=auth))
+        third = c.post("/v1/runs", headers=auth, json={"clientRunId": "c-2026-11-06-003", "mapInstanceId": "map_crs_lake_loop",
+                                                        "goal": {"type": "NONE"}, "startedAt": "2026-11-06T12:00:00Z"})
+        third_id = third.json()["success"]["data"]["runId"]
+        c.post(f"/v1/runs/{third_id}/finish", headers=auth,
+               json={"endedAt": "2026-11-06T12:15:00Z", "sensor": {"distanceM": 2400, "durationS": 900}})
+        body = {"reason": "SKIPPED"}
+        rec("POST", "/v1/runs/{runId}/verification/skip", body, "Bearer {accessToken}",
+            c.post(f"/v1/runs/{third_id}/verification/skip", json=body, headers=auth))
         body = {"refreshToken": tok["refreshToken"]}
         tok2 = rec("POST", "/v1/auth/refresh", {"refreshToken": PLACEHOLDER["refreshToken"]}, None,
                    c.post("/v1/auth/refresh", json=body))["success"]["data"]

@@ -115,7 +115,7 @@ namespace Scrun.App.Tests
         public void 추정이_뛰어도_한_프레임에_점프하지_않는다()
         {
             Run(5, 170, 8f);
-            Run(Dt, 170, 14f);
+            Run(Dt, 170, 12f); // 5 km/h 이하 변화(더 크면 2초 확인 뒤 받아들임, 계획 0039)
             Assert.AreEqual(8f + AvatarSpeed.AccelKmhPerSec * (float)Dt, a.SpeedKmh, 0.01f);
         }
 
@@ -242,6 +242,81 @@ namespace Scrun.App.Tests
             Assert.IsFalse(a.Stepping);
             Assert.AreEqual(0f, a.SpeedKmh);
             Assert.IsFalse(delays.Exists(d => d.Kind == AvatarDelayKind.Stop), "진동");
+        }
+            // ---------- 측정값 이상(계획 0039, I-03) ----------
+        [Test]
+        public void 잠깐_튄_추정은_무시하고_직전_속도를_유지한다()
+        {
+            Run(5, 170, 10f);
+            Run(1, 170, 18f); // 1초 동안 8 km/h 튐
+            Assert.IsTrue(a.Unsteady);
+            Assert.AreEqual(10f, a.SpeedKmh, 0.01f, "튄 값을 따라가지 않음");
+            Run(0.5, 170, 10.2f); // 돌아옴
+            Assert.IsFalse(a.Unsteady);
+            Assert.AreEqual(10.2f, a.SpeedKmh, 0.05f);
+        }
+
+        [Test]
+        public void 큰_변화가_2초_넘게_이어지면_진짜로_받아들인다()
+        {
+            Run(5, 170, 8f);
+            Run(1.9, 175, 14f);
+            Assert.IsTrue(a.Unsteady);
+            Run(0.2, 175, 14f);
+            Assert.IsFalse(a.Unsteady, "2초 지나면 보폭을 늘린 진짜 변화로");
+            Run(2, 175, 14f);
+            Assert.AreEqual(14f, a.SpeedKmh, 0.01f);
+        }
+
+        [Test]
+        public void 시속_25_넘는_추정은_무시하고_5초_뒤부터_서서히_줄인다()
+        {
+            Run(5, 170, 10f);
+            Run(5, 170, 40f);
+            Assert.IsTrue(a.Unsteady);
+            Assert.AreEqual(10f, a.SpeedKmh, 0.01f);
+            Run(3, 170, 40f);
+            Assert.AreEqual(7f, a.SpeedKmh, 0.2f, "5초 넘으면 초당 1 km/h씩");
+        }
+
+        [Test]
+        public void 출발_직후_첫_추정은_튐으로_보지_않는다()
+        {
+            Run(2, 170, null); // 걸음만, 추정 없음 → 3 km/h(걸음 2개가 잡힌 뒤 초당 4 km/h로 오름)
+            Assert.AreEqual(AvatarSpeed.RestartKmh, a.SpeedKmh, 0.01f);
+            Run(3, 170, 12f); // 3 → 12는 9 km/h 차이지만 처음 받은 추정
+            Assert.IsFalse(a.Unsteady);
+            Assert.AreEqual(12f, a.SpeedKmh, 0.01f);
+        }
+
+        [Test]
+        public void 멈추면_이상_표시도_꺼진다()
+        {
+            Run(5, 170, 10f);
+            Run(1, 170, 30f);
+            Assert.IsTrue(a.Unsteady);
+            Run(2, 0, 30f); // 벨트에서 내려옴
+            Assert.IsFalse(a.Unsteady);
+        }
+            [Test]
+        public void 위아래로_흔들린_튐은_2초가_지나도_받아들이지_않는다()
+        {
+            Run(5, 170, 8f);
+            Run(1, 170, 14f);
+            Run(1.1, 170, 2f); // 반대로 튐: 새 수준이 아님 → 확인을 처음부터
+            Assert.IsTrue(a.Unsteady);
+            Assert.AreEqual(8f, a.SpeedKmh, 0.01f);
+        }
+
+        [Test]
+        public void 이상한_중에_추정이_비면_띠를_내리고_마지막_믿던_속도로()
+        {
+            Run(5, 170, 10f);
+            Run(1, 170, 30f);
+            Assert.IsTrue(a.Unsteady);
+            Run(0.5, 170, null);
+            Assert.IsFalse(a.Unsteady);
+            Assert.AreEqual(10f, a.SpeedKmh, 0.01f);
         }
     }
 }

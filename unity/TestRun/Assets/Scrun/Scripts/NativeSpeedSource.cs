@@ -35,6 +35,7 @@ namespace Scrun
             if (sensor == null || frame == Time.frameCount) return;
             frame = Time.frameCount;
             avatar.Update(sensor.Current, sensor.Phone == SensorFlow.Ok);
+            RunLink.SpeedUnsteady = avatar.Unsteady; // 앱 HUD의 I-03 띠(계획 0039)
         }
 
         void OnEnable()

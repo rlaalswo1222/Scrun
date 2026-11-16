@@ -67,6 +67,14 @@ namespace Scrun.App
         RunHudView hud;
         RunEndView endView;
         RunRecordUploader uploader;
+        RunMeasureWatch measure;     // 측정 끊김·이상·발열(계획 0039)
+        bool lastUnsteady;           // I-03 띠가 바뀐 순간만 기록
+        double deviceReadAt = double.NegativeInfinity; // 발열·배터리는 자주 안 바뀌어 몇 초마다만(아이폰에선 네이티브 호출, 리뷰)
+        ThermalLevel thermal = ThermalLevel.Nominal;
+        float battery = -1f;
+        bool charging, deviceWarned;
+        const double DeviceReadSec = 5;
+        bool goalPending;            // 다른 패널이 떠 있는 동안 목표에 닿음 → 닫히면 D-19
         IVisualElementScheduledItem runTick;
         Button topButton;
         CancellationTokenSource runUpload; // 맵을 나가면 달리는 동안의 묶음 올리기를 그만둠(끝낸 기록 보내기는 끝까지)
@@ -356,6 +364,10 @@ namespace Scrun.App
             v.CloseGoal += HideEnd;
             v.Verify += () => onExit?.Invoke(MapExit.VerifyConsole, null);
             v.SkipVerify += SkipVerify;
+            v.LostPause += () => { measure?.DismissLost(); OpenPause(); };
+            v.LostRetry += RetryMeasure;
+            v.HeatContinue += HideEnd;
+            v.HeatLower += () => { if (!(RunLink.LowerQuality?.Invoke() ?? false)) Debug.Log("[품질] 더 낮출 수 없음"); HideEnd(); };
             endView = v;
             return v;
         }
@@ -400,6 +412,8 @@ namespace Scrun.App
                 case RunEndPanel.Confirm: endView.ShowPause(session.DistanceM(RunLink.PlayerDistanceM), session.ElapsedSec); break;
                 case RunEndPanel.Pause: ResumeRun(); break;
                 case RunEndPanel.Goal: HideEnd(); break;
+                case RunEndPanel.MeasureLost: measure?.DismissLost(); OpenPause(); break; // "일시정지"와 같게
+                case RunEndPanel.Heat: HideEnd(); break;                                  // "계속 달리기"와 같게
             }
         }
 
@@ -408,9 +422,100 @@ namespace Scrun.App
         {
             if (leaving || session == null || !session.Started || session.Finished) return;
             session.Update(RunLink.PlayerSpeedKmh);
-            if (session.CheckGoalReached(RunLink.PlayerDistanceM))
+            var shown = endView?.Shown ?? RunEndPanel.None;
+            if (session.CheckGoalReached(RunLink.PlayerDistanceM)) goalPending = true;
+            if (goalPending && shown == RunEndPanel.None)
+            {
+                goalPending = false;
                 ShowEnd(v => v.ShowGoal(session.Goal, session.ElapsedSec)); // 달리기는 그대로(아바타·시간 계속)
+                shown = RunEndPanel.Goal;
+            }
+            WatchMeasure(shown);
             if (uploader != null && runUpload != null) uploader.StartUploadDue(runUpload.Token);
+        }
+
+        // 측정 끊김(D-15)·에어팟만 끊김(알림)·측정값 이상(I-03 띠)·배터리·발열(I-12). 패널이 떠 있으면 새로 띄우지 않음
+        void WatchMeasure(RunEndPanel shown)
+        {
+            if (measure == null) return;
+            // "계속 달리기" 뒤 걸음을 기다리는 동안(Resuming)도 달리는 중으로: 폰이 끊긴 채 계속을 누르면 아바타가 못 움직여
+            // Resuming에 머무는데, 그때도 D-15가 떠야 함(리뷰)
+            bool running = (session.Phase == RunPhase.Running || session.Phase == RunPhase.Resuming) && shown == RunEndPanel.None;
+            var i = new MeasureInputs { Running = running, Unsteady = RunLink.SpeedUnsteady };
+            try
+            {
+                var sensor = Native.Speed;
+                i.Phone = sensor.Phone;
+                i.AirPods = sensor.AirPods;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[측정] 센서 상태를 못 읽음: " + e.Message);
+                return;
+            }
+            ReadDevice(); // 따로: 발열을 못 읽어도 D-15 감지는 계속(리뷰)
+            i.Thermal = thermal;
+            i.Battery = battery;
+            i.Charging = charging;
+
+            var c = measure.Update(i);
+            if (c.HideLost && shown == RunEndPanel.MeasureLost) HideEnd();
+            if (c.ShowLost) ShowEnd(v => v.ShowMeasureLost());
+            if (c.AirPodsDropped) hud?.Notice(RunEndText.AirPodsDropped);
+            bool canLower = RunLink.CanLowerQuality?.Invoke() ?? false;
+            if (c.AskHeat) ShowEnd(v => v.ShowHeat(canLower));
+            hud?.SetUnsteady(measure.Unsteady);
+
+            // 헬스장 뒤 문턱 조정 근거(계획 0039 4번): 개발 빌드 Documents/run-log/measure-events.csv
+            double t = session.ElapsedSec;
+            if (c.ShowLost) RunEventLog.Write("측정끊김", t, "");
+            if (c.HideLost) RunEventLog.Write("측정복구", t, "");
+            if (c.AirPodsDropped) RunEventLog.Write("에어팟끊김", t, "");
+            if (c.AskHeat) RunEventLog.Write("발열배터리", t, $"{thermal} {battery:0.00} {(charging ? "충전" : "")}");
+            if (measure.Unsteady != lastUnsteady)
+            {
+                lastUnsteady = measure.Unsteady;
+                RunEventLog.Write(lastUnsteady ? "측정이상시작" : "측정이상끝", t, $"{RunLink.PlayerSpeedKmh:0.0}");
+            }
+        }
+
+        void ReadDevice()
+        {
+            double now = RealtimeClock.Now();
+            if (now - deviceReadAt < DeviceReadSec) return;
+            deviceReadAt = now;
+            try
+            {
+                var dev = Native.Device;
+                thermal = dev.Thermal;
+                battery = dev.BatteryLevel;
+                charging = dev.Charging;
+            }
+            catch (Exception e)
+            {
+                if (!deviceWarned) Debug.LogWarning("[측정] 발열·배터리를 못 읽음(이번 달리기엔 안 물음): " + e.Message);
+                deviceWarned = true;
+                thermal = ThermalLevel.Nominal;
+                battery = -1f;
+            }
+        }
+
+        // D-15 "다시 측정": 센서를 껐다 켬(#49 I-01 "다시 시도"와 같은 방식). 섬 쪽이 켠 센서라도 켜 둔 채로 끝나 "켠 쪽이 끈다"를 안 깸.
+        // 카드는 폰 데이터가 다시 들어오면 저절로 닫힘
+        void RetryMeasure()
+        {
+            measure?.SensorRestarted();
+            RunEventLog.Write("다시측정", session?.ElapsedSec ?? 0, "");
+            try
+            {
+                var sensor = Native.Speed;
+                sensor.Stop();
+                sensor.Start();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[측정] 센서를 다시 켜지 못함: " + e.Message);
+            }
         }
 
         // D-18 "종료하고 인증" · D-19 "마무리하기" → D-22, 뒤에서 서버에 남은 묶음 + 종료
@@ -523,6 +628,12 @@ namespace Scrun.App
             runUpload?.Dispose();
             runUpload = new CancellationTokenSource();
             uploader = new RunRecordUploader(session, mapInstanceId, userId: RunRecordUploader.TokenSubject(Api.Session.AccessToken));
+            measure = new RunMeasureWatch();
+            goalPending = false;
+            lastUnsteady = false;
+            deviceReadAt = double.NegativeInfinity;
+            deviceWarned = false;
+            RunEventLog.Begin(session.ClientRunId);
             SetTopButtonPause(true);
             runTick ??= Root.schedule.Execute(RunTick).Every(RunTickMs);
             runTick.Resume();

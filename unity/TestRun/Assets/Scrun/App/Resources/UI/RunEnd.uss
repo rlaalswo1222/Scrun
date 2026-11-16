@@ -166,6 +166,18 @@
     background-color: var(--color-surface);
 }
 
+/* ---- D-15·I-12 경고(Figma 주황 원 #FFB020) ---- */
+.end-warn-icon {
+    background-color: #FFB020;
+}
+
+.course .end-warn-mark {
+    font-size: 26px;
+    color: var(--color-surface);
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
 /* ---- D-19 목표 달성 ---- */
 .end-goal {
     align-items: center;

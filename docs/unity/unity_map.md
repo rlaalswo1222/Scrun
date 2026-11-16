@@ -260,6 +260,7 @@
   - `RunSession`: 일시정지면 `RunLink.Moving` 꺼짐(아바타·남의 화면 멈춤), "계속"은 아바타가 1 km/h 이상이 되면(걸음 다시 잡힘) 시간이 다시 흐름. 시간은 달린 시간만, 시계열은 달린 시간 1초마다(일시정지 구간 빼고 이어 붙임)
   - `RunRecordUploader`: 1분 묶음 `PUT samples`, 끝나면 남은 묶음 + `POST finish`(runId가 없으면 시작부터). 끝내 못 보냈거나 로그인 만료·429면 `PendingRunStore`(앱 데이터 `pending-runs.json`, 계정별)에 남기고 홈(`HomeScreen.OnShow`)에서 다시 보냄. D-22 "계기판 촬영하기"는 상세가 `MapScreen.FinishedRunId`로 인증 화면(지환 E-02)을 열 자리(지금은 임시 안내창)
   - 에디터에서 서버 주소를 잠깐 바꿀 땐 EditorPrefs뿐 아니라 `ApiConfig.BaseUrl`도(에디터 켤 때 한 번 읽음). UXML 주석에 `--`를 쓰면 XML 오류로 화면 전체가 안 불림
+- **러닝 중 측정 예외**(11/17, 계획 0039, Figma D-15·I-03·I-12): `MapScreen`이 0.2초마다 `RunMeasureWatch`에 넘김 → D-15 측정 중단(폰 센서 끊김, 데이터가 다시 오면 저절로 닫힘, 다시 측정 = 센서 껐다 켬, 시간은 흐름), 에어팟만 끊기면 HUD 알림, I-03 띠(`AvatarSpeed.Unsteady` → `RunLink.SpeedUnsteady`: 25 km/h 넘음·5 km/h 넘는 튐 2초 미만이면 직전 속도), I-12 배터리·발열(`Native.Device`: 발열 Swift `device.thermal`, 배터리 Unity, 달리기마다 한 번, 품질 낮추기 = `RunLink.LowerQuality` → `ScrunQuality.LowerOneStep`). 기록은 `RunEventLog`(개발 빌드 `Documents/run-log/measure-events.csv`). 에디터는 Fake Native 창 "속도 센서"·"폰 상태"로
 - **아래 탭 바**(11/10, UI Kit Tab Bar): 아이콘 24 + 글자 12, 홈·친구·기록·마이 순서, 고른 탭은 파란 아이콘(`tab-*-on.svg`)·굵은 글자. 탭 버튼 이름(`tab-home` 등)은 그대로라 `Navigator`는 안 바뀜
 - 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
 

@@ -8,7 +8,7 @@ namespace Scrun.App
     // 아이폰 진짜 구현. 실제 일은 Swift(Assets/Plugins/iOS/Scrun*.swift)가 하고, 여기서는 이름·JSON만 오간다.
     // 통로(INativeChannel)만 바꿔 끼우면 에디터 테스트에서도 같은 코드가 돈다(IosNativeTests).
     // 이름·값 문자열은 Swift ScrunBridge.swift와 짝이다. 바꾸면 양쪽을 같이 고친다.
-    internal sealed class IosNative : IPermissions, IHeadphones, ISecureStore, IKakaoLogin, ICamera
+    internal sealed class IosNative : IPermissions, IHeadphones, ISecureStore, IKakaoLogin, ICamera, IDeviceStatus
     {
         readonly NativeBridge bridge;
 
@@ -71,6 +71,19 @@ namespace Scrun.App
         public string DeviceName => (string)HeadphonesNow()["name"];
 
         JToken HeadphonesNow() => bridge.Query("headphones.status");
+
+        // ---- 폰 상태(계획 0039): 발열은 Swift ProcessInfo.thermalState, 배터리는 Unity ----
+        public ThermalLevel Thermal => ParseThermal((string)bridge.Query("device.thermal"));
+        public float BatteryLevel => UnityBattery.Level;
+        public bool Charging => UnityBattery.Charging;
+
+        internal static ThermalLevel ParseThermal(string s) => s switch
+        {
+            "fair" => ThermalLevel.Fair,
+            "serious" => ThermalLevel.Serious,
+            "critical" => ThermalLevel.Critical,
+            _ => ThermalLevel.Nominal,
+        };
 
         // ---- ISecureStore (키체인) ----
 
