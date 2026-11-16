@@ -2,10 +2,7 @@
 
 - 상태: **머지(11/16 #48) · 에디터 앱 흐름 확인 끝, 아이폰·러닝머신 확인 남음** (2026-11-12 민재 승인: 정할 것 1 (가) 3 km/h 출발, 2 1.2초, 3 `RunnerAnimator` 안 건드림. S4를 미리 함, 11/14 시연 전 머지는 에디터 확인이 끝났을 때만)
 - **맥 할 일 (11/17 헬스장 빌드)**(Windows가 적고 맥이 읽음. 사용자는 맥에 "0034 맥 할 일 해 줘". 끝낸 줄은 지우고 결과는 아래 "진행"에 맥 줄로. **1–4가 급함**: 민재가 이 빌드를 들고 헬스장에 감)
-  1. `git fetch` → **빌드는 `git checkout fix/dev-recalibrate`**(develop 422b441 + 개발 빌드 마이 탭 "보정 다시 하기" 버튼 하나. 이미 보정이 서버에 있는 계정도 헬스장에서 처음 보정부터 하려고). 이 할 일 목록은 `git show origin/docs/deploy-1112b:docs/plans/0034-avatar-stop.md`로 읽음. 맥에서 커밋하지 말 것 목록은 `handoff/minjae.md` "환경 메모 → 맥"
-  2. **Y Bot FBX 확인**: `unity/TestRun/Assets/Scrun/Characters/YBot/`에 `Y Bot@*.fbx` 7개가 없으면 아이폰 빌드에 캐릭터가 빠짐(11/13 맥 빌드가 그랬음). Unity를 **열기 전에** 채움: 민재가 Windows에서 보낸 `ybot_fbx.zip`이 있으면 그 폴더에 풀기(Windows가 만든 파일이라 클립 지문 `YBotRunner.clips.txt`와 같음), 없으면 루트 `README.md` "처음 받았을 때" 3번(mixamo.com, 맥 Chrome). Unity가 지운 `.meta`는 `git checkout -- unity/TestRun/Assets/Scrun/Characters/YBot`
-  3. Unity → Scrun → Reimport Mixamo Characters → Build Island Scene. 콘솔에 `[Scrun] 클립 없음`·`클립이 … 다름`이 없는지 확인(있으면 2번 다시). 씬 파일 변경은 커밋 안 함
-  4. **개발 빌드**로 아이폰 설치(`docs/unity/unity_map.md` "아이폰에 설치" ⑤–⑦, 메뉴 Xcode 만들기(아이폰, 개발)). 개발 빌드여야 HUD 오른쪽 아래 속도와 `Documents/run-log/`(`avatar-delays.csv`·`measure-events.csv`)가 생김. 이 빌드에 0039 Swift `device.thermal`이 들어가므로 **0039 맥 할 일 1번(컴파일)도 여기서 같이 끝남** → 0039 "진행"에 맥 줄
+  (1–4는 11/17 맥에서 끝, 결과는 "진행"의 11/17 맥 줄)
   5. 설치 뒤 책상에서 5분: 앱 → 코스 → 맵 입장 → 섬에 캐릭터가 보이고, 폰을 손으로 두드리면(점검 화면 "속도 센서") 걸음이 잡히는지. 안 되면 콘솔 로그를 그대로 민재에게
   6. 헬스장에서 돌아오면: `xcrun devicectl device copy from --device <UDID> --domain-type appDataContainer --domain-identifier com.scrun.app --source Documents/run-log --destination data/gym/20261117-run-log/` 로 CSV 받기 → `data/gym/20261117-run-log/`에 두고(커밋은 Windows가 note와 같이) 결과 요약을 "진행"에 맥 줄로
   7. (헬스장 뒤, 급하지 않음) 0039 맥 할 일 2번(아이폰 발열·D-15·에어팟 알림), 0033 맥 할 일 Swift 8건 → `fix/camera-swift` PR
@@ -59,3 +56,8 @@
   - 가짜 센서 10 km/h → 0 → 6 km/h → 0: 에디터 아바타는 출발 0.8–0.9초(3 km/h로 가다 추정이 오면 그 속도), 멈춤 1.4–1.5초 뒤 0. 관찰자 쪽은 0.5초쯤 늦게 같은 흐름(states 0.5초 간격), 멈춘 동안 위치 고정(3177.27m, 3195.30m). 11/12의 "출발 약 30초 늦음"은 두 번 출발에서 재현 안 됨
   - 한계: 가짜 센서는 멈추면 추정도 바로 0이라, "추정은 남아 있는데 걸음만 멈춘" 진짜 센서 경우(1.2초 규칙만으로 멈춤)는 테스트·11/12 프로브로만 봄 → 아이폰에서
   - 콘솔(이 변경과 무관해 보임): 맵 불러오는 중 같이 뛰기 연결이 한 번 끊겼다 다시 붙음(같은 순간 MCP 연결도 끊김 → 섬 불러오기 중 에디터 멈춤, 가설), `[MapLaunch] 섬 쪽 입장 위치 적용 알림이 없음`, Y Bot 메시 경고
+- 11/17 민재 맥: 맥 할 일 1–4 끝(헬스장 빌드)
+  - 빌드는 `fix/dev-recalibrate` 4f84786(마이 탭 "보정 다시 하기" 들어감, 빌드 메타데이터에서 문구 확인). 처음엔 `docs/deploy-1112b`로 빌드했다가 Windows가 브랜치를 바꿔 다시 빌드. Y Bot FBX 7개는 11/13에 받아 둔 것(Mixamo, Breathing Idle만 스킨 포함·나머지 In Place, FBX for Unity 30 fps) 그대로 씀, `YBot` 폴더 `.meta`·지문 변경 0
+  - Reimport Mixamo Characters → Build Island Scene: `[Scrun] 클립 없음`·`클립이 … 다름` 없음(`EnsureBuilt` 직접 불러 확인: "있는 것 그대로, 가장 빠른 기준점 18.8 km/h"). 씬·조명 변경은 커밋 안 함
+  - Xcode 만들기(아이폰, 개발) → 개발 빌드(`boot.config`에 player-connection) → xcodebuild Debug **BUILD SUCCEEDED**(Swift 경고는 카카오 SDK library evolution 3줄뿐) → TEAM07의 iPhone(iPhone 13 mini, iOS 27.2.1)에 설치. 지환 아이폰(15 Pro Max)은 연결 안 됨
+  - 첫 실행이 "프로필을 신뢰하지 않음"으로 막힘(무료 팀 인증서를 다시 받아서, 가설) → 설정에서 다시 신뢰 → 실행됨
