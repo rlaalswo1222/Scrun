@@ -153,6 +153,12 @@ namespace Scrun.App.Editor
             cfg.detectDelaySec = EditorGUILayout.Slider("걸음 감지 지연(초)", cfg.detectDelaySec, 0f, 10f);
             if (!playing) cfg.startKmh = EditorGUILayout.Slider("켤 때 속도(km/h)", cfg.startKmh, 0f, 20f);
 
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("폰 상태 (I-12)", EditorStyles.boldLabel);
+            cfg.thermal = (ThermalLevel)EditorGUILayout.EnumPopup("발열", cfg.thermal);
+            cfg.batteryLevel = EditorGUILayout.Slider("배터리", cfg.batteryLevel, 0f, 1f);
+            cfg.charging = EditorGUILayout.Toggle("충전 중", cfg.charging);
+
             if (EditorGUI.EndChangeCheck())
             {
                 SaveConfig();
