@@ -21,6 +21,34 @@ public static class RunnerAnimatorBuilder
     // 가장 빠른 동작의 기준점(km/h). 이보다 빠르면 RunnerAnimator가 재생 속도를 올림
     public static float TopSpeedKmh { get; private set; }
 
+    // 씬 만들기 메뉴(Build Island·TestTrack·Course Scene)가 부른다. 컨트롤러가 이미 있으면 그대로 쓴다(계획 0036):
+    // 다시 재면 컴퓨터마다 기준점이 달리 나와(11/16 맥: 걷기 3.5 → 5.0) 커밋된 발 속도 표(RunnerGait.asset, 계획 0027)와 어긋남.
+    // 없을 때(처음 받은 컴퓨터에서 지웠거나 Y Bot을 바꿈)만 새로 잰다. 기준점을 다시 재려면 메뉴 Build Runner Animator
+    public static AnimatorController EnsureBuilt()
+    {
+        var existing = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
+        if (existing != null && TryTopThreshold(existing, out float top))
+        {
+            TopSpeedKmh = top;
+            Debug.Log($"[Scrun] 러너 블렌드 트리: 있는 것 그대로({ControllerPath}, 가장 빠른 기준점 {top:0.0} km/h). 다시 재려면 Scrun → Build Runner Animator");
+            return existing;
+        }
+        return Build();
+    }
+
+    // 블렌드 트리의 가장 큰 기준점. 1D 블렌드 트리가 없으면 false(→ 새로 만듦)
+    static bool TryTopThreshold(AnimatorController ctrl, out float top)
+    {
+        top = 0f;
+        foreach (var layer in ctrl.layers)
+            foreach (var st in layer.stateMachine.states)
+                if (st.state.motion is BlendTree tree)
+                    foreach (var child in tree.children)
+                        top = Mathf.Max(top, child.threshold);
+        return top > 0f;
+    }
+
+    // 클립을 다시 재서 컨트롤러를 새로 만든다(있던 것은 지움). 기준점이 바뀌면 발 속도 표도 다시 재야 함
     [MenuItem("Scrun/Build Runner Animator")]
     public static AnimatorController Build()
     {
