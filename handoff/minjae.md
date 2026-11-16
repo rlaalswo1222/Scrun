@@ -2,12 +2,11 @@
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만 하고 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/api/README.md`·`realtime.md`, `docs/adr/`, `docs/plans/`)에 있다. 옛 전체본: `docs/log/HANDOFF_minjae_20261110.md`(11/10 정리 전), `_20261109.md`, `_20261107.md`, `_20261106.md`
 
-## 지금 (11/16, S5 시작일. develop·오라클 서버 둘 다 e14a16b)
-- **develop에 합친 것(11/11–12)**: #39 아바타 발 속도(지환 0027), #40 같이 뛰기 기본(0029), #41·#43 문서, #42 에디터 흐름, #44 스플래시(0030), #45 온보딩 A-02–A-19(0031), #47 지환 내 정보·설정 API DB 연결(0028, 11/12 머지·오라클 배포)
+## 지금 (11/16, S5 시작일. develop 53316fe, 오라클 서버 e14a16b — 그 뒤는 Unity만 바뀌어 배포 불필요)
+- **develop에 합친 것(11/11–16)**: #39 아바타 발 속도(지환 0027), #40 같이 뛰기 기본(0029), #41·#43 문서, #42 에디터 흐름, #44 스플래시(0030), #45 온보딩 A-02–A-19(0031), #47 지환 내 정보·설정 API DB 연결(0028, 11/12 머지·오라클 배포), **#48 멈추면 아바타도 멈춤(0034, 11/16 머지)** — 머지 전 에디터 앱 흐름 확인: 관찰용 가짜 계정 화면에서도 내 아바타가 멈춘 뒤 약 2초 안에 0·위치 고정(결과는 0034 "진행"). 아이폰·러닝머신 5번씩은 헬스장에서
 - **열린 PR**
   - **#46** 이 인수인계(docs/deploy-1112b). "머지해"면 머지
-  - **#48** 멈추면 아바타도 멈춤(BL-13, 계획 0034, `feat/avatar-stop`): `App/Run/AvatarSpeed.cs` — 걸음이 1.2초 없으면 부드럽게 0, 걸음 2개 이어지면 출발(추정 전 3 km/h, 짧게 멈춰 추정기가 옛 값을 들고 있으면 3초 뒤부터 추정), 215 spm 넘는 "걸음"(벨트 진동)·폰 끊김은 멈춤, 지연 CSV. EditMode 262 통과, `/code-review` 9건 반영. **머지 전**: 앱 흐름 전체(맵 입장 → 카운트다운 → 달리기)에서 다른 러너 화면에도 같이 멈추는지(에디터 + 로컬 서버, Claude가 할 수 있음). 첫 프로브에서 출발 판정이 약 30초 늦은 적 한 번(재현 안 됨, 원인 미확인)
-  - **#49** 지환 센서 준비·달림 인식·카운트다운(BL-10·11, 계획 0035) — 11/16 올라옴, **민재 리뷰 대기**. #48과 같은 `NativeSpeedSource`·카운트다운 이음매(`MapScreen.StartRunning`)를 건드리는지 확인
+  - **#49** 지환 센서 준비·달림 인식·카운트다운(BL-10·11, 계획 0035) — **11/16 민재 리뷰 코멘트 올림, 지환 수정 대기**. 머지 전 고칠 것 3개: ① 아이폰에서 D-07·I-01 나갈 길 없음(X 없음, `OnBack`은 Escape뿐) ② `MapScreen.CalibrationNow`가 bool로 실패 이유를 짐작(404·응답 못 읽음 → 끝없는 다시 시도, 로그인 바뀜 → 보정 있는 사람을 A-11로) ③ 출발 판단이 #48과 다름(걸음 1개 vs 2개, 벨트 진동 215 spm 거르기 없음) → develop(#48) 받아 `AvatarSpeed`와 같은 판단 쓰기. 그 밖 5개(폰 5초 기준점, 에어팟 구독 시점, 흐림 다시 만들기, 4xx 다시 보냄, 간격표 두 벌). 지환이 고치면 다시 리뷰
 - **브랜치(PR 전)**: `feat/camera-exposure` 계기판 촬영 카메라(BL-16 Swift, 지환 S3 줄을 11/12 민재가 가져옴, 계획 0033·ADR-0011: E-03은 Swift 화면, 셔터 한 번에 0·−1.5·−3 EV 브래킷 3장, C# `Native.Camera.ShootAsync`·에디터 가짜 카메라·점검 화면 버튼, `CameraTests` 19개). **11/13 맥 확인 끝**: 컴파일 오류 0, 아이폰 13 mini(iOS 27.2.1)에서 미리보기·가이드·시간 초과·X·셔터 → 3장(4032×3024, 한 번에 6.6–8.0 MB), 셔터 상한 1/60초 지킴. 남은 것: 실제 계기판(LED) 브래킷 → OCR 비교, `/code-review` → PR
 - **로컬에만(커밋 안 함)**: 계획 0032 홈 B-01–B-04(로컬 브랜치 `feat/home-figma`, 정할 것 5개 답 대기, 홈은 지환 담당이라 누가 할지부터), `docs/meeting/midterm_feedback.md`(중간발표 피드백 적용 정리), `docs/meeting/20261114_미팅자료.html`·`.pdf`(11/14 교수님 미팅 민재 파트)
 - **11/14 교수님 미팅 자료**(민재 파트 6쪽, 상준은 4번 아바타·디자인을 따로): 진행 → 남은 계획(S5–S8, 안정화에 사용성·부하 테스트·성능 개선) → 피드백 반영 3-1 서비스(그룹런·응원·에어팟 공간 음향 / 고스트·인증 기록만 비교 / 아바타 반영·시점) · 3-2 측정 수단 · 3-3 다른 조건 검증(추후 결정). 원문 인용 → 반영 형식. HTML 고친 뒤 PDF는 headless Chrome으로(아래 요령). **미팅 결과는 아직 안 적음**
@@ -20,8 +19,8 @@
 - 계획 번호: 0032(민재 홈, 로컬), 0033(카메라), 0034(아바타 멈춤), 0035(지환 #49) → 다음은 pull 뒤 0036부터
 
 ## 다음 (S5 11/16–11/17: 민재는 달리기 화면 완성 BL-12·14 + runs API)
-1. **#49 리뷰**(지환) → #48과 겹치는 곳 맞추기 → 둘 다 머지 순서 정하기
-2. **#48 머지 전 앱 흐름 확인**(에디터 + 로컬 8001 서버 + 가짜 러너), 머지 뒤 오라클 배포는 서버 변경 없어 불필요
+1. **#49 다시 리뷰**: 지환이 위 3개를 고쳐 올리면. 에디터 앱 흐름은 이번처럼(관찰자 스크립트는 아래 요령)
+2. (끝남 11/16) #48 앱 흐름 확인·머지
 3. **S5 본 일**: 달리기 화면 완성(HUD·일시정지·종료·목표 달성, BL-12·14) + `POST /runs` 등 runs API를 DB와 연결 — 계획 문서부터(0036)
 4. **카메라**: 실제 계기판(헬스장 LED 또는 LED 시계) 브래킷 → `console_ocr.md` 방식 OCR 비교 / 서버 OCR로 올리기 전 가이드 영역 자르기·줄이기(브래킷 한 번 6.6–8.0 MB, 지환 BL-17과) / `/code-review` → PR
 5. **iOS 최소 버전**: 앱 최소 15.0인데 Xcode 27 빌드가 iOS 16에서 실행 직후 꺼진다는 포럼 보고(가설, 맥 11/13) → 최소 17로 올릴지 정하기. Xcode 27은 기기 실행을 iOS 17 이상만 지원
@@ -43,6 +42,7 @@
 - **로컬 HTML 보기·PDF**: Chrome 확장은 `file://`을 못 엶 → `.venv/Scripts/python -m http.server 8765 --bind 127.0.0.1`(백그라운드)로 띄워 확인, 끝나면 끄기. PDF는 `chrome.exe --headless=new --no-pdf-header-footer --allow-file-access-from-files --print-to-pdf=<pdf> file:///<html>`(HTML에 `@page{size:1280px 720px}`·`.slide{break-after:page}`). PDF 화면은 확장으로 캡처 안 됨 → `pypdf`로 쪽수·글자 확인. 이 PC엔 poppler·PyMuPDF 없음
 - **Figma 탭이 자주 멈춤**: 큰 `findAll`이면 45초 넘게 응답 없음 → 탭 다시 열고 프레임 하나씩 `children`만 읽기
 - **Unity 테스트**: 에디터가 Play 중이면 테스트 시작이 막힘(민재에게 묻고 `manage_editor stop`). `execute_code`는 CodeDom(C# 6)이라 `$"..."` 일부·`Object` 모호함 주의. Play 중 값 보기는 `EditorApplication.update` 콜백으로 모아 `AppDomain.SetData`에 두고 다음 호출에서 꺼냄
+- **다른 러너 화면 확인(11/16)**: `fake_runner.py`는 남의 상태를 안 찍음 → `scripts.fake_runner`의 `login`을 불러 0 km/h로 서서 `states`의 `v`·`d`를 실제 시각과 함께 찍는 작은 관찰 스크립트(backend 폴더에서 실행). 에디터 쪽은 `FakeSpeedSensor.Instance.SetTargetKmh`를 `EditorApplication.update` 콜백으로 시간표대로 바꾸며 `NativeSpeedSource.SpeedKmh`를 0.25초마다 기록 → 두 로그를 시각으로 맞춤. 앱 흐름은 `Nav.Push(new CourseDetailScreen("crs_lake_loop"))` → `enter` → `goal-next`·`mount-next`·`manual-next`(UXML에 `using`이 없어 `UQueryExtensions.Q<Button>(root, name, (string)null)`로)
 - **한글 컴퓨터 이름**: Mono가 `localhost`를 못 풀어 ClientWebSocket 실패 → 에디터 서버 주소는 `127.0.0.1`(코드 기본값·저장값 자동 변환)
 
 ## 팀원에게 전할 것
