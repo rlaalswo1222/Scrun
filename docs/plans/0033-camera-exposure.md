@@ -1,0 +1,61 @@
+# 계획 0033: 계기판 촬영용 카메라 — 노출 제어 Swift (BL-16 일부, S3 지환 → 민재)
+
+- 상태: **구현 중 · 맥 빌드·아이폰 기능 확인 끝(11/13), 실제 계기판 노출·OCR 시험 남음** (2026-11-12 민재 승인: 정할 것 1 (가), 2 브래킷 3장 → ADR-0011. 3은 옵션 값으로 두고 지환·상준이 정함)
+- **맥 할 일**(Windows가 적고 맥이 읽음. 맥은 `git pull --rebase` 뒤 위에서부터, 끝낸 줄은 지우고 결과는 아래 "진행"의 맥 줄에. 사용자는 맥에 "0033 맥 할 일 해 줘"만 침)
+  (11/13 맥: 컴파일·아이폰 확인·사진 받기 끝, 결과는 "진행"의 11/13 맥 줄)
+  - **11/16 `/code-review` Swift 8건**(PR 전 리뷰, C#·줄바꿈은 Windows에서 고쳐 PR, 이건 맥에서 고치고 컴파일·아이폰 확인 → 새 브랜치 `fix/camera-swift` PR). `ScrunCamera.swift`:
+    1. 띄우는 중에 닫기: `engine.start` 실패·`RuntimeError`가 present 애니메이션(약 0.3초) 중이면 `dismiss`가 무시돼 `finish`가 안 불림 → `current`가 안 지워져 C# `ShootAsync`가 영원히 기다리고 다음 촬영은 "이미 떠 있습니다". present 완료 뒤에 닫거나, 닫기 실패해도 `finish`는 꼭
+    2. present 실패: `current = vc`를 present 전에 두고 성공을 확인 안 함(위 창이 사라지는 중이거나 이미 무언가 띄우는 중) → 같은 영원히 기다림. present 완료 콜백에서 확인, 안 떴으면 `unavailable`로 끝내고 `current` 비우기
+    3. 권한 묻는 동안 두 번 부름: 둘 다 `current == nil`을 통과 → 두 번째가 `unavailable`("카메라 없음"). ICamera 약속대로 두 번째는 오류(NativeException)로
+    4. 중단: `AVCaptureSessionWasInterrupted`·`InterruptionEnded`를 안 봄 → 전화·다른 앱이 카메라를 쓰면 검은 미리보기로 시간 초과(TimedOut). 중단이면 셔터 막고 안내, 길면 `unavailable`
+    5. 노출 하나만 주면(`ExposureBiases = {-2}`) 아이폰은 자동 노출 한 장·`fallbackBias: 0` — 에디터 가짜는 -2를 씀. 한 장도 요청한 노출로(`AVCapturePhotoBracketSettings` 1장 또는 `setExposureTargetBias` 뒤 찍기)
+    6. 정렬: 같은 브래킷 사진은 `sequenceCount`가 같음 → 브래킷 안 순서는 `photo.photoCount`로 정렬(파일 -0·-1·-2와 `photos`가 요청한 노출 순서 0·−1.5·−3을 지키게)
+    7. 6.6–8.0 MB JPEG 쓰기(`.atomic`)를 메인 스레드에서 → 셔터 직후 끊김. 쓰기는 캡처·백그라운드 큐에서, `close`만 메인
+    8. 셔터 상한 1/60초(`activeMaxExposureDuration`)를 `startRunning` 전에 한 번만 → 세션·프리셋이 형식을 다시 적용하면 풀림. `startRunning` 뒤(그리고 `AVCaptureSessionDidStartRunning` 알림에서) 다시 설정, 어두운 곳에서 1/60초 넘지 않는지 확인(11/13 노트북 화면은 밝아 1/120초라 못 잡았음)
+- 담당: 민재(11/12 지환 S3 줄 "카메라 노출 제어 Swift"를 가져옴 → 지환에게 알림, 0017 표 고치기). 촬영 화면 E-02·E-04와 OCR·인증(BL-16 화면·17·18)은 지환 S4 그대로, 모양은 상준
+- 기준: 공개 백로그 BL-16 ①–⑥, `docs/product/console_ocr.md`(10/29 첫 시험: **병목은 인식기보다 노출**, LED가 하얗게 타고 꺼진 획이 비침), Figma E-02(607:1115)·E-03(607:1174)·E-04(607:1216) 노트, ADR-0009(네이티브 통로), OCR은 서버에서(BL-17 ①, 11/06 확정)
+
+## Figma E-03이 요구하는 것
+- 앱 카메라만(갤러리 없음), 어두운 전체 화면에 **미리보기 + 겹친 UI**: 왼쪽 위 X, 위 "남은 시간 0:45", 점선 가이드 프레임과 "계기판이 이 안에 들어오게", "숫자가 선명하게 보이도록 맞춰 주세요", 셔터. 시간 초과 → E-10, 찍으면 → E-04 확인(다시 찍기 가능)
+- 시뮬레이터엔 카메라가 없음 → **아이폰 실기기(케이블 페어링)가 있어야 확인 가능**
+
+## 하는 것
+1. Swift `ScrunCamera.swift`: `AVCaptureSession`(후면 광각, 사진), 미리보기, 찍기
+   - **노출**: 계기판 LED가 타지 않게 낮게. 한 번 누르면 **브래킷 3장**(자동 / −1.5 EV / −3 EV 근처, `AVCapturePhotoBracketSettings`) — 7세그먼트 LED는 어두운 장, LCD·터치스크린은 자동 장이 맞을 것(가설) → 서버 OCR이 고름. 가이드 프레임 가운데에 초점·노출 기준점, 셔터 1/60초보다 빠르게(LED 깜빡임·손떨림, 가설). 수치는 첫 실기기 시험으로 정함
+   - 사진은 앱 임시 폴더에 JPEG로 쓰고 경로만 C#에 돌려줌(사진 바이트를 통로에 안 태움). 화면을 떠나면 지움(사진은 서버 OCR 직후 폐기 원칙과 같은 방향)
+2. C# `Native.Camera`: `Open`·`Capture` → 파일 경로 3개·`Close`, 권한 없음·카메라 없음 실패. 에디터는 가짜(예시 사진 3장, 지연) → 지환이 E-03 → E-04 흐름을 에디터에서 만들 수 있게. ADR-0009 통로(`scrun_call`) 그대로
+3. 미리보기를 그리는 방법(정할 것 1)
+4. 확인용 시험 화면(점검 화면 `NativeCheck`에 "카메라" 줄) — 지환의 진짜 E-03 전에 실기기에서 노출만 먼저 시험
+
+## 정할 것
+1. **미리보기를 어디서 그릴지**(새 기술 → 고르면 ADR-0011):
+   - (가) **E-03만 Swift 화면**(`UIViewController`를 Unity 위에 띄움, 겹친 UI도 Swift). 미리보기가 가장 매끄럽고 노출 제어와 한곳. 대신 E-03 한 화면은 UXML·USS가 아니라 Swift라 상준 UI Kit 값을 Swift에 옮겨야 하고, 지환은 E-02 → `Native.Camera.Shoot()` → 결과 경로 → E-04만 함 **(추천: 단순하고 실패할 곳이 적음, 아이폰 카메라 앱들이 흔히 쓰는 구조. E-03 UI는 작음)**
+   - (나) **미리보기 프레임을 Unity 텍스처로**(Swift가 Metal 텍스처를 넘기고 UI Toolkit `Image`에 그림, 겹친 UI는 UXML). 화면 전부 UI Toolkit으로 통일. 대신 Metal·텍스처 수명·회전·프레임마다 넘기기를 새로 만들어야 하고 실기기 전엔 확인 불가 → S4 안에 끝낼 위험
+   - (다) 미리보기를 Unity 화면 **뒤에** 깔고 Unity를 투명하게 — 섬 렌더링 설정까지 건드려 빼는 게 좋음
+2. **브래킷 3장 vs 1장**: 3장(추천: 노출이 병목이었고 기종마다 맞는 노출이 다름) vs 낮은 노출 1장(올리는 데이터 적음). 서버 OCR(지환 BL-17)과 "사진 여러 장 받기"를 맞춰야 함
+3. **남은 시간**: Figma 0:45, 백로그 Q-02 미정 → 지환·상준이 정함(Swift 화면이면 값만 받음)
+
+## 확인 (끝났다고 볼 기준)
+- 에디터: 가짜 카메라로 `Shoot` → 경로 3개, 권한 거부·취소·시간 초과 각각 실패 값, EditMode 테스트
+- 아이폰(케이블 페어링 뒤): 헬스장 계기판(또는 집 LED 시계)을 브래킷으로 찍어 `console_ocr.md`의 Tesseract 7seg 방식으로 다시 읽음 → 10/29(10칸 중 5칸)보다 나아지는지. 사진은 저장소에 안 올림(유리에 사람이 비침), 결과만 `console_ocr.md`에
+- 미리보기 30fps 이상 끊김 없음, 화면을 나가면 카메라 꺼짐(초록 점 사라짐), 다시 들어와도 됨
+
+## 순서
+11/14(토) 교수 미팅·시연과 겹치지 않음(시연 범위에 촬영 없음). Windows에서 C#·가짜·Swift 초안 → 맥에서 빌드 → 아이폰(케이블 필요)
+
+## 진행
+- 11/12 민재 Windows: BL-16·Figma E-02–E-05 읽음, 계획 작성 → 승인 뒤 구현(`feat/camera-exposure`)
+  - Swift `ScrunCamera.swift`: E-03 화면(미리보기 둥근 칸·점선 가이드 + 태그·남은 시간·X·안내·셔터, 색은 UI Kit ink·sky/700), 세션은 `ScrunCaptureEngine`(자기 큐), 브래킷 `AVCapturePhotoBracketSettings`(기기 최대 장수까지, 못 하면 자동 한 장), 노출 기준점 = 가이드 가운데, 셔터 상한 1/60초(`activeMaxExposureDuration`), JPEG를 `tmp/scrun-camera/`에, 1시간 지난 것 정리, 지우기는 그 폴더 안만. 권한은 `ScrunPermissions.request(.camera)`(안 물어봤으면 팝업). 브리지 `camera.shoot`(call)·`camera.discard`(query)
+  - C#: `ICamera`·`CameraShot`·`CameraShootOptions`(`Native/Camera.cs`), `IosNative`, 에디터 가짜 `FakeCamera`(권한은 가짜 권한 그대로, 결과·지연은 Fake Native 창, 찍음이면 노출만 다른 설명용 그림 JPEG), 점검 화면 "계기판 카메라"(사진을 Documents/camera-check로 옮김)
+  - 테스트: `CameraTests` 새로(이름·JSON 모양, 결과 5종, 사진 없는 찍음·모르는 결과 = 오류, 지우기, 가짜 권한·결과·폴더 밖 안 지움·동시 호출)
+  - Figma E-03 세부 수치는 탭이 멈춰 못 읽음 → 화면 캡처와 UI Kit 값으로 그림, 상준이 나란히 놓고 다듬기
+- 11/13 민재 맥: 맥 할 일 끝(컴파일·아이폰 확인·사진 받기)
+  - Swift 타입 검사(iOS 17 대상, 플러그인 전체 + 카카오 대역): 오류 0·경고 0
+  - Unity "Xcode 만들기 (아이폰, 개발)" → Info.plist에 `NSCameraUsageDescription` 들어감, `xcodebuild`(generic iOS, Debug) **BUILD SUCCEEDED**. `ScrunCamera.swift`·`ScrunBridge.swift` 오류·경고 0. 나머지 경고는 원래 있던 것(Unity libc++ 448, 카카오 SDK library evolution 12, Unity 트램펄린 deprecated)
+  - 기기: 새로 쓰는 iPhone 13 mini(TEAM07)가 iOS 16.2였는데 **Xcode 27은 기기 실행·디버그를 iOS 17 이상만 지원**(Xcode 27.1 릴리스 노트) → 맥이 "페어링 지원 안 함"으로 봄. iOS 27.2.1로 올리고 페어링·개발자 모드·개발자 앱 신뢰 뒤 설치
+  - **Windows에 넘길 것**: 앱 최소 iOS가 15.0인데 Xcode 27로 빌드한 앱이 iOS 16에서 실행하자마자 꺼진다는 포럼 보고가 있음(가설, 확인 안 함, developer.apple.com/forums/thread/847531). 출시 전에 최소 버전을 17로 올릴지, iOS 15·16 기기로 확인할지 정하기
+  - 아이폰(iPhone 13 mini, iOS 27.2.1) 점검 화면 "계기판 카메라": 미리보기 끊김 없음, 남은 시간 줄어듦, 점선 가이드·X·셔터 보임, 나간 뒤 초록 점 사라짐(사용자 확인). 결과 값: 시간 초과 → `TimedOut`, X → `Cancelled`, 셔터 2번 → 2번 다 **3장**(4032×3024, 장당 1.8–3.1 MB, 한 번에 6.6–8.0 MB). `[ScrunCamera]` 오류 로그 없음
+  - EXIF: 0 EV 1/120초·ISO 100–125, −1.5 EV 1/120초·ISO 32–40(계산 −1.6 EV), −3 EV 1/473–1/407초·ISO 50(계산 −3.0 EV). 셔터 상한 1/60초 지킴
+  - **노출이 맞는지는 아직 모름**: 이번엔 헬스장이 아니라 인터넷 계기판 사진을 띄운 노트북 화면을 찍음(스스로 빛나는 화면이라 LED와 다름) → OCR 비교에 쓰지 않음. 실제 계기판(또는 LED 시계) 브래킷 → `console_ocr.md` 방식 OCR은 남음
+  - Windows에 넘길 것(추가): 브래킷 한 번이 6.6–8.0 MB라 서버 OCR로 올리기 전에 가이드 영역 자르기·줄이기를 정해야 함(BL-17과 맞추기)
+- 11/16 민재 Windows: develop(#48–#52) 합침, EditMode 312 통과. `/code-review` 10건 → C# 1건(`FakeCamera.Discard`가 옆 폴더 `scrun-camera-old/`도 안으로 봄 → 끝에 구분자, 테스트 추가)·줄바꿈 1건(`ScrunBridge.swift`·`ScrunCamera.swift`가 CRLF로 커밋돼 6줄 바꾼 게 332줄로 보임 → LF) 고쳐 PR. Swift 8건은 위 "맥 할 일"(지환 E-02–E-04는 에디터 가짜 카메라 위에서 시작하므로 막지 않음)
