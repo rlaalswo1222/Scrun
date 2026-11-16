@@ -78,7 +78,7 @@ namespace Scrun.App
         // D-09에 보일 숫자(3·2·1). 카운트다운이 아니면 0
         public int CountdownNumber { get; private set; }
 
-        public void Begin(double now)
+        public void Begin()
         {
             Step = ReadyStep.Checking;
             phoneBadSince = null;
@@ -100,9 +100,7 @@ namespace Scrun.App
             switch (Step)
             {
                 case ReadyStep.Checking:
-                    if (i.Phone == SensorFlow.Ok) phoneBadSince = null;
-                    else phoneBadSince ??= now;
-                    if (i.Phone == SensorFlow.Lost || (phoneBadSince.HasValue && now - phoneBadSince.Value >= CheckTimeoutSec))
+                    if (PhoneFailed(now, i))
                     {
                         Fail();
                         break;
@@ -122,7 +120,7 @@ namespace Scrun.App
                     break;
 
                 case ReadyStep.Waiting:
-                    if (i.Phone == SensorFlow.Lost)
+                    if (PhoneFailed(now, i))
                     {
                         Fail();
                         break;
@@ -131,7 +129,7 @@ namespace Scrun.App
                     break;
 
                 case ReadyStep.Countdown:
-                    if (i.Phone == SensorFlow.Lost)
+                    if (PhoneFailed(now, i))
                     {
                         Fail();
                         break;
@@ -163,9 +161,22 @@ namespace Scrun.App
         }
 
         // I-01 "다시 시도" → D-07부터(화면이 센서를 껐다 켬)
-        public void Retry(double now)
+        public void Retry()
         {
-            if (Step == ReadyStep.SensorFailed) Begin(now);
+            if (Step == ReadyStep.SensorFailed) Begin();
+        }
+
+        // 폰 센서를 못 씀: 끊김(Lost)은 바로, 그 밖에 Ok가 아닌 상태(켜지는 중·꺼짐)는 이어서 CheckTimeoutSec.
+        // D-08·D-09도 같다: 센서가 꺼지면(Off, Lost가 되지 않음) 걸어도 카운트다운이 안 돼 조용히 기다리기만 했음(#49 2차 리뷰)
+        bool PhoneFailed(double now, in ReadyInputs i)
+        {
+            if (i.Phone == SensorFlow.Ok)
+            {
+                phoneBadSince = null;
+                return false;
+            }
+            phoneBadSince ??= now;
+            return i.Phone == SensorFlow.Lost || now - phoneBadSince.Value >= CheckTimeoutSec;
         }
 
         // 보정값 줄의 칩을 눌러 다시 불러올 수 있음

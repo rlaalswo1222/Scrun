@@ -22,10 +22,10 @@ namespace Scrun.App.Tests
         // 걷는 중(AvatarSpeed.Stepping)
         static ReadyInputs Walk() => Ok(true);
 
-        static RunReadyFlow Begun(double now = 0)
+        static RunReadyFlow Begun()
         {
             var f = new RunReadyFlow();
-            f.Begin(now);
+            f.Begin();
             return f;
         }
 
@@ -63,7 +63,7 @@ namespace Scrun.App.Tests
         [Test]
         public void PhoneThatNeverArrivesFailsAfterTimeout()
         {
-            var f = Begun(10);
+            var f = Begun();
             var i = Ok();
             i.Phone = SensorFlow.Waiting;
             f.Update(10, i); // 들어온 프레임부터 안 옴
@@ -120,7 +120,7 @@ namespace Scrun.App.Tests
             var lost = Ok();
             lost.Phone = SensorFlow.Lost;
             f.Update(0, lost);
-            f.Retry(30);
+            f.Retry();
             Assert.AreEqual(ReadyStep.Checking, f.Step);
             var waiting = Ok();
             waiting.Phone = SensorFlow.Waiting;
@@ -241,12 +241,36 @@ namespace Scrun.App.Tests
             Assert.IsTrue(g.Cancel(), "I-01에서도 X → D-01");
         }
 
+        // #49 2차 리뷰: 센서가 꺼지면(Off) Lost가 되지 않아 D-08이 조용히 기다리기만 했음
+        [Test]
+        public void SensorTurnedOffWhileWaitingOrCountingFailsAfterTimeout()
+        {
+            var off = Ok();
+            off.Phone = SensorFlow.Off;
+
+            var f = AtWaiting();
+            Assert.AreEqual(ReadyStep.Waiting, f.Update(2, off), "잠깐 꺼짐은 기다림");
+            Assert.AreEqual(ReadyStep.Waiting, f.Update(3, Ok()), "다시 켜지면 시간도 처음부터");
+            f.Update(4, off);
+            Assert.AreEqual(ReadyStep.Waiting, f.Update(4 + RunReadyFlow.CheckTimeoutSec - 0.1, off));
+            Assert.AreEqual(ReadyStep.SensorFailed, f.Update(4 + RunReadyFlow.CheckTimeoutSec, off));
+
+            var g = AtWaiting();
+            g.Update(2, Walk());
+            Assert.AreEqual(ReadyStep.Countdown, g.Step);
+            var offWalking = Walk();
+            offWalking.Phone = SensorFlow.Off;
+            Assert.AreEqual(ReadyStep.Countdown, g.Update(2.1, offWalking));
+            Assert.AreEqual(ReadyStep.SensorFailed, g.Update(2.1 + RunReadyFlow.CheckTimeoutSec, offWalking));
+        }
+
         [Test]
         public void OnlyNetworkAndServerErrorsAreTransient()
         {
             Assert.IsTrue(new ApiException(ApiFailure.Network, "끊김").IsTransient);
             Assert.IsTrue(new ApiException(ApiFailure.Server, "서버", 500).IsTransient);
-            Assert.IsTrue(new ApiException(ApiFailure.BadResponse, "빈 응답").IsTransient);
+            Assert.IsTrue(new ApiException(ApiFailure.BadResponse, "502 HTML", 502).IsTransient);
+            Assert.IsFalse(new ApiException(ApiFailure.BadResponse, "빈 runId").IsTransient, "답은 왔는데 내용이 이상함 → 다시 보내도 같음(#49 2차 리뷰)");
             Assert.IsFalse(new ApiException(ApiFailure.BadResponse, "못 읽은 4xx", 400).IsTransient);
             Assert.IsFalse(new ApiException(ApiFailure.Server, "틀림", 400).IsTransient);
             Assert.IsFalse(new ApiException(ApiFailure.NotLoggedIn, "만료").IsTransient);
@@ -281,7 +305,7 @@ namespace Scrun.App.Tests
 
             public Treadmill()
             {
-                Flow.Begin(0);
+                Flow.Begin();
                 Run(RunReadyFlow.AutoAdvanceSec + 0.1, 0); // D-08까지
                 Assert.AreEqual(ReadyStep.Waiting, Flow.Step);
             }

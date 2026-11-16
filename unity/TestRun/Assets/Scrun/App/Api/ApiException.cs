@@ -30,9 +30,10 @@ namespace Scrun.App
             DetailsJson = detailsJson;
         }
 
-        // 잠깐 기다렸다 같은 요청을 다시 보내면 될 수도 있는 실패: 연결 안 됨·시간 초과(상태 0)·서버 5xx.
-        // 4xx(본문을 못 읽은 BadResponse 포함)는 다시 보내도 같고, 로그인 만료는 다시 로그인해야 함(계획 0035 리뷰)
-        public bool IsTransient => Failure != ApiFailure.NotLoggedIn && (Status == 0 || Status >= 500);
+        // 잠깐 기다렸다 같은 요청을 다시 보내면 될 수도 있는 실패: 연결 안 됨·시간 초과(Network)·서버 5xx.
+        // 4xx(본문을 못 읽은 BadResponse 포함)·상태 없이 응답이 이상함(빈 runId 등 BadResponse)은 다시 보내도 같고,
+        // 로그인 만료는 다시 로그인해야 함(계획 0035 리뷰, #49 2차 리뷰: 상태 0만 보면 BadResponse도 다시 보냈음)
+        public bool IsTransient => Failure == ApiFailure.Network || (Failure != ApiFailure.NotLoggedIn && Status >= 500);
 
         public override string ToString() =>
             $"ApiException({Failure}, {Status}, {Code ?? "-"}, requestId={RequestId ?? "-"}): {Message}";

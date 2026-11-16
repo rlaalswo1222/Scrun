@@ -149,6 +149,8 @@ namespace Scrun.App
                 CloseSetup();
                 EndRun();
                 ReleaseIsland();
+                headphones?.Dispose(); // 실패 카드 동안 에어팟 모션을 지켜보지 않음(배터리). 다시 입장하면 새로
+                headphones = null;
                 if (!leaving) ShowUnavailable("맵을 열지 못했어요", "잠시 후 다시 시도해 주세요.", canRetry: true);
             }
             finally
@@ -169,7 +171,8 @@ namespace Scrun.App
             catch (ApiException e)
             {
                 Debug.LogWarning("[보정] 서버 보정을 못 불러옴: " + e);
-                if (e.Failure == ApiFailure.NotLoggedIn && !leaving) Feedback.Handle(e);
+                // 로그인 화면으로는 이 맵이 아직 맨 위일 때만: 로그아웃·다른 로그인으로 이미 화면이 옮겨졌으면(로그인 바뀜) 두 번 옮기지 않음(#49 2차 리뷰)
+                if (e.Failure == ApiFailure.NotLoggedIn && !leaving && Nav.Current == this) Feedback.Handle(e);
                 return ReadyCalibration.From(e);
             }
             catch (Exception e)
@@ -287,6 +290,7 @@ namespace Scrun.App
                 view.NeedsCalibration += () => onExit?.Invoke(MapExit.NeedsCalibration, null); // 코스 상세가 보정 안내(A-11)
                 readyView = view;
             }
+            ReloadCalibrationIfFailed();
             readyView.Start(setup.Goal);
         }
 
@@ -337,8 +341,18 @@ namespace Scrun.App
             }
             if (calibrationLoad == null || !calibrationLoad.IsCompleted) return CalibrationState.Loading;
             var r = calibrationLoad.Result;
-            // 불러왔다(Ready)는데 센서에 없음 = 그 사이 지워짐(로그아웃) → 다시 보정과 같게
-            return r == CalibrationState.Ready ? CalibrationState.NeedsCalibration : r;
+            // 불러왔다(Ready)는데 센서에 없음 = 그 사이 로그아웃으로 지워짐 → 로그인 쪽이 화면을 옮기므로 아무것도 안 함.
+            // 보정 안내(A-11)로 보내면 로그인 화면 이동과 겹치고, 로그아웃한 사람이 보정 화면에 남음(#49 2차 리뷰)
+            return r == CalibrationState.Ready ? CalibrationState.Cancelled : r;
+        }
+
+        // D-07을 다시 열 때(X → D-01 → … → D-06) 지난번 불러오기가 실패로 끝났으면 다시 불러온다.
+        // 넘어갈 수 없는 실패(Failed, 429 등)도 맵을 나갔다 들어오지 않고 다시 해 볼 수 있게(#49 2차 리뷰)
+        void ReloadCalibrationIfFailed()
+        {
+            if (calibrationLoad == null || !calibrationLoad.IsCompleted) return;
+            var r = calibrationLoad.Result;
+            if (r == CalibrationState.Failed || r == CalibrationState.RetryLater) calibrationLoad = LoadCalibrationAsync();
         }
 
         void RetryCalibration()
