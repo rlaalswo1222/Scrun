@@ -19,13 +19,28 @@ namespace Scrun.App
         public RunGoal Goal { get; }
         public bool Started { get; private set; }
 
+        // 서버 기록(계획 0035). clientRunId는 이 달리기마다 하나(POST /runs를 다시 보내도 기록 하나)
+        public string ClientRunId { get; } = Guid.NewGuid().ToString("N");
+        public DateTime? StartedAtUtc { get; private set; }
+        public string RunId { get; internal set; } // 서버가 준 ID. 못 받았으면 null(종료·인증 때 StartBody로 다시 보냄)
+
         public void Start(float playerDistanceM)
         {
             if (Started) return;
             Started = true;
             startedAt = clock();
+            StartedAtUtc = DateTime.UtcNow;
             startDistance = playerDistanceM;
         }
+
+        // POST /v1/runs 본문. 시작 전엔 null
+        public RunStartBody StartBody(string mapInstanceId) => StartedAtUtc == null ? null : new RunStartBody
+        {
+            ClientRunId = ClientRunId,
+            MapInstanceId = mapInstanceId,
+            Goal = Goal.ToRequest(),
+            StartedAt = StartedAtUtc.Value,
+        };
 
         public double ElapsedSec => Started ? Math.Max(0, clock() - startedAt) : 0;
 

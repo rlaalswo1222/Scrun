@@ -183,6 +183,7 @@ namespace Scrun.App.Tests
             s.LoadCalibration(FakeSpeedSensor.SampleModel().ToJson());
             var t = CalibrationStore.EnsureLoadedAsync(s); // Api를 부르면 테스트 환경엔 서버가 없어 실패
             Assert.IsTrue(t.IsCompleted && !t.IsFaulted);
+            Assert.AreEqual(CalibrationLoad.Loaded, t.Result);
         }
 
         [Test]
@@ -195,6 +196,7 @@ namespace Scrun.App.Tests
                 Assert.IsFalse(s.HasCalibration);
                 var t = CalibrationStore.EnsureLoadedAsync(s);
                 Assert.IsTrue(t.IsCompleted && !t.IsFaulted);
+            Assert.AreEqual(CalibrationLoad.Loaded, t.Result);
                 Assert.IsTrue(s.HasCalibration);
                 Assert.AreEqual(model, s.ExportCalibration());
             }
