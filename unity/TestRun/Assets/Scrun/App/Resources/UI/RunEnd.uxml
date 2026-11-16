@@ -52,6 +52,36 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
+        <!-- D-15 측정 중단(계획 0039). 폰 데이터가 다시 들어오면 저절로 닫힘 -->
+        <ui:VisualElement name="measure-lost" class="end-layer end-center">
+            <ui:VisualElement class="end-confirm-card">
+                <ui:VisualElement class="end-confirm-icon end-warn-icon">
+                    <ui:Label text="!" class="end-warn-mark" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:Label text="측정이 끊겼어요" class="end-card-title" />
+                <ui:Label text="폰이 거치대에 잘 놓여 있는지 확인해 주세요. 손에 쥐거나 흔들리면 속도를 잴 수 없어요." class="end-card-body" />
+                <ui:VisualElement class="end-buttons">
+                    <ui:Button name="lost-pause" text="일시정지" class="btn btn-ghost end-btn-gap" />
+                    <ui:Button name="lost-retry" text="다시 측정" class="btn btn-primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- I-12 배터리·발열(계획 0039, 이번 달리기에 한 번) -->
+        <ui:VisualElement name="heat" class="end-layer end-center">
+            <ui:VisualElement class="end-confirm-card">
+                <ui:VisualElement class="end-confirm-icon end-warn-icon">
+                    <ui:Label text="!" class="end-warn-mark" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:Label text="폰이 뜨겁거나 배터리가 부족해요" class="end-card-title" />
+                <ui:Label name="heat-body" text="그래픽 품질을 낮추면 발열과 배터리 사용을 줄일 수 있어요." class="end-card-body" />
+                <ui:VisualElement class="end-buttons">
+                    <ui:Button name="heat-continue" text="계속 달리기" class="btn end-btn-text end-btn-gap" />
+                    <ui:Button name="heat-lower" text="품질 낮추기" class="btn btn-primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
         <!-- D-22 종료 → 계기판 인증 안내 -->
         <ui:VisualElement name="done" class="end-layer end-center">
             <ui:VisualElement class="end-done-card">

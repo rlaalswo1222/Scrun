@@ -11,14 +11,15 @@ namespace Scrun.App
     //   목표 도달 → D-19(달리기는 그대로) ─ 계속 달리기 → 닫힘 / 마무리하기 → D-22(D-18 없이, Figma 노트)
     //   D-22 ─ 계기판 촬영하기 → 인증(지환 E-02) / 촬영 없이 마무리 → 미인증
     // 단계 판단은 맵 화면(MapScreen)이 하고, 이 층은 보여 주고 누른 것을 알리기만 한다
-    public enum RunEndPanel { None, Pause, Confirm, Goal, Done }
+    public enum RunEndPanel { None, Pause, Confirm, Goal, Done, MeasureLost, Heat }
 
     public sealed class RunEndView : IDisposable
     {
         readonly VisualElement root;
-        readonly VisualElement pause, confirm, goal, done;
+        readonly VisualElement pause, confirm, goal, done, measureLost, heat;
         readonly Label pauseDistance, pauseTime, confirmBody, goalBanner, goalTime, doneBody, doneSaving;
-        readonly Button doneVerify, doneSkip;
+        readonly Button doneVerify, doneSkip, heatLower;
+        readonly Label heatBody;
 
         public event Action Resume;       // D-17·D-18 "계속 달리기"
         public event Action AskFinish;    // D-17 "종료하기" → D-18
@@ -26,6 +27,10 @@ namespace Scrun.App
         public event Action CloseGoal;    // D-19 "계속 달리기"
         public event Action Verify;       // D-22 "계기판 촬영하기"
         public event Action SkipVerify;   // D-22 "촬영 없이 마무리 (미인증)"
+        public event Action LostPause;    // D-15 "일시정지"
+        public event Action LostRetry;    // D-15 "다시 측정"(센서를 껐다 켬, 카드는 데이터가 들어오면 닫힘)
+        public event Action HeatContinue; // I-12 "계속 달리기"
+        public event Action HeatLower;    // I-12 "품질 낮추기"
 
         public RunEndPanel Shown { get; private set; } = RunEndPanel.None;
 
@@ -47,6 +52,8 @@ namespace Scrun.App
             confirm = Q<VisualElement>("confirm");
             goal = Q<VisualElement>("goal");
             done = Q<VisualElement>("done");
+            measureLost = Q<VisualElement>("measure-lost");
+            heat = Q<VisualElement>("heat");
             pauseDistance = Q<Label>("pause-distance");
             pauseTime = Q<Label>("pause-time");
             confirmBody = Q<Label>("confirm-body");
@@ -65,6 +72,12 @@ namespace Scrun.App
             Q<Button>("goal-finish").clicked += () => Finish?.Invoke();
             doneVerify.clicked += () => Verify?.Invoke();
             doneSkip.clicked += () => SkipVerify?.Invoke();
+            Q<Button>("lost-pause").clicked += () => LostPause?.Invoke();
+            Q<Button>("lost-retry").clicked += () => LostRetry?.Invoke();
+            Q<Button>("heat-continue").clicked += () => HeatContinue?.Invoke();
+            heatLower = Q<Button>("heat-lower");
+            heatLower.clicked += () => HeatLower?.Invoke();
+            heatBody = Q<Label>("heat-body");
 
             Show(RunEndPanel.None);
             host.Add(root); // 다 만든 뒤에 붙인다
@@ -107,6 +120,15 @@ namespace Scrun.App
             doneSkip.SetEnabled(ready);
         }
 
+        public void ShowMeasureLost() => Show(RunEndPanel.MeasureLost);
+        // canLower: 그래픽 품질을 더 낮출 수 있음(이미 가장 낮으면 "품질 낮추기"를 숨기고 다른 안내)
+        public void ShowHeat(bool canLower)
+        {
+            heatLower.SetVisible(canLower);
+            heatBody.text = canLower ? RunEndText.HeatBody : RunEndText.HeatBodyLowest;
+            Show(RunEndPanel.Heat);
+        }
+
         public void Hide() => Show(RunEndPanel.None);
 
         void Show(RunEndPanel p)
@@ -116,6 +138,8 @@ namespace Scrun.App
             confirm.SetVisible(p == RunEndPanel.Confirm);
             goal.SetVisible(p == RunEndPanel.Goal);
             done.SetVisible(p == RunEndPanel.Done);
+            measureLost.SetVisible(p == RunEndPanel.MeasureLost);
+            heat.SetVisible(p == RunEndPanel.Heat);
         }
 
         public void Dispose() => root.RemoveFromHierarchy();
@@ -136,6 +160,12 @@ namespace Scrun.App
     public static class RunEndText
     {
         public static string Km(float m) => RunSession.DistanceText(m) + "km";
+
+        // 계획 0039(임시 문구, Figma에 없음 → 상준 확인)
+        public const string AirPodsDropped = "이어폰 연결이 끊겨 폰 센서로만 재요";
+        public const string Unsteady = "측정값이 불안정해요 · 보정하고 있어요"; // I-03(Figma 문구)
+        public const string HeatBody = "그래픽 품질을 낮추면 발열과 배터리 사용을 줄일 수 있어요."; // I-12(Figma 문구)
+        public const string HeatBodyLowest = "그래픽 품질은 이미 가장 낮아요. 잠시 쉬거나 충전해 주세요."; // 임시(Figma에 없음)
 
         // D-18: "2.10km · 12:08\n기록은 계기판을 인증하면 저장돼요. 인증하지 않으면 미인증 기록으로 남아요."
         public static string ConfirmBody(float m, double sec) =>
