@@ -8,7 +8,7 @@ public static class RunnerRigBuilder
 {
     public const string CharacterModelPath = Root + "/Characters/YBot/Y Bot@Breathing Idle.fbx";
 
-    // controller: RunnerAnimatorBuilder.Build() 결과(씬 만들기 전에 미리 생성해 둘 것)
+    // controller: RunnerAnimatorBuilder.EnsureBuilt() 결과(씬 만들기 전에 미리 생성해 둘 것)
     public static RunnerController Create(Track track, RuntimeAnimatorController controller, float groundHeight = 0f)
     {
         var fake = new GameObject("SpeedSource (Keyboard)").AddComponent<FakeSpeedSource>();

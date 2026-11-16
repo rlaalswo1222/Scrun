@@ -92,7 +92,8 @@ namespace Scrun.App
             goalChip.text = RunReadyText.GoalChip(goal);
             StartSensor();
             walking.Reset(); // 센서를 새로 켜면 걸음 수도 0부터
-            flow.Begin(clock());
+            flow.Begin();
+            earphoneReadAt = double.NegativeInfinity; // 들어올 때마다 바로 한 번 읽음
             shown = null;
             root.SetVisible(true);
             Tick();
@@ -138,7 +139,8 @@ namespace Scrun.App
                 sensorBroken = true;
             }
             walking.Reset(); // 센서를 새로 켜면 걸음 수도 0부터
-            flow.Retry(clock());
+            flow.Retry();
+            earphoneReadAt = double.NegativeInfinity;
             Tick();
         }
 
@@ -195,17 +197,37 @@ namespace Scrun.App
                 }
             }
             if (flow.Step != ReadyStep.Checking) return i; // 이어폰·네트워크 줄은 D-07에만 보임
-            try
-            {
-                i.Headphones = Native.Headphones.Status;
-                i.HeadphoneMotionGranted = Native.Permissions.GetStatus(PermissionKind.HeadphoneMotion) == PermissionStatus.Granted;
-            }
-            catch (Exception)
-            {
-                i.Headphones = HeadphoneStatus.NotConnected; // 이어폰은 막지 않음
-            }
+            ReadEarphone(ref i);
             i.Network = together()?.Status;
             return i;
+        }
+
+        // 이어폰 연결·헤드폰 모션 권한: 아이폰에선 읽을 때마다 네이티브 호출이라 33ms마다 묻지 않고 0.5초마다(#49 2차 리뷰).
+        // 설정 앱에서 바꾸고 돌아와도 0.5초 안에 보임
+        const double EarphoneReadSec = 0.5;
+        double earphoneReadAt = double.NegativeInfinity;
+        HeadphoneStatus earphone = HeadphoneStatus.NotConnected;
+        bool motionGranted;
+
+        void ReadEarphone(ref ReadyInputs i)
+        {
+            double now = clock();
+            if (now - earphoneReadAt >= EarphoneReadSec)
+            {
+                earphoneReadAt = now;
+                try
+                {
+                    earphone = Native.Headphones.Status;
+                    motionGranted = Native.Permissions.GetStatus(PermissionKind.HeadphoneMotion) == PermissionStatus.Granted;
+                }
+                catch (Exception)
+                {
+                    earphone = HeadphoneStatus.NotConnected; // 이어폰은 막지 않음
+                    motionGranted = false;
+                }
+            }
+            i.Headphones = earphone;
+            i.HeadphoneMotionGranted = motionGranted;
         }
 
         void Tick()

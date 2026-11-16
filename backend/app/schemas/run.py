@@ -1,10 +1,11 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Annotated, Optional
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from ..core.model import CamelModel
+from ..realtime.hub import MAX_KMH as MAX_SPEED_KMH  # 실시간 방과 같은 속도 상한
 from .common import RunStats, Verification
 
 
@@ -16,7 +17,13 @@ class GoalType(str, Enum):
 
 class Goal(CamelModel):
     type: GoalType
-    value: Optional[int] = Field(default=None, description="DISTANCE면 m, TIME이면 초")
+    value: Optional[int] = Field(default=None, gt=0, description="DISTANCE면 m, TIME이면 초. NONE이면 비움")
+
+    @model_validator(mode="after")
+    def _value_matches_type(self):
+        if (self.type == GoalType.NONE) != (self.value is None):
+            raise ValueError("DISTANCE·TIME이면 value가 있어야 하고, NONE이면 비워야 합니다")
+        return self
 
 
 class RunStartRequest(CamelModel):
@@ -33,13 +40,20 @@ class RunStarted(CamelModel):
     started_at: datetime
 
 
+MAX_SAMPLES_PER_UPLOAD = 7200  # 한 묶음 최대 2시간(1초 간격). 앱은 60초마다 올림(계획 0037)
+Speed = Annotated[float, Field(ge=0, le=MAX_SPEED_KMH)]
+
+
 class SpeedSeries(CamelModel):
     interval_s: float = Field(gt=0, description="칸 간격(초)")
     speeds_kmh: list[float]
 
 
-class SamplesUpload(SpeedSeries):
-    offset_s: float = Field(default=0, ge=0, description="이 묶음의 시작 시각(러닝 시작부터 초). 나눠 올릴 때")
+class SamplesUpload(SpeedSeries):  # 받을 때만 칸 수·속도 범위를 좁힘(응답의 그래프용 시계열은 30초 간격도 씀)
+    interval_s: float = Field(gt=0, le=10, description="칸 간격(초). 앱은 1초")
+    speeds_kmh: list[Speed] = Field(min_length=1, max_length=MAX_SAMPLES_PER_UPLOAD)
+    offset_s: float = Field(default=0, ge=0, le=86400,
+                            description="이 묶음의 시작 시각(달린 시간 기준 초, 일시정지 구간은 빠짐). 나눠 올릴 때")
 
 
 class RunFinishRequest(CamelModel):

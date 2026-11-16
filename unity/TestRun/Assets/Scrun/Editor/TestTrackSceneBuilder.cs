@@ -20,7 +20,7 @@ public static class TestTrackSceneBuilder
 
         // 클립 자르기(재임포트)가 있을 수 있어 씬 만들기 전에 Animator부터
         var runnerController = AssetDatabase.LoadAssetAtPath<GameObject>(RunnerRigBuilder.CharacterModelPath)
-            ? RunnerAnimatorBuilder.Build() : null;
+            ? RunnerAnimatorBuilder.EnsureBuilt() : null;
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
