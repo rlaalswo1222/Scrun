@@ -1,0 +1,113 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- 러닝 설정 뒤 달리기 시작까지(가로, 계획 0035): D-07 센서 확인 → D-08 달림 인식 대기 → D-09 카운트다운, 실패 I-01.
+         Figma "SCRUN" 와이어프레임 602:847·602:907·602:939·611:2188. 흐림은 MapScreen(MapBackdrop)이 D-07·D-08·I-01 동안만 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/RunSetup.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/RunReady.uss" />
+    <ui:VisualElement name="run-ready" class="course run-ready">
+
+        <!-- D-07 센서 확인 -->
+        <ui:VisualElement name="check-step" class="setup-step check-step">
+            <ui:Label text="센서를 확인하고 있어요" class="setup-title" />
+            <!-- 러닝 설정(D-01)으로. Figma엔 없지만 아이폰엔 뒤로 키가 없어 넣음(계획 0035 리뷰) -->
+            <ui:Button name="check-close" class="map-round-btn ready-close">
+                <ui:VisualElement class="map-x-bar" picking-mode="Ignore" />
+                <ui:VisualElement class="map-x-bar map-x-bar--2" picking-mode="Ignore" />
+            </ui:Button>
+            <ui:VisualElement class="check-body">
+                <ui:VisualElement class="setup-card check-card">
+                    <ui:VisualElement name="row-phone" class="check-row">
+                        <ui:VisualElement class="check-icon"><ui:VisualElement class="check-icon-img icon-motion" /></ui:VisualElement>
+                        <ui:VisualElement class="check-text">
+                            <ui:Label text="폰 센서" class="check-name" />
+                            <ui:Label name="sub" class="check-sub" />
+                        </ui:VisualElement>
+                        <ui:Button name="chip" class="check-chip" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="row-earphone" class="check-row">
+                        <ui:VisualElement class="check-icon"><ui:VisualElement class="check-icon-img icon-headphone" /></ui:VisualElement>
+                        <ui:VisualElement class="check-text">
+                            <ui:Label text="이어폰 (AirPods)" class="check-name" />
+                            <ui:Label name="sub" class="check-sub" />
+                        </ui:VisualElement>
+                        <ui:Button name="chip" class="check-chip" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="row-calibration" class="check-row">
+                        <ui:VisualElement class="check-icon"><ui:VisualElement class="check-icon-img icon-clock" /></ui:VisualElement>
+                        <ui:VisualElement class="check-text">
+                            <ui:Label text="속도 보정값" class="check-name" />
+                            <ui:Label name="sub" class="check-sub" />
+                        </ui:VisualElement>
+                        <!-- 못 불러오면 "다시 시도"로 눌림 -->
+                        <ui:Button name="chip" class="check-chip" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="row-network" class="check-row check-row--last">
+                        <ui:VisualElement class="check-icon"><ui:VisualElement class="check-icon-img icon-wifi" /></ui:VisualElement>
+                        <ui:VisualElement class="check-text">
+                            <ui:Label text="네트워크" class="check-name" />
+                            <ui:Label name="sub" class="check-sub" />
+                        </ui:VisualElement>
+                        <ui:Button name="chip" class="check-chip" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="check-art-card">
+                    <!-- 헤드폰 낀 캐릭터가 러닝머신에서 달리는 그림(상준). 그전엔 같은 크기 빈 칸 -->
+                    <ui:VisualElement name="check-art" class="art-slot check-art" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <!-- 다 정상이면 1.5초 뒤 저절로 넘어감. 누르면 바로(계획 0035 정한 것 1) -->
+            <ui:Button name="ready" text="준비 완료" class="btn btn-primary setup-next check-next" />
+        </ui:VisualElement>
+
+        <!-- D-08 달림 인식 대기 -->
+        <ui:VisualElement name="wait-step" class="setup-step wait-step">
+            <ui:VisualElement class="wait-chips">
+                <ui:Label name="course-chip" class="chip wait-chip" />
+                <ui:Label name="goal-chip" class="chip wait-chip" />
+            </ui:VisualElement>
+            <ui:VisualElement class="wait-center" picking-mode="Ignore">
+                <ui:Label text="달리기를 시작하면&#10;자동으로 시작돼요" class="setup-title wait-title" />
+                <ui:Label text="러닝머신을 켜고 걷기 시작해 보세요" class="wait-lead" />
+                <!-- 고리 두 개(움직임은 상준). 가운데 캐릭터 그림 자리 -->
+                <ui:VisualElement class="wait-ring wait-ring--outer" picking-mode="Ignore">
+                    <ui:VisualElement class="wait-ring wait-ring--inner" picking-mode="Ignore">
+                        <ui:VisualElement name="wait-art" class="wait-art" picking-mode="Ignore" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <!-- 러닝 설정(D-01)으로(계획 0035 정한 것 3) -->
+            <ui:Button name="wait-close" class="map-round-btn ready-close">
+                <ui:VisualElement class="map-x-bar" picking-mode="Ignore" />
+                <ui:VisualElement class="map-x-bar map-x-bar--2" picking-mode="Ignore" />
+            </ui:Button>
+        </ui:VisualElement>
+
+        <!-- D-09 카운트다운(흐림 풀림) -->
+        <ui:VisualElement name="count-step" class="setup-step count-step" picking-mode="Ignore">
+            <ui:VisualElement class="live-chip count-chip" picking-mode="Ignore">
+                <ui:VisualElement class="live-dot" />
+                <ui:Label name="count-chip-text" class="live-text" />
+            </ui:VisualElement>
+            <ui:Label name="count-number" class="count-number" />
+            <ui:Label text="곧 출발해요" class="count-lead" />
+        </ui:VisualElement>
+
+        <!-- I-01 센서 연결 실패 -->
+        <ui:VisualElement name="fail-step" class="setup-step fail-step">
+            <!-- 러닝 설정(D-01)으로. 모션 권한을 거부하면 "설정 열기"·"다시 시도"만으론 못 나감(계획 0035 리뷰) -->
+            <ui:Button name="fail-close" class="map-round-btn ready-close">
+                <ui:VisualElement class="map-x-bar" picking-mode="Ignore" />
+                <ui:VisualElement class="map-x-bar map-x-bar--2" picking-mode="Ignore" />
+            </ui:Button>
+            <ui:VisualElement class="fail-card">
+                <ui:VisualElement class="fail-icon"><ui:VisualElement class="fail-icon-img" /></ui:VisualElement>
+                <ui:Label text="모션 센서를 읽을 수 없어요" class="fail-title" />
+                <ui:Label text="폰의 모션 및 피트니스 권한이나 센서 상태를 확인하고 다시 시도해 주세요." class="fail-body" />
+                <ui:VisualElement class="fail-buttons">
+                    <ui:Button name="open-settings" text="설정 열기" class="btn btn-ghost fail-btn" />
+                    <ui:Button name="retry" text="다시 시도" class="btn btn-primary fail-btn" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

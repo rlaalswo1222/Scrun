@@ -16,12 +16,14 @@ namespace Scrun.App
         static AuthApi auth;
         static UsersApi users;
         static CoursesApi courses;
+        static RunsApi runs;
 
         public static ApiClient Client { get { Ensure(); return client; } }
         public static Session Session => Client.Session;
         public static AuthApi Auth { get { Ensure(); return auth; } }
         public static UsersApi Users { get { Ensure(); return users; } }
         public static CoursesApi Courses { get { Ensure(); return courses; } }
+        public static RunsApi Runs { get { Ensure(); return runs; } }
 
         static void Ensure()
         {
@@ -30,6 +32,7 @@ namespace Scrun.App
             auth = new AuthApi(client);
             users = new UsersApi(client);
             courses = new CoursesApi(client);
+            runs = new RunsApi(client);
         }
 
         // Play마다 저장된 로그인부터 다시 읽는다(이 프로젝트는 Play 때 도메인 리로드를 꺼 둠).
@@ -147,6 +150,20 @@ namespace Scrun.App
             var e = await c.PostAsync<MapEntry>("/v1/courses/" + Uri.EscapeDataString(courseId) + "/entries", null, AuthMode.User);
             if (e == null) throw new ApiException(ApiFailure.BadResponse, "입장 응답이 비었습니다.");
             return e;
+        }
+    }
+
+    public sealed class RunsApi
+    {
+        readonly ApiClient c;
+        public RunsApi(ApiClient client) => c = client;
+
+        // 카운트다운 끝(D-09, 계획 0035). 같은 clientRunId를 다시 보내면 서버가 처음 결과를 돌려줌(다시 보내도 기록 하나)
+        public async Task<RunStarted> StartAsync(RunStartBody body)
+        {
+            var r = await c.PostAsync<RunStarted>("/v1/runs", body, AuthMode.User);
+            if (r == null || string.IsNullOrEmpty(r.RunId)) throw new ApiException(ApiFailure.BadResponse, "러닝 시작 응답이 비었습니다.");
+            return r;
         }
     }
 }
