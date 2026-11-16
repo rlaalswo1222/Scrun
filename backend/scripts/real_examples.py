@@ -1,6 +1,7 @@
 """진짜로 구현된 API의 예시를 실제 흐름으로 만든다(테스트 DB + 가짜 카카오). export_openapi·notion_pages가 쓴다.
 
-흐름: 카카오 로그인(처음) → 약관 → 닉네임 확인 → 가입 → 내 정보·설정 조회·수정 → 코스 목록·상세 → 보정 저장·조회 → 맵 입장 → 토큰 재발급 → 로그아웃.
+흐름: 카카오 로그인(처음) → 약관 → 닉네임 확인 → 가입 → 내 정보·설정 조회·수정 → 코스 목록·상세 → 보정 저장·조회 → 맵 입장 →
+러닝 시작 → 시계열 올리기 → 끝나지 않은 러닝 → 종료 → (다른 러닝 시작 → 버리기) → 토큰 재발급 → 로그아웃.
 토큰 값·저장 시각·사용자 ID·친구 코드는 매번 바뀌므로 고정 값으로 바꿔 넣는다. 입장 위치(랜덤)는 시드를 고정한 난수로 바꿔 끼워 매번 같게.
 """
 from app.testenv import use_test_settings
@@ -8,9 +9,14 @@ from app.testenv import use_test_settings
 use_test_settings()  # app보다 먼저(임시 서명 키 + 가짜 카카오)
 
 import random
+import re
+from datetime import datetime, timezone
+
+from sqlalchemy import update
 
 from fastapi.testclient import TestClient
 
+from app.db.models import CourseEntry
 from app.db.testing import TestDatabase
 from app.main import app
 from app.routers.courses import get_rng
@@ -19,13 +25,22 @@ from app.stub_requests import REAL
 FIXED_META = {"timestamp": "2026-11-06T00:00:00Z", "requestId": "req_example"}
 DEVICE_ID = "6F1A2B3C-0000-4000-8000-000000000001"  # 예시 identifierForVendor
 PLACEHOLDER = {"accessToken": "eyJhbGciOi...(access)", "refreshToken": "(refresh 토큰 원문)", "signupToken": "eyJhbGciOi...(signup)",
-               "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000", "friendCode": "SCR-7K2Q"}
+               "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000", "friendCode": "SCR-7K2Q", "runId": "01JC0ZA4R7N2X5EXAMPLERUN00"}
+
+
+_ULID = re.compile(r"/[0-9A-HJKMNP-TV-Z]{26}(?=/|$)")  # 주소 안의 기록 ID(db.ids.new_id)
+
+
+def _clean_path(path: str) -> str:
+    """실제 요청 주소의 기록 ID를 예시 값으로(다시 만들 때마다 바뀌지 않게)."""
+    return _ULID.sub("/" + PLACEHOLDER["runId"], path)
 
 
 def _clean(j):
     if j is None:
         return None
     j["meta"].update(FIXED_META)
+    j["meta"]["path"] = _clean_path(j["meta"]["path"])
     data = (j.get("success") or {}).get("data")
     if isinstance(data, dict):
         for k, v in PLACEHOLDER.items():
@@ -36,6 +51,10 @@ def _clean(j):
             rt["token"] = "eyJhbGciOi...(realtime)"
         if data.get("createdAt"):  # 저장 시각(보정 등)도 다시 만들 때마다 바뀌지 않게
             data["createdAt"] = FIXED_META["timestamp"]
+        run = data.get("run")  # 끝나지 않은 러닝: 기록 ID·복구 기한(마지막 갱신 + 24시간)
+        if isinstance(run, dict):
+            run["runId"] = PLACEHOLDER["runId"]
+            data["recoverableUntil"] = "2026-11-07T10:01:00Z"
     return j
 
 
@@ -50,7 +69,7 @@ def collect() -> dict:
         def rec(method, path, body, auth, r):
             if r.status_code >= 400:  # 실패한 응답을 예시로 남기지 않게
                 raise RuntimeError(f"예시 흐름 실패: {method} {path} → {r.status_code} {r.text}")
-            out[(method, path)] = {"body": body, "auth": auth, "status": r.status_code,
+            out[(method, path)] = {"path": _clean_path(r.request.url.path), "body": body, "auth": auth, "status": r.status_code,
                                    "response": _clean(r.json()) if r.content else None}
             return r.json() if r.content else None
 
@@ -90,6 +109,26 @@ def collect() -> dict:
                 c.post("/v1/courses/crs_lake_loop/entries", headers=auth))
         finally:
             app.dependency_overrides.pop(get_rng, None)
+        # 러닝: 시작 → 1분 묶음 2개 → 끝나지 않은 러닝 → 종료. 시각은 예시 값이라 입장 시각을 그 앞으로 돌림(시작은 입장 뒤여야 함)
+        with tdb.Session() as s:
+            s.execute(update(CourseEntry).values(entered_at=datetime(2026, 11, 6, 9, 55, tzinfo=timezone.utc)))
+            s.commit()
+        body = {"clientRunId": "c-2026-11-06-001", "mapInstanceId": "map_crs_lake_loop",
+                "goal": {"type": "DISTANCE", "value": 3000}, "startedAt": "2026-11-06T10:00:00Z"}
+        run_id = rec("POST", "/v1/runs", body, "Bearer {accessToken}",
+                     c.post("/v1/runs", json=body, headers=auth))["success"]["data"]["runId"]
+        for i, v in enumerate((8.0, 8.4)):
+            body = {"offsetS": 60.0 * i, "intervalS": 1.0, "speedsKmh": [v] * 60}
+            rec("PUT", "/v1/runs/{runId}/samples", body, "Bearer {accessToken}",
+                c.put(f"/v1/runs/{run_id}/samples", json=body, headers=auth))
+        rec("GET", "/v1/runs/active", None, "Bearer {accessToken}", c.get("/v1/runs/active", headers=auth))
+        body = {"endedAt": "2026-11-06T10:19:30Z", "sensor": {"distanceM": 3120, "durationS": 1080}}
+        rec("POST", "/v1/runs/{runId}/finish", body, "Bearer {accessToken}",
+            c.post(f"/v1/runs/{run_id}/finish", json=body, headers=auth))
+        other = c.post("/v1/runs", headers=auth, json={"clientRunId": "c-2026-11-06-002", "mapInstanceId": "map_crs_lake_loop",
+                                                        "goal": {"type": "NONE"}, "startedAt": "2026-11-06T11:00:00Z"})
+        rec("POST", "/v1/runs/{runId}/discard", None, "Bearer {accessToken}",
+            c.post(f"/v1/runs/{other.json()['success']['data']['runId']}/discard", headers=auth))
         body = {"refreshToken": tok["refreshToken"]}
         tok2 = rec("POST", "/v1/auth/refresh", {"refreshToken": PLACEHOLDER["refreshToken"]}, None,
                    c.post("/v1/auth/refresh", json=body))["success"]["data"]

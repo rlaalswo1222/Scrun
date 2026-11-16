@@ -69,6 +69,11 @@ REAL = {
     ("PATCH", "/v1/users/me"),
     ("GET", "/v1/users/me/settings"),
     ("PATCH", "/v1/users/me/settings"),
+    ("POST", "/v1/runs"),
+    ("GET", "/v1/runs/active"),
+    ("PUT", "/v1/runs/{runId}/samples"),
+    ("POST", "/v1/runs/{runId}/finish"),
+    ("POST", "/v1/runs/{runId}/discard"),
 }
 
 

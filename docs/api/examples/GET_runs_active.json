@@ -2,6 +2,7 @@
   "request": {
     "method": "GET",
     "path": "/v1/runs/active",
+    "auth": "Bearer {accessToken}",
     "body": null
   },
   "status": 200,
@@ -9,8 +10,18 @@
     "resultType": "SUCCESS",
     "success": {
       "data": {
-        "run": null,
-        "recoverableUntil": null
+        "run": {
+          "runId": "01JC0ZA4R7N2X5EXAMPLERUN00",
+          "startedAt": "2026-11-06T10:00:00Z",
+          "courseId": "crs_lake_loop",
+          "courseName": "노을 호수 한 바퀴",
+          "distanceM": 273,
+          "durationS": 120,
+          "avgPaceSPerKm": 440,
+          "verification": "PENDING",
+          "shared": false
+        },
+        "recoverableUntil": "2026-11-07T10:01:00Z"
       }
     },
     "error": null,
