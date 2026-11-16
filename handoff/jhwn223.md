@@ -1,20 +1,23 @@
-# jhwn223 인수인계 (2026-11-12, S2 내 정보·설정 API)
+# jhwn223 인수인계 (2026-11-16, S3 센서 준비·카운트다운)
 
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
-## 지금 (11/12)
-- **내 정보·설정 API PR #47**(민재 리뷰 대기): 브랜치 `feat/user-me-settings-api`(develop fb38898에서, 11/12 develop 4a9b979 합침), 계획 [0028](../docs/plans/0028-user-me-settings-api.md). `GET·PATCH /users/me`·`/users/me/settings`를 DB와 연결, 가입·수정 시간대는 IANA 이름만(`tzdata` 추가), pytest 193/193
-  - 민재에게: 가입 시간대 검사·tzdata 알림(11/12 지환이 (가)로 승인), 노션 API 명세 상태 바꿔 달라고, 공용 서버 배포 때 requirements 다시 설치
-- **아바타 속도 맞춤 PR #39 머지됨**: 브랜치 `feat/avatar-run-speed`(develop 681f47a에서), 계획 [0027](../docs/plans/0027-avatar-run-speed.md). 실행 중 Animator의 실제 발 속도 표(`App/Resources/RunnerGait.asset`)로 `RunnerAnimator` 재생 속도를 맞춤 → 1에서 20 km/h 미끄러짐 5% 이내(전 최대 80%). 멈추면 동작을 세움. `/code-review` 반영, EditMode 117/117. 원본 `data/avatar/`, 바뀐 동작은 `unity_map.md` 캐릭터 절
-  - 커밋 a7fda83(Y Bot `.meta` Avatar 공유)이 이 브랜치에 있음. develop(#35 머지 뒤) 합침
-  - 영상(저장소 밖): scratchpad `avatar_compare/`(1·8 km/h 전·후, 20 km/h 후). 형에게 보여 줄 때 다시 찍으려면 Play 중 메뉴 Scrun/Dev/Capture Runner Side
-  - 아이폰·섬 씬(봇·고스트)에서 눈으로 확인 남음. 클립 분석값(GaitAnalysis)과 실행 중 발 속도가 다른 원인 미확인
-- **PR #35(러닝 설정·거치 안내) 머지됨**(11/11). 민재 리뷰 1-10·상준 Figma 반영(버튼 어두운 원) 포함
-- (지난) **러닝 설정·거치 안내 PR #35**: 브랜치 `feat/run-setup`, 계획 [0026](../docs/plans/0026-run-setup-mount-guide.md). Figma D-01·D-05·D-06을 맵 화면 위 층(`RunSetupView`)으로, 흐린 배경은 `MapBackdrop`(섬 카메라 한 장 찍어 줄이기, 안내 중 섬 카메라 끔). `/code-review` 반영, EditMode 145/145, 에디터 Play로 흐름 확인. 바뀐 동작은 `docs/unity/unity_map.md` "러닝 설정·거치 안내"
-  - 커밋할 것: `App/Run/`, `App/Map/MapBackdrop.cs`, `RunSetupView.cs`, `RunSetup.uxml`·`.uss`, `RunSetupTests.cs`(+ 새 `.meta`), `MapScreen.cs`, `Map.uxml`, `Api.cs`, `Dtos.cs`, `UiExtensions.cs`, 섬 `Scripts/RunnerLabels.cs`, 계획 0026, `unity_map.md`, 이 파일. **넣지 말 것**: Y Bot·PolyHaven `.meta`, `.gitignore`(따로)
-  - 이 handoff 파일은 #34 브랜치에도 있음 → 합칠 때 이 브랜치 쪽(나중 내용)을 고른다
-  - 상준 답(11/11): 그림은 라이선스 미확인이라 빈 칸 유지(캐릭터는 상준이 Blender로, 계기판은 새로), 시간 퀵·범위 확정, "다시 보지 않기"·뒤로 가기·X·고스트 숨김 OK(상준이 Figma·노션 반영), BL-9 ③ 안내는 BL-45 조사 뒤 D-08 쪽으로. PR 올리면 링크 보내기
-  - 민재에게: D-01 "지금 N명"을 입장 응답에서 받을지, `MapScreen.Setup`(고른 목표)을 S3 카운트다운이 `POST /runs`에 씀
+## 지금 (11/16): 계획 0035 센서 준비·달림 인식·카운트다운(BL-10·11) 구현·리뷰 반영, PR 전
+- 브랜치 `feat/run-ready-countdown`(develop e14a16b에서). **커밋 안 함**. `/code-review` 반영 끝(계획 0035 끝 절, EditMode 268/268). 다음: 커밋 나눠서 → PR(민재 리뷰)
+- 한 것·확인·바뀐 것은 [계획 0035](../docs/plans/0035-run-ready-countdown.md) "진행". EditMode 268/268, 에디터 Play로 D-07 → D-08 → D-09 → HUD, I-01·다시 시도, X → D-01, 카운트다운 중 멈춤 → D-08 확인
+- 민재 코드 건드린 곳(PR에 표시): `MapScreen`(임시 `StartRunning()` 지움, 센서 준비 층 연결), `RunSession`(`ClientRunId`·`RunId`·`StartBody` 추가), `Api.cs`·`Dtos.cs`(`RunsApi.StartAsync`)
+- 남은 확인: 아이폰 책상(폰 센서 Ok·걸음 감지까지 몇 초), 러닝머신(1.2초 걸음 문턱이 2 km/h에서 잘못 멈추지 않는지, 카운트다운 전 계기판 거리)
+- 상준에게: D-07 오른쪽 그림·D-08 고리 움직임·I-01 계속 실패 문구, 백로그 BL-11 ④ "(C-01)" 번호 확인(문구는 러닝 설정, 번호는 코스 목록)
+- 민재에게: 노션 작업 표 정리(내 정보·설정 API 두 줄 "완료", 카메라 노출 줄 → 민재), 홈 B-01–B-04 계획 0032 누가 할지(홈은 지환 S6)
+- 로컬 서버: `backend`에서 `.venv/bin/python -m uvicorn app.main:app --port 8000`(11/16 `alembic upgrade head`로 만 14세 약관 마이그레이션 받음)
+
+## 지금 (11/12): S2 내 몫 끝
+- **S2 네 개 모두 develop에 머지됨**: 러닝 설정·거치 안내 #35(계획 0026), 아바타 속도 맞춤 #39(0027), 내 정보·설정 API #47(0028, 11/12), 권한·이어폰 #34(0025). 계획 상태는 모두 "완료"
+  - #47: `GET·PATCH /users/me`·`/users/me/settings`가 DB와 연결됨. 가입·수정 시간대는 IANA 이름만(`core/timezones.py`, `tzdata`). develop 합친 뒤 pytest 222/222
+  - 민재에게 보낸 것(11/12): 가입 시간대 검사·`tzdata`(오라클 배포 때 `pip install -r requirements.txt` 다시), 노션 API 명세 4개 "진짜"로
+  - 아바타(#39): 아이폰·섬 씬(봇·고스트) 눈 확인 남음. 클립 분석값(GaitAnalysis)과 실행 중 발 속도가 다른 원인 미확인. 다시 찍기는 Play 중 메뉴 Scrun/Dev/Capture Runner Side
+  - 러닝 설정(#35): 고른 목표는 `MapScreen.Setup` → S3 카운트다운이 `POST /runs`에 씀(민재와 맞출 것). 그림 칸은 상준 그림 올 때까지 빈 칸
+- 로컬에만 있고 커밋하지 않는 것: `.gitignore` 4줄, PolyHaven `.meta`(Unity가 다시 만듦), `docs/meeting/` 발표 자료, `ios/` 서명 설정, 계획 0009·0011 초안, Y Bot `Beta_*.asset`
 - 로컬 변경 보관: `git stash` "11/11 맥 Mixamo 재임포트·씬 재저장"(Unity가 다시 만드는 meta·씬·라이팅. 버려도 되는지 확인 뒤 지움). Unity가 켜져 있으면 Y Bot·PolyHaven meta는 다시 생김 → 커밋에서 빼기
 - Unity MCP: `unity/tools/ucs.sh`는 bash에서 옛 인텔 python3를 잡아 "Bad CPU type" → zsh의 python3로 JSON을 만들어 `umcp.sh`에 넘기면 됨. 버튼은 `NavigationSubmitEvent`, 화면은 `ScreenCapture.CaptureScreenshot`(UI 포함)
 
@@ -27,9 +30,8 @@ jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md
 - **develop에 커밋 금지**: `feat/...`·`docs/...` 브랜치를 따서 나눠 올린다
 
 ## 다음 할 일
-1. #34 머지됨 → 노션 상태 완료. 아이폰(PR #28 뒤): 권한 팝업·설정 앱 왕복 때 앱이 꺼지는지(꺼지면 입장하려던 코스·온보딩 단계 저장해 이어 가기, 계획 0025), 에어팟, 가로 맵·노치
-2. **S2 남은 것**: 내 정보·설정 API PR #47 리뷰·머지(#39는 머지됨). 보정값 API(BL-4)는 #30에서 끝남 → 노션 완료 표시만
-3. S3: 센서 준비·카운트다운(D-07·D-09), 맵 HUD(D-10 진행 막대·멈춤 D-17), MapScreen 쪼개기
+1. 노션 작업 표(11/12 확인, 이제 내 Notion 연결로 읽힘): S2 여섯 줄 모두 완료. S1 [BE] 코스 API·[FE] 코스 목록·상세·맵 입장 화면도 11/12 완료로 바꿈(#30·#32 머지). 지환 S1 5줄·S2 7줄 모두 완료. 아이폰(PR #28 뒤): 권한 팝업·설정 앱 왕복 때 앱이 꺼지는지(꺼지면 입장하려던 코스·온보딩 단계 저장해 이어 가기, 계획 0025), 에어팟, 가로 맵·노치
+2. **S3**(0035로 센서 준비·카운트다운 진행 중. 카메라 노출 제어는 민재가 가져감(계획 0033, `feat/camera-exposure`). 노션 작업 표 11/12 확인, 달림 인식·센서 준비는 11/13 시연 흐름): [FE] 센서 준비 확인(BL-10, D-07), [FE] 달림 인식·카운트다운(BL-11, D-09), [3D] 섬 맵 위 아바타 달리기·아이폰 성능(60fps·발열, BL-43), [FE·Swift] 카메라 노출 제어(BL-16). 센서 값과 가짜 버전은 민재 속도 플러그인, 화면 모양은 상준. 시작 전 계획 0029(#40 같이 뛰기·기본 HUD) 읽기
 
 ## 맡은 영역 (계획 0017, 노션 [개발 계획](https://tough-wednesday-fe0.notion.site/11-08-11-23-4114ae82f1de81a9bec2db16a9bfe635) 작업 표 지환 36줄)
 기능 단위로 화면(UXML·동작)·서버 API(DB 연결·pytest)·연결까지 끝까지. 예외: 권한·에어팟·센서 준비·카운트다운은 화면만(밑의 Swift는 민재). 상준은 UI Kit·USS와 화면 모양 다듬기, PR 리뷰는 민재.
