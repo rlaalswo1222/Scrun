@@ -170,6 +170,24 @@ namespace Scrun.App.Tests
             }
         }
 
+        [Test]
+        public void 가짜_지우기는_이름이_비슷한_옆_폴더를_안_지운다()
+        {
+            var sibling = dir.TrimEnd('/', '\\') + "-old";
+            Directory.CreateDirectory(sibling);
+            var keep = Path.Combine(sibling, "x.jpg");
+            File.WriteAllText(keep, "x");
+            try
+            {
+                Fake(PermissionStatus.Granted).Discard(new CameraShot { Photos = { new CameraPhoto { Path = keep } } });
+                Assert.IsTrue(File.Exists(keep));
+            }
+            finally
+            {
+                Directory.Delete(sibling, true);
+            }
+        }
+
         [TestCase(PermissionStatus.Denied)]
         [TestCase(PermissionStatus.Restricted)]
         public void 가짜는_카메라_권한이_없으면_NoPermission(PermissionStatus status)
