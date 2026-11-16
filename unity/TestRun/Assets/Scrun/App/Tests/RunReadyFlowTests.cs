@@ -71,6 +71,7 @@ namespace Scrun.App.Tests
             var f = Begun(10);
             var i = Ok();
             i.Phone = SensorFlow.Waiting;
+            f.Update(10, i); // 들어온 프레임부터 안 옴
             Assert.AreEqual(ReadyStep.Checking, f.Update(10 + RunReadyFlow.CheckTimeoutSec - 0.1, i));
             Assert.AreEqual(ReadyStep.SensorFailed, f.Update(10 + RunReadyFlow.CheckTimeoutSec, i));
         }
@@ -206,12 +207,12 @@ namespace Scrun.App.Tests
         {
             var f = Begun();
             var i = Ok();
-            i.Calibration = CalibrationState.Missing; // 연결 문제: 기다리며 다시 시도
+            i.Calibration = CalibrationState.RetryLater; // 일시 실패: 기다리며 다시 시도
             Assert.AreEqual(ReadyStep.Checking, f.Update(10, i));
-            i.Calibration = CalibrationState.Unusable;
+            i.Calibration = CalibrationState.NeedsCalibration;
             Assert.AreEqual(ReadyStep.NeedsCalibration, f.Update(11, i));
             Assert.IsFalse(f.Cancel(), "이미 맵을 나가는 중");
-            Assert.AreEqual(RowTone.Failed, RunReadyText.Calibration(CalibrationState.Unusable).Tone);
+            Assert.AreEqual(RowTone.Failed, RunReadyText.Calibration(CalibrationState.NeedsCalibration).Tone);
         }
 
         [Test]
@@ -221,6 +222,95 @@ namespace Scrun.App.Tests
             Assert.IsTrue(RunReadyFlow.Blurred(ReadyStep.Waiting));
             Assert.IsTrue(RunReadyFlow.Blurred(ReadyStep.SensorFailed));
             Assert.IsFalse(RunReadyFlow.Blurred(ReadyStep.Countdown), "D-09는 흐림이 풀림");
+        }
+
+        // ---------- 리뷰 반영(11/16) ----------
+        [Test]
+        public void PhoneTimeoutCountsFromWhenPhoneWentBadNotFromEntering()
+        {
+            var f = Begun();
+            var loading = Ok();
+            loading.Calibration = CalibrationState.Loading; // 보정이 8초 늦게 옴, 그동안 폰은 정상
+            f.Update(0, loading);
+            Assert.AreEqual(ReadyStep.Checking, f.Update(8, loading));
+            var blip = loading;
+            blip.Phone = SensorFlow.Waiting;
+            Assert.AreEqual(ReadyStep.Checking, f.Update(8.1, blip), "들어온 지 8초여도 폰이 나빠진 지 0초");
+            Assert.AreEqual(ReadyStep.Checking, f.Update(8.1 + RunReadyFlow.CheckTimeoutSec - 0.05, blip));
+            Assert.AreEqual(ReadyStep.SensorFailed, f.Update(8.1 + RunReadyFlow.CheckTimeoutSec, blip));
+
+            var g = Begun();
+            g.Update(0, blip);
+            g.Update(3, loading); // 3초에 정상으로 → 다시 0부터
+            g.Update(4, blip);
+            Assert.AreEqual(ReadyStep.Checking, g.Update(4 + RunReadyFlow.CheckTimeoutSec - 0.05, blip));
+        }
+
+        [Test]
+        public void CalibrationLoadResultsAndErrorsMapToRowStates()
+        {
+            Assert.AreEqual(CalibrationState.Ready, ReadyCalibration.From(CalibrationLoad.Loaded));
+            Assert.AreEqual(CalibrationState.NeedsCalibration, ReadyCalibration.From(CalibrationLoad.NotOnServer));
+            Assert.AreEqual(CalibrationState.NeedsCalibration, ReadyCalibration.From(CalibrationLoad.Unreadable));
+            Assert.AreEqual(CalibrationState.Cancelled, ReadyCalibration.From(CalibrationLoad.Cancelled), "로그인이 바뀜 → 보정 안내로 보내지 않음");
+
+            Assert.AreEqual(CalibrationState.RetryLater, ReadyCalibration.From(new ApiException(ApiFailure.Network, "끊김")));
+            Assert.AreEqual(CalibrationState.RetryLater, ReadyCalibration.From(new ApiException(ApiFailure.Server, "서버", 503, null)));
+            Assert.AreEqual(CalibrationState.RetryLater, ReadyCalibration.From(new ApiException(ApiFailure.BadResponse, "502 HTML", 502)));
+            Assert.AreEqual(CalibrationState.Failed, ReadyCalibration.From(new ApiException(ApiFailure.Server, "없음", 404, "NOT_FOUND")));
+            Assert.AreEqual(CalibrationState.Failed, ReadyCalibration.From(new ApiException(ApiFailure.Server, "틀림", 422, "VALIDATION_ERROR")));
+            Assert.AreEqual(CalibrationState.Failed, ReadyCalibration.From(new ApiException(ApiFailure.BadResponse, "못 읽음", 404)), "본문 못 읽은 4xx도 다시 해도 같음");
+            Assert.AreEqual(CalibrationState.Cancelled, ReadyCalibration.From(new ApiException(ApiFailure.NotLoggedIn, "만료", 401)));
+
+            Assert.IsTrue(RunReadyFlow.CanRetryCalibration(CalibrationState.RetryLater));
+            Assert.IsFalse(RunReadyFlow.CanRetryCalibration(CalibrationState.Failed), "눌러도 같은 실패라 버튼이 아님");
+        }
+
+        [Test]
+        public void PermanentCalibrationFailureStaysButCanStillLeave()
+        {
+            var f = Begun();
+            var i = Ok();
+            i.Calibration = CalibrationState.Failed;
+            Assert.AreEqual(ReadyStep.Checking, f.Update(30, i), "넘어가지도 않고 보정 안내로도 안 감");
+            Assert.IsFalse(f.Skip(i));
+            Assert.IsTrue(f.Cancel(), "X → D-01");
+
+            var lost = Ok();
+            lost.Phone = SensorFlow.Lost;
+            var g = Begun();
+            g.Update(0, lost);
+            Assert.AreEqual(ReadyStep.SensorFailed, g.Step);
+            Assert.IsTrue(g.Cancel(), "I-01에서도 X → D-01");
+        }
+
+        [Test]
+        public void OnlyNetworkAndServerErrorsAreTransient()
+        {
+            Assert.IsTrue(new ApiException(ApiFailure.Network, "끊김").IsTransient);
+            Assert.IsTrue(new ApiException(ApiFailure.Server, "서버", 500).IsTransient);
+            Assert.IsTrue(new ApiException(ApiFailure.BadResponse, "빈 응답").IsTransient);
+            Assert.IsFalse(new ApiException(ApiFailure.BadResponse, "못 읽은 4xx", 400).IsTransient);
+            Assert.IsFalse(new ApiException(ApiFailure.Server, "틀림", 400).IsTransient);
+            Assert.IsFalse(new ApiException(ApiFailure.NotLoggedIn, "만료").IsTransient);
+        }
+
+        [Test]
+        public async Task RunStartRetriesUseTheRealtimeReconnectDelays()
+        {
+            var waited = new List<int>();
+            var sender = new RunStartSender(_ => throw new ApiException(ApiFailure.Network, "끊김"), (ms, ct) =>
+            {
+                waited.Add(ms);
+                return Task.CompletedTask;
+            });
+            Assert.IsNull(await sender.SendAsync(Body(), CancellationToken.None));
+            Assert.AreEqual(new[] { 1000, 2000, 4000, 8000 }, waited.ToArray(), "같이 뛰기 다시 붙기(ReconnectPolicy)와 같은 간격");
+
+            int calls = 0;
+            var bad = new RunStartSender(_ => { calls++; throw new ApiException(ApiFailure.BadResponse, "못 읽은 400", 400); }, NoWait);
+            Assert.IsNull(await bad.SendAsync(Body(), CancellationToken.None));
+            Assert.AreEqual(1, calls, "본문 못 읽은 4xx는 다시 안 보냄");
         }
 
         [Test]
@@ -274,7 +364,7 @@ namespace Scrun.App.Tests
             Assert.AreEqual("정상", RunReadyText.Calibration(CalibrationState.Ready).Chip);
             Assert.AreEqual("정상", RunReadyText.Network(RunTogetherStatus.Connected).Chip);
             Assert.AreEqual("공동 맵 연결", RunReadyText.Network(RunTogetherStatus.Connected).Sub);
-            Assert.AreEqual(RowTone.Failed, RunReadyText.Calibration(CalibrationState.Missing).Tone);
+            Assert.AreEqual(RowTone.Failed, RunReadyText.Calibration(CalibrationState.RetryLater).Tone);
             Assert.AreEqual(RowTone.Fallback, RunReadyText.Network(null).Tone);
             Assert.AreEqual(RowTone.Fallback, RunReadyText.Network(RunTogetherStatus.Stopped).Tone);
         }
@@ -325,7 +415,7 @@ namespace Scrun.App.Tests
             calls = 0;
             var down = new RunStartSender(_ => { calls++; throw new ApiException(ApiFailure.Server, "서버", 503, null); }, NoWait);
             Assert.IsNull(await down.SendAsync(Body(), CancellationToken.None));
-            Assert.AreEqual(1 + RunStartSender.RetryDelaysMs.Count, calls);
+            Assert.AreEqual(1 + RunStartSender.MaxRetries, calls);
         }
 
         [Test]
