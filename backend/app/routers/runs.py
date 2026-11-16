@@ -20,7 +20,7 @@ from .. import stub_data as d
 from ..core.auth import Principal, stub_user
 from ..core.config import settings
 from ..core.errors import invalid as _invalid
-from ..core.run_access import ACTIVE, DISCARDED, PENDING, VERIFIED, UNVERIFIED
+from ..core.run_access import ACTIVE, DISCARDED, PENDING, UNVERIFIED, VERIFIED, close_expired
 from ..core.run_access import my_run as _my_run
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
@@ -243,7 +243,11 @@ def finish_run(runId: str, body: RunFinishRequest, request: Request, user: User 
     if run.status != ACTIVE:
         if run.status != DISCARDED and run.ended_at == body.ended_at and run.sensor_distance_m == body.sensor.distance_m \
                 and run.sensor_duration_s == body.sensor.duration_s:
-            return ok(request, _finished_summary(db, run))  # 응답을 못 받은 앱이 다시 보냄
+            # 응답을 못 받은 앱이 다시 보냄. 그 사이 인증 마감이 지났으면 닫힌 상태로 답함(#55 리뷰: PENDING으로 보이면 앱이 촬영으로 감)
+            if close_expired(db, run_id=run.id):
+                db.commit()
+                db.refresh(run)
+            return ok(request, _finished_summary(db, run))
         raise ApiError(E.RUN_ALREADY_FINISHED)
     if _expired(run):
         raise ApiError(E.RUN_ALREADY_FINISHED)
