@@ -1,3 +1,4 @@
+using Scrun.App;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -18,6 +19,15 @@ namespace Scrun
         [SerializeField] Volume postVolume;
 
         public static Tier Current { get; private set; } = Tier.High;
+        static ScrunQuality active; // 지금 섬 씬의 것(달리는 중 품질 낮추기, 계획 0039 I-12)
+
+        // 한 단계 낮춤(High → Medium → Low). 섬이 없거나 이미 Low면 false
+        public static bool LowerOneStep()
+        {
+            if (active == null || Current == Tier.Low) return false;
+            active.Apply(Current == Tier.High ? Tier.Medium : Tier.Low);
+            return true;
+        }
 
         // 섬 씬이 열리기 전 값(OnDestroy에서 되돌림)
         int prevSleepTimeout, prevFrameRate;
@@ -29,13 +39,25 @@ namespace Scrun
 
         void Awake()
         {
+            active = this;
+            RunLink.LowerQuality = LowerOneStep;
+            RunLink.CanLowerQuality = () => Current != Tier.Low;
             SaveGlobals();
             var tier = force != Tier.Auto ? force : Detect();
             Apply(tier);
             Screen.sleepTimeout = SleepTimeout.NeverSleep;   // 달리는 동안 화면 꺼짐 방지
         }
 
-        void OnDestroy() => RestoreGlobals();
+        void OnDestroy()
+        {
+            if (active == this)
+            {
+                active = null;
+                RunLink.LowerQuality = null;
+                RunLink.CanLowerQuality = null;
+            }
+            RestoreGlobals();
+        }
 
         void SaveGlobals()
         {

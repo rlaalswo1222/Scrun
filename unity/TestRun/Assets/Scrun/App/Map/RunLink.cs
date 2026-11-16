@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace Scrun.App
@@ -17,6 +18,10 @@ namespace Scrun.App
         public static float PlayerDistanceM { get; private set; } // 입장 위치부터 이어지는 누적 거리(m, 바퀴 넘어도 계속 늘어남)
         public static float PlayerSpeedKmh { get; private set; }  // 아바타에 쓰는 속도(달리기 전 0)
         public static float LapLengthM { get; private set; }      // 섬 코스 한 바퀴(m)
+        // 섬 → 앱: 그래픽 품질 한 단계 낮추기(ScrunQuality가 섬 씬에서 채움, I-12 "품질 낮추기", 계획 0039). 못 낮추면 false
+        public static Func<bool> LowerQuality { get; set; }
+        public static Func<bool> CanLowerQuality { get; set; } // 지금보다 낮은 단계가 있음
+        public static bool SpeedUnsteady { get; set; }            // 섬 → 앱: 추정이 이상해 직전 속도로 버티는 중(AvatarSpeed.Unsteady, I-03)
 
         public static float PlayerLapPositionM => LoopMath.Wrap(PlayerDistanceM, LapLengthM);
 
@@ -39,6 +44,7 @@ namespace Scrun.App
             PlayerDistanceM = 0f;
             PlayerSpeedKmh = 0f;
             LapLengthM = 0f;
+            SpeedUnsteady = false;
         }
 
         public static void ReportPlayer(float distanceM, float speedKmh, float lapLengthM)
