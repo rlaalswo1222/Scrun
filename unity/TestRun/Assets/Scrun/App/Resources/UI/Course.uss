@@ -357,6 +357,32 @@
     rotate: -45deg;
 }
 
+/* 달리는 동안 멈춤(D-10 Pause button): 막대 둘. X는 숨김 */
+.map-pause-bar {
+    position: absolute;
+    width: 4px;
+    height: 16px;
+    border-radius: 2px;
+    background-color: var(--color-text);
+    display: none;
+}
+
+.map-pause-bar--left {
+    translate: -4px 0;
+}
+
+.map-pause-bar--right {
+    translate: 4px 0;
+}
+
+.map-round-btn--pause > .map-pause-bar {
+    display: flex;
+}
+
+.map-round-btn--pause > .map-x-bar {
+    display: none;
+}
+
 /* I-10 맵 로딩 */
 .map-loading {
     position: absolute;

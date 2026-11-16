@@ -142,4 +142,39 @@ namespace Scrun.App
         public string ClientRunId { get; set; }
         public DateTime StartedAt { get; set; }
     }
+
+    // PUT /v1/runs/{runId}/samples(계획 0037): 달린 시간 기준 offsetS(일시정지 구간은 빠짐)부터 1초 간격 속도
+    public sealed class RunSamplesBody
+    {
+        public double OffsetS { get; set; }
+        public double IntervalS { get; set; }
+        public float[] SpeedsKmh { get; set; }
+    }
+
+    public sealed class RunStatsBody
+    {
+        public int DistanceM { get; set; }
+        public int DurationS { get; set; } // 일시정지를 뺀 달린 시간
+    }
+
+    // POST /v1/runs/{runId}/finish
+    public sealed class RunFinishBody
+    {
+        public DateTime EndedAt { get; set; } // UTC
+        public RunStatsBody Sensor { get; set; }
+    }
+
+    // 기록 요약(종료 응답 등). verification: PENDING(인증 대기)·VERIFIED·UNVERIFIED
+    public sealed class RunSummary
+    {
+        public string RunId { get; set; }
+        public DateTime StartedAt { get; set; }
+        public string CourseId { get; set; }
+        public string CourseName { get; set; }
+        public int DistanceM { get; set; }
+        public int DurationS { get; set; }
+        public int? AvgPaceSPerKm { get; set; }
+        public string Verification { get; set; }
+        public bool Shared { get; set; }
+    }
 }

@@ -7,11 +7,13 @@ using UnityEngine.UIElements;
 
 namespace Scrun.App
 {
-    // 맵이 입장하지 못해 상세 화면으로 돌려보낼 때
+    // 맵을 나가며 상세 화면에 알릴 때
     public enum MapExit
     {
         OtherCourse,      // I-11 "다른 코스 보기" → 목록
         NeedsCalibration, // 보정 먼저(상세에서 안내, Figma C-03)
+        VerifyConsole,    // D-22 "계기판 촬영하기" → 인증(지환 E-02, MapScreen.FinishedRunId)
+        Finished,         // D-22 "촬영 없이 마무리" 등 달리기를 끝내고 나감
     }
 
     // 맵(가로, D-10 자리). Figma 흐름대로 가로로 돌린 뒤 입장(POST /entries)과 섬 씬 불러오기를 I-10 로딩 화면 아래에서 하고,
@@ -23,6 +25,8 @@ namespace Scrun.App
     // 입장 응답의 realtime으로 같은 맵 실시간 방에 붙고(계획 0029, 화면은 IRunTogether만 봄), 달리기를 시작하면 HUD(RunHudView)를 띄운다.
     // 섬과는 RunLink로 주고받는다(내 거리·속도, 달리는 중 스위치, 다른 러너).
     // 안내가 끝나면 센서 준비 → 달림 인식 → 3·2·1(RunReadyView, 계획 0035)을 띄우고, 끝나면 달리기를 시작하고 서버에 알린다(POST /runs).
+    // 달리는 동안 오른쪽 위 버튼은 멈춤(D-10) → 일시정지·종료 확인·목표 달성·인증 안내(RunEndView, 계획 0037).
+    // 속도 시계열은 1분마다, 끝나면 남은 것과 종료를 서버에 올린다(RunRecordUploader, 못 보내면 기기에 남김).
     public sealed class MapScreen : AppScreen
     {
         const float EntryShare = 0.15f; // 진행 막대에서 입장 요청 몫(나머지는 씬 불러오기)
@@ -61,6 +65,16 @@ namespace Scrun.App
         IRunTogether together;
         RunSession session;
         RunHudView hud;
+        RunEndView endView;
+        RunRecordUploader uploader;
+        IVisualElementScheduledItem runTick;
+        Button topButton;
+        CancellationTokenSource runUpload; // 맵을 나가면 달리는 동안의 묶음 올리기를 그만둠(끝낸 기록 보내기는 끝까지)
+
+        const long RunTickMs = 200;
+
+        // 이 맵에서 끝낸 달리기의 서버 기록 ID(D-22 "계기판 촬영하기" → 상세 화면이 인증 화면에 넘김, 지환 E-02). 서버에 못 보냈으면 null
+        public string FinishedRunId { get; private set; }
 
         // 러닝 설정에서 고른 것(안내를 끝내기 전에는 null). S3 센서 준비·카운트다운이 쓴다
         public RunSetup Setup { get; private set; }
@@ -81,7 +95,8 @@ namespace Scrun.App
 
         protected override void OnCreate()
         {
-            Q<Button>("leave").clicked += () => Nav.Pop();
+            topButton = Q<Button>("leave");
+            topButton.clicked += OnTopButton;
             mapTop = Q<VisualElement>("map-top");
             Q<Label>("course-label").text = CourseText.MapLabel(course.LengthM, course.Name);
             loadingView = Q<VisualElement>("map-loading");
@@ -106,6 +121,12 @@ namespace Scrun.App
         // 안내가 떠 있으면 한 단계 앞으로(D-01에서는 맵 나가기), 센서 준비·대기·3·2·1이면 D-01로. 맵만 보이면 그냥 닫힘
         protected internal override bool OnBack()
         {
+            if (RunInProgress)
+            {
+                BackWhileRunning();
+                return true;
+            }
+            if (session != null && session.Finished) return true; // D-22는 버튼으로만(저장 중에 뒤로 가기로 맵이 닫히지 않게)
             if (readyView != null && readyView.Visible)
             {
                 readyView.Back();
@@ -121,6 +142,12 @@ namespace Scrun.App
             leaving = true;
             MapLaunch.Clear();
             CancelRunStart();
+            runTick?.Pause();
+            runUpload?.Cancel();
+            runUpload?.Dispose();
+            runUpload = null;
+            endView?.Dispose();
+            endView = null;
             headphones?.Dispose();
             headphones = null;
             CloseSetup(); // 센서 준비 층이 켠 센서도 끔
@@ -306,6 +333,130 @@ namespace Scrun.App
             StartRunning();
         }
 
+        // ---- 달리는 동안: 멈춤·끝(계획 0037) ----
+
+        bool RunInProgress => session != null && session.Started && !session.Finished;
+
+        // 오른쪽 위 버튼: 달리기 전엔 나가기(X), 달리는 동안엔 멈춤(D-10)
+        void OnTopButton()
+        {
+            if (RunInProgress) OpenPause();
+            else Nav.Pop();
+        }
+
+        void SetTopButtonPause(bool pause) => topButton.EnableInClassList("map-round-btn--pause", pause);
+
+        RunEndView EndView()
+        {
+            if (endView != null) return endView;
+            var v = new RunEndView(Root);
+            v.Resume += ResumeRun;
+            v.AskFinish += () => { if (session != null) v.ShowConfirm(session.DistanceM(RunLink.PlayerDistanceM), session.ElapsedSec); };
+            v.Finish += FinishRun;
+            v.CloseGoal += HideEnd;
+            v.Verify += () => onExit?.Invoke(MapExit.VerifyConsole, null);
+            v.SkipVerify += SkipVerify;
+            endView = v;
+            return v;
+        }
+
+        // 패널을 띄우면 윗줄(코스 이름·멈춤 버튼)을 숨김(Figma D-17–D-22에 없음). 패널은 이 둘로만 띄우고 닫는다
+        void ShowEnd(Action<RunEndView> show)
+        {
+            show(EndView());
+            mapTop.SetVisible(false);
+        }
+
+        void HideEnd()
+        {
+            endView?.Hide();
+            mapTop.SetVisible(true);
+        }
+
+        // D-10 멈춤 → D-17: 시간 멈춤, 내 아바타 서 있음(남의 화면에도 running=false로 대기, Figma D-17 노트)
+        void OpenPause()
+        {
+            if (!RunInProgress) return;
+            session.Pause();
+            RunLink.Moving = false;
+            ShowEnd(v => v.ShowPause(session.DistanceM(RunLink.PlayerDistanceM), session.ElapsedSec));
+        }
+
+        // "계속 달리기": 아바타는 걸음을 따라 바로 움직이고(AvatarSpeed), 시간은 걸음이 다시 잡히면(아바타가 움직이면) 흐름
+        void ResumeRun()
+        {
+            if (!RunInProgress) return;
+            session.Resume();
+            RunLink.Moving = true;
+            HideEnd();
+        }
+
+        // Esc·안드로이드 뒤로: 달리는 중이면 멈춤, D-18이면 D-17로, D-17·D-19면 닫기. D-22는 버튼으로만
+        void BackWhileRunning()
+        {
+            switch (endView?.Shown ?? RunEndPanel.None)
+            {
+                case RunEndPanel.None: OpenPause(); break;
+                case RunEndPanel.Confirm: endView.ShowPause(session.DistanceM(RunLink.PlayerDistanceM), session.ElapsedSec); break;
+                case RunEndPanel.Pause: ResumeRun(); break;
+                case RunEndPanel.Goal: HideEnd(); break;
+            }
+        }
+
+        // 0.2초마다: 시계열 칸, 다시 걷기, 목표 달성(D-19), 1분 묶음 올리기
+        void RunTick()
+        {
+            if (leaving || session == null || !session.Started || session.Finished) return;
+            session.Update(RunLink.PlayerSpeedKmh);
+            if (session.CheckGoalReached(RunLink.PlayerDistanceM))
+                ShowEnd(v => v.ShowGoal(session.Goal, session.ElapsedSec)); // 달리기는 그대로(아바타·시간 계속)
+            if (uploader != null && runUpload != null) uploader.StartUploadDue(runUpload.Token);
+        }
+
+        // D-18 "종료하고 인증" · D-19 "마무리하기" → D-22, 뒤에서 서버에 남은 묶음 + 종료
+        async void FinishRun()
+        {
+            if (!RunInProgress) return;
+            var body = session.Finish(RunLink.PlayerDistanceM, RunLink.PlayerSpeedKmh);
+            if (body == null) return;
+            RunLink.Moving = false;
+            runTick?.Pause();
+            CancelRunStart(); // 아직 runId가 없으면 올리는 쪽이 같은 clientRunId로 다시 시작함
+            runUpload?.Cancel();
+            ShowEnd(v => v.ShowDone(session.DistanceM(RunLink.PlayerDistanceM)));
+            FinishedRunId = null;
+            var s = session;
+            RunSaveState state;
+            try
+            {
+                var summary = await uploader.FinishAsync(CancellationToken.None); // 맵을 나가도 끝까지(못 보내면 기기에 남김)
+                state = summary != null ? RunSaveState.Saved : PendingRunStore.Default.Has(s.ClientRunId) ? RunSaveState.KeptLocal : RunSaveState.Failed;
+                if (summary != null) FinishedRunId = summary.RunId;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                state = RunSaveState.Failed;
+            }
+            if (!leaving && endView != null && session == s) endView.SetSaving(state);
+        }
+
+        // D-22 "촬영 없이 마무리 (미인증)": 미인증으로 저장, 나중에 인증 못 함(Figma D-22 노트, 11/06 확정). 인증 API는 지환 BL-18.
+        // 기록을 폰에 남겼으면(오프라인) 그 기록에 "미인증으로 마무리"를 적어 두고 나중에 같이 보냄
+        async void SkipVerify()
+        {
+            string runId = FinishedRunId;
+            string clientRunId = session?.ClientRunId;
+            onExit?.Invoke(MapExit.Finished, null);
+            if (runId == null)
+            {
+                if (clientRunId != null) PendingRunStore.Default.MarkSkipVerification(clientRunId);
+                return;
+            }
+            try { await Api.Runs.SkipVerificationAsync(runId); }
+            catch (ApiException e) { Debug.LogWarning("[기록] 미인증 마무리를 서버에 못 알림(인증 대기로 남음): " + e); }
+        }
+
         // D-08 X·뒤로 → D-01 러닝 설정부터 다시(맵·입장 자리 그대로, 정한 것 3)
         void OnReadyCancelled()
         {
@@ -368,6 +519,13 @@ namespace Scrun.App
             session.Start(RunLink.PlayerDistanceM);
             RunLink.Moving = true;
             SendRunStart(session);
+            runUpload?.Cancel();
+            runUpload?.Dispose();
+            runUpload = new CancellationTokenSource();
+            uploader = new RunRecordUploader(session, mapInstanceId, userId: RunRecordUploader.TokenSubject(Api.Session.AccessToken));
+            SetTopButtonPause(true);
+            runTick ??= Root.schedule.Execute(RunTick).Every(RunTickMs);
+            runTick.Resume();
         }
 
         async void SendRunStart(RunSession s)
@@ -409,6 +567,9 @@ namespace Scrun.App
 
         void EndRun()
         {
+            runTick?.Pause();
+            endView?.Hide();
+            if (topButton != null) SetTopButtonPause(false);
             hud?.Dispose();
             hud = null;
             together?.Dispose();

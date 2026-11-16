@@ -255,6 +255,11 @@
   - **HUD `RunHudView`**(`RunHud.uxml/uss`, 맵 화면 안의 층): 거리·시간·목표 진행 막대, 왼쪽 아래 앞뒤 가장 가까운 사람 간격, 위 가운데 들어옴·나감 토스트(3초, 하나씩)·연결 상태. 속도·페이스는 안 보임(BL-12 ②), 개발 빌드만 오른쪽 아래 속도·왕복 지연. 시간·거리는 `RunSession`(카운트다운 끝 `MapScreen.StartRunning()`, 지금은 `OnSetupDone`이 임시로 바로 부름)
   - 다른 사람 없이 확인: `backend/scripts/fake_runner.py`(로컬 가짜 카카오 서버에 가짜 계정으로 들어가 일정한 속도로 달림)
   - 아직: 에디터 Play 전체 흐름, 아이폰(`ClientWebSocket` IL2CPP·왕복 지연), 상준 모양 다듬기, 미니맵·멈춤·종료(S5), 페이스 봇(S4 이후)
+- **멈춤·끝·기록 올리기**(11/16, 계획 0037, Figma D-17·D-18·D-19·D-22): 달리는 동안 맵 윗줄 오른쪽 버튼이 멈춤 모양(`map-round-btn--pause`) → `RunEndView`(`RunEnd.uxml/uss`, 맵 화면 안의 층)
+  - D-17 일시정지(거리·시간, 종료하기·계속 달리기) → D-18 종료 확인 → D-22 인증 안내(계기판 촬영하기·촬영 없이 마무리). 목표에 처음 닿으면 D-19(계속·마무리하기, 달리기는 안 멈춤). 패널이 뜨면 윗줄 숨김. Esc: 달리는 중 → D-17, D-18 → D-17, D-17·D-19 닫기, D-22는 버튼으로만
+  - `RunSession`: 일시정지면 `RunLink.Moving` 꺼짐(아바타·남의 화면 멈춤), "계속"은 아바타가 1 km/h 이상이 되면(걸음 다시 잡힘) 시간이 다시 흐름. 시간은 달린 시간만, 시계열은 달린 시간 1초마다(일시정지 구간 빼고 이어 붙임)
+  - `RunRecordUploader`: 1분 묶음 `PUT samples`, 끝나면 남은 묶음 + `POST finish`(runId가 없으면 시작부터). 끝내 못 보냈거나 로그인 만료·429면 `PendingRunStore`(앱 데이터 `pending-runs.json`, 계정별)에 남기고 홈(`HomeScreen.OnShow`)에서 다시 보냄. D-22 "계기판 촬영하기"는 상세가 `MapScreen.FinishedRunId`로 인증 화면(지환 E-02)을 열 자리(지금은 임시 안내창)
+  - 에디터에서 서버 주소를 잠깐 바꿀 땐 EditorPrefs뿐 아니라 `ApiConfig.BaseUrl`도(에디터 켤 때 한 번 읽음). UXML 주석에 `--`를 쓰면 XML 오류로 화면 전체가 안 불림
 - **아래 탭 바**(11/10, UI Kit Tab Bar): 아이콘 24 + 글자 12, 홈·친구·기록·마이 순서, 고른 탭은 파란 아이콘(`tab-*-on.svg`)·굵은 글자. 탭 버튼 이름(`tab-home` 등)은 그대로라 `Navigator`는 안 바뀜
 - 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
 
