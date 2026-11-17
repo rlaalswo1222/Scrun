@@ -1,4 +1,6 @@
 """내 정보·설정 진짜 흐름(테스트 DB, BL-36, 계획 0028). 실행 전 DB가 떠 있어야 함."""
+import re
+
 import pytest
 
 from app.core import tokens
@@ -15,7 +17,7 @@ def test_가입한_값을_그대로_돌려준다(db_client):
     got = data(db_client.get(ME, headers=me))
     assert got["nickname"] == "러너1" and got["heightCm"] == 175 and got["weightKg"] == 70
     assert got["timezone"] == "Asia/Seoul"
-    assert got["friendCode"].startswith("SCR-") and got["userId"]
+    assert re.fullmatch(r"[2-9A-HJ-NP-Z]{8}", got["friendCode"]) and got["userId"]
     assert got["createdAt"].endswith("Z")
 
 

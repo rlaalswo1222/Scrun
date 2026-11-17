@@ -148,6 +148,14 @@ class Track:
     seen: dict[str, Companion] = field(default_factory=dict)  # 키(사람 ID, 봇은 "bot:페이스 이름") → 처음 본 순서
 
 
+@dataclass(frozen=True)
+class RunningNow:
+    """지금 달리는 사람 한 명(친구 탭)."""
+    course_id: str
+    run_m: Optional[float]  # 이번 달리기 거리. 옛 앱·첫 state 전이면 None
+    kmh: float
+
+
 def bot_id(index: int) -> str:
     return f"bot_{index + 1}"  # 사람 ID(ULID: 숫자·대문자만)와 겹치지 않음
 
@@ -310,6 +318,20 @@ class Hub:
             return [r.d for room in self._rooms.values() if room.course_id == course_id
                     for r in room.runners.values()
                     if r.placed and r.running and r.conn is not None and r.user_id != except_user]
+
+    def running_now(self, user_ids) -> dict[str, RunningNow]:
+        """그중 지금 섬에서 달리는 중인 사람(친구 탭, 계획 0044). 끊긴 지 GRACE_S 안이면 마지막 상태로 남긴다
+        (헬스장 와이파이가 잠깐 끊길 때마다 친구 목록에서 깜빡이지 않게. 그 뒤엔 sweep이 뺌)."""
+        wanted = set(user_ids)
+        out: dict[str, RunningNow] = {}
+        with self._lock:
+            self._sweep_locked()
+            for uid in wanted & self._where.keys():
+                room = self._rooms.get(self._where[uid])
+                r = room.runners.get(uid) if room else None
+                if r is not None and r.placed and r.running:
+                    out[uid] = RunningNow(course_id=room.course_id, run_m=r.run, kmh=r.v)
+        return out
 
     def reset(self) -> None:
         """테스트용."""

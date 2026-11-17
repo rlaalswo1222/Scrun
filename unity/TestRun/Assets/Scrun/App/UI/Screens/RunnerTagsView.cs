@@ -7,7 +7,7 @@ namespace Scrun.App
 {
     // 다른 러너 머리 위 이름표와 러너 정보 카드(BL-22, Figma D-12, 계획 0041 정할 것 5·6).
     // 이름표 위치는 섬이 매 프레임 RunLink.Heads에 넣고(화면 픽셀), 여기서 HUD 층에 붙여 누를 수 있게 한다.
-    // 카드: 이름·나와의 간격·이번 러닝 거리·닫기(Figma "누적 거리"는 전체 누적으로 읽혀서 바꿈, 상준 확인). 봇은 간격만. 레벨·친구·인증 마크는 데이터가 생기면(S7·S8)
+    // 카드: 이름·나와의 간격·이번 러닝 거리·닫기(Figma "누적 거리"는 전체 누적으로 읽혀서 바꿈, 상준 확인). 봇은 간격만. 친구면 "친구" 배지(계획 0044, FriendDirectory). 레벨·인증 마크는 BL-32(S8)
     public sealed class RunnerTagsView
     {
         public const string BotSubtitle = "일정한 페이스로 함께 달리는 페이스메이커예요"; // 임시 문구(상준)
@@ -133,7 +133,8 @@ namespace Scrun.App
 
         void FillCard(RemoteRunner r)
         {
-            var (name, badge, sub, gap, dist) = CardText(r, RunLink.PlayerLapPositionM, RunLink.LapLengthM, RealtimeClock.Now());
+            var (name, badge, sub, gap, dist) = CardText(r, RunLink.PlayerLapPositionM, RunLink.LapLengthM, RealtimeClock.Now(),
+                                                          FriendDirectory.Contains(r.UserId));
             cardName.text = name;
             cardBadge.text = badge ?? "";
             cardBadge.SetVisible(badge != null);
@@ -144,15 +145,16 @@ namespace Scrun.App
             if (dist != null) cardDist.text = dist;
         }
 
-        // 카드 글자: (이름, 배지, 설명, 나와의 간격, 누적 거리). 봇은 배지 "BOT"·설명, 거리 없음. 사람은 거리를 모르면 null
+        // 카드 글자: (이름, 배지, 설명, 나와의 간격, 누적 거리). 봇은 배지 "BOT"·설명, 거리 없음. 사람은 거리를 모르면 null,
+        // 친구면 배지 "친구"(계획 0044 정할 것 3: 카드에서 친구 추가는 안 함)
         public static (string name, string badge, string sub, string gap, string dist) CardText(
-            RemoteRunner r, float myLapM, float lapM, double now)
+            RemoteRunner r, float myLapM, float lapM, double now, bool isFriend = false)
         {
             float delta = LoopMath.Delta(myLapM, r.PositionAt(now), lapM);
             string gap = Math.Abs(delta) < 1f ? "나란히" : LoopMath.GapText(Math.Abs(delta), ahead: delta >= 0f);
             if (r.IsBot) return (r.Nickname, "BOT", BotSubtitle, gap, null);
             string dist = r.RunDistanceM is float m ? RunSession.DistanceText(m) + "km" : null;
-            return (r.Nickname, null, null, gap, dist);
+            return (r.Nickname, isFriend ? "친구" : null, null, gap, dist);
         }
     }
 }

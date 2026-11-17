@@ -1,0 +1,49 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- G-01·G-02·G-04 친구 탭(계획 0044, Figma 608:1675·1772·1969). 위: 지금 달리는 친구(실시간), 아래: 친구 피드.
+         친구가 0명이면 G-04 빈 상태. 줄·카드는 FriendsScreen이 코드로(FriendParts) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
+    <ui:VisualElement class="fr fr-page">
+        <ui:VisualElement class="fr-header">
+            <ui:Label text="친구" class="fr-title" />
+            <ui:VisualElement class="fr-header-actions">
+                <ui:Button name="manage" text="관리" class="fr-text-btn" />
+                <ui:Button name="add" class="fr-round-add">
+                    <ui:VisualElement class="fr-plus" picking-mode="Ignore" />
+                </ui:Button>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- 친구가 있을 때(G-01·G-02) -->
+        <ui:ScrollView name="scroll" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="fr-scroll">
+            <ui:Label name="pull" class="fr-pull" />
+            <ui:Label name="running-title" text="지금 달리는 친구" class="fr-section" />
+            <ui:VisualElement name="running-list" />
+            <!-- G-02 -->
+            <ui:VisualElement name="running-empty" class="fr-empty-card">
+                <ui:Label text="지금 달리는 친구가 없어요" class="fr-empty-title" />
+                <ui:Label text="친구가 달리기 시작하면 여기에 표시돼요" class="fr-empty-body" />
+            </ui:VisualElement>
+            <ui:Label text="친구 피드" class="fr-section" />
+            <ui:VisualElement name="feed-list" />
+            <ui:Label name="feed-empty" text="아직 친구들이 공유한 러닝이 없어요" class="fr-hint" />
+            <ui:Button name="feed-more" text="더 보기" class="btn btn-ghost fr-more" />
+        </ui:ScrollView>
+
+        <!-- G-04 친구 없음 -->
+        <ui:VisualElement name="no-friends" class="fr-scroll">
+            <ui:VisualElement class="fr-illust">
+                <ui:VisualElement class="fr-illust-icon" />
+            </ui:VisualElement>
+            <ui:Label text="함께 달릴 친구를 추가해 보세요" class="fr-big" />
+            <ui:Label text="친구가 달리고 있으면 바로 같이 달릴 수 있고,&#10;서로의 인증된 러닝도 볼 수 있어요" class="fr-lead" />
+            <ui:VisualElement class="fr-spacer" />
+            <ui:Button name="add-first" text="친구 추가하기" class="btn btn-primary" />
+        </ui:VisualElement>
+
+        <!-- 처음 불러오기에 실패하고 안내창을 닫았을 때 -->
+        <ui:VisualElement name="load-failed" class="empty-state">
+            <ui:Label text="친구 목록을 불러오지 못했어요" class="hint-text" />
+            <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

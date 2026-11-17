@@ -2,8 +2,9 @@
   "request": {
     "method": "POST",
     "path": "/v1/friends",
+    "auth": "Bearer {accessToken}",
     "body": {
-      "friendCode": "SCR-ABCD"
+      "friendCode": "K7Q2M9XA"
     }
   },
   "status": 201,
@@ -11,11 +12,13 @@
     "resultType": "SUCCESS",
     "success": {
       "data": {
-        "userId": "usr_f2",
-        "nickname": "주말러너",
-        "level": 1,
-        "verifiedCount": 1,
-        "runningNow": false
+        "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000",
+        "nickname": "아침러너",
+        "level": null,
+        "verifiedCount": 0,
+        "runningNow": false,
+        "runningDistanceM": null,
+        "lastRunAt": "2026-11-06T12:15:00Z"
       }
     },
     "error": null,
