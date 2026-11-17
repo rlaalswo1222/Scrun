@@ -39,8 +39,8 @@ def build(size: str) -> YOLOX:
 def datasets():
     pub = HERE / "data/public/7seg_v3"
     syn = HERE / "data/synth"
-    train = load_coco(pub / "train") + load_coco(syn / "train")
-    val = {"public_valid": load_coco(pub / "valid"), "synth_val": load_coco(syn / "val")}
+    train = load_coco(pub / "train", public=True) + load_coco(syn / "train")
+    val = {"public_valid": load_coco(pub / "valid", public=True), "synth_val": load_coco(syn / "val")}
     return train, val
 
 
@@ -91,6 +91,8 @@ def main():
     train_items, val_sets = datasets()
     if args.limit:
         train_items = train_items[: args.limit]
+    if not train_items:
+        raise SystemExit("학습 데이터 없음: data/public/7seg_v3·data/synth를 먼저 만드세요(README)")
     bs = min(args.bs, len(train_items))   # --limit이 배치보다 작아도 배치가 0개가 되지 않게(#61 리뷰)
     loader = torch.utils.data.DataLoader(DigitDataset(train_items, train=True), batch_size=bs, shuffle=True,
                                          num_workers=4, drop_last=True, persistent_workers=True)

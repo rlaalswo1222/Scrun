@@ -52,7 +52,7 @@ def main():
     run = HERE / args.run
     onnx_path = export(args.size, run)
     reader = OnnxReader(str(onnx_path), threads=2)
-    sets = {"public_test": load_coco(HERE / "data/public/7seg_v3/test"), "synth_val": load_coco(HERE / "data/synth/val")}
+    sets = {"public_test": load_coco(HERE / "data/public/7seg_v3/test", public=True), "synth_val": load_coco(HERE / "data/synth/val")}
     if args.photos:
         sets["photos"] = load_coco(Path(args.photos))
     out = {name: score(reader, items) for name, items in sets.items()}

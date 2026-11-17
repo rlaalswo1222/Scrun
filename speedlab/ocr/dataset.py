@@ -20,18 +20,18 @@ MAX_LABELS = 32
 # 이름 '2' 상자가 실제 0, '1'이 소수점, '0'이 '-', '-'가 8, '.'이 9). 원래 순서 '- . 0 … 9'에 이름만 '0 … 9 - .'로 붙은 것(가설)
 PUBLIC_NAME_FIX = {"0": "-", "1": ".", "2": "0", "3": "1", "4": "2", "5": "3", "6": "4", "7": "5", "8": "6", "9": "7",
                    "-": "8", ".": "9"}
-PUBLIC_DIR = "7seg_v3"   # 이름 바로잡기는 이 공개 데이터 폴더에만. 우리가 Roboflow로 정답을 단 실사진(채점용)엔 걸지 않는다
 
 
-def load_coco(folder: Path, images_dir: str = "images") -> list[tuple[Path, np.ndarray, str]]:
+def load_coco(folder: Path, images_dir: str = "images", public: bool = False) -> list[tuple[Path, np.ndarray, str]]:
     """COCO 폴더 → [(그림 경로, 상자[N,5](분류, x0, y0, x1, y1), 정답 글자)]. 분류 이름으로 우리 CLASSES에 맞춤.
-    Roboflow 내보내기(_annotations.coco.json)도 받는다. 이름 바로잡기(PUBLIC_NAME_FIX)는 공개 데이터 폴더(PUBLIC_DIR) 안에서만:
-    우리 헬스장 사진에 Roboflow로 정답을 달아 채점할 때 정답이 뒤섞이지 않게(#61 리뷰)."""
+    Roboflow 내보내기(_annotations.coco.json)도 받는다. 이름 바로잡기(PUBLIC_NAME_FIX)는 public=True(공개 7segmentrecognition_v3)로 부를 때만:
+    우리 헬스장 사진에 Roboflow로 정답을 달아 채점할 때 정답이 뒤섞이지 않게(#61 리뷰). 폴더 이름으로 고르지 않음:
+    Roboflow 기본 폴더 이름(7SegmentRecognition_v3-1)으로 받으면 바로잡기가 조용히 꺼졌음(#68 리뷰)."""
     ann_file = folder / "annotations.json"
     if not ann_file.exists():
         ann_file = folder / "_annotations.coco.json"
         images_dir = "."
-    fix = PUBLIC_NAME_FIX if PUBLIC_DIR in Path(folder).resolve().parts else {}
+    fix = PUBLIC_NAME_FIX if public else {}
     j = json.loads(ann_file.read_text())
     name_of = {c["id"]: fix.get(c["name"], c["name"]) for c in j["categories"]}
     by_img: dict[int, list] = {im["id"]: [] for im in j["images"]}
