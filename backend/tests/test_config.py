@@ -61,3 +61,21 @@ def test_migrations_need_only_database_url():
                        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
     assert r.returncode == 0, r.stderr
     assert "ConfigError" not in r.stderr
+
+
+def test_bot_policy_defaults_and_overrides():
+    from app.core.config import BotPolicy
+    s = load_settings({"JWT_SECRET": GOOD_SECRET, "KAKAO_MODE": "fake"})
+    assert s.bots == BotPolicy() and s.bots.fill_to == 6 and len(s.bots.paces_kmh) == 5
+    s = load_settings({"JWT_SECRET": GOOD_SECRET, "KAKAO_MODE": "fake", "BOT_FILL_TO": "0", "BOT_PACES_KMH": " 8, 9.5 "})
+    assert s.bots.fill_to == 0 and s.bots.paces_kmh == (8.0, 9.5)
+
+
+@pytest.mark.parametrize("env, msg", [
+    ({"BOT_FILL_TO": "-1"}, "BOT_FILL_TO"), ({"BOT_FILL_TO": "21"}, "BOT_FILL_TO"), ({"BOT_FILL_TO": "six"}, "BOT_FILL_TO"),
+    ({"BOT_PACES_KMH": "9,,10"}, "BOT_PACES_KMH"), ({"BOT_PACES_KMH": "nan"}, "BOT_PACES_KMH"),
+    ({"BOT_PACES_KMH": "2.5"}, "BOT_PACES_KMH"), ({"BOT_PACES_KMH": "9,inf"}, "BOT_PACES_KMH"),
+])
+def test_bot_policy_rejects_bad_values(env, msg):
+    with pytest.raises(ConfigError, match=msg):
+        load_settings({"JWT_SECRET": GOOD_SECRET, "KAKAO_MODE": "fake", **env})

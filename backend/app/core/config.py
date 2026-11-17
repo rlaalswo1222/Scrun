@@ -6,6 +6,7 @@
 - KAKAO_APP_ID: real일 때 꼭 있어야 함(카카오 개발자 앱 ID, 숫자). 다른 앱에서 받은 토큰을 거르는 데 씀
 - OCR_ENGINE: none(기본, 사진 인증은 503) 또는 fake(파일 이름으로 값을 정하는 가짜, 로컬·테스트 전용). 진짜 엔진은 ADR-0012 뒤
 - VERIFY_*: 계기판 인증 판정 값(계획 0038). 없으면 아래 VerificationPolicy 기본값
+- BOT_FILL_TO·BOT_PACES_KMH: 페이스 봇(계획 0040). 없으면 아래 BotPolicy 기본값, BOT_FILL_TO=0이면 봇 없음
 """
 import logging
 import os
@@ -80,6 +81,38 @@ def load_verification(env: Mapping[str, str]) -> VerificationPolicy:
 
 
 @dataclass(frozen=True)
+class BotPolicy:
+    """페이스 봇(계획 0040, BL-23 ②: 수·페이스는 서버 설정값). 맵마다 사람 + 봇 = fill_to가 되게 채운다(사람만 셈, 고스트는 안 셈).
+    사람이 늘면 사람에게서 가장 먼 봇이 빠지고, 줄면 빈 페이스 중 목록 앞쪽부터 들어온다. 첫 값은 가설: 걷기에 가까운 6부터 빠른 12까지."""
+
+    fill_to: int = 6
+    paces_kmh: tuple[float, ...] = (9.0, 7.5, 10.5, 6.0, 12.0)
+
+
+BOT_MIN_KMH, BOT_MAX_KMH = 3.0, 20.0
+BOT_MAX_FILL = 20  # 맵 최대 인원(ADR-0010)
+
+
+def load_bots(env: Mapping[str, str]) -> BotPolicy:
+    values = {}
+    raw = env.get("BOT_FILL_TO", "").strip()
+    if raw:
+        if not re.fullmatch(r"[0-9]+", raw) or int(raw) > BOT_MAX_FILL:
+            raise ConfigError(f"BOT_FILL_TO는 0에서 {BOT_MAX_FILL} 사이 정수여야 합니다(지금: {raw!r}).")
+        values["fill_to"] = int(raw)
+    raw = env.get("BOT_PACES_KMH", "").strip()
+    if raw:
+        try:
+            paces = tuple(float(p) for p in raw.split(","))
+        except ValueError:
+            raise ConfigError(f"BOT_PACES_KMH는 쉼표로 나눈 숫자(km/h)여야 합니다(지금: {raw!r}).") from None
+        if not all(BOT_MIN_KMH <= p <= BOT_MAX_KMH for p in paces):  # NaN도 여기서 걸림
+            raise ConfigError(f"BOT_PACES_KMH의 값은 {BOT_MIN_KMH:g}에서 {BOT_MAX_KMH:g} km/h 사이여야 합니다(지금: {raw!r}).")
+        values["paces_kmh"] = paces
+    return BotPolicy(**values)
+
+
+@dataclass(frozen=True)
 class Settings:
     database_url: str
     jwt_secret: str
@@ -93,6 +126,7 @@ class Settings:
     max_sessions_per_user: int = 5  # 살아 있는 로그인(기기) 수 상한
     ocr_engine: str = "none"
     verification: VerificationPolicy = VerificationPolicy()
+    bots: BotPolicy = BotPolicy()
 
 
 def load_settings(env: Mapping[str, str]) -> Settings:
@@ -128,6 +162,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         kakao_app_id=kakao_app_id,
         ocr_engine=ocr_engine,
         verification=load_verification(env),
+        bots=load_bots(env),
     )
 
 

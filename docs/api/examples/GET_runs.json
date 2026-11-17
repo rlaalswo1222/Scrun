@@ -2,6 +2,7 @@
   "request": {
     "method": "GET",
     "path": "/v1/runs?month=2026-11",
+    "auth": "Bearer {accessToken}",
     "body": null
   },
   "status": 200,
@@ -11,26 +12,26 @@
       "data": {
         "items": [
           {
-            "runId": "run_01HZX",
-            "startedAt": "2026-11-05T11:02:00Z",
+            "runId": "01JC0ZA4R7N2X5EXAMPLERUN00",
+            "startedAt": "2026-11-06T12:00:00Z",
             "courseId": "crs_lake_loop",
             "courseName": "노을 호수 한 바퀴",
-            "distanceM": 3120,
-            "durationS": 1080,
-            "avgPaceSPerKm": 346,
-            "verification": "VERIFIED",
-            "shared": true
+            "distanceM": 2400,
+            "durationS": 900,
+            "avgPaceSPerKm": 375,
+            "verification": "UNVERIFIED",
+            "shared": false
           },
           {
-            "runId": "run_01HZW",
-            "startedAt": "2026-11-03T10:40:00Z",
+            "runId": "01JC0ZA4R7N2X5EXAMPLERUN00",
+            "startedAt": "2026-11-06T10:00:00Z",
             "courseId": "crs_lake_loop",
             "courseName": "노을 호수 한 바퀴",
-            "distanceM": 2450,
-            "durationS": 900,
-            "avgPaceSPerKm": 367,
-            "verification": "UNVERIFIED",
-            "shared": true
+            "distanceM": 3150,
+            "durationS": 1140,
+            "avgPaceSPerKm": 362,
+            "verification": "VERIFIED",
+            "shared": false
           }
         ],
         "nextCursor": null

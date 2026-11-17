@@ -169,7 +169,7 @@ def _handle(conn: Conn, text):
         return _BAD
     kind = msg.get("type")
     if kind == "state":
-        ok = hub.update(conn, msg.get("d"), msg.get("v"), msg.get("running") is True)
+        ok = hub.update(conn, msg.get("d"), msg.get("v"), msg.get("running") is True, msg.get("run"))
         return None if ok or conn.replaced else _BAD
     if kind == "ping":
         return {"type": "pong", "t": msg.get("t"), "serverTime": server_time_ms()}

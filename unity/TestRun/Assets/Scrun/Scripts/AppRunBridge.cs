@@ -10,6 +10,8 @@ namespace Scrun
     //  2. 섬의 가짜 봇·무리·시험용 고스트는 끈다: 폰마다 따로 돌아 기기마다 위치가 다름(BL-23 ③). 페이스 봇은 서버가 정하는 것으로 S4 이후
     //  3. 같은 맵의 다른 사람(RunLink.Together)을 봇 몸을 복제해 그린다. 자리는 RemoteRunner가 내다본 위치
     //  4. 매 프레임 내 거리·속도를 RunLink에 적는다(HUD·실시간 방이 읽음)
+    // LateUpdate(이름표 화면 위치)가 카메라(FollowCamera.LateUpdate)가 움직인 뒤에 돌게(같은 프레임 위치로)
+    [DefaultExecutionOrder(1000)]
     public sealed class AppRunBridge : MonoBehaviour
     {
         static readonly Color[] Shirts =
@@ -19,6 +21,10 @@ namespace Scrun
             new Color(0.95f, 0.45f, 0.70f), new Color(0.98f, 0.62f, 0.15f),
         };
         static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
+        public const int LowTierBotBodies = 3; // 저사양 단계에서 그리는 서버 봇 몸 수(섬 봇 시절 저사양 3명과 같게)
+
+        // 섬 봇·무리를 숨긴 채 앱으로 달리는 중. ScrunQuality.Apply가 이걸 보고 섬 봇을 다시 켜지 않음
+        public static bool HidesIslandRunners { get; private set; }
 
         RunnerTag player;
         RouteTrack route;
@@ -27,6 +33,8 @@ namespace Scrun
         readonly Dictionary<string, RemoteBody> bodies = new Dictionary<string, RemoteBody>();
         readonly List<string> gone = new List<string>();
         readonly HashSet<string> seen = new HashSet<string>();
+        readonly List<(string id, float gap)> botGaps = new List<(string, float)>();
+        readonly HashSet<string> shownBots = new HashSet<string>();
         MaterialPropertyBlock block;
 
         public static void Attach(Scene scene)
@@ -48,6 +56,10 @@ namespace Scrun
             }
             UseSensorSpeed();
             HideIslandRunners();
+            // 이름표는 앱 HUD가 그림(누르면 러너 카드 D-12, 계획 0041). 섬의 OnGUI 이름표는 끔
+            foreach (var labels in FindObjectsByType<RunnerLabels>(FindObjectsInactive.Include))
+                if (labels.gameObject.scene == gameObject.scene) labels.enabled = false;
+            RunLink.RouteShape = SampleRoute(route, RouteShapePoints);
             remoteRoot = new GameObject("RemoteRunners").transform;
             remoteRoot.SetParent(transform, false);
         }
@@ -65,6 +77,7 @@ namespace Scrun
 
         void HideIslandRunners()
         {
+            HidesIslandRunners = true;
             var bots = new List<RunnerTag>();
             var ghosts = new List<RunnerTag>();
             foreach (var t in RunnerTag.All)
@@ -87,6 +100,40 @@ namespace Scrun
             if (template == null) Debug.LogWarning("[같이 뛰기] 복제할 봇 몸이 없음 → 다른 사람이 안 보임");
         }
 
+        public const int RouteShapePoints = 256; // 미니맵 코스 모양 점 수(6.7 km면 26m마다)
+        const float HeadHeightM = 2.15f;         // 이름표를 다는 높이(섬 RunnerLabels와 같음)
+        const float LabelMaxM = 80f;             // 이 거리 안의 사람만 이름표(섬 RunnerLabels와 같음)
+
+        // 위에서 본 코스 모양(x·z). 앱 미니맵이 줄여 그림
+        static Vector2[] SampleRoute(RouteTrack track, int n)
+        {
+            float lap = track.LapLength;
+            if (lap <= 0f) return null;
+            var pts = new Vector2[n];
+            for (int i = 0; i < n; i++)
+            {
+                var p = track.GetPoint(lap * i / n);
+                pts[i] = new Vector2(p.x, p.z);
+            }
+            return pts;
+        }
+
+        // 다른 러너 머리 위 화면 위치 → RunLink.Heads(앱 HUD 이름표). 카메라가 꺼져 있으면(러닝 설정·거치 안내) 비움
+        void LateUpdate()
+        {
+            RunLink.Heads.Clear();
+            var cam = Camera.main;
+            if (cam == null || !cam.isActiveAndEnabled) return;
+            foreach (var kv in bodies)
+            {
+                var rc = kv.Value.runner;
+                if (rc == null || !rc.isActiveAndEnabled) continue;
+                var sp = cam.WorldToScreenPoint(rc.transform.position + Vector3.up * HeadHeightM);
+                if (sp.z <= 0f || sp.z > LabelMaxM) continue;
+                RunLink.Heads[kv.Key] = new Vector2(sp.x, sp.y);
+            }
+        }
+
         void Update()
         {
             var me = player.runner;
@@ -106,8 +153,10 @@ namespace Scrun
                 WarnIfLapDiffers(together.CourseLengthM, lap);
                 double now = RealtimeClock.Now();
                 float myLap = LoopMath.Wrap(myDistance, lap);
+                PickBotsToDraw(together, myLap, lap, now);
                 foreach (var r in together.Runners)
                 {
+                    if (r.IsBot && !shownBots.Contains(r.UserId)) continue; // 저사양: 가까운 봇만 그림(간격 카드엔 다 나옴)
                     seen.Add(r.UserId);
                     if (!bodies.TryGetValue(r.UserId, out var body)) bodies[r.UserId] = body = Spawn(r);
                     // 내 누적 거리 근처로 펴서 놓음(이름표 간격 계산이 내 거리와 같은 기준이 되게)
@@ -125,6 +174,19 @@ namespace Scrun
                 Destroy(bodies[id].runner.gameObject);
                 bodies.Remove(id);
             }
+        }
+
+        // 저사양 단계(처음부터든 달리는 중 품질 낮추기든)면 서버 봇은 나와 가까운 LowTierBotBodies명만 그림.
+        // 섬 봇 시절 저사양이 봇 3명이었던 것과 같은 비용(봇이 서버 방으로 옮겨 품질 단계가 못 줄이게 된 것을 여기서)
+        void PickBotsToDraw(IRunTogether together, float myLap, float lap, double now)
+        {
+            shownBots.Clear();
+            botGaps.Clear();
+            foreach (var r in together.Runners)
+                if (r.IsBot) botGaps.Add((r.UserId, Mathf.Abs(LoopMath.Delta(myLap, r.PositionAt(now), lap))));
+            int max = ScrunQuality.Current == ScrunQuality.Tier.Low ? LowTierBotBodies : int.MaxValue;
+            if (botGaps.Count > max) botGaps.Sort((a, b) => a.gap.CompareTo(b.gap));
+            for (int i = 0; i < botGaps.Count && i < max; i++) shownBots.Add(botGaps[i].id);
         }
 
         bool lapChecked;
@@ -154,7 +216,7 @@ namespace Scrun
             var tag = go.GetComponent<RunnerTag>();
             tag.kind = RunnerTag.Kind.Remote;
             tag.crowd = false;
-            tag.displayName = r.Nickname;
+            tag.displayName = r.DisplayName; // 봇이어도 kind는 Remote: Bot은 섬 봇(품질 단계·순간이동 도구가 건드림)
             tag.color = color;
             block ??= new MaterialPropertyBlock();
             foreach (var smr in go.GetComponentsInChildren<Renderer>(true))
@@ -167,7 +229,11 @@ namespace Scrun
             return new RemoteBody { runner = rc, speed = speed };
         }
 
-        void OnDestroy() => RunLink.IslandGone();
+        void OnDestroy()
+        {
+            HidesIslandRunners = false;
+            RunLink.IslandGone();
+        }
 
         T FindInScene<T>() where T : Component
         {

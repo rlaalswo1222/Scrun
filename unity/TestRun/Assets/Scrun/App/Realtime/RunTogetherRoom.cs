@@ -117,7 +117,9 @@ namespace Scrun.App
                 SampleFrom(known, r, now);
                 return false;
             }
-            added = new RemoteRunner(id, (string)r["nickname"], CourseLengthM);
+            // bot은 true/false만 봄(다른 모양이면 사람으로: 형변환 예외로 메시지 전체를 버리지 않게)
+            bool isBot = r["bot"]?.Type == JTokenType.Boolean && (bool)r["bot"];
+            added = new RemoteRunner(id, (string)r["nickname"], CourseLengthM, isBot);
             SampleFrom(added, r, now);
             byId[id] = added;
             runners.Add(added);
@@ -138,6 +140,8 @@ namespace Scrun.App
             float? d = (float?)r["d"], v = (float?)r["v"];
             if (d == null || v == null) return;
             runner.Sample(d.Value, v.Value, (bool?)r["running"] ?? false, now);
+            var run = r["run"]; // 이번 달리기 거리(러너 카드 D-12). 숫자가 아니면 모름
+            runner.RunDistanceM = run != null && (run.Type == JTokenType.Float || run.Type == JTokenType.Integer) ? (float?)run : null;
         }
     }
 
