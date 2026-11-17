@@ -194,6 +194,14 @@ namespace Scrun.App
             return r ?? throw new ApiException(ApiFailure.BadResponse, "인증 응답이 비었습니다.");
         }
 
+        // 읽은 값 확인(E-05b, 계획 0045): correct = 맞아요(지금 판정)·틀렸어요(다시 찍기, 횟수 안 씀)
+        public async Task<VerificationResult> ConfirmReadAsync(string runId, string attemptId, bool correct)
+        {
+            var r = await c.PostAsync<VerificationResult>($"/v1/runs/{Uri.EscapeDataString(runId)}/verification/confirm",
+                                                          new { attemptId, correct }, AuthMode.User);
+            return r ?? throw new ApiException(ApiFailure.BadResponse, "인증 응답이 비었습니다.");
+        }
+
         // 미인증으로 저장: SKIPPED(촬영 없이·카메라 권한 없음)·TIMEOUT(E-10)·RETAKE_GIVEN_UP(E-07·08·09에서 그만둠)
         public async Task<VerificationResult> SaveUnverifiedAsync(string runId, string reason)
         {

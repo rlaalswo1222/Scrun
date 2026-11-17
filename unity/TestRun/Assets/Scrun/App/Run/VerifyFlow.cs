@@ -9,7 +9,8 @@ namespace Scrun.App
         ConfirmLeave, // E-02에서 뒤로: 인증하지 않고 나갈지 묻기(미인증으로 저장됨)
         Camera,       // E-03 카메라(민재 Swift, ADR-0011) 열림
         Confirm,      // E-04 촬영 확인(사진만, 읽은 값은 결과에서 — 11/17 결정)
-        Sending,      // E-05 인증 중
+        Sending,      // E-05 인증 중(사진을 보내는 중, 또는 읽은 값 확인을 보내는 중 — Confirming)
+        ReadConfirm,  // E-05b 읽은 값 확인(계획 0045): 사진 + 읽은 거리·시간, 맞아요 / 틀렸어요(다시 찍기)
         Verified,     // E-06 인증 완료
         Unreadable,   // E-07 숫자를 읽지 못함(다시 찍기)
         Mismatch,     // E-08 계기판과 센서가 다름
@@ -22,7 +23,8 @@ namespace Scrun.App
 
     // 서버 오류를 흐름이 아는 만큼만(화면이 ApiException을 이걸로 바꿈)
     // Camera는 서버가 아니라 카메라를 못 연 것(안내·다시 찍기 화면에 문구)
-    public enum VerifyError { None, Network, Closed, Busy, NotFound, Other, Camera }
+    // Stale은 확인할 값이 이미 없음(CONFIRM_NOT_PENDING: 새 사진을 보냈거나 다른 답을 함) → 다시 찍기로
+    public enum VerifyError { None, Network, Closed, Busy, NotFound, Other, Camera, Stale }
 
     // 흐름 판단만(순수 C#, EditMode 테스트). 카메라·서버·시계는 밖에서 결과만 넣는다(RunReadyFlow와 같은 방식)
     public sealed class VerifyFlow
@@ -37,6 +39,12 @@ namespace Scrun.App
         VerifyStep before = VerifyStep.Guide;
 
         public bool HasPhoto { get; private set; }
+
+        // 읽은 값 확인(맞아요·틀렸어요)을 보내는 중. 화면은 E-05 대신 E-05b를 잠근 채로 둠
+        public bool Confirming { get; private set; }
+
+        // 틀렸어요 → 서버가 다시 찍기로 답함: 화면이 바로 카메라(E-03)를 엶(계획 0045)
+        public bool Rejected => Step == VerifyStep.Guide && Result != null && Result.Reason == VerifyReason.UserRejected;
 
         // 서버가 이미 정함(인증 완료·미인증으로 저장됨) — 더 보낼 것 없음
         public bool Saved => Result != null && (Result.Status == VerifyStatus.Verified || Result.Status == VerifyStatus.Unverified);
@@ -94,23 +102,51 @@ namespace Scrun.App
             if (Step != VerifyStep.Sending && Step != VerifyStep.Saving) return;
             bool saving = Step == VerifyStep.Saving;
             Result = r;
-            HasPhoto = false; // 보낸 사진은 버림(화면이 Discard)
+            Confirming = false;
+            // 값 확인은 마감에 유예가 붙어 옴(서버 CONFIRM_GRACE). 그 밖의 다시 찍기는 인증 마감
             if (r.RetakeDeadline.HasValue) Deadline = r.RetakeDeadline.Value.ToUniversalTime();
+            if (!saving && r.Status == VerifyStatus.Confirm)
+            {
+                Step = VerifyStep.ReadConfirm; // 사진은 맞아요·틀렸어요까지 들고 있음(E-05b에 보여 줌)
+                return;
+            }
+            HasPhoto = false; // 보낸 사진은 버림(화면이 Discard)
             Step = saving ? VerifyStep.Done : StepFor(r); // 미인증 저장이 끝나면 화면을 닫음
+            if (Rejected) before = VerifyStep.Guide; // 다시 찍다 취소하면 안내로
+        }
+
+        // E-05b "맞아요, 인증하기"(true)·"틀렸어요, 다시 찍기"(false). 값은 고칠 수 없음(BL-17 ④)
+        public bool AnswerRead(bool correct)
+        {
+            if (Step != VerifyStep.ReadConfirm || Result?.AttemptId == null) return false;
+            Error = VerifyError.None;
+            Confirming = true;
+            Step = VerifyStep.Sending;
+            return true;
         }
 
         public void Failed(VerifyError e)
         {
             if (Step != VerifyStep.Sending && Step != VerifyStep.Saving) return;
             Error = e;
+            bool confirming = Confirming;
+            Confirming = false;
             if (e == VerifyError.Closed) // 마감이 지남(VERIFICATION_CLOSED)
             {
                 HasPhoto = false;
                 Step = VerifyStep.TimeOver;
                 return;
             }
-            // 사진을 보내다 실패 → E-04로(같은 사진을 다시 보낼 수 있게). 저장하다 실패 → 저장을 누른 화면으로
-            Step = Step == VerifyStep.Sending ? VerifyStep.Confirm : savingFrom;
+            if (e == VerifyError.Stale && confirming) // 확인할 값이 이미 없음 → 다시 찍기
+            {
+                HasPhoto = false;
+                before = VerifyStep.Guide;
+                Step = VerifyStep.Guide;
+                return;
+            }
+            // 사진을 보내다 실패 → E-04로(같은 사진을 다시 보낼 수 있게). 확인을 보내다 실패 → E-05b에 그대로(다시 누름).
+            // 저장하다 실패 → 저장을 누른 화면으로
+            Step = Step == VerifyStep.Sending ? (confirming ? VerifyStep.ReadConfirm : VerifyStep.Confirm) : savingFrom;
         }
 
         VerifyStep savingFrom = VerifyStep.Guide;
@@ -154,14 +190,15 @@ namespace Scrun.App
                     Step = before;
                     return true;
                 case VerifyStep.NoCamera: Step = before; return true;
-                default: return true; // 보내는 중·결과 화면에선 뒤로로 빠지지 않음(버튼으로만)
+                default: return true; // 보내는 중·값 확인·결과 화면에선 뒤로로 빠지지 않음(버튼으로만)
             }
         }
 
-        // 시계(화면이 매초). 다시 찍기 화면에서 마감이 지나면 E-10
+        // 시계(화면이 매초). 다시 찍기·값 확인 화면에서 마감이 지나면 E-10
         public void Tick(DateTime nowUtc)
         {
-            if ((IsRetakeScreen && CanRetake || Step == VerifyStep.Confirm || Step == VerifyStep.Guide) && PastDeadline(nowUtc))
+            if ((IsRetakeScreen && CanRetake || Step == VerifyStep.Confirm || Step == VerifyStep.Guide ||
+                 Step == VerifyStep.ReadConfirm) && PastDeadline(nowUtc))
                 ToTimeOver();
         }
 
@@ -189,6 +226,7 @@ namespace Scrun.App
                 case VerifyReason.Unsupported: return VerifyStep.Unsupported;
                 case VerifyReason.Timeout when r.Status == VerifyStatus.Unverified: return VerifyStep.TimeOver;
             }
+            if (r.Status == VerifyStatus.Retake && r.Reason == VerifyReason.UserRejected) return VerifyStep.Guide; // 바로 카메라
             if (r.Status == VerifyStatus.Retake) return VerifyStep.Unreadable;
             return VerifyStep.Done; // 미인증으로 저장됨(촬영 없이·그만둠)
         }
@@ -197,11 +235,11 @@ namespace Scrun.App
     // 서버 값 이름(문자열을 곳곳에 쓰지 않게)
     public static class VerifyStatus
     {
-        public const string Verified = "VERIFIED", Unverified = "UNVERIFIED", Retake = "RETAKE_REQUIRED";
+        public const string Verified = "VERIFIED", Unverified = "UNVERIFIED", Retake = "RETAKE_REQUIRED", Confirm = "CONFIRM_REQUIRED";
     }
 
     public static class VerifyReason
     {
-        public const string Mismatch = "MISMATCH", Unsupported = "UNSUPPORTED_CONSOLE", Timeout = "TIMEOUT";
+        public const string Mismatch = "MISMATCH", Unsupported = "UNSUPPORTED_CONSOLE", Timeout = "TIMEOUT", UserRejected = "USER_REJECTED";
     }
 }

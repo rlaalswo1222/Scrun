@@ -22,10 +22,11 @@ namespace Scrun.App
         IVisualElementScheduledItem ticker;
         bool busy, finished;
         VisualElement guide, leave, confirm, sending, read, result;
-        Label navTitle, chip, resultTitle, resultLead, confirmError, guideError, resultError;
+        Label navTitle, chip, resultTitle, resultLead, confirmError, guideError, resultError, readError, readDistance, readTime;
         Button back, primary, secondary;
         VisualElement resultIcon, resultBody;
-        Image photo;
+        Image photo;               // 사진 미리보기. E-04 칸과 E-05b 칸 사이를 옮겨 다님(Add가 옮김)
+        VisualElement confirmPhotoBox, readPhotoBox;
 
         public VerifyScreen(string runId, RunStatsBody sensor, Action onDone)
         {
@@ -50,7 +51,14 @@ namespace Scrun.App
             result = Q<VisualElement>("result");
             photo = new Image { scaleMode = ScaleMode.ScaleAndCrop };
             photo.AddToClassList("verify-photo-img");
-            Q<VisualElement>("photo").Add(photo);
+            confirmPhotoBox = Q<VisualElement>("photo");
+            readPhotoBox = Q<VisualElement>("read-photo");
+            confirmPhotoBox.Add(photo);
+            readError = Q<Label>("read-error");
+            readDistance = Q<Label>("read-distance");
+            readTime = Q<Label>("read-time");
+            Q<Button>("read-yes").clicked += () => ConfirmRead(true);
+            Q<Button>("read-no").clicked += () => ConfirmRead(false);
             confirmError = Q<Label>("confirm-error");
             guideError = Q<Label>("guide-error");
             resultError = Q<Label>("result-error");
@@ -195,8 +203,8 @@ namespace Scrun.App
             {
                 var parts = await VerifyPhotos.PrepareAsync(shot, sensor, Application.isEditor ? FakeNative.Config.cameraOcr : (FakeOcrResult?)null);
                 var r = await Api.Runs.VerifyPhotoAsync(runId, parts);
-                DropPhoto();
                 flow.Answer(r);
+                if (flow.Step != VerifyStep.ReadConfirm) DropPhoto(); // 값 확인이면 맞아요·틀렸어요까지 들고 있음
             }
             catch (ApiException e)
             {
@@ -215,6 +223,31 @@ namespace Scrun.App
             }
             if (Root.panel != null) Render();
             if (flow.Step == VerifyStep.Done) Finish();
+        }
+
+        // E-05b 맞아요(true)·틀렸어요(false). 틀렸어요면 서버가 다시 찍기로 답하고 바로 카메라(E-03)를 엶
+        async void ConfirmRead(bool correct)
+        {
+            if (busy || !flow.AnswerRead(correct)) return;
+            busy = true;
+            Render();
+            try
+            {
+                flow.Answer(await Api.Runs.ConfirmReadAsync(runId, flow.Result.AttemptId, correct));
+            }
+            catch (ApiException e)
+            {
+                flow.Failed(ErrorOf(e));
+                if (e.Failure == ApiFailure.NotLoggedIn) Feedback.Handle(e);
+            }
+            finally
+            {
+                busy = false;
+            }
+            if (flow.Step != VerifyStep.ReadConfirm) DropPhoto();
+            if (Root.panel != null) Render();
+            if (flow.Step == VerifyStep.Done) Finish();
+            else if (flow.Rejected) OpenCamera();
         }
 
         async void SaveUnverified()
@@ -252,6 +285,7 @@ namespace Scrun.App
             {
                 case "VERIFICATION_CLOSED": return VerifyError.Closed;
                 case "SERVICE_UNAVAILABLE": return VerifyError.Busy;
+                case "CONFIRM_NOT_PENDING": return VerifyError.Stale;
                 case "RUN_NOT_FOUND": return VerifyError.NotFound;
                 default: return VerifyError.Other;
             }
@@ -303,15 +337,27 @@ namespace Scrun.App
             guide.SetVisible(s == VerifyStep.Guide);
             leave.SetVisible(s == VerifyStep.ConfirmLeave);
             confirm.SetVisible(s == VerifyStep.Confirm);
-            sending.SetVisible(s == VerifyStep.Sending);
-            read.SetVisible(false); // E-05b 읽은 값 확인(계획 0045): 모양만 있음, 단계·버튼 연결은 지환
+            // 확인을 보내는 동안은 E-05 대신 E-05b를 잠근 채로(버튼만 잠김)
+            bool showRead = s == VerifyStep.ReadConfirm || s == VerifyStep.Sending && flow.Confirming;
+            sending.SetVisible(s == VerifyStep.Sending && !flow.Confirming);
+            read.SetVisible(showRead);
+            var photoBox = showRead ? readPhotoBox : confirmPhotoBox;
+            if (photo.parent != photoBox) photoBox.Add(photo);
+            if (showRead)
+            {
+                var c = flow.Result?.Console;
+                readDistance.text = c == null ? "-" : FormatKm(c.DistanceM);
+                readTime.text = c == null ? "-" : FormatTime(c.DurationS);
+            }
             bool isResult = s >= VerifyStep.Verified && s <= VerifyStep.NoCamera;
             result.SetVisible(isResult);
             back.SetVisible(s == VerifyStep.Guide || s == VerifyStep.ConfirmLeave || s == VerifyStep.Confirm || s == VerifyStep.NoCamera);
             navTitle.text = s switch
             {
                 VerifyStep.Confirm => "촬영 확인",
+                VerifyStep.Sending when flow.Confirming => "읽은 값 확인",
                 VerifyStep.Sending => "인증 중",
+                VerifyStep.ReadConfirm => "읽은 값 확인",
                 VerifyStep.Verified => "인증 결과",
                 VerifyStep.Mismatch => flow.CanRetake ? "재촬영 필요" : "인증 결과",
                 VerifyStep.Unreadable => "재촬영 필요",
@@ -322,8 +368,15 @@ namespace Scrun.App
             };
             // 카메라를 못 엶: 안내(E-02)나 다시 찍기 화면(E-07·08·09)으로 돌아와 문구를 보여 줌
             const string cameraFailed = "카메라를 열지 못했어요. 다시 눌러 주세요.";
-            guideError.SetVisible(s == VerifyStep.Guide && flow.Error == VerifyError.Camera);
-            guideError.text = cameraFailed;
+            guideError.SetVisible(s == VerifyStep.Guide && (flow.Error == VerifyError.Camera || flow.Error == VerifyError.Stale));
+            guideError.text = flow.Error == VerifyError.Stale ? "이미 확인한 사진이에요. 계기판을 다시 찍어 주세요." : cameraFailed;
+            readError.SetVisible(s == VerifyStep.ReadConfirm && flow.Error != VerifyError.None);
+            readError.text = flow.Error switch
+            {
+                VerifyError.Network => "인터넷 연결을 확인하고 다시 눌러 주세요.",
+                VerifyError.Busy => "잠시 뒤 다시 눌러 주세요.",
+                _ => "확인을 보내지 못했어요. 다시 눌러 주세요.",
+            };
             resultError.SetVisible(isResult && flow.Error == VerifyError.Camera);
             resultError.text = cameraFailed;
             confirmError.SetVisible(s == VerifyStep.Confirm && flow.Error != VerifyError.None);
