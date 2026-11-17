@@ -1,8 +1,16 @@
-# jhwn223 인수인계 (2026-11-16, S4 계기판 인증 서버)
+# jhwn223 인수인계 (2026-11-17, S4 계기판 인증 화면·OCR)
 
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
-## 지금 (11/16 밤): S4 계획 [0038](../docs/plans/0038-console-verification.md) — 서버 인증 API PR #55(리뷰 대기)
+## 지금 (11/17): S4 계획 0038 앱 화면 PR·OCR PR #61, 계획 0042
+- **작업 폴더**: S4는 워크트리 `../Scrun-s4`에서만(원래 `Scrun` 폴더는 다른 창이 Unity·아이폰 빌드에 씀). 워크트리 Unity를 열면 Y Bot·PolyHaven 원본이 없어 메타가 지워지거나 바뀜 → 원래 폴더에서 원본만 복사해 둠(11/17), 커밋 전 `git checkout -- …/YBot …/PolyHaven`
+- **앱 화면**(`feat/verification-screens`, 계획 0038 "앱 화면"): E-02·E-04–E-10·I-06, Figma와 서버 어긋난 네 곳 정함(E-08·09 다시 찍기, E-04 사진만, 남은 시간 = 서버 마감, 종료 시각 줄 뺌). 에디터 메뉴 **Scrun → 개발 → 계기판 인증 화면 열기**로 달리기 없이 확인. 가짜 카메라가 같은 바이트를 써서 서버 같은 사진 막기에 걸리던 것 고침. EditMode 382, pytest 295, 11/17 에디터에서 결과 화면 전부 눈 확인
+- **OCR**(PR #61, ADR-0012·계획 0042 승인): YOLOX-Nano 칸 읽기 + PP-OCRv5 라벨로 거리·시간 칸 이름 붙이기(센서 값 안 씀). 합성 새 200장 80.5%(정확도 아님). 다음: **새 기종 실사진**(상준 BL-45 + 헬스장) → 오라클 ARM 시간 → 서버 엔진 연결(자식 프로세스) → RF-DETR·YOLO11 비교
+- **아이폰 서명**(11/17 결정, CLAUDE.md "자주 쓰는 명령"): 팀 공용 Apple 계정 무료 팀 TEAM07 Capstone + `com.scrun.app`, 2단계 인증 코드는 민재. 내 15 Pro Max 설치됨(11/24 11:39까지). 원래 폴더 `fix/ios-local-bundle-id`(번들 ID 바꾸기)는 공용 팀이면 필요 없음 → 그 창에서 정리
+- 상준에게: Figma E-04 읽은 값 칩·E-08 "종료 시각" 줄 빼기, E-02 예시 사진, 한글 줄바꿈 끝 글자 넘어감(E-02 나가기·E-08 안내), 계기판 실사진(BL-45)
+- 민재에게: 노션 BL-18 "판독값" API 빼기, Swift 촬영 화면의 가이드 위치를 사진 자르기에 쓰게, 공용 Apple 계정 메시지(보냄?), PR에 형 파일 건드린 곳(FakeCamera·FakeNative·CourseDetailScreen·ApiClient·HttpTransport)
+
+## 그전 (11/16 밤): S4 계획 [0038](../docs/plans/0038-console-verification.md) — 서버 인증 API PR #55(리뷰 대기)
 - 브랜치 `feat/verification-api`(develop efef985에서) → **PR #55**. pytest 280/280, `/code-review` 두 축 반영(계획 0038 "진행"), 실제 uvicorn에서 2 MB 사진 2장 → VERIFIED 확인
 - 정한 것(11/16): 거리 15%, 시간 계기판 − 앱 −30초에서 +5분(+ 쉰 시간), 마감 = 서버가 종료를 받은 뒤 10분, 다시 찍기 3번, E-03 0:45. `reading` API 뺌. 값은 `VERIFY_*` 환경 변수
 - 민재 답(11/16): 달리기 API DB #52 머지·오라클 배포, 0033 카메라 PR 연다(C# `ShootAsync`·가짜 그대로), #49·#50 머지·후속은 민재(#51). 계획 번호 0037은 민재 것이라 내 건 0038
