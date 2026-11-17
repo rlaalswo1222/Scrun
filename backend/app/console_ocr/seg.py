@@ -37,13 +37,16 @@ def _iou(a, b):
     return inter / ((a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter + 1e-9)
 
 
-def read_text(dets: np.ndarray, conf: float = 0.4, iou: float = 0.5) -> str:
-    """dets: [N, 6] = x0, y0, x1, y1, 점수, 분류."""
+def read_text(dets: np.ndarray, conf: float = 0.4, iou: float = 0.5, nms: bool = True) -> str:
+    """dets: [N, 6] = x0, y0, x1, y1, 점수, 분류. nms=False면 이미 겹침을 정리한 상자(detect)로 보고 다시 안 함."""
     dets = dets[dets[:, 4] >= conf] if len(dets) else dets
-    keep = []
-    for d in dets[np.argsort(-dets[:, 4])] if len(dets) else []:
-        if all(_iou(d, k) < iou for k in keep):
-            keep.append(d)
+    if not nms:
+        keep = list(dets)
+    else:
+        keep = []
+        for d in dets[np.argsort(-dets[:, 4])] if len(dets) else []:
+            if all(_iou(d, k) < iou for k in keep):
+                keep.append(d)
     if not keep:
         return ""
     keep = np.array(keep)
@@ -99,6 +102,6 @@ class OnnxReader:
         return np.concatenate([boxes, score[keep, None], cls[keep, None].astype(np.float32)], 1)
 
     def read(self, img: np.ndarray) -> str:
-        # 글자 문턱(0.4)으로 한 번에 걸러 겹침 정리도 한 번만(0.05로 다 정리한 뒤 다시 거르면 서버 CPU 낭비, #61 리뷰).
+        # 글자 문턱(0.4)으로 한 번에 걸러 겹침 정리도 detect의 cv2 한 번만(같은 IoU 0.5·분류 상관없이, #61·#68 리뷰).
         # 낮은 문턱 detect는 채점(eval)에서 상자를 볼 때만
-        return read_text(self.detect(img, conf=READ_CONF), conf=READ_CONF)
+        return read_text(self.detect(img, conf=READ_CONF), conf=READ_CONF, nms=False)
