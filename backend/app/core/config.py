@@ -23,7 +23,7 @@ MIN_JWT_SECRET_LEN = 32
 # 저장소(공개)에 한 번이라도 적힌 값. 이 값으로 서명하면 누구나 토큰을 만들 수 있다
 PUBLIC_JWT_SECRETS = frozenset({"local-dev-secret-change-me-0123456789abcdef"})
 KAKAO_MODES = ("real", "fake")
-OCR_ENGINES = ("none", "fake")
+OCR_ENGINES = ("none", "fake", "onnx")   # onnx: 진짜 엔진(계획 0043, app/console_ocr)
 GENERATE_HINT = '../.venv/Scripts/python -c "import secrets; print(secrets.token_urlsafe(48))"'
 
 

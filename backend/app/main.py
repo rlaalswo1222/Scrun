@@ -17,6 +17,7 @@ from .core.envelope import (
 )
 from .core.errors import ApiError
 from .core.kakao import close_client as close_kakao_client
+from .core.ocr import start_ocr, stop_ocr
 from .realtime import router as realtime
 from .routers import auth, courses, events, friends, progress, runs, users, verification
 
@@ -31,7 +32,9 @@ DESCRIPTION = """
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    start_ocr()   # OCR_ENGINE=onnx면 읽기 프로세스를 미리 띄움(계획 0043)
     yield
+    stop_ocr()
     close_kakao_client()
 
 

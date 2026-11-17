@@ -8,3 +8,8 @@ psycopg[binary]==3.3.8
 pyjwt==2.15.1
 tzdata==2026.6
 httpx
+# 계기판 OCR 진짜 엔진(OCR_ENGINE=onnx, 계획 0043). 오라클 ARM(aarch64) 휠 있음(11/17 확인)
+onnxruntime==1.32.0
+rapidocr==3.10.0
+opencv-python-headless==5.0.0.93
+numpy==2.4.6

@@ -27,7 +27,7 @@ from starlette.formparsers import MultiPartException, MultiPartParser
 from ..core.config import settings
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode, invalid
-from ..core.ocr import UNREADABLE, BadPhoto, ConsoleRead, OcrEngine, Photo, get_ocr
+from ..core.ocr import UNREADABLE, BadPhoto, ConsoleRead, EngineUnavailable, OcrEngine, Photo, get_ocr
 from ..core.run_access import (ACTIVE, DISCARDED, PENDING, TIMEOUT, UNVERIFIED, close_expired, is_expired, my_run, now_utc,
                                verification_deadline)
 from ..core.security import current_user
@@ -111,7 +111,8 @@ class _OcrRunner:
     """OCR은 CPU를 쓰므로 요청 스레드와 따로, 시간 제한(BL-17 ⑥). 동시에 WORKERS개까지, 자리가 없으면 줄 세우지 않고 바로 503.
     시간을 넘긴 작업은 스레드를 멈출 수 없으므로 자리를 돌려주고 "버려진 작업"으로 센다(새 요청이 그 뒤에 줄 서지 않게
     일꾼을 그만큼 더 둠). 버려진 작업이 ABANDONED_MAX개 쌓이면 엔진이 멈춘 것이라 503 + 오류 기록(재시작 필요).
-    진짜 엔진은 자식 프로세스에서 돌려 시간 초과 때 죽이는 방식으로 바꾼다(엔진 붙일 때, ADR-0012)."""
+    진짜 엔진(OCR_ENGINE=onnx)은 자식 프로세스에서 돌고 이 제한보다 1초 먼저 스스로 끊어 그 프로세스를 죽인다(계획 0043).
+    그래서 버려지는 스레드는 엔진 바깥 고장 때만 생긴다."""
 
     WORKERS, ABANDONED_MAX = 2, 2
 
@@ -160,6 +161,9 @@ class _OcrRunner:
                 return future.result()
         except BadPhoto:
             return UNREADABLE  # 사진을 못 엶 → 다시 찍기(횟수 셈)
+        except EngineUnavailable as e:
+            log.warning("계기판 OCR 503: %s", e)
+            raise ApiError(E.SERVICE_UNAVAILABLE, str(e)) from None
         except ApiError:
             raise
         except Exception:
