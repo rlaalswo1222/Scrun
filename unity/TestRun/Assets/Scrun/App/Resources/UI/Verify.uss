@@ -1,0 +1,231 @@
+/* 계기판 인증(계획 0038, Figma E-02·E-04–E-10·I-06). 공통(nav-bar·onb-title·btn·steps)은 Onboarding.uss, 색·크기는 App.uss 변수.
+   모양은 상준이 Figma와 나란히 놓고 다듬음 */
+.verify-page {
+    flex-grow: 1;
+}
+.verify-center {
+    align-items: center;
+    padding-top: 40px;
+}
+/* ---- E-02 예시 사진 자리(상준 예시 사진이 오면 그림으로) ---- */
+.verify-sample {
+    height: 230px;
+    margin-top: var(--space-4);
+    border-radius: 20px;
+    background-color: var(--color-night);
+    align-items: center;
+    justify-content: center;
+}
+.verify-sample-icon {
+    width: 48px;
+    height: 48px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-camera.svg");
+}
+.onb .verify-sample-text {
+    margin-top: var(--space-2);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: var(--font-size-body-sm);
+}
+/* ---- 팁 목록(E-02·E-07)·진행 목록(E-05) ---- */
+.verify-tips {
+    margin-top: var(--space-4);
+    padding: 5px 17px 17px 17px;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+    align-self: stretch;
+}
+.verify-tip {
+    flex-direction: row;
+    align-items: center;
+    min-height: 21px;
+    margin-top: var(--space-3);
+}
+.verify-check {
+    width: 20px;
+    height: 20px;
+    margin-right: var(--space-3);
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-tick.svg");
+}
+.verify-dot {
+    width: 20px;
+    height: 20px;
+    margin-right: var(--space-3);
+    border-radius: 10px;
+    background-color: var(--color-primary-soft);
+}
+.onb .verify-tip-text {
+    flex-shrink: 1;
+    font-size: var(--font-size-body-sm);
+    color: var(--color-text);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+/* ---- E-04 사진 ---- */
+.verify-photo {
+    height: 300px;
+    margin-top: var(--space-4);
+    border-radius: 20px;
+    overflow: hidden;
+    background-color: var(--color-night);
+}
+.verify-photo-img {
+    flex-grow: 1;
+}
+.onb .verify-info {
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-radius: 14px;
+    background-color: var(--color-primary-tint);
+    color: var(--color-primary);
+    font-size: var(--font-size-body-sm);
+    white-space: normal;
+}
+.onb .verify-error {
+    margin-top: var(--space-3);
+    color: #D64545;
+    font-size: var(--font-size-body-sm);
+    white-space: normal;
+}
+/* ---- E-05 돌아가는 고리(VerifyScreen이 돌리지 않아도 고리 모양) ---- */
+.verify-spinner {
+    width: 140px;
+    height: 140px;
+    border-radius: 70px;
+    border-width: 10px;
+    border-color: var(--color-primary-soft);
+    border-top-color: var(--color-primary);
+    border-right-color: var(--color-primary);
+    margin-bottom: var(--space-6);
+}
+/* ---- 결과 머리: 동그란 아이콘 + 제목 + 설명 + 남은 시간 칩 ---- */
+.verify-head {
+    align-items: center;
+    margin-top: var(--space-4);
+}
+.verify-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 36px;
+    background-color: var(--color-primary);
+    background-size: 36px 36px;
+}
+.verify-icon--ok { background-color: #2BB673; background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-check.svg"); }
+.verify-icon--warn { background-color: var(--color-warn); background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-alert.svg"); }
+.verify-icon--bad { background-color: #EF5A5A; background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-x.svg"); }
+.verify-icon--clock { background-color: var(--color-muted); background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-clock.svg"); }
+.verify-icon--camera { background-color: var(--color-warn); background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-camera.svg"); }
+.onb .verify-title {
+    margin-top: var(--space-5);
+    font-size: var(--font-size-heading);
+    color: var(--color-text);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+.onb .verify-lead {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-body);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+.onb .verify-chip {
+    margin-top: var(--space-3);
+    padding: 4px 12px;
+    border-radius: 12px;
+    background-color: rgba(255, 176, 32, 0.18);
+    color: #B26A00;
+    font-size: var(--font-size-caption);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+/* ---- E-06 계기판 값 카드 ---- */
+.verify-stats {
+    flex-direction: row;
+    margin-top: var(--space-5);
+}
+.verify-stat {
+    flex-grow: 1;
+    flex-basis: 0;
+    padding: var(--space-4);
+    border-radius: 16px;
+    background-color: var(--color-surface);
+}
+.verify-stat--second {
+    margin-left: var(--space-3);
+}
+.onb .verify-stat-label {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+}
+.onb .verify-stat-value {
+    margin-top: 4px;
+    font-size: var(--font-size-heading);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+/* ---- E-08 대조 표 ---- */
+.verify-table {
+    margin-top: var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    border-radius: 16px;
+    background-color: var(--color-surface);
+}
+.verify-row {
+    flex-direction: row;
+    padding: 10px 4px;
+    border-bottom-width: 1px;
+    border-color: var(--color-line);
+}
+.verify-row--head {
+    padding-top: 0;
+}
+.verify-row--bad {
+    background-color: rgba(239, 90, 90, 0.1);
+}
+.onb .verify-cell {
+    flex-grow: 1;
+    flex-basis: 0;
+    font-size: var(--font-size-body-sm);
+    color: var(--color-text);
+}
+.onb .verify-row--head .verify-cell {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+}
+.onb .verify-row--bad .verify-cell--diff {
+    color: #D64545;
+}
+.verify-notice {
+    margin-top: var(--space-4);
+    padding: var(--space-4);
+    border-radius: 16px;
+    background-color: rgba(239, 90, 90, 0.1);
+}
+.onb .verify-notice-title {
+    color: #D64545;
+    font-size: var(--font-size-body-sm);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+.onb .verify-notice-text {
+    margin-top: 4px;
+    color: var(--color-text);
+    font-size: var(--font-size-body-sm);
+    white-space: normal;
+}
+/* ---- E-09 캐릭터 ---- */
+.verify-character-box {
+    height: 200px;
+    margin-top: var(--space-5);
+    border-radius: 20px;
+    background-color: var(--color-primary-soft);
+    align-items: center;
+    justify-content: center;
+}
+.verify-character {
+    width: 140px;
+    height: 170px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/CharacterStand.png");
+    -unity-background-scale-mode: scale-to-fit;
+}

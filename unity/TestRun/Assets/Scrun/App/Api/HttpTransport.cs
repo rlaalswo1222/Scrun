@@ -11,6 +11,8 @@ namespace Scrun.App
         public string Method;
         public string Url;
         public string Body; // JSON, 없으면 null
+        public byte[] RawBody;      // JSON이 아닌 본문(사진 multipart, 계획 0038). 있으면 Body 대신 이걸 보냄
+        public string ContentType;  // RawBody의 Content-Type
         public readonly Dictionary<string, string> Headers = new Dictionary<string, string>();
         public int TimeoutSeconds = ApiConfig.TimeoutSeconds;
     }
@@ -33,7 +35,12 @@ namespace Scrun.App
         public async Task<HttpResponse> SendAsync(HttpRequest r)
         {
             using var req = new UnityWebRequest(r.Url, r.Method) { downloadHandler = new DownloadHandlerBuffer() };
-            if (r.Body != null)
+            if (r.RawBody != null)
+            {
+                req.uploadHandler = new UploadHandlerRaw(r.RawBody);
+                req.SetRequestHeader("Content-Type", r.ContentType);
+            }
+            else if (r.Body != null)
             {
                 req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(r.Body));
                 req.SetRequestHeader("Content-Type", "application/json");
