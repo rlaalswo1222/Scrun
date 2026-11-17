@@ -9,6 +9,7 @@
 센서 값은 쓰지 않는다(독립성, 계획 0038): 센서와 가까운 칸을 고르면 다른 칸이 우연히 맞아도 통과된다.
 """
 import re
+from collections import Counter
 from dataclasses import dataclass, field as dfield
 from typing import Optional
 
@@ -21,14 +22,17 @@ SEG_CONFUSION = str.maketrans({"S": "5", "s": "5", "O": "0", "o": "0", "D": "0",
                                "B": "8", "Z": "2", "z": "2", "G": "6", "q": "9", ",": "."})
 NUM = re.compile(r"^\d{1,3}(?:[.:]\d{1,2}){0,2}$")
 
-# 라벨 낱말(대문자·공백 없앤 글자에서 찾음). 속도(km/h)를 거리(km)보다 먼저 본다
-OTHER_WORDS = ["KM/H", "KMH", "KPH", "MPH", "속도", "SPEED", "페이스", "PACE", "/KM", "칼로리", "KCAL", "CAL",
-               "경사", "INCLINE", "ELEV", "%", "심박", "PULSE", "BPM", "HR", "와트", "WATT", "LEVEL", "레벨"]
+# 라벨 낱말(대문자·공백 없앤 글자에서 찾음). 순서: 속도·페이스·마일(거리 km보다 먼저) → 거리·시간 → 그 밖
+RATE_WORDS = ["KM/H", "KMH", "KPH", "MPH", "/KM", "/MIN", "/분", "MILE"]   # 마일은 km로 못 바꿈 → 거리 칸으로 안 봄
 DIST_WORDS = ["거리", "DISTANCE", "DIST", "KM"]
 TIME_WORDS = ["운동시간", "시간", "TIME", "MIN", "분"]
-
+NOT_WORKOUT_TIME = ["남은", "REMAIN", "LAP", "SPLIT", "구간"]          # 남은 시간·구간 시간은 운동 시간이 아님
+OTHER_WORDS = ["속도", "SPEED", "페이스", "PACE", "칼로리", "KCAL", "CAL", "경사", "INCLINE", "ELEV", "%", "심박", "PULSE",
+               "BPM", "HR", "와트", "WATT", "LEVEL", "레벨"]
+AMBIGUOUS_GAP = 0.35   # 짝짓기: 다른 종류 라벨(또는 다른 숫자)과의 거리 차가 숫자 높이의 이만큼보다 작으면 애매 → 못 읽음
 
 UNIT = re.compile(r"KM|MIN|KCAL|KM/H|KPH|%|BPM|M|분")   # 숫자 오른쪽에 붙는 단위(그 밖의 오른쪽 라벨은 다음 칸 것)
+NUM_IN_TEXT = re.compile(r"([A-Z가-힣/%]*)(\d{1,3}(?:[.:]\d{1,2}){0,2})([A-Z가-힣/%]*)")   # 라벨·단위 + 숫자 + 라벨·단위
 
 
 def _norm(text: str) -> str:
@@ -36,15 +40,25 @@ def _norm(text: str) -> str:
 
 
 def label_kind(text: str) -> Optional[str]:
+    """라벨 글자 → distance·time·other, 모르면 None. 거리·시간 낱말을 그 밖보다 먼저 봄("TIME HR:MIN"은 시간),
+    남은·구간 시간은 그 밖, 한 라벨에 거리·시간이 다 있으면 모름(#61 리뷰)."""
     t = _norm(text)
     if not re.search(r"[A-Z가-힣%/]", t):
         return None
+    if any(w in t for w in RATE_WORDS):
+        return "other"
+    has_dist = any(w in t for w in DIST_WORDS)
+    has_time = any(w in t for w in TIME_WORDS)
+    if has_time and any(w in t for w in NOT_WORKOUT_TIME):
+        return "other"
+    if has_dist and has_time:
+        return None
+    if has_dist:
+        return "distance"
+    if has_time:
+        return "time"
     if any(w in t for w in OTHER_WORDS):
         return "other"
-    if any(w in t for w in DIST_WORDS):
-        return "distance"
-    if any(w in t for w in TIME_WORDS):
-        return "time"
     return None
 
 
@@ -125,11 +139,20 @@ class ConsoleReader:
 
     @staticmethod
     def _number(text: str) -> Optional[str]:
-        t = text.replace(" ", "")
-        if label_kind(t) is None:   # 숫자 영역: 7세그먼트를 일반 글자로 읽을 때 흔한 혼동
-            t = t.translate(SEG_CONFUSION)
-        m = re.search(r"\d{1,3}(?:[.:]\d{1,2}){0,2}", t)
-        return m.group(0) if m else None
+        """인식 글자 → 숫자. 글자 전체가 (라벨·단위) + 숫자 + (라벨·단위) 모양일 때만("12.345"·"1680"을 잘라 읽지 않게).
+        7세그먼트 혼동(S→5 등)은 진짜 숫자가 하나라도 있고 바로잡은 뒤 전부 숫자일 때만("BODY"·"STOP"이 숫자가 되지 않게)."""
+        t = re.sub(r"\s+", "", text)
+        if label_kind(t) is None and re.search(r"\d", t):
+            fixed = t.translate(SEG_CONFUSION)
+            if re.fullmatch(r"[\d.:]+", fixed):
+                t = fixed
+        m = NUM_IN_TEXT.fullmatch(t.upper())
+        if not m:
+            return None
+        affix = m.group(1) + m.group(3)
+        if affix and label_kind(affix) is None and not UNIT.fullmatch(affix):
+            return None   # 숫자 옆 글자가 라벨·단위가 아님(로고·버튼 글자 등)
+        return m.group(2)
 
     @staticmethod
     def _crop(img, reg: Region, pad: float = 0.15):
@@ -194,8 +217,11 @@ def merge_split(regs: list) -> list:
 
 
 def pair(labels: list, nums: list) -> None:
-    """라벨과 숫자를 가까운 순서로 하나씩 짝짓는다(라벨은 숫자 위·아래·왼쪽·오른쪽, 거리는 숫자 높이로 나눔)."""
-    cands = []
+    """라벨과 숫자를 가까운 순서로 하나씩 짝짓는다(라벨은 숫자 위·아래·왼쪽, 단위는 오른쪽, 거리는 숫자 높이로 나눔).
+    계기판은 라벨 위치가 한 방향으로 일정하므로, 서로 가장 가까운 짝들이 대부분 한 방향이면 그 방향 짝만 본다
+    (줄 사이 라벨이 위·아래 숫자 어느 쪽인지). 그래도 거리 차·비율이 비슷하게 겨루는 짝이 있으면 그럴듯한 쪽을
+    고르지 않고 "ambiguous"(못 읽음, #61 리뷰)."""
+    cands = []   # (gap, 라벨 번호, 숫자 번호, 방향)
     for li, L in enumerate(labels):
         lx0, ly0, lx1, ly1 = L.rect
         lcx, lcy = (lx0 + lx1) / 2, (ly0 + ly1) / 2
@@ -204,26 +230,51 @@ def pair(labels: list, nums: list) -> None:
             h = max(1.0, ny1 - ny0)
             xover = min(lx1, nx1 + h) - max(lx0, nx0 - h) > 0           # 가로로 겹침(숫자 높이만큼 여유)
             yover = min(ly1, ny1) - max(ly0, ny0) > 0
-            if xover and ly1 <= ny0 + h * 0.3:                          # 라벨이 위
-                gap = (ny0 - ly1) / h
-            elif xover and ly0 >= ny1 - h * 0.3:                        # 라벨이 아래
-                gap = (ly0 - ny1) / h
-            elif yover and lx1 <= nx0 + h * 0.3:                        # 라벨이 왼쪽
-                gap = (nx0 - lx1) / h
-            elif yover and lx0 >= nx1 - h * 0.3 and (lx0 - nx1) / h <= 0.6 and UNIT.fullmatch(_norm(L.rec)):  # 단위만 오른쪽
-                gap = (lx0 - nx1) / h + 0.5
+            if xover and ly1 <= ny0 + h * 0.3:
+                gap, way = (ny0 - ly1) / h, "above"
+            elif xover and ly0 >= ny1 - h * 0.3:
+                gap, way = (ly0 - ny1) / h, "below"
+            elif yover and lx1 <= nx0 + h * 0.3:
+                gap, way = (nx0 - lx1) / h, "left"
+            elif yover and lx0 >= nx1 - h * 0.3 and (lx0 - nx1) / h <= 0.6 and UNIT.fullmatch(_norm(L.rec)):
+                gap, way = (lx0 - nx1) / h + 0.5, "unit"
             else:
                 continue
-            gap += abs(lcx - (nx0 + nx1) / 2) / h * 0.15 if (ly1 <= ny0 or ly0 >= ny1) else abs(lcy - (ny0 + ny1) / 2) / h * 0.15
+            gap += abs(lcx - (nx0 + nx1) / 2) / h * 0.15 if way in ("above", "below") else abs(lcy - (ny0 + ny1) / 2) / h * 0.15
             if gap <= 2.5:
-                cands.append((gap, li, ni))
+                cands.append((gap, li, ni, way))
+
+    # 서로 가장 가까운 짝들의 방향으로 이 계기판의 라벨 방향을 정함(분명할 때만)
+    best_l = {li: min((c for c in cands if c[1] == li), key=lambda c: c[0]) for li in {c[1] for c in cands}}
+    best_n = {ni: min((c for c in cands if c[2] == ni), key=lambda c: c[0]) for ni in {c[2] for c in cands}}
+    ways = Counter(c[3] for li, c in best_l.items() if best_n.get(c[2]) == c and c[3] != "unit")
+    if ways:
+        way, n = ways.most_common(1)[0]
+        if n >= 2 and n >= 0.6 * sum(ways.values()):
+            cands = [c for c in cands if c[3] in (way, "unit")]
+
+    gaps = {(li, ni): gap for gap, li, ni, _ in cands}
+
+    def rivals(g, gap):   # 거리 차도 작고 비율도 비슷해야 겨룸(0.08 대 0.42는 안 겨룸)
+        return g - gap < AMBIGUOUS_GAP and g <= gap * 2 + 0.1
+
+    def claimed_elsewhere(g, mine, others):   # 그 라벨·숫자에 분명히 더 가까운 다른 짝이 있음
+        return any(g2 < g - AMBIGUOUS_GAP or (g2 < g and not rivals(g, g2)) for g2 in others)
+
     used_l, used_n = set(), set()
-    for gap, li, ni in sorted(cands):
+    for gap, li, ni, _ in sorted(cands):
         if li in used_l or ni in used_n:
             continue
         used_l.add(li)
         used_n.add(ni)
-        nums[ni].name, nums[ni].how = labels[li].kind, "label"
+        kind = labels[li].kind
+        rival_label = any(lj != li and labels[lj].kind != kind and rivals(g, gap)
+                          and not claimed_elsewhere(g, lj, [g2 for (lk, nk), g2 in gaps.items() if lk == lj and nk != ni])
+                          for (lj, nj), g in gaps.items() if nj == ni)
+        rival_num = any(nj != ni and rivals(g, gap)
+                        and not claimed_elsewhere(g, nj, [g2 for (lk, nk), g2 in gaps.items() if nk == nj and lk != li])
+                        for (lj, nj), g in gaps.items() if lj == li)
+        nums[ni].name, nums[ni].how = ("ambiguous", "label") if rival_label or rival_num else (kind, "label")
 
 
 def decide(regs: list) -> ConsoleRead:
@@ -231,8 +282,11 @@ def decide(regs: list) -> ConsoleRead:
         cands = [r for r in regs if r.name == name and r.number]
         labeled = [r for r in cands if r.how == "label"]
         use = labeled or cands                       # 라벨로 정한 것이 있으면 규칙 후보는 버림
-        vals = {next((v for v in map(parse, r.cands) if v is not None), None) for r in use} - {None}
-        if len(vals) == 1:
+        vals = set()
+        for r in use:
+            parsed = {v for v in map(parse, r.cands) if v is not None}
+            vals |= parsed if len(parsed) == 1 else {None}   # 한 칸을 두 읽기가 다르게 읽음 → 애매(추측하지 않음)
+        if len(vals) == 1 and None not in vals:
             return vals.pop(), ""
         return None, f"{name} 후보 {len(use)}개" + (f"({', '.join(r.number for r in use)})" if use else "")
 
