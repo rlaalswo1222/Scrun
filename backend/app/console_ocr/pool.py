@@ -25,6 +25,10 @@ class PoolBusy(Exception):
     """쉬는 프로세스가 시간 안에 안 생김(모두 일하는 중이거나 아직 뜨는 중)."""
 
 
+class EngineDown(PoolBusy):
+    """프로세스가 연달아 뜨지 못함(모델·의존성 없음 등). 기다리지 않고 바로 실패."""
+
+
 class ReadTimeout(Exception):
     """읽기가 시간 제한을 넘김 → 그 프로세스를 죽이고 새로 띄움."""
 
@@ -33,13 +37,21 @@ class WorkerFailed(Exception):
     """프로세스가 죽었거나 엔진이 예외를 냄."""
 
 
+MAX_PIXELS = 50_000_000   # 사진 한 장 픽셀 상한(앱은 긴 변 2048로 줄여 보냄, 원본 12 MP·48 MP도 들어감)
+
+
 def serve(conn, model_path: str, threads: int) -> None:
     """자식 프로세스 본체: 모델을 올리고 "ready"를 보낸 뒤, 사진 묶음(bytes 목록)을 받아 사진마다 결과를 돌려준다."""
+    import os
+    # 압축 폭탄 막기: 4 MB 안에 10억 픽셀이라고 적은 JPEG(검은 2000×2000 = 63 KB)를 풀면 몇 GB를 잡음(#68 리뷰).
+    # OpenCV가 첫 디코드 때 읽는 값이라 cv2보다 먼저. 넘으면 cv2.error → 못 엶
+    os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = str(MAX_PIXELS)
     import cv2
     import numpy as np
 
     from .field import ConsoleReader
 
+    cv2.setNumThreads(1)   # 프로세스 2개 × OpenCV 스레드가 2코어를 넘겨 쓰지 않게(onnxruntime도 threads개)
     reader = ConsoleReader(model_path, threads)
     conn.send(("ready", None))
     while True:
@@ -52,7 +64,10 @@ def serve(conn, model_path: str, threads: int) -> None:
         try:
             out = []
             for data in job:
-                img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+                try:
+                    img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+                except cv2.error:
+                    img = None   # 너무 큰 사진(MAX_PIXELS) 등
                 if img is None:
                     out.append(None)
                     continue
@@ -95,6 +110,8 @@ class ReaderPool:
 
     START_TIMEOUT_S = 180.0   # 모델 올리기(처음엔 PP-OCRv5를 받을 수도 있음)
     RESTART_DELAY_S = 5.0     # 띄우기에 실패하면 이만큼 쉬고 다시
+    DOWN_AFTER = 3            # 연달아 이만큼 못 뜨면 고장으로 보고 요청을 기다리게 하지 않음
+    LATE_MIN_S = 0.2          # 요청이 끝날 때 읽기에 남은 시간이 이보다 적으면 읽기가 넘긴 것으로 보고 바로 죽임
 
     def __init__(self, workers: int = 2, threads: int = 1, model: Path = MODEL,
                  target: Callable = serve, args: Optional[tuple] = None):
@@ -105,6 +122,7 @@ class ReaderPool:
         self.closed = False
         self.all: set = set()
         self.lock = threading.Lock()
+        self.start_failures = 0   # 연달아 못 뜬 횟수(뜨면 0)
         for _ in range(workers):
             self._start_later()
 
@@ -117,12 +135,25 @@ class ReaderPool:
         if self.closed:
             return
         w = _Worker(self.ctx, self.target, self.args)
-        with self.lock:
-            self.all.add(w)
-        if w.wait_ready(self.START_TIMEOUT_S) and not self.closed:
+        with self.lock:   # close()가 all을 비운 뒤 새 프로세스가 들어가 안 죽는 일이 없게(#68 리뷰)
+            closed = self.closed
+            if not closed:
+                self.all.add(w)
+        if closed:
+            w.kill()
+            return
+        ready = w.wait_ready(self.START_TIMEOUT_S)
+        if self.closed:
+            self._drop(w)
+            return
+        if ready:
+            self.start_failures = 0
             self.idle.put(w)
             return
-        log.error("계기판 OCR 프로세스를 띄우지 못함 — %.0f초 뒤 다시", self.RESTART_DELAY_S)
+        self.start_failures += 1
+        level = logging.CRITICAL if self.start_failures >= self.DOWN_AFTER else logging.ERROR
+        log.log(level, "계기판 OCR 프로세스를 띄우지 못함(연달아 %d번) — %.0f초 뒤 다시",
+                self.start_failures, self.RESTART_DELAY_S)
         self._drop(w)
         self._start_later(self.RESTART_DELAY_S)
 
@@ -136,16 +167,26 @@ class ReaderPool:
         self._start_later()
 
     def read(self, photos: list[bytes], timeout_s: float) -> list[PhotoResult]:
+        """timeout_s 안에 결과를 돌려주거나 예외. 프로세스는 **읽기 자체가** timeout_s를 넘길 때만 죽인다:
+        빈 프로세스를 기다리느라 시간을 다 쓴 요청이 방금 받은 멀쩡한 프로세스를 죽이지 않게(#68 리뷰)."""
         deadline = time.monotonic() + timeout_s
+        if self.start_failures >= self.DOWN_AFTER and self.idle.empty():
+            raise EngineDown()
         try:
             w = self.idle.get(timeout=max(0.0, deadline - time.monotonic()))
         except queue.Empty:
             raise PoolBusy() from None
         try:
+            sent = time.monotonic()
             w.conn.send(photos)
             if not w.conn.poll(max(0.0, deadline - time.monotonic())):
-                log.error("계기판 OCR이 %.1f초를 넘김 — 프로세스를 죽이고 새로 띄움", timeout_s)
-                self._replace(w)
+                left = sent + timeout_s - time.monotonic()
+                if left <= self.LATE_MIN_S:   # 기다림 없이 받은 요청(남은 시간이 거의 없음) → 읽기가 넘긴 것
+                    log.error("계기판 OCR이 %.1f초를 넘김 — 프로세스를 죽이고 새로 띄움", timeout_s)
+                    self._replace(w)
+                else:   # 기다리느라 늦은 요청: 이 요청은 끝내고, 읽기는 남은 시간만큼 더 지켜봄
+                    threading.Thread(target=self._finish_late, args=(w, left, timeout_s), daemon=True,
+                                     name="console-ocr-late").start()
                 raise ReadTimeout()
             kind, out = w.conn.recv()
         except (EOFError, OSError, BrokenPipeError):
@@ -157,9 +198,24 @@ class ReaderPool:
             raise WorkerFailed(out)
         return out
 
+    def _finish_late(self, w: _Worker, left_s: float, timeout_s: float) -> None:
+        """요청은 이미 끝난 읽기: 결과는 버리고, 읽기가 timeout_s 안에 끝나면 프로세스를 돌려놓고 아니면 죽임."""
+        try:
+            if w.conn.poll(left_s):
+                w.conn.recv()
+                if self.closed:
+                    self._drop(w)
+                else:
+                    self.idle.put(w)
+                return
+            log.error("계기판 OCR이 %.1f초를 넘김 — 프로세스를 죽이고 새로 띄움", timeout_s)
+        except (EOFError, OSError):
+            log.error("계기판 OCR 프로세스가 죽음 — 새로 띄움")
+        self._replace(w)
+
     def close(self) -> None:
-        self.closed = True
         with self.lock:
+            self.closed = True
             workers = list(self.all)
             self.all.clear()
         for w in workers:

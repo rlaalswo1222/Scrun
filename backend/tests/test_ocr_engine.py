@@ -1,11 +1,12 @@
 """계기판 OCR 진짜 엔진(계획 0046): 브래킷 합치기, 자식 프로세스 시간 초과·죽음, 실제 모델로 합성 계기판 한 장."""
 import importlib.util
+import threading
 import time
 from pathlib import Path
 
 import pytest
 
-from app.console_ocr.pool import PoolBusy, ReaderPool, ReadTimeout, WorkerFailed
+from app.console_ocr.pool import EngineDown, PoolBusy, ReaderPool, ReadTimeout, WorkerFailed
 from app.core.ocr import UNREADABLE, BadPhoto, ConsoleRead, OnnxOcr, Photo, combine, get_ocr
 from app.main import app
 from tests.helpers import data, fail
@@ -50,6 +51,40 @@ def test_timeout_kills_the_process_and_starts_a_new_one():
         assert not first.proc.is_alive()          # 멈춘 작업을 죽임(스레드는 못 죽임)
         wait_idle(pool)                            # 새로 뜸
         assert first not in pool.all
+    finally:
+        pool.close()
+
+
+def test_request_that_waited_does_not_kill_a_healthy_process():
+    # 일꾼 1개가 0.6초 읽기 중 → 다음 요청은 기다리느라 시간을 거의 다 씀 → 이 요청만 끝나고 일꾼은 살아서 돌아옴(#68 리뷰)
+    pool = ReaderPool(workers=1, target=slow, args=(0.6,))
+    try:
+        wait_idle(pool)
+        first = next(iter(pool.all))
+        busy = threading.Thread(target=pool.read, args=([b"x"], 5.0))
+        busy.start()
+        time.sleep(0.1)
+        with pytest.raises(ReadTimeout):
+            pool.read([b"y"], timeout_s=1.0)       # 약 0.5초 기다리고 0.5초 남음 → 0.6초 읽기를 못 기다림
+        busy.join()
+        wait_idle(pool, seconds=5)
+        assert first.proc.is_alive() and pool.all == {first}
+    finally:
+        pool.close()
+
+
+def test_engine_down_fails_fast(monkeypatch):
+    monkeypatch.setattr(ReaderPool, "RESTART_DELAY_S", 60.0)
+    monkeypatch.setattr(ReaderPool, "DOWN_AFTER", 1)
+    pool = ReaderPool(workers=1, target=crashes_on_start, args=())
+    try:
+        end = time.monotonic() + 20
+        while pool.start_failures < 1 and time.monotonic() < end:
+            time.sleep(0.05)
+        t0 = time.monotonic()
+        with pytest.raises(EngineDown):
+            pool.read([b"x"], timeout_s=10)
+        assert time.monotonic() - t0 < 1.0         # 10초를 기다리지 않음
     finally:
         pool.close()
 
@@ -121,5 +156,12 @@ def test_real_engine_reads_a_synthetic_console_in_a_child_process():
         assert engine.read([Photo(data_), Photo(data_)]) == ConsoleRead.read(6470, 34 * 60 + 49)
         with pytest.raises(BadPhoto):
             engine.read([Photo(b"\xff\xd8\xff not a jpeg")])
+        import cv2
+        import numpy as np
+        ok, bomb = cv2.imencode(".jpg", np.zeros((8000, 8000, 3), np.uint8))   # 64 MP(상한 50 MP), 파일은 작음
+        assert ok and len(bomb) < 4 * 1024 * 1024
+        with pytest.raises(BadPhoto):                                          # 풀지 않고 못 엶
+            engine.read([Photo(bomb.tobytes())])
+        assert engine.read([Photo(data_)]) == ConsoleRead.read(6470, 34 * 60 + 49)   # 프로세스는 멀쩡
     finally:
         engine.close()

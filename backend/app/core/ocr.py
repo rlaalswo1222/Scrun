@@ -96,12 +96,16 @@ class OnnxOcr:
         self.pool = pool
 
     def read(self, photos: list[Photo]) -> ConsoleRead:
-        from ..console_ocr.pool import PoolBusy, ReadTimeout
+        from ..console_ocr.pool import EngineDown, PoolBusy, ReadTimeout
 
-        # 라우터의 시간 제한보다 조금 먼저 끊어 프로세스를 죽인다(라우터 쪽 스레드가 버려지지 않게)
-        timeout_s = max(1.0, settings.verification.ocr_timeout_s - 1.0)
+        # 라우터의 시간 제한보다 조금 먼저 끊어 프로세스를 죽인다(라우터 쪽 스레드가 버려지지 않게).
+        # 1초 또는 20% 중 작은 만큼 먼저: VERIFY_OCR_TIMEOUT_S가 1–2초여도 라우터보다 먼저 끝남(#68 리뷰)
+        limit = settings.verification.ocr_timeout_s
+        timeout_s = limit - min(1.0, limit * 0.2)
         try:
             return combine(self.pool.read([p.data for p in photos], timeout_s))
+        except EngineDown:
+            raise EngineUnavailable("계기판 읽기를 잠시 쓸 수 없습니다.") from None
         except PoolBusy:
             raise EngineUnavailable("계기판 읽기가 밀려 있습니다. 잠시 뒤 다시 보내세요.") from None
         except ReadTimeout:

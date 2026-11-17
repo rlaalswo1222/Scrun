@@ -2,6 +2,7 @@
 
 실행: backend 폴더에서 `uvicorn app.main:app --reload` → http://localhost:8000/docs
 """
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -34,7 +35,7 @@ DESCRIPTION = """
 async def lifespan(_: FastAPI):
     start_ocr()   # OCR_ENGINE=onnx면 읽기 프로세스를 미리 띄움(계획 0046)
     yield
-    stop_ocr()
+    await asyncio.to_thread(stop_ocr)   # 프로세스 join이 이벤트 루프(실시간 WebSocket 정리)를 막지 않게
     close_kakao_client()
 
 
