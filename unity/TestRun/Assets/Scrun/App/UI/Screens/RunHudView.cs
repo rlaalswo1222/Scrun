@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 namespace Scrun.App
 {
     // 달리는 중 기본 HUD(계획 0029): 거리·시간·목표 진행(BL-12 ②), 앞뒤 가장 가까운 러너 간격(④), 들어옴·나감 토스트(BL-21 ⑤),
-    // 연결 상태. 맵 화면 안의 층이다(RunSetupView와 같은 방식). 섬 값은 RunLink에서 읽는다.
+    // 연결 상태. S6(계획 0041): 구간 알림(⑦ D-24·D-25), 끊김 배너·흐림(D-16). 맵 화면 안의 층이다(RunSetupView와 같은 방식). 섬 값은 RunLink에서 읽는다.
     public sealed class RunHudView : IDisposable
     {
         const long RefreshMs = 200;
@@ -17,8 +17,14 @@ namespace Scrun.App
         readonly IRunTogether together;
         readonly Label distance, time, goal, aheadName, aheadGap, behindName, behindGap, toast, net, dev, unsteady;
         readonly VisualElement goalFill, gaps, ahead, behind;
-        readonly IVisualElementScheduledItem tick;
+        readonly IVisualElementScheduledItem tick, frameTick;
+        readonly LoopMinimap minimap;  // 왼쪽 위 루프 미니맵(BL-12 ③, 계획 0041)
+        readonly Label mapProgress;
+        readonly RunnerTagsView tagsView; // 이름표·러너 카드(BL-22)
+        readonly List<(float, bool)> dots = new List<(float, bool)>();
         readonly Queue<string> toasts = new Queue<string>();
+        readonly RunMoments moments; // 구간 알림(D-24·D-25, 계획 0041)
+        string moment;               // 다음에 띄울 구간 알림(들어옴·나감보다 먼저)
         readonly List<(string, float)> others = new List<(string, float)>();
         double toastUntil;
 
@@ -58,6 +64,12 @@ namespace Scrun.App
             unsteady.SetVisible(false);
 
             goal.text = GoalText(session.Goal);
+            moments = new RunMoments(session.Goal);
+            minimap = new LoopMinimap();
+            minimap.style.flexGrow = 1;
+            Q<VisualElement>("hud-map").Add(minimap);
+            mapProgress = Q<Label>("hud-map-progress");
+            tagsView = new RunnerTagsView(root, together);
             dev.SetVisible(Debug.isDebugBuild);
             toast.SetVisible(false);
             net.SetVisible(false);
@@ -70,12 +82,15 @@ namespace Scrun.App
 
             host.Add(root); // 다 만든 뒤에 붙인다
             tick = root.schedule.Execute(Refresh).Every(RefreshMs);
+            frameTick = root.schedule.Execute(() => tagsView.Tick(together != null && OthersStale(together.Status))).Every(0); // 이름표는 매 프레임
             Refresh();
         }
 
         public void Dispose()
         {
             tick?.Pause();
+            frameTick?.Pause();
+            RunLink.MyRunM = null;
             if (together != null)
             {
                 together.Joined -= OnJoined;
@@ -86,11 +101,19 @@ namespace Scrun.App
 
         public static string GoalText(RunGoal g) => $"목표 {g.ValueText}{(g.Kind == GoalKind.Distance ? " " : "")}{g.UnitText}";
 
+        // D-16(BL-26, 계획 0041): 끊긴 동안 위 가운데 배너, 다른 러너 정보는 흐리게. 내 달리기·기록은 그대로(폰에 쌓이고
+        // 다시 붙으면 1분 묶음이 이어서 올라감, 0037). 오래 끊겨도 막지 않고 계속 다시 붙음(정할 것 1)
+        public const string Reconnecting = "연결이 불안정해요 · 재연결 중…";
+
+        // 다른 러너 위치를 믿을 수 없는 동안(끊겨서 마지막 값으로 내다보는 중) → 간격 카드·이름표를 흐리게
+        public static bool OthersStale(RunTogetherStatus status) =>
+            status == RunTogetherStatus.Reconnecting || status == RunTogetherStatus.Stopped;
+
         public static string NetText(RunTogetherStatus status, RunTogetherStop stop)
         {
             switch (status)
             {
-                case RunTogetherStatus.Reconnecting: return "연결이 끊겨 다시 잇는 중이에요";
+                case RunTogetherStatus.Reconnecting: return Reconnecting; // D-16
                 case RunTogetherStatus.Stopped:
                     switch (stop)
                     {
@@ -127,12 +150,18 @@ namespace Scrun.App
             time.text = RunSession.TimeText(session.ElapsedSec);
             goalFill.style.width = Length.Percent(session.Progress(me) * 100f);
 
+            RunLink.MyRunM = session.Started ? session.DistanceM(me) : (float?)null; // 다른 사람의 러너 카드 "누적 거리"
             RefreshGaps();
+            RefreshMinimap(me);
+            if (session.Phase == RunPhase.Running)
+                moment = moments.Check(session.DistanceM(me), session.ElapsedSec, NearestPerson()) ?? moment;
             RefreshToast();
 
             string netText = together == null ? null : NetText(together.Status, together.StopReason);
             net.SetVisible(netText != null);
             if (netText != null) net.text = netText;
+            bool stale = together != null && OthersStale(together.Status);
+            gaps.EnableInClassList("hud-dimmed", stale);
 
             if (Debug.isDebugBuild)
             {
@@ -167,16 +196,61 @@ namespace Scrun.App
             }
         }
 
+        void RefreshMinimap(float me)
+        {
+            float lap = RunLink.LapLengthM;
+            dots.Clear();
+            if (together != null && lap > 0f)
+            {
+                double now = RealtimeClock.Now();
+                foreach (var r in together.Runners) dots.Add((r.PositionAt(now), r.IsBot));
+            }
+            minimap.Set(RunLink.RouteShape, lap, RunLink.PlayerLapPositionM, dots);
+            minimap.EnableInClassList("hud-dimmed", together != null && OthersStale(together.Status));
+            mapProgress.text = MapProgressText(session.Goal, session.DistanceM(me), session.ElapsedSec);
+        }
+
+        // 미니맵 아래 "2.1 / 3.0km"(거리 목표), "12 / 30분"(시간 목표)
+        public static string MapProgressText(RunGoal g, float distanceM, double elapsedSec)
+        {
+            if (g.Kind == GoalKind.Distance)
+                return (Math.Floor(distanceM / 100.0) / 10.0).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) +
+                       " / " + g.ValueText + g.UnitText;
+            return ((int)(elapsedSec / 60)).ToString(System.Globalization.CultureInfo.InvariantCulture) + " / " + g.ValueText + g.UnitText;
+        }
+
+        // 가장 가까운 사람(봇 빼고, 끊긴 동안은 위치를 못 믿어 없음): 이름, 간격(앞 +, 뒤 −)
+        (string, float)? NearestPerson()
+        {
+            float lap = RunLink.LapLengthM;
+            if (together == null || lap <= 0f || OthersStale(together.Status)) return null;
+            double now = RealtimeClock.Now();
+            float me = RunLink.PlayerLapPositionM;
+            (string, float)? best = null;
+            foreach (var r in together.Runners)
+            {
+                if (r.IsBot) continue;
+                float gap = LoopMath.Delta(me, r.PositionAt(now), lap);
+                if (best == null || System.Math.Abs(gap) < System.Math.Abs(best.Value.Item2)) best = (r.Nickname, gap);
+            }
+            return best;
+        }
+
         void RefreshToast()
         {
             double now = RealtimeClock.Now();
             if (now < toastUntil) return;
-            if (toasts.Count == 0)
+            if (moment == null && toasts.Count == 0)
             {
                 toast.SetVisible(false);
                 return;
             }
-            toast.text = toasts.Dequeue();
+            if (moment != null)
+            {
+                toast.text = moment;
+                moment = null;
+            }
+            else toast.text = toasts.Dequeue();
             toast.SetVisible(true);
             toastUntil = now + ToastSec;
         }

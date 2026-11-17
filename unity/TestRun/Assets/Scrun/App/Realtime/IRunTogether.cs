@@ -20,17 +20,19 @@ namespace Scrun.App
         ProtocolError,   // 서버가 메시지 모양이 틀렸다고 함(4400, 앱 버그)
     }
 
-    // 내가 보내는 상태(초당 2번). D는 한 바퀴 안 위치(m)
+    // 내가 보내는 상태(초당 2번). D는 한 바퀴 안 위치(m), RunM은 이번 달리기 거리(m, 달리기 전 null, 러너 카드 D-12, 계획 0041)
     public readonly struct MyRunState
     {
         public readonly float D, SpeedKmh;
         public readonly bool Running;
+        public readonly float? RunM;
 
-        public MyRunState(float d, float speedKmh, bool running)
+        public MyRunState(float d, float speedKmh, bool running, float? runM = null)
         {
             D = d;
             SpeedKmh = speedKmh;
             Running = running;
+            RunM = runM;
         }
     }
 

@@ -266,7 +266,8 @@ namespace Scrun.App
         {
             float d = float.IsNaN(s.D) || float.IsInfinity(s.D) ? 0f : s.D;
             float v = float.IsNaN(s.SpeedKmh) || float.IsInfinity(s.SpeedKmh) ? 0f : Math.Max(0f, s.SpeedKmh);
-            return "{\"type\":\"state\",\"d\":" + Num(d) + ",\"v\":" + Num(v) + ",\"running\":" + (s.Running ? "true" : "false") + "}";
+            string run = s.RunM is float r && !float.IsNaN(r) && !float.IsInfinity(r) && r >= 0f ? ",\"run\":" + Num(Math.Round(r, 1)) : "";
+            return "{\"type\":\"state\",\"d\":" + Num(d) + ",\"v\":" + Num(v) + ",\"running\":" + (s.Running ? "true" : "false") + run + "}";
         }
 
         public static string Ping(double clientMs) => "{\"type\":\"ping\",\"t\":" + Num(Math.Round(clientMs, 1)) + "}";

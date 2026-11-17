@@ -154,6 +154,18 @@ def test_running_positions_for_entry(h):
     assert h.running_positions("crs_lake_loop", except_user="a") == []
 
 
+
+def test_run_distance_is_passed_on(h):
+    a, _ = placed(h, "a")
+    b, _ = placed(h, "b")
+    assert h.update(a, 10.0, 9.0, True, 2400.04)
+    assert h.states(b)["runners"] == [{"userId": "a", "d": 10.0, "v": 9.0, "running": True, "run": 2400.0}]
+    assert h.update(a, 11.0, 9.0, True, "많이") and h.update(a, 11.0, 9.0, True, math.nan)
+    assert "run" not in h.states(b)["runners"][0], "숫자가 아니면 모름(연결은 안 끊음)"
+    assert h.update(a, 11.0, 9.0, True, -5) and h.states(b)["runners"][0]["run"] == 0.0
+    assert h.update(a, 11.0, 9.0, True, 10 ** 400) and "run" not in h.states(b)["runners"][0]
+    assert not h.update(a, 10 ** 400, 9.0, True), "d가 아주 큰 정수여도 예외 없이 거부"
+
 # ---------- 페이스 봇(계획 0040) ----------
 PACES = (9.0, 7.5, 10.5, 6.0, 12.0)
 

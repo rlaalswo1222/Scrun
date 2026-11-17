@@ -10,6 +10,8 @@ namespace Scrun
     //  2. 섬의 가짜 봇·무리·시험용 고스트는 끈다: 폰마다 따로 돌아 기기마다 위치가 다름(BL-23 ③). 페이스 봇은 서버가 정하는 것으로 S4 이후
     //  3. 같은 맵의 다른 사람(RunLink.Together)을 봇 몸을 복제해 그린다. 자리는 RemoteRunner가 내다본 위치
     //  4. 매 프레임 내 거리·속도를 RunLink에 적는다(HUD·실시간 방이 읽음)
+    // LateUpdate(이름표 화면 위치)가 카메라(FollowCamera.LateUpdate)가 움직인 뒤에 돌게(같은 프레임 위치로)
+    [DefaultExecutionOrder(1000)]
     public sealed class AppRunBridge : MonoBehaviour
     {
         static readonly Color[] Shirts =
@@ -54,6 +56,10 @@ namespace Scrun
             }
             UseSensorSpeed();
             HideIslandRunners();
+            // 이름표는 앱 HUD가 그림(누르면 러너 카드 D-12, 계획 0041). 섬의 OnGUI 이름표는 끔
+            foreach (var labels in FindObjectsByType<RunnerLabels>(FindObjectsInactive.Include))
+                if (labels.gameObject.scene == gameObject.scene) labels.enabled = false;
+            RunLink.RouteShape = SampleRoute(route, RouteShapePoints);
             remoteRoot = new GameObject("RemoteRunners").transform;
             remoteRoot.SetParent(transform, false);
         }
@@ -92,6 +98,40 @@ namespace Scrun
             if (recorder != null) recorder.enabled = false;
             if (template == null && bots.Count > 0) template = bots[0].gameObject;
             if (template == null) Debug.LogWarning("[같이 뛰기] 복제할 봇 몸이 없음 → 다른 사람이 안 보임");
+        }
+
+        public const int RouteShapePoints = 256; // 미니맵 코스 모양 점 수(6.7 km면 26m마다)
+        const float HeadHeightM = 2.15f;         // 이름표를 다는 높이(섬 RunnerLabels와 같음)
+        const float LabelMaxM = 80f;             // 이 거리 안의 사람만 이름표(섬 RunnerLabels와 같음)
+
+        // 위에서 본 코스 모양(x·z). 앱 미니맵이 줄여 그림
+        static Vector2[] SampleRoute(RouteTrack track, int n)
+        {
+            float lap = track.LapLength;
+            if (lap <= 0f) return null;
+            var pts = new Vector2[n];
+            for (int i = 0; i < n; i++)
+            {
+                var p = track.GetPoint(lap * i / n);
+                pts[i] = new Vector2(p.x, p.z);
+            }
+            return pts;
+        }
+
+        // 다른 러너 머리 위 화면 위치 → RunLink.Heads(앱 HUD 이름표). 카메라가 꺼져 있으면(러닝 설정·거치 안내) 비움
+        void LateUpdate()
+        {
+            RunLink.Heads.Clear();
+            var cam = Camera.main;
+            if (cam == null || !cam.isActiveAndEnabled) return;
+            foreach (var kv in bodies)
+            {
+                var rc = kv.Value.runner;
+                if (rc == null || !rc.isActiveAndEnabled) continue;
+                var sp = cam.WorldToScreenPoint(rc.transform.position + Vector3.up * HeadHeightM);
+                if (sp.z <= 0f || sp.z > LabelMaxM) continue;
+                RunLink.Heads[kv.Key] = new Vector2(sp.x, sp.y);
+            }
         }
 
         void Update()

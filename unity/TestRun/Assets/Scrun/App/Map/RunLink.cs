@@ -22,6 +22,14 @@ namespace Scrun.App
         public static Func<bool> LowerQuality { get; set; }
         public static Func<bool> CanLowerQuality { get; set; } // 지금보다 낮은 단계가 있음
         public static bool SpeedUnsteady { get; set; }            // 섬 → 앱: 추정이 이상해 직전 속도로 버티는 중(AvatarSpeed.Unsteady, I-03)
+        // 섬 → 앱(계획 0041): 미니맵용 코스 모양(위에서 본 x·z, 한 바퀴를 같은 간격으로 나눈 점, i번째 = i/개수 × 한 바퀴)
+        public static Vector2[] RouteShape { get; set; }
+        // 섬 → 앱(계획 0041): 다른 러너 머리 위 화면 위치(픽셀, y는 아래에서 위). 카메라 앞 이름표 거리 안의 사람만, 매 프레임 다시 채움
+        public static readonly System.Collections.Generic.Dictionary<string, Vector2> Heads =
+            new System.Collections.Generic.Dictionary<string, Vector2>();
+
+        // ---- 앱 안 ----
+        public static float? MyRunM { get; set; } // 이번 달리기 거리(m, HUD가 채움, 실시간 state의 run)
 
         public static float PlayerLapPositionM => LoopMath.Wrap(PlayerDistanceM, LapLengthM);
 
@@ -45,6 +53,9 @@ namespace Scrun.App
             PlayerSpeedKmh = 0f;
             LapLengthM = 0f;
             SpeedUnsteady = false;
+            RouteShape = null;
+            Heads.Clear();
+            MyRunM = null;
         }
 
         public static void ReportPlayer(float distanceM, float speedKmh, float lapLengthM)
@@ -60,10 +71,12 @@ namespace Scrun.App
         {
             IslandReady = false;
             PlayerSpeedKmh = 0f;
+            Heads.Clear();
+            RouteShape = null; // 다시 열린 섬이 새로 넣음(앞 코스 모양이 남지 않게)
         }
 
         // 실시간 방에 보낼 내 상태. 섬이 아직 안 열렸으면 null(안 보냄: 입장 위치가 아닌 0m에 나타나지 않게)
         public static MyRunState? MyState() =>
-            IslandReady ? new MyRunState(PlayerLapPositionM, PlayerSpeedKmh, Moving) : (MyRunState?)null;
+            IslandReady ? new MyRunState(PlayerLapPositionM, PlayerSpeedKmh, Moving, MyRunM) : (MyRunState?)null;
     }
 }

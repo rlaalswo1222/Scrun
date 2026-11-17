@@ -719,7 +719,13 @@ namespace Scrun.App
                 ShowUnavailable(t, b, canRetry: code == CourseText.CourseFull); // 없는 코스는 다시 들어가도 같음
                 return;
             }
-            var (title, body, canRetry) = Feedback.Describe(e); // 연결 안 됨 등
+            // I-07(계획 0041): 기기에 네트워크가 아예 없을 때만. 시간 초과(망은 있는데 서버가 느림)는 공통 안내
+            if (e.Failure == ApiFailure.Network && Application.internetReachability == NetworkReachability.NotReachable)
+            {
+                ShowUnavailable(CourseText.NoNetworkTitle, CourseText.NoNetworkBody, canRetry: true);
+                return;
+            }
+            var (title, body, canRetry) = Feedback.Describe(e); // 서버 오류 등
             ShowUnavailable(title, body, canRetry);
         }
 
