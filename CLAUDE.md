@@ -14,7 +14,7 @@
 - 세션이 끝나면 `docs/log/retro.md`에 5줄 회고(잘된 것 / 잘못된 것 / 배운 것 / 규칙으로 올릴 것)
 
 ## 보고서·발표 자료 (교수님·멘토)
-- 지어낸 수치, 실제로 없는 앱 흐름, 실측하지 않은 성능을 쓰지 않는다. 계획·목표 수치도 지어내지 않는다. 쓸 수 있는 수치는 `docs/speed/README.md`의 실측값뿐. 공개 데이터 재분석은 출처를 달고 우리 실측과 구분
+- 지어낸 수치, 실제로 없는 앱 흐름, 실측하지 않은 성능을 쓰지 않는다. 계획·목표 수치도 지어내지 않는다. 쓸 수 있는 수치는 `docs/speed/README.md`의 실측값뿐(계기판 OCR 실측은 `docs/product/console_ocr.md`, 학습에 안 쓴 실사진 점수만). 공개 데이터 재분석은 출처를 달고 우리 실측과 구분
 - 앱 화면 흐름(유저플로우)은 참고용이라 보고서에 넣지 않는다. PDR, Kinomap/RunSocial, "Zwift 분석" 표현 금지(유사 서비스로만)
 - 팀원 수정본과 합칠 때는 양쪽 수정 사항을 모두 반영한다
 - HWP는 한컴 없이 `docs/hwp/` 스크립트(hwplib·dump·fix)로 고친다. 채팅에서 복사하면 검은 음영·형광펜·별표가 딸려 오니 "텍스트만 붙여넣기(Ctrl+Shift+V)" 안내
@@ -47,7 +47,7 @@
 | Unity 본 앱(섬 맵·아바타·성능·앱 화면) | `docs/unity/unity_map.md`(끝에 Figma → UI Toolkit 옮기기·남은 큰 것), `unity/tools/README.md` |
 | 화면·기능 기획 | **상준 공개 노션 사이트가 항상 최신 원본**(PRD·백로그·유스케이스, [개발 백로그](https://heavenly-beak-116.notion.site/eb95382a0c1a4745a33d3bd3c2380600?v=7fe2ce1da4a04daf8d778a5db8ebd139)). 민재 노션의 기획 문서는 참고하지 않음(옛 사본). Figma 와이어프레임. 저장소 `docs/product/`는 옛 초안 |
 | 서버 API | `docs/api/README.md`(공통 규칙·오류 코드), 노션 API 명세(목록·진행), 계획 0014 |
-| 기술 결정 이유 | `docs/adr/` (0001 Unity 통일, 0002 FastAPI, 0003 MCP 커뮤니티판, 0004 달릴 때 속도 추정, 0005 안내형 보정, 0006 속도 추정 제약, 0007 아이폰 우선, 0008 서버 올리는 곳(오라클), 0009 iOS 네이티브 브리지, 0010 실시간은 FastAPI WebSocket, 0011 계기판 촬영 화면은 Swift) |
+| 기술 결정 이유 | `docs/adr/` (0001 Unity 통일, 0002 FastAPI, 0003 MCP 커뮤니티판, 0004 달릴 때 속도 추정, 0005 안내형 보정, 0006 속도 추정 제약, 0007 아이폰 우선, 0008 서버 올리는 곳(오라클), 0009 iOS 네이티브 브리지, 0010 실시간은 FastAPI WebSocket, 0011 계기판 촬영 화면은 Swift, 0012 계기판 숫자 읽기 엔진(YOLOX 먼저)) |
 | 계획 중·승인된 작업 | `docs/plans/` |
 | 교수님·멘토 문서, HWP | `docs/meeting/`, `docs/hwp/` |
 | 유사 서비스·관련 연구 | `docs/research/` (Zwift 자료는 참고용, 보고서에 "Zwift 분석" 표현 금지. 관련 연구 정리 `treadmill_sensing_papers.md`) |
