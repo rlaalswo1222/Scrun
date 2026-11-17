@@ -1266,7 +1266,7 @@
           "Run"
         ],
         "summary": "내 기록 목록",
-        "description": "화면 F-01, F-02, D-03 · BL-20, BL-24. 월별, 커서 방식. 고스트 고르기에도 씀. 기록이 없으면 items=[]",
+        "description": "화면 F-01, F-02, D-03 · BL-20, BL-24. 끝난 기록(인증 대기·완료·미인증)만 최신순, 커서 방식(한 쪽 20개). month(YYYY-MM)는 내 시간대 기준 달. 고스트 고르기에도 씀. 기록이 없으면 items=[]",
         "operationId": "list_runs_v1_runs_get",
         "security": [
           {
@@ -1306,8 +1306,10 @@
                   "type": "null"
                 }
               ],
+              "description": "앞 쪽 응답의 nextCursor",
               "title": "Cursor"
-            }
+            },
+            "description": "앞 쪽 응답의 nextCursor"
           }
         ],
         "responses": {
@@ -1417,7 +1419,7 @@
           "Run"
         ],
         "summary": "기록 상세",
-        "description": "화면 F-03, F-04, E-12 · BL-19, BL-20. 공식 값과 출처(계기판/센서), 그래프용 시계열, 함께 달린 러너\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 F-03, F-04, E-12 · BL-19, BL-20. 공식 값과 출처(계기판/센서), 센서 값, 계기판에서 읽은 값(사진을 읽었을 때), 그래프용 시계열(최대 120칸, 칸 간격은 정수 초), 함께 달린 러너(같은 맵에서 같이 달린 사람·봇, 친구 표시)\n\n남의 기록이면 FORBIDDEN, 없거나 아직 달리는 중·버린 기록이면 RUN_NOT_FOUND",
         "operationId": "get_run_v1_runs__runId__get",
         "security": [
           {
@@ -1493,7 +1495,7 @@
           "Run"
         ],
         "summary": "피드 공유 바꾸기",
-        "description": "화면 E-12 · BL-19. 공유만. 기록 값 수정·삭제는 없음(PRD)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 E-12 · BL-19. 공유만. 기록 값 수정·삭제는 없음(PRD). 끄면 친구 피드에서 빠짐\n\n남의 기록이면 FORBIDDEN, 없거나 아직 달리는 중·버린 기록이면 RUN_NOT_FOUND",
         "operationId": "patch_run_v1_runs__runId__patch",
         "security": [
           {
@@ -1881,7 +1883,7 @@
           "Run"
         ],
         "summary": "고스트 재생용 시계열",
-        "description": "화면 D-13 · BL-24. 본인 기록만, 코스와 무관하게 씀(PRD F04)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 D-13 · BL-24. 본인 끝난 기록만, 코스와 무관하게 씀(PRD F04). 시계열은 정수 초 칸(앱은 1초 그대로), 빠진 칸은 앞 칸 값\n\n남의 기록이면 FORBIDDEN, 없거나 아직 달리는 중·버린 기록이면 RUN_NOT_FOUND",
         "operationId": "ghost_v1_runs__runId__ghost_get",
         "security": [
           {
@@ -5136,7 +5138,7 @@
                 "type": "null"
               }
             ],
-            "description": "계기판 값(인증 완료일 때)"
+            "description": "계기판에서 읽은 값(사진을 읽었을 때. 값이 어긋난 미인증이어도 있음)"
           },
           "speedSeries": {
             "$ref": "#/components/schemas/SpeedSeries",

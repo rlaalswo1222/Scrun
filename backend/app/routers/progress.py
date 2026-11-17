@@ -5,11 +5,21 @@ from ..core.auth import Principal, stub_user
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
 from ..schemas.progress import ImpactSelect, Progress, Rewards
-from .runs import KNOWN, RUN_ERRORS, STUB_NOTE, _check_run
+from .runs import RUN_ERRORS
 
 router = APIRouter(prefix="/v1", tags=["Progress"])
 E = ErrorCode
 AUTH = error_responses(E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)
+# 반영 결과(BL-32, 지환 S8)는 아직 스텁. 기록 API는 DB로 옮겨 감(계획 0043) → 예시 기록 ID는 여기서만 씀
+STUB_NOTE = "\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND"
+KNOWN = {r["runId"] for r in d.RUNS} | {d.RUN_STARTED["runId"]}
+
+
+def _check_run(run_id: str, known: set[str]) -> None:
+    if run_id == "run_other":
+        raise ApiError(E.FORBIDDEN)
+    if run_id not in known:
+        raise ApiError(E.RUN_NOT_FOUND)
 
 
 @router.get("/runs/{runId}/rewards", summary="이번 운동 반영 결과",
