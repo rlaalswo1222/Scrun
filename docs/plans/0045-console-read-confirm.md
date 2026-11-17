@@ -1,6 +1,6 @@
 # 계획 0045: 계기판 읽은 값 확인 — "맞아요 / 틀렸어요(다시 찍기)" (BL-17 보완)
 
-- 상태: **초안(11/17 민재 방향 OK: 확인 단계를 넣고, 틀렸으면 다시 찍기만) · 정할 것 답 대기**
+- 상태: **승인(11/17 민재: 정할 것 1 가, 2 나, 3 가, 4 가, 5 가, 6 가)** · 지환 서버 OCR PR 다음에 지환이 구현
 - 담당: 정할 것 6. 화면 모양·백로그 문구는 상준(Figma 새 화면, BL-17에 줄 추가)
 - 왜: 지금은 서버가 읽자마자 판정해서(계획 0038), OCR이 **그럴듯하게 틀린 값**을 내면 아무도 못 거름. 틀린 값이 우연히 센서와 가까우면 틀린 채로 "인증 완료"가 됨(#61 리뷰 2번). 사람이 한 번 보면 대부분 잡힘
 - 지키는 것: 사용자는 값을 **고칠 수 없음**(BL-17 ④ 그대로, 조작 방지). 고를 수 있는 건 "맞아요" 또는 "틀렸어요 → 다시 찍기"뿐
@@ -10,12 +10,12 @@
 E-04 사진 확인 → E-05 읽는 중 → POST photo
   → (새) E-05b 읽은 값 확인: 사진 + "거리 3.12 km · 시간 28:40" (센서 값·결과는 아직 안 보여 줌)
        ├ 맞아요 → POST confirm {correct: true} → 판정: E-06 인증 완료 / E-08 미인증(정할 것 3)
-       └ 틀렸어요 → POST confirm {correct: false} → 다시 찍기(E-03), 남은 횟수 1 줄어듦(정할 것 2)
+       └ 틀렸어요 → POST confirm {correct: false} → 다시 찍기(E-03), 남은 횟수는 그대로(정할 것 2 나), 마감(종료 뒤 10분)까지
   못 읽음 E-07 · 읽을 수 없는 계기판 E-09 · 마감 E-10은 지금 그대로(확인할 값이 없음)
 ```
 
 ## 하는 것
-1. **서버**: `POST /runs/{runId}/verification/photo`가 읽었으면 판정하지 않고 `status: CONFIRM_REQUIRED` + 읽은 값(`console`)·`attemptId`·`retakesLeft`·`retakeDeadline`. 새 `POST /runs/{runId}/verification/confirm` `{attemptId, correct}`: 마지막 시도만, 마감 안에서만, 한 번만. true면 저장해 둔 읽은 값으로 지금 판정(`core/verification.py`), false면 `RETAKE_REQUIRED` + `reason: USER_REJECTED`(다시 찍기를 다 썼으면 UNVERIFIED). `verifications` 표에 확인 결과 칸(마이그레이션). pytest
+1. **서버**: `POST /runs/{runId}/verification/photo`가 읽었으면 판정하지 않고 `status: CONFIRM_REQUIRED` + 읽은 값(`console`)·`attemptId`·`retakesLeft`·`retakeDeadline`. 새 `POST /runs/{runId}/verification/confirm` `{attemptId, correct}`: 마지막 시도만, 마감 안에서만, 한 번만. true면 저장해 둔 읽은 값으로 지금 판정(`core/verification.py`), false면 `RETAKE_REQUIRED` + `reason: USER_REJECTED`(다시 찍기 횟수는 안 씀, 마감만 봄). "맞아요" 뒤 오차 초과는 다시 찍기 없이 UNVERIFIED(MISMATCH). `verifications` 표에 확인 결과 칸(마이그레이션). pytest
 2. **앱**: `VerifyFlow`에 `ConfirmRead` 단계, `VerifyScreen`에 E-05b, `Api.Runs.ConfirmReadAsync`. EditMode 테스트. 에디터 가짜 OCR로 끝까지
 3. **문서**: `docs/api/README.md`, 계획 0038 흐름, 노션 API 명세·작업 표, 상준에게 Figma E-05b·BL-17 줄 요청
 
@@ -32,9 +32,10 @@ E-04 사진 확인 → E-05 읽는 중 → POST photo
 - 판정 기준(오차 폭·횟수·마감) 바꾸기 — 서버 설정값 그대로
 
 ## 확인 (끝났다고 볼 기준)
-- pytest: CONFIRM_REQUIRED → 맞아요 → VERIFIED·UNVERIFIED(MISMATCH), 틀렸어요 → 횟수 줄고 RETAKE_REQUIRED, 마지막 횟수에서 틀렸어요 → UNVERIFIED, 마감 지난 confirm → VERIFICATION_CLOSED, 남의 기록·옛 attemptId·두 번 confirm
+- pytest: CONFIRM_REQUIRED → 맞아요 → VERIFIED·UNVERIFIED(MISMATCH), 틀렸어요 → 횟수 그대로 RETAKE_REQUIRED(여러 번 연달아도), 맞아요 뒤 오차 초과 → 다시 찍기 없이 UNVERIFIED, 마감 지난 confirm → VERIFICATION_CLOSED, 남의 기록·옛 attemptId·두 번 confirm
 - EditMode: 확인 화면 → 맞아요/틀렸어요, 확인 화면에서 마감 → E-10, 확인 중 네트워크 끊김
 - 에디터 Play 눈 확인, 아이폰은 서버 OCR PR 배포 뒤
 
 ## 진행
 - 11/17 민재 Windows: #61 리뷰 2번(틀린 값이 그대로 확정) 설명 뒤 민재가 확인 단계에 동의 → 초안
+- 11/17 민재 답: 1 가, **2 나**(틀렸어요는 횟수를 안 씀), 3 가, 4 가, 5 가, 6 가 → 승인. 2 나로 생기는 것: 틀렸어요 반복은 마감(서버 `VERIFY_DEADLINE_S`, 지금 600초)까지만 가능. 1 가라 사용자는 판정을 모른 채 고르므로 "틀렸어요"로 결과를 고를 수는 없음(정직한 오독 신고만 남음). 확인 표: 틀렸어요 연속 → 같은 마감 안에서 계속 RETAKE_REQUIRED, 마감 지나면 VERIFICATION_CLOSED. OCR 서버 부하는 기존 503(밀림)으로 막힘 — 지환 OCR PR 배포 뒤 오라클 측정 때 같이 봄
