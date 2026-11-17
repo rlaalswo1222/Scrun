@@ -7,6 +7,7 @@
 - OCR_ENGINE: none(기본, 사진 인증은 503) 또는 fake(파일 이름으로 값을 정하는 가짜, 로컬·테스트 전용). 진짜 엔진은 ADR-0012 뒤
 - VERIFY_*: 계기판 인증 판정 값(계획 0038). 없으면 아래 VerificationPolicy 기본값
 - BOT_FILL_TO·BOT_PACES_KMH: 페이스 봇(계획 0040). 없으면 아래 BotPolicy 기본값, BOT_FILL_TO=0이면 봇 없음
+- FRIEND_ADD_FAIL_LIMIT·FRIEND_ADD_FAIL_WINDOW_S: 틀린 친구 코드 제한(계획 0044). 없으면 아래 FriendPolicy 기본값
 """
 import logging
 import os
@@ -89,6 +90,34 @@ class BotPolicy:
     paces_kmh: tuple[float, ...] = (9.0, 7.5, 10.5, 6.0, 12.0)
 
 
+@dataclass(frozen=True)
+class FriendPolicy:
+    """친구(계획 0044). 최대 인원은 11/06 확정(BL-27 ⑤). 틀린 코드 제한은 가설 값: 코드를 잘못 옮겨 적는 사람은 몇 번이면
+    맞추고, 맞혀 보려는 사람은 10분에 10번이면 1조 개 중 하나를 못 찾는다."""
+
+    max_friends: int = 50
+    add_fail_limit: int = 10       # 이 횟수만큼 틀리면 그다음부터 RATE_LIMITED
+    add_fail_window_s: int = 600   # 최근 이 시간 안의 틀린 코드만 셈
+
+
+FRIEND_ENV = (
+    ("FRIEND_ADD_FAIL_LIMIT", "add_fail_limit", 1, 1000),
+    ("FRIEND_ADD_FAIL_WINDOW_S", "add_fail_window_s", 10, 24 * 3600),
+)
+
+
+def load_friends(env: Mapping[str, str]) -> FriendPolicy:
+    values = {}
+    for name, field, lo, hi in FRIEND_ENV:
+        raw = env.get(name, "").strip()
+        if not raw:
+            continue
+        if not re.fullmatch(r"[0-9]+", raw) or not lo <= int(raw) <= hi:
+            raise ConfigError(f"{name}는 {lo}에서 {hi} 사이 정수여야 합니다(지금: {raw!r}).")
+        values[field] = int(raw)
+    return FriendPolicy(**values)
+
+
 BOT_MIN_KMH, BOT_MAX_KMH = 3.0, 20.0
 BOT_MAX_FILL = 20  # 맵 최대 인원(ADR-0010)
 
@@ -127,6 +156,7 @@ class Settings:
     ocr_engine: str = "none"
     verification: VerificationPolicy = VerificationPolicy()
     bots: BotPolicy = BotPolicy()
+    friends: FriendPolicy = FriendPolicy()
 
 
 def load_settings(env: Mapping[str, str]) -> Settings:
@@ -163,6 +193,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         ocr_engine=ocr_engine,
         verification=load_verification(env),
         bots=load_bots(env),
+        friends=load_friends(env),
     )
 
 

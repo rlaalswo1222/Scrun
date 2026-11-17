@@ -1,7 +1,8 @@
 {
   "request": {
     "method": "GET",
-    "path": "/v1/friends/usr_f1",
+    "path": "/v1/friends/01JC0Z8H3K6Q2W9EXAMPLE0000",
+    "auth": "Bearer {accessToken}",
     "body": null
   },
   "status": 200,
@@ -9,19 +10,25 @@
     "resultType": "SUCCESS",
     "success": {
       "data": {
-        "userId": "usr_f1",
-        "nickname": "바닷바람",
-        "level": 3,
-        "verifiedCount": 6,
-        "runningNow": true,
-        "outfitStage": 3,
-        "recentVerifiedRuns": [
+        "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000",
+        "nickname": "아침러너",
+        "level": null,
+        "verifiedCount": 0,
+        "runningNow": false,
+        "runningDistanceM": null,
+        "lastRunAt": "2026-11-06T12:15:00Z",
+        "outfitStage": 1,
+        "recentRuns": [
           {
-            "runId": "run_f1_01",
-            "startedAt": "2026-11-05T21:00:00Z",
-            "distanceM": 5000,
-            "durationS": 1620,
-            "avgPaceSPerKm": 324
+            "runId": "01JC0ZA4R7N2X5EXAMPLERUN00",
+            "startedAt": "2026-11-06T12:00:00Z",
+            "endedAt": "2026-11-06T12:15:00Z",
+            "courseId": "crs_lake_loop",
+            "courseName": "노을 호수 한 바퀴",
+            "distanceM": 2400,
+            "durationS": 900,
+            "avgPaceSPerKm": 375,
+            "verification": "UNVERIFIED"
           }
         ]
       }
@@ -29,7 +36,7 @@
     "error": null,
     "meta": {
       "timestamp": "2026-11-06T00:00:00Z",
-      "path": "/v1/friends/usr_f1",
+      "path": "/v1/friends/01JC0Z8H3K6Q2W9EXAMPLE0000",
       "requestId": "req_example"
     }
   }

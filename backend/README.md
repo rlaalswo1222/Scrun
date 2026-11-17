@@ -1,6 +1,6 @@
 # SCRUN 서버 (`backend/`)
 
-FastAPI + PostgreSQL. API 41개 중 **로그인 5개 + 닉네임 확인**(DB 저장·토큰 발급, 계획 [0016](../docs/plans/0016-server-skeleton.md)), **코스 3개**(목록·상세·맵 입장, 계획 [0021](../docs/plans/0021-course-api.md)), **보정값 2개**(계획 [0023](../docs/plans/0023-calibration.md)), **내 정보·설정 4개**(계획 [0028](../docs/plans/0028-user-me-settings-api.md)), **러닝 5개**(시작·시계열·끝나지 않은 러닝·종료·버리기, 계획 [0037](../docs/plans/0037-run-pause-finish.md)), **계기판 인증 2개**(사진·건너뛰기, 계획 [0038](../docs/plans/0038-console-verification.md))는 진짜, **나머지 19개는 아직 스텁**(고정 예시, 계획 [0014](../docs/plans/0014-api-spec.md)). 스텁은 묶음별로 하나씩 진짜로 바꾼다. 옛 `server.py`(코스 만들기 실험 서버)와는 별개.
+FastAPI + PostgreSQL. API 41개 중 **로그인 5개 + 닉네임 확인**(DB 저장·토큰 발급, 계획 [0016](../docs/plans/0016-server-skeleton.md)), **코스 3개**(목록·상세·맵 입장, 계획 [0021](../docs/plans/0021-course-api.md)), **보정값 2개**(계획 [0023](../docs/plans/0023-calibration.md)), **내 정보·설정 4개**(계획 [0028](../docs/plans/0028-user-me-settings-api.md)), **러닝 5개**(시작·시계열·끝나지 않은 러닝·종료·버리기, 계획 [0037](../docs/plans/0037-run-pause-finish.md)), **계기판 인증 2개**(사진·건너뛰기, 계획 [0038](../docs/plans/0038-console-verification.md)), **기록 읽기 4개**(목록·상세·공유·고스트, 계획 [0043](../docs/plans/0043-run-records-api.md)), **친구 6개**(추가·목록·달리는 친구·프로필·삭제·피드, 계획 [0044](../docs/plans/0044-s7-friends.md))는 진짜, **나머지 9개는 아직 스텁**(고정 예시, 계획 [0014](../docs/plans/0014-api-spec.md)). 스텁은 묶음별로 하나씩 진짜로 바꾼다. 옛 `server.py`(코스 만들기 실험 서버)와는 별개.
 
 공통 규칙(응답 껍데기·상태 코드·오류 코드·단위)은 [docs/api/README.md](../docs/api/README.md), DB 테이블은 [docs/api/data_model.md](../docs/api/data_model.md), API 목록·진행은 노션 SCRUN > 문서 > API 명세.
 
@@ -37,7 +37,7 @@ http://localhost:8000/docs 에서 눌러 본다.
 - 정확도는 실사진 채점 전이라 모름(`speedlab/ocr/README.md`). 맥 M5 1스레드에서 사진 3장 2.0–3.0초(합성 계기판, 11/17)
 - 판정 값(거리 15%, 시간 −30초에서 +5분, 쉰 시간으로 넓히는 폭 최대 10분, 마감 10분, 다시 찍기 3번)은 `VERIFY_*` 환경 변수로 바꾼다(`.env.example`, 기본값 `app/core/config.py` `VerificationPolicy`)
 
-### 스텁 API(19개) 규칙 — 오류 화면 확인용
+### 스텁 API(9개) 규칙 — 오류 화면 확인용
 스텁 API는 토큰을 검사하지 않는다(아무 토큰이나 예시 사용자 `usr_demo`). 진짜가 되면 진짜 토큰만 받는다.
 | 넣는 값 | 결과 |
 |---|---|
@@ -45,7 +45,6 @@ http://localhost:8000/docs 에서 눌러 본다.
 | 토큰 `expired` | 401 `TOKEN_EXPIRED` |
 | 토큰 `signup` | 가입용 토큰 흉내(스텁 API는 403 `SIGNUP_REQUIRED`) |
 | 기록 `run_other` / 없는 ID | 403 `FORBIDDEN` / 404 `RUN_NOT_FOUND` |
-| 친구 코드 `SCR-7K2Q`(내 코드) / `SCR-NONE` / `SCR-FRND` / `SCR-FULL` | 내 코드 / 없음 / 이미 친구 / 50명 초과 |
 | 같이 달리기 `usr_f2` | 409 `FRIEND_NOT_RUNNING` |
 
 ## 구조
@@ -61,7 +60,7 @@ app/
                      verification(센서-계기판 대조 판정, 순수 함수)
   db/                models(테이블 21개), session(DB 연결), ids(ULID), testing(테스트 DB로 바꿔 끼우기)
   schemas/           요청·응답 모델(도메인별). Swagger의 Schemas
-  routers/           API 주소(도메인별). auth.py, users.py의 닉네임 확인·내 정보·설정·보정값, courses.py, runs.py의 달리는 쪽, verification.py가 진짜, 나머지는 스텁
+  routers/           API 주소(도메인별). auth.py, users.py의 닉네임 확인·내 정보·설정·보정값, courses.py, runs.py, verification.py, friends.py(같이 달리기 빼고)가 진짜, 나머지는 스텁
   testenv.py         테스트·예시 내보내기 전용 설정(임시 서명 키 + 가짜 카카오, app보다 먼저 부름)
   stub_data.py       스텁이 돌려주는 예시 값(실측 아님)
   stub_requests.py   모든 API 예시 요청 표 + 진짜가 된 API 목록(REAL)

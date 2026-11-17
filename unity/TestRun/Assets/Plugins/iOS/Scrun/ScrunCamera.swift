@@ -44,7 +44,7 @@ enum ScrunCamera {
                 guard status == .granted else { done(["outcome": "noPermission"]); return }
                 guard current == nil else { done(["outcome": "unavailable"]); return } // 권한 팝업 사이에 또 불림
                 guard AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) != nil,
-                      let top = topViewController() else {
+                      let top = ScrunBridge.topViewController() else {
                     done(["outcome": "unavailable"]) // 시뮬레이터에는 카메라가 없음
                     return
                 }
@@ -103,14 +103,6 @@ enum ScrunCamera {
             let t = (try? f.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
             if t < limit { try? fm.removeItem(at: f) }
         }
-    }
-
-    private static func topViewController() -> UIViewController? {
-        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-        let windows = scenes.flatMap { $0.windows }
-        var vc = (windows.first { $0.isKeyWindow } ?? windows.first)?.rootViewController
-        while let p = vc?.presentedViewController { vc = p }
-        return vc
     }
 }
 
