@@ -32,7 +32,7 @@ DESCRIPTION = """
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    start_ocr()   # OCR_ENGINE=onnx면 읽기 프로세스를 미리 띄움(계획 0043)
+    start_ocr()   # OCR_ENGINE=onnx면 읽기 프로세스를 미리 띄움(계획 0046)
     yield
     stop_ocr()
     close_kakao_client()

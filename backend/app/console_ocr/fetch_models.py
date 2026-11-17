@@ -1,4 +1,4 @@
-"""Docker 빌드 때 PP-OCRv5 모델(검출·한국어 인식)을 받아 이미지에 넣는다(계획 0043). 요청 중에 받지 않게.
+"""Docker 빌드 때 PP-OCRv5 모델(검출·한국어 인식)을 받아 이미지에 넣는다(계획 0046). 요청 중에 받지 않게.
 
     python -m app.console_ocr.fetch_models
 

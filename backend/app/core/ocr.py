@@ -2,7 +2,7 @@
 
 - 사진은 바이트로만 받는다. 엔진은 디스크에 쓰지 않고, 읽은 뒤 라우터가 버린다(BL-17 ③)
 - 브래킷 여러 장(노출만 다름, ADR-0011)을 한 번에 받아 엔진이 가장 잘 읽힌 값을 고른다
-- OCR_ENGINE: none → 라우터가 503, fake → 파일 이름으로(로컬·테스트), onnx → 진짜 엔진(계획 0043: `app/console_ocr`를
+- OCR_ENGINE: none → 라우터가 503, fake → 파일 이름으로(로컬·테스트), onnx → 진짜 엔진(계획 0046: `app/console_ocr`를
   자식 프로세스 2개에서, 시간을 넘기면 죽이고 새로 띄움)
 - 브래킷 합치기: 읽힌 사진의 거리·시간이 모두 같을 때만 READ, 다르면 다시 찍기(11/17 지환). 센서 값은 쓰지 않음
 """
@@ -90,7 +90,7 @@ def combine(results: list) -> ConsoleRead:
 
 
 class OnnxOcr:
-    """진짜 엔진(계획 0043). 읽기는 `app.console_ocr.pool.ReaderPool`의 자식 프로세스에서."""
+    """진짜 엔진(계획 0046). 읽기는 `app.console_ocr.pool.ReaderPool`의 자식 프로세스에서."""
 
     def __init__(self, pool):
         self.pool = pool

@@ -1,4 +1,4 @@
-"""계기판 OCR 진짜 엔진(계획 0043): 브래킷 합치기, 자식 프로세스 시간 초과·죽음, 실제 모델로 합성 계기판 한 장."""
+"""계기판 OCR 진짜 엔진(계획 0046): 브래킷 합치기, 자식 프로세스 시간 초과·죽음, 실제 모델로 합성 계기판 한 장."""
 import importlib.util
 import time
 from pathlib import Path
