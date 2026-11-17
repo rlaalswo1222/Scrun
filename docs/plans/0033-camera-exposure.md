@@ -12,6 +12,7 @@
     6. 정렬: 같은 브래킷 사진은 `sequenceCount`가 같음 → 브래킷 안 순서는 `photo.photoCount`로 정렬(파일 -0·-1·-2와 `photos`가 요청한 노출 순서 0·−1.5·−3을 지키게)
     7. 6.6–8.0 MB JPEG 쓰기(`.atomic`)를 메인 스레드에서 → 셔터 직후 끊김. 쓰기는 캡처·백그라운드 큐에서, `close`만 메인
     8. 셔터 상한 1/60초(`activeMaxExposureDuration`)를 `startRunning` 전에 한 번만 → 세션·프리셋이 형식을 다시 적용하면 풀림. `startRunning` 뒤(그리고 `AVCaptureSessionDidStartRunning` 알림에서) 다시 설정, 어두운 곳에서 1/60초 넘지 않는지 확인(11/13 노트북 화면은 밝아 1/120초라 못 잡았음)
+    9. **(11/17 Windows가 고침, 맥은 확인만, `fix/verify-review`)** 사진 세우기: 카메라는 세로 사진도 가로 픽셀 + EXIF 방향 태그로 써서, C#(`Texture2D.LoadImage`)·서버가 90° 누운 사진을 받았음(#62 리뷰). `ScrunCamera.upright`가 사진 콜백 스레드에서 ImageIO로 픽셀을 돌리고 긴 변 2048(`CameraShootOptions.MaxSide`)로 줄여 씀(메타데이터는 버림, 7번의 쓰기 크기도 줄어듦). 맥에서: Swift 컴파일 → 아이폰에서 계기판 인증 E-02 → 찍기 → E-04 미리보기가 **세로로 바로** 보이는지, 받은 파일(`scrun-camera/`)이 1536×2048 정도·장당 1 MB 안팎인지, `[ScrunCamera] 사진을 세우지 못해` 로그가 없는지
 - 담당: 민재(11/12 지환 S3 줄 "카메라 노출 제어 Swift"를 가져옴 → 지환에게 알림, 0017 표 고치기). 촬영 화면 E-02·E-04와 OCR·인증(BL-16 화면·17·18)은 지환 S4 그대로, 모양은 상준
 - 기준: 공개 백로그 BL-16 ①–⑥, `docs/product/console_ocr.md`(10/29 첫 시험: **병목은 인식기보다 노출**, LED가 하얗게 타고 꺼진 획이 비침), Figma E-02(607:1115)·E-03(607:1174)·E-04(607:1216) 노트, ADR-0009(네이티브 통로), OCR은 서버에서(BL-17 ①, 11/06 확정)
 

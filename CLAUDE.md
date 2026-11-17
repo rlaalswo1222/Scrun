@@ -61,5 +61,6 @@
 ## 자주 쓰는 명령
 - Unity 조작: 에디터에서 Window → MCP for Unity → Start Server. 도구가 안 보이면 Git Bash로 `unity/tools/` 스크립트(`ucs.sh` C# 실행, `umenu.sh` 메뉴, `ucon.sh` 콘솔)
 - 섬 씬 다시 만들기: 메뉴 Scrun → Build Island Scene / 식생만: Rebuild Vegetation Meshes (fast)
+- 아이폰 설치(개발 서명, 11/17 결정): 셋 다 Xcode → Settings → Accounts에 **팀 공용 Apple 계정**으로 로그인해 그 무료 개인 팀(TEAM07 Capstone)으로 서명, 번들 ID는 `com.scrun.app` 그대로(`ScrunLocal.json`의 `appleTeamId`에 그 팀 ID). 새 아이폰은 꽂은 채 한 번 빌드하면 팀에 등록됨. 무료 팀이라 7일마다 다시 설치. 2단계 인증 코드는 민재 폰으로 감. 개인 Apple ID 팀으로 서명하면 다른 팀원 폰에 안 깔림
 - 속도 실험 앱: 메뉴 Scrun → Build SpeedLab APK → `unity/Builds/SpeedLab.apk`
 - adb: `C:/Program Files/Unity/Hub/Editor/6000.6.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platform-tools/adb.exe`. Git Bash에서 폰 경로는 `MSYS_NO_PATHCONV=1`, 그때 PC 쪽 경로는 Windows 형식(`C:\...`)

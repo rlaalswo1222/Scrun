@@ -152,6 +152,8 @@ namespace Scrun.App
         void ReturnFromMap(MapExit exit, ApiException error)
         {
             string finishedRunId = map?.FinishedRunId; // 인증 화면에 넘길 기록(지환 E-02)
+            RunStatsBody sensor = map?.Session?.FinishBody?.Sensor; // 인증 결과 표의 센서 값(서버 답에도 있음, 에디터 가짜 OCR용)
+            string clientRunId = map?.Session?.ClientRunId;
             map = null;
             skipReload = exit != MapExit.Finished; // 끝내고 나오면 인원이 바뀌어 다시 불러옴. 인증 안내 때는 안내창이 로딩에 덮이지 않게
             try { Nav.Pop(); }
@@ -174,12 +176,23 @@ namespace Scrun.App
                     Nav.Push(new CalibrationIntroScreen(onDone: AfterCalibration));
                     break;
                 case MapExit.VerifyConsole:
-                    // 임시(계획 0037 정할 것 3): 계기판 촬영·인증 화면(지환 E-02, S4)이 생기면 여기서
-                    // finishedRunId로 그 화면을 연다. 그 전엔 기록이 인증 대기로 남았다고만 알림
-                    Debug.Log("[기록] 인증할 기록: " + (finishedRunId ?? "(서버에 못 보냄)"));
-                    Feedback.ShowError("계기판 인증 화면은 준비 중이에요", "이번 기록은 인증 대기로 저장됐어요.");
+                    // D-22 "계기판 촬영하기" → E-02(계획 0038). 끝나면 이 화면을 다시 불러옴(인원이 바뀜)
+                    if (finishedRunId != null)
+                    {
+                        Nav.Push(new VerifyScreen(finishedRunId, sensor, AfterVerify));
+                        break;
+                    }
+                    // 기록을 서버에 아직 못 올림(이 폰에 남음, 나중에 올림) → 인증은 종료 직후에만이라 미인증으로 표시
+                    if (clientRunId != null) PendingRunStore.Default.MarkSkipVerification(clientRunId);
+                    Feedback.ShowError("지금은 인증할 수 없어요", "기록을 서버에 아직 올리지 못했어요. 연결되면 미인증 기록으로 올라가요.");
                     break;
             }
+        }
+
+        // 인증 화면이 끝남(인증 완료 "다음"·미인증 저장) → 인증 화면을 내리고 다시 불러옴(Pop하면 OnShow가 불러옴)
+        void AfterVerify()
+        {
+            if (Nav.Current is VerifyScreen) Nav.Pop();
         }
 
         // 보정이 끝남. 서버 저장이 실패했으면(이 폰에 남음) 입장해도 또 409라, 한 번 더 올려 보고 들어간다

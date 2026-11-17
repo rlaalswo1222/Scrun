@@ -118,15 +118,48 @@ def test_verified_overwrites_official_with_console(db_client, me, db):
 
 
 @pytest.mark.parametrize("name", ["d3600_t1000", "d3000_t1400", "d3000_t900"])
-def test_mismatch_keeps_sensor_values(db_client, me, db, name):
+def test_mismatch_can_retake_then_saved_unverified(db_client, me, db, name):
+    """오차 초과는 바로 정하지 않고 다시 찍기(E-08), 미인증으로 저장하면 MISMATCH로 정함(11/17 Figma대로)."""
     run_id = finished(db_client, me)
     out = data(photo(db_client, me, run_id, f"{name}.jpg"))
-    assert (out["status"], out["reason"]) == ("UNVERIFIED", "MISMATCH")
-    assert not all(r["ok"] for r in out["comparison"])
+    assert (out["status"], out["reason"], out["retakesLeft"]) == ("RETAKE_REQUIRED", "MISMATCH", 3)
+    assert out["console"]["distanceM"] == int(name[1:5]) and not all(r["ok"] for r in out["comparison"])
+    assert run_row(db, run_id).status == "PENDING" and run_row(db, run_id).console_distance_m is None
+    saved = data(skip(db_client, me, run_id, "RETAKE_GIVEN_UP"))
+    assert (saved["status"], saved["reason"], saved["console"], saved["comparison"]) == \
+        ("UNVERIFIED", "MISMATCH", out["console"], out["comparison"])
     run = run_row(db, run_id)
     assert (run.status, run.unverified_reason, run.official_source, run.official_distance_m) == \
         ("UNVERIFIED", "MISMATCH", "SENSOR", 3000)
-    assert run.console_distance_m is not None  # 표에 보이려고 읽은 값은 남김
+    assert run.console_distance_m == out["console"]["distanceM"]  # 표에 보이려고 읽은 값은 남김
+
+
+def test_mismatch_retake_then_verified(db_client, me, db):
+    run_id = finished(db_client, me)
+    assert data(photo(db_client, me, run_id, "d3600_t1000.jpg"))["reason"] == "MISMATCH"  # 잘못 읽힘
+    assert data(photo(db_client, me, run_id, "d3010_t1000.jpg"))["status"] == "VERIFIED"
+    assert run_row(db, run_id).official_distance_m == 3010
+
+
+def test_mismatch_every_time_ends_mismatch(db_client, me):
+    run_id = finished(db_client, me)
+    outs = [data(photo(db_client, me, run_id, f"x{i}_d3600_t1000.jpg")) for i in range(4)]
+    assert [(o["status"], o["reason"]) for o in outs] == [("RETAKE_REQUIRED", "MISMATCH")] * 3 + [("UNVERIFIED", "MISMATCH")]
+    assert outs[-1]["console"] == {"distanceM": 3600, "durationS": 1000}
+
+
+def test_same_mismatch_photo_again_gives_same_answer(db_client, me):
+    run_id = finished(db_client, me)
+    files = [jpeg("d3600_t1000.jpg")]
+    first = data(photo(db_client, me, run_id, files=files))
+    assert data(photo(db_client, me, run_id, files=files)) == first
+
+
+def test_give_up_after_unreadable_is_retake_given_up(db_client, me):
+    run_id = finished(db_client, me)
+    assert data(photo(db_client, me, run_id, "blur.jpg"))["reason"] is None
+    out = data(skip(db_client, me, run_id, "RETAKE_GIVEN_UP"))
+    assert (out["status"], out["reason"], out["console"]) == ("UNVERIFIED", "RETAKE_GIVEN_UP", None)
 
 
 def test_paused_run_widens_time(db_client, me):
@@ -167,10 +200,14 @@ def test_same_photo_again_is_not_counted(db_client, me):
     assert data(photo(db_client, me, run_id, "blur2.jpg"))["retakesLeft"] == 2
 
 
-def test_unsupported_console_ends_at_once(db_client, me):
+def test_unsupported_console_can_retake_then_saved(db_client, me):
+    """읽을 수 없는 계기판(E-09)도 다시 찍기 가능, 미인증으로 저장하면 UNSUPPORTED_CONSOLE."""
     run_id = finished(db_client, me)
     out = data(photo(db_client, me, run_id, "unsupported.jpg"))
-    assert (out["status"], out["reason"], out["console"]) == ("UNVERIFIED", "UNSUPPORTED_CONSOLE", None)
+    assert (out["status"], out["reason"], out["console"], out["retakesLeft"]) == \
+        ("RETAKE_REQUIRED", "UNSUPPORTED_CONSOLE", None, 3)
+    out = data(skip(db_client, me, run_id, "RETAKE_GIVEN_UP"))
+    assert (out["status"], out["reason"]) == ("UNVERIFIED", "UNSUPPORTED_CONSOLE")
 
 
 def test_implausible_read_asks_retake(db_client, me):

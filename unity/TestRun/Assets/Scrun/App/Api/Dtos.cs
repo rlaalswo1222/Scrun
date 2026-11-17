@@ -177,4 +177,30 @@ namespace Scrun.App
         public string Verification { get; set; }
         public bool Shared { get; set; }
     }
+
+    // ---- 계기판 인증(계획 0038, BL-16–18) ----
+
+    // POST /v1/runs/{runId}/verification/photo·skip 응답. status: VERIFIED(인증 완료, 저장)·UNVERIFIED(미인증, 저장)·
+    // RETAKE_REQUIRED(아직 저장 안 됨, 다시 찍기). reason: UNVERIFIED면 미인증 사유, RETAKE_REQUIRED면 MISMATCH(오차 초과, E-08)·
+    // UNSUPPORTED_CONSOLE(읽을 수 없는 계기판, E-09)·null(못 읽음, E-07)
+    public sealed class VerificationResult
+    {
+        public string Status { get; set; }
+        public string Reason { get; set; }
+        public RunStatsBody Console { get; set; } // 계기판에서 읽은 값(없을 수 있음)
+        public RunStatsBody Sensor { get; set; }
+        public List<ComparisonRow> Comparison { get; set; } = new List<ComparisonRow>();
+        public DateTime? RetakeDeadline { get; set; } // 다시 찍기일 때 인증 마감(UTC)
+        public int? RetakesLeft { get; set; }
+    }
+
+    // 대조 표 한 줄: item = distance·duration, diffRatio = (계기판 − 센서) / 계기판
+    public sealed class ComparisonRow
+    {
+        public string Item { get; set; }
+        public double? Console { get; set; }
+        public double Sensor { get; set; }
+        public double? DiffRatio { get; set; }
+        public bool Ok { get; set; }
+    }
 }
