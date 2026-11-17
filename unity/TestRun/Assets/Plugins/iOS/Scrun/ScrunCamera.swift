@@ -1,10 +1,12 @@
 import AVFoundation
+import ImageIO
 import UIKit
 
 // 계기판 촬영 화면(Figma E-03, 계획 0033, ADR-0011). C# ICamera(IosNative.cs)와 짝.
 // Unity 위에 이 화면을 통째로 띄운다: 미리보기 + 겹친 UI(X·남은 시간·점선 가이드·안내·셔터) + 노출 제어.
 // 셔터 한 번에 노출만 다른 사진을 연달아 찍고(브래킷, 기본 0·−1.5·−3 EV) 앱 임시 폴더에 JPEG로 쓴 뒤
 // 화면을 닫고 경로만 C#에 돌려준다(사진 바이트는 통로에 안 태움). 서버 OCR이 가장 잘 읽힌 장을 고른다.
+// 사진은 픽셀을 세우고 긴 변 maxSide(기본 2048, 서버 한 장 4 MB 상한)로 줄여 쓴다(upright).
 //   답: {"outcome": "taken"|"cancelled"|"timedOut"|"noPermission"|"unavailable", "photos": [{"path", "bias"}]}
 // 노출 규칙(가설, 첫 실기기 시험에서 값 정함, console_ocr.md):
 //   - 초점·노출 기준점 = 가이드 프레임 가운데(계기판)
@@ -21,9 +23,11 @@ enum ScrunCamera {
         var guideLabel = "계기판이 이 안에 들어오게"
         var hint = "숫자가 선명하게 보이도록 맞춰 주세요"
         var biases: [Float] = [0, -1.5, -3]
+        var maxSide = 2048 // 저장할 사진의 긴 변(px). 0이면 원본 크기(그래도 세워서 씀)
 
         init(_ a: [String: Any]) {
             if let v = a["timeLimitSec"] as? Int { timeLimitSec = max(0, v) }
+            if let v = a["maxSide"] as? Int { maxSide = max(0, v) }
             if let v = a["guideLabel"] as? String { guideLabel = v }
             if let v = a["hint"] as? String { hint = v }
             if let v = a["biases"] as? [NSNumber], !v.isEmpty { biases = v.map { $0.floatValue } }
@@ -65,6 +69,31 @@ enum ScrunCamera {
         }
     }
 
+    // 카메라 JPEG → 픽셀을 세운(EXIF 방향 반영) JPEG, 긴 변 maxSide 이하.
+    // 세로로 찍어도 카메라는 센서 방향(가로) 픽셀에 EXIF 방향 태그만 붙인다. C#(Texture2D.LoadImage)·서버 OCR이
+    // 태그를 보지 않으면 90° 누운 사진이 되므로 여기서 픽셀을 돌린다. 메타데이터(EXIF·위치)는 새 파일에 넣지 않음.
+    // 사진 콜백 스레드에서 부른다(메인 스레드를 막지 않게). 실패하면 nil → 원본을 그대로 씀
+    static func upright(_ data: Data, maxSide: Int, quality: Double = 0.85) -> Data? {
+        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        var opts: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true, // EXIF 방향대로 픽셀을 돌림
+            kCGImageSourceShouldCacheImmediately: true,
+        ]
+        if maxSide > 0 {
+            opts[kCGImageSourceThumbnailMaxPixelSize] = maxSide
+        } else if let p = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
+                  let w = p[kCGImagePropertyPixelWidth] as? Int, let h = p[kCGImagePropertyPixelHeight] as? Int {
+            opts[kCGImageSourceThumbnailMaxPixelSize] = max(w, h) // 원본 크기 그대로(지정하지 않으면 작은 미리보기가 나옴)
+        }
+        guard let image = CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary) else { return nil }
+        let out = NSMutableData()
+        guard let dst = CGImageDestinationCreateWithData(out, "public.jpeg" as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(dst, image, [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary)
+        guard CGImageDestinationFinalize(dst) else { return nil }
+        return out as Data
+    }
+
     // 앱이 중간에 꺼져 남은 사진(1시간 지난 것)을 치운다
     private static func cleanOld() {
         let fm = FileManager.default
@@ -91,14 +120,23 @@ private final class ScrunPhotoCollector: NSObject, AVCapturePhotoCaptureDelegate
     private let lock = NSLock()
     private let done: ([(seq: Int, bias: Float, data: Data)], Error?) -> Void
     private let fallbackBias: Float
+    private let maxSide: Int
 
-    init(fallbackBias: Float, done: @escaping ([(seq: Int, bias: Float, data: Data)], Error?) -> Void) {
+    init(fallbackBias: Float, maxSide: Int, done: @escaping ([(seq: Int, bias: Float, data: Data)], Error?) -> Void) {
         self.fallbackBias = fallbackBias
+        self.maxSide = maxSide
         self.done = done
     }
 
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-        guard error == nil, let data = photo.fileDataRepresentation() else { return }
+        guard error == nil, let raw = photo.fileDataRepresentation() else { return }
+        let data: Data
+        if let up = ScrunCamera.upright(raw, maxSide: maxSide) {
+            data = up
+        } else {
+            NSLog("[ScrunCamera] 사진을 세우지 못해 원본을 씀(누워 보일 수 있음)")
+            data = raw
+        }
         let bias = (photo.bracketSettings as? AVCaptureAutoExposureBracketedStillImageSettings)?.exposureTargetBias ?? fallbackBias
         lock.lock()
         photos.append((photo.sequenceCount, bias, data))
@@ -415,7 +453,7 @@ final class ScrunCameraController: UIViewController {
         }
         Self.portrait(out.connection(with: .video))
 
-        let c = ScrunPhotoCollector(fallbackBias: 0) { [weak self] photos, error in
+        let c = ScrunPhotoCollector(fallbackBias: 0, maxSide: opts.maxSide) { [weak self] photos, error in
             self?.collector = nil
             self?.saved(photos, error)
         }

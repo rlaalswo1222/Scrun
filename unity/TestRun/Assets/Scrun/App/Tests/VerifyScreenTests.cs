@@ -24,7 +24,40 @@ namespace Scrun.App.Tests
         [TestCase(3000, "3.00km")]
         [TestCase(3120, "3.12km")]
         [TestCase(520, "0.52km")]
+        [TestCase(3129, "3.12km")] // HUD·결과와 같게 10 m 아래 버림
         public void Km(int m, string text) => Assert.AreEqual(text, VerifyScreen.FormatKm(m));
+
+        [Test]
+        public void Km_uses_dot_in_comma_locale()
+        {
+            var saved = System.Globalization.CultureInfo.CurrentCulture;
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("de-DE");
+            try { Assert.AreEqual("3.12km", VerifyScreen.FormatKm(3120)); }
+            finally { System.Globalization.CultureInfo.CurrentCulture = saved; }
+        }
+
+        [Test]
+        public void Jpeg_size_is_read_from_header_and_small_photos_pass_untouched()
+        {
+            var tex = new UnityEngine.Texture2D(64, 48, UnityEngine.TextureFormat.RGB24, false);
+            byte[] jpg;
+            try { jpg = UnityEngine.ImageConversion.EncodeToJPG(tex, 80); }
+            finally { UnityEngine.Object.DestroyImmediate(tex); }
+            Assert.AreEqual((64, 48), VerifyPhotos.JpegSize(jpg));
+            Assert.AreSame(jpg, VerifyPhotos.Shrink(jpg)); // 긴 변 2048 이하 → 디코딩·재압축 없이 그대로
+            Assert.IsNull(VerifyPhotos.JpegSize(new byte[] { 1, 2, 3, 4 }));
+            Assert.IsNull(VerifyPhotos.JpegSize(new byte[] { 0xFF, 0xD8, 0xFF, 0xD9 }));
+        }
+
+        [Test]
+        public void Large_photo_is_shrunk_to_max_side()
+        {
+            var tex = new UnityEngine.Texture2D(3000, 1500, UnityEngine.TextureFormat.RGB24, false);
+            byte[] jpg;
+            try { jpg = UnityEngine.ImageConversion.EncodeToJPG(tex, 50); }
+            finally { UnityEngine.Object.DestroyImmediate(tex); }
+            Assert.AreEqual((VerifyPhotos.MaxSide, VerifyPhotos.MaxSide / 2), VerifyPhotos.JpegSize(VerifyPhotos.Shrink(jpg)));
+        }
 
         [TestCase(1720, "28:40")]
         [TestCase(59, "0:59")]

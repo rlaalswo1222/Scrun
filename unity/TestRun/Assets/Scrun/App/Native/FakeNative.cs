@@ -173,10 +173,10 @@ namespace Scrun.App
         }
     }
 
-    [Serializable]
     // 에디터 가짜 카메라 사진을 로컬 서버 가짜 OCR이 어떻게 읽을지(E-06·07·08·09를 에디터에서 보기)
     public enum FakeOcrResult { Match, Mismatch, Unreadable, Unsupported }
 
+    [Serializable] // 창이 JsonUtility로 EditorPrefs에 저장(이게 빠지면 설정이 저장되지 않음)
     public class FakeNativeConfig
     {
         public static readonly int KindCount = Enum.GetValues(typeof(PermissionKind)).Length;

@@ -73,6 +73,7 @@
                     <ui:Label name="result-title" class="verify-title" />
                     <ui:Label name="result-lead" class="verify-lead" />
                     <ui:Label name="result-chip" class="verify-chip" />
+                    <ui:Label name="result-error" class="verify-error" />
                 </ui:VisualElement>
                 <ui:VisualElement name="result-body" />
             </ui:ScrollView>
