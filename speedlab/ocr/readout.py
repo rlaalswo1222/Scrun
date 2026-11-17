@@ -28,7 +28,8 @@ def read_text(dets: np.ndarray, conf: float = 0.4, iou: float = 0.5) -> str:
     if not keep:
         return ""
     keep = np.array(keep)
-    digits = keep[(keep[:, 5] != DOT) & (keep[:, 5] != COLON)]
+    # 숫자 높이·윗줄·밑줄은 숫자 칸으로만: "-"(가운데 짧은 가로획)가 섞이면 "-1.20"의 소수점을 위쪽 표시등으로 보고 버림(#61 리뷰)
+    digits = keep[(keep[:, 5] != DOT) & (keep[:, 5] != COLON) & (keep[:, 5] != DASH)]
     if len(digits):
         tall = (digits[:, 3] - digits[:, 1]).max()
         bottom = np.median(digits[:, 3])

@@ -91,7 +91,8 @@ def main():
     train_items, val_sets = datasets()
     if args.limit:
         train_items = train_items[: args.limit]
-    loader = torch.utils.data.DataLoader(DigitDataset(train_items, train=True), batch_size=args.bs, shuffle=True,
+    bs = min(args.bs, len(train_items))   # --limit이 배치보다 작아도 배치가 0개가 되지 않게(#61 리뷰)
+    loader = torch.utils.data.DataLoader(DigitDataset(train_items, train=True), batch_size=bs, shuffle=True,
                                          num_workers=4, drop_last=True, persistent_workers=True)
     device = torch.device(args.device)
     model = build(args.size).to(device)
@@ -104,6 +105,7 @@ def main():
     warm = min(5 * len(loader), iters // 10)
     log = {"args": vars(args), "train_images": len(train_items), "epochs": []}
     best, step, t0 = -1.0, 0, time.time()
+    lr = args.lr
     for ep in range(args.epochs):
         model.train()
         losses = []

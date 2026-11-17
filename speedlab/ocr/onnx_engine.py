@@ -10,6 +10,8 @@ import onnxruntime as ort
 from dataset import letterbox
 from readout import read_text
 
+READ_CONF = 0.4   # 글자로 쓰는 상자 점수 문턱
+
 
 class OnnxReader:
     def __init__(self, path: str, threads: int = 2):
@@ -39,4 +41,6 @@ class OnnxReader:
         return np.concatenate([boxes, score[keep, None], cls[keep, None].astype(np.float32)], 1)
 
     def read(self, img: np.ndarray) -> str:
-        return read_text(self.detect(img))
+        # 글자 문턱(0.4)으로 한 번에 걸러 겹침 정리도 한 번만(0.05로 다 정리한 뒤 다시 거르면 서버 CPU 낭비, #61 리뷰).
+        # 낮은 문턱 detect는 채점(eval)에서 상자를 볼 때만
+        return read_text(self.detect(img, conf=READ_CONF), conf=READ_CONF)
