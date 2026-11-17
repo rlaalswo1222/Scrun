@@ -198,8 +198,9 @@ namespace Scrun.App
         public RunStatsBody Console { get; set; } // 계기판에서 읽은 값(없을 수 있음)
         public RunStatsBody Sensor { get; set; }
         public List<ComparisonRow> Comparison { get; set; } = new List<ComparisonRow>();
-        public DateTime? RetakeDeadline { get; set; } // 다시 찍기일 때 인증 마감(UTC)
+        public DateTime? RetakeDeadline { get; set; } // 다시 찍기·값 확인일 때 마감(UTC, 값 확인은 유예 포함)
         public int? RetakesLeft { get; set; }
+        public string AttemptId { get; set; } // CONFIRM_REQUIRED일 때 확인할 시도(confirm에 그대로, 계획 0045)
     }
 
     // ---- 친구(계획 0044, BL-27·28) ----

@@ -99,6 +99,36 @@ namespace Scrun.App.Tests
         }
 
         [Test]
+        public void Confirm_read_posts_attempt_and_answer()
+        {
+            var http = new FakeHttp();
+            http.Handler = r => FakeHttp.Ok("{\"status\":\"RETAKE_REQUIRED\",\"reason\":\"USER_REJECTED\",\"retakesLeft\":3," +
+                                            "\"console\":null,\"sensor\":{\"distanceM\":3000,\"durationS\":1000},\"comparison\":[]," +
+                                            "\"retakeDeadline\":\"2026-11-17T01:10:00Z\",\"attemptId\":null}");
+            var session = new Session(new MemorySecureStore());
+            session.SetTokens("acc", "ref");
+            var api = new RunsApi(new ApiClient(http, session, () => "http://x"));
+            var saved = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(null);
+            VerificationResult r;
+            try
+            {
+                r = api.ConfirmReadAsync("run_1", "att_9", false).GetAwaiter().GetResult();
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(saved);
+            }
+            var sent = http.Sent.Single();
+            Assert.AreEqual("http://x/v1/runs/run_1/verification/confirm", sent.Url);
+            Assert.AreEqual("POST", sent.Method);
+            StringAssert.Contains("\"attemptId\":\"att_9\"", sent.Body);
+            StringAssert.Contains("\"correct\":false", sent.Body);
+            Assert.AreEqual("Bearer acc", sent.Headers["Authorization"]);
+            Assert.AreEqual((VerifyStatus.Retake, VerifyReason.UserRejected, 3), (r.Status, r.Reason, r.RetakesLeft.Value));
+        }
+
+        [Test]
         public void Photo_upload_is_multipart_with_auth_and_parses_retake()
         {
             var http = new FakeHttp();

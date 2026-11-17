@@ -28,7 +28,8 @@ from app.stub_requests import REAL
 FIXED_META = {"timestamp": "2026-11-06T00:00:00Z", "requestId": "req_example"}
 DEVICE_ID = "6F1A2B3C-0000-4000-8000-000000000001"  # 예시 identifierForVendor
 PLACEHOLDER = {"accessToken": "eyJhbGciOi...(access)", "refreshToken": "(refresh 토큰 원문)", "signupToken": "eyJhbGciOi...(signup)",
-               "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000", "friendCode": "K7Q2M9XA", "runId": "01JC0ZA4R7N2X5EXAMPLERUN00"}
+               "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000", "friendCode": "K7Q2M9XA", "runId": "01JC0ZA4R7N2X5EXAMPLERUN00",
+               "attemptId": "01JC0ZB2M5P8T1EXAMPLEVER00"}
 
 
 _ULID = re.compile(r"/[0-9A-HJKMNP-TV-Z]{26}(?=/|$)")  # 주소 안의 기록 ID(db.ids.new_id)
@@ -59,6 +60,8 @@ def _clean(j):
             rt["token"] = "eyJhbGciOi...(realtime)"
         if data.get("createdAt"):  # 저장 시각(보정 등)도 다시 만들 때마다 바뀌지 않게
             data["createdAt"] = FIXED_META["timestamp"]
+        if data.get("retakeDeadline"):  # 인증 마감(다시 찍기·값 확인)도
+            data["retakeDeadline"] = "2026-11-06T00:10:00Z"
         for item in (data.get("items") or []) + (data.get("recentRuns") or []):  # 기록 목록·피드·프로필: 줄마다 ID
             if isinstance(item, dict):
                 for k in ("runId", "feedId"):
@@ -144,8 +147,12 @@ def collect() -> dict:
         app.dependency_overrides[get_ocr] = FakeOcr
         try:
             shots = [("photos", (f"console_{i}_d3150_t1140.jpg", b"\xff\xd8\xff" + bytes([i]), "image/jpeg")) for i in range(3)]
-            rec("POST", "/v1/runs/{runId}/verification/photo", "(multipart: photos=계기판 사진 JPEG, 브래킷 3장)",
-                "Bearer {accessToken}", c.post(f"/v1/runs/{run_id}/verification/photo", files=shots, headers=auth))
+            shown = rec("POST", "/v1/runs/{runId}/verification/photo", "(multipart: photos=계기판 사진 JPEG, 브래킷 3장)",
+                        "Bearer {accessToken}", c.post(f"/v1/runs/{run_id}/verification/photo", files=shots, headers=auth))
+            # 읽은 값 확인(계획 0045): 맞아요 → 지금 판정
+            body = {"attemptId": shown["success"]["data"]["attemptId"], "correct": True}
+            rec("POST", "/v1/runs/{runId}/verification/confirm", {**body, "attemptId": PLACEHOLDER["attemptId"]},
+                "Bearer {accessToken}", c.post(f"/v1/runs/{run_id}/verification/confirm", json=body, headers=auth))
         finally:
             app.dependency_overrides.pop(get_ocr, None)
         other = c.post("/v1/runs", headers=auth, json={"clientRunId": "c-2026-11-06-002", "mapInstanceId": "map_crs_lake_loop",

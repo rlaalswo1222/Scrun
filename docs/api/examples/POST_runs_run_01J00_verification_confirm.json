@@ -1,0 +1,55 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/v1/runs/01JC0ZA4R7N2X5EXAMPLERUN00/verification/confirm",
+    "auth": "Bearer {accessToken}",
+    "body": {
+      "attemptId": "01JC0ZB2M5P8T1EXAMPLEVER00",
+      "correct": true
+    }
+  },
+  "status": 200,
+  "response": {
+    "resultType": "SUCCESS",
+    "success": {
+      "data": {
+        "status": "VERIFIED",
+        "reason": null,
+        "attemptId": null,
+        "console": {
+          "distanceM": 3150,
+          "durationS": 1140
+        },
+        "sensor": {
+          "distanceM": 3120,
+          "durationS": 1080
+        },
+        "comparison": [
+          {
+            "item": "distance",
+            "console": 3150.0,
+            "sensor": 3120.0,
+            "diffRatio": 0.0095,
+            "ok": true
+          },
+          {
+            "item": "duration",
+            "console": 1140.0,
+            "sensor": 1080.0,
+            "diffRatio": 0.0526,
+            "ok": true
+          }
+        ],
+        "retakeDeadline": null,
+        "retakesLeft": null,
+        "rewards": null
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2026-11-06T00:00:00Z",
+      "path": "/v1/runs/01JC0ZA4R7N2X5EXAMPLERUN00/verification/confirm",
+      "requestId": "req_example"
+    }
+  }
+}

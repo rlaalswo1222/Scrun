@@ -12,7 +12,9 @@ namespace Scrun.App.Tests
         static VerificationResult R(string status, string reason = null, int? left = null, int deadlineSec = 600) => new VerificationResult
         {
             Status = status, Reason = reason, RetakesLeft = left,
-            RetakeDeadline = status == VerifyStatus.Retake ? T0.AddSeconds(deadlineSec) : (DateTime?)null,
+            RetakeDeadline = status == VerifyStatus.Retake || status == VerifyStatus.Confirm ? T0.AddSeconds(deadlineSec) : (DateTime?)null,
+            AttemptId = status == VerifyStatus.Confirm ? "att_1" : null,
+            Console = status == VerifyStatus.Confirm ? new RunStatsBody { DistanceM = 3120, DurationS = 1720 } : null,
             Sensor = new RunStatsBody { DistanceM = 3000, DurationS = 1000 },
             Comparison = new List<ComparisonRow>(),
         };
@@ -32,6 +34,93 @@ namespace Scrun.App.Tests
             Assert.IsTrue(f.Send());
             f.Answer(r);
             return f;
+        }
+
+        // ---- 읽은 값 확인 E-05b(계획 0045) ----
+        static VerifyFlow AtRead(int deadlineSec = 600)
+        {
+            var f = Answered(R(VerifyStatus.Confirm, left: 3, deadlineSec: deadlineSec));
+            Assert.AreEqual(VerifyStep.ReadConfirm, f.Step);
+            Assert.IsTrue(f.HasPhoto); // 맞아요·틀렸어요까지 사진을 들고 있음
+            return f;
+        }
+
+        [Test]
+        public void Read_value_confirmed_then_verified()
+        {
+            var f = AtRead();
+            Assert.IsTrue(f.AnswerRead(true));
+            Assert.AreEqual(VerifyStep.Sending, f.Step);
+            Assert.IsTrue(f.Confirming);
+            f.Answer(R(VerifyStatus.Verified));
+            Assert.AreEqual(VerifyStep.Verified, f.Step);
+            Assert.IsFalse(f.HasPhoto);
+            Assert.IsFalse(f.Confirming);
+        }
+
+        [Test]
+        public void Confirmed_mismatch_is_final_E08_without_retake()
+        {
+            var f = AtRead();
+            f.AnswerRead(true);
+            f.Answer(R(VerifyStatus.Unverified, VerifyReason.Mismatch));
+            Assert.AreEqual(VerifyStep.Mismatch, f.Step);
+            Assert.IsTrue(f.Saved);
+            Assert.IsFalse(f.CanRetake);
+            Assert.IsFalse(f.SaveUnverified()); // "확인" → 이미 정해져 보낼 것 없음
+            Assert.AreEqual(VerifyStep.Done, f.Step);
+        }
+
+        [Test]
+        public void Rejected_read_opens_camera_and_cancel_returns_to_guide()
+        {
+            var f = AtRead();
+            Assert.IsTrue(f.AnswerRead(false));
+            f.Answer(R(VerifyStatus.Retake, VerifyReason.UserRejected, left: 3));
+            Assert.AreEqual(VerifyStep.Guide, f.Step);
+            Assert.IsTrue(f.Rejected); // 화면이 바로 카메라를 엶
+            Assert.IsFalse(f.HasPhoto);
+            Assert.IsTrue(f.OpenCamera(T0));
+            Assert.IsFalse(f.Rejected);
+            f.CameraDone(CameraOutcome.Cancelled);
+            Assert.AreEqual(VerifyStep.Guide, f.Step);
+        }
+
+        [Test]
+        public void Deadline_on_read_confirm_goes_E10()
+        {
+            var f = AtRead(deadlineSec: 60);
+            f.Tick(T0.AddSeconds(59));
+            Assert.AreEqual(VerifyStep.ReadConfirm, f.Step);
+            f.Tick(T0.AddSeconds(60));
+            Assert.AreEqual(VerifyStep.TimeOver, f.Step);
+            Assert.IsFalse(f.HasPhoto);
+        }
+
+        [TestCase(VerifyError.Network, VerifyStep.ReadConfirm, true)]
+        [TestCase(VerifyError.Busy, VerifyStep.ReadConfirm, true)]
+        [TestCase(VerifyError.Closed, VerifyStep.TimeOver, false)]
+        [TestCase(VerifyError.Stale, VerifyStep.Guide, false)]
+        public void Confirm_failure(VerifyError e, VerifyStep expected, bool keepsPhoto)
+        {
+            var f = AtRead();
+            f.AnswerRead(true);
+            f.Failed(e);
+            Assert.AreEqual(expected, f.Step);
+            Assert.AreEqual(keepsPhoto, f.HasPhoto);
+            Assert.AreEqual(e, f.Error);
+            Assert.IsFalse(f.Confirming);
+        }
+
+        [Test]
+        public void Read_confirm_ignores_back_and_other_answers()
+        {
+            var f = AtRead();
+            Assert.IsTrue(f.Back());
+            Assert.AreEqual(VerifyStep.ReadConfirm, f.Step);
+            Assert.IsFalse(f.SaveUnverified());
+            Assert.IsFalse(f.OpenCamera(T0));
+            Assert.IsFalse(new VerifyFlow().AnswerRead(true)); // 확인할 값이 없음
         }
 
         [Test]

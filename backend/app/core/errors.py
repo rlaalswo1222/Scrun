@@ -23,6 +23,7 @@ class ErrorCode(str, Enum):
     RUN_ALREADY_FINISHED = "RUN_ALREADY_FINISHED"
     RUN_NOT_FINISHED = "RUN_NOT_FINISHED"
     VERIFICATION_CLOSED = "VERIFICATION_CLOSED"
+    CONFIRM_NOT_PENDING = "CONFIRM_NOT_PENDING"
     SELF_FRIEND_CODE = "SELF_FRIEND_CODE"
     ALREADY_FRIEND = "ALREADY_FRIEND"
     FRIEND_LIMIT_EXCEEDED = "FRIEND_LIMIT_EXCEEDED"
@@ -53,6 +54,7 @@ ERRORS: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.RUN_ALREADY_FINISHED: (409, "이미 끝난 러닝입니다."),
     ErrorCode.RUN_NOT_FINISHED: (409, "아직 끝나지 않은 러닝입니다."),
     ErrorCode.VERIFICATION_CLOSED: (409, "인증 가능 시간이 지났습니다."),
+    ErrorCode.CONFIRM_NOT_PENDING: (409, "확인할 값이 없습니다. 새 사진을 보냈거나 이미 답했습니다."),
     ErrorCode.SELF_FRIEND_CODE: (400, "내 친구 코드입니다."),
     ErrorCode.ALREADY_FRIEND: (409, "이미 친구입니다."),
     ErrorCode.FRIEND_LIMIT_EXCEEDED: (409, "친구는 50명까지입니다."),

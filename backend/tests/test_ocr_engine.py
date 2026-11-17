@@ -139,7 +139,7 @@ def test_engine_unavailable_is_503_and_not_counted(db_client, me, fresh_ocr):  #
     fail(photo(db_client, me, run_id, "a.jpg", "b.jpg"), 503, "SERVICE_UNAVAILABLE")
     app.dependency_overrides[get_ocr] = lambda: OnnxOcr(AgreeingPool())
     r = data(photo(db_client, me, run_id, "a.jpg", "b.jpg", "c.jpg"))
-    assert r["status"] == "VERIFIED" and r["console"] == {"distanceM": 3000, "durationS": 1040}
+    assert r["status"] == "CONFIRM_REQUIRED" and r["console"] == {"distanceM": 3000, "durationS": 1040}   # 계획 0045: 판정은 확인 뒤
 
 
 # ---------- 실제 모델 ----------

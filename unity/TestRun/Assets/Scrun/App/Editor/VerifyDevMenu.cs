@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -54,6 +56,15 @@ namespace Scrun.App.Editor
             Open();
         }
 
+        static async Task<bool> LogIn()
+        {
+            var login = await Api.Auth.KakaoLoginAsync(FakeNative.Config.kakaoToken);
+            if (!login.IsNewUser) return true;
+            Debug.LogWarning($"[인증] 카카오 토큰 {FakeNative.Config.kakaoToken}은 로컬 서버에 없는 사람입니다. " +
+                             "앱에서 가입을 끝내거나 Fake Native 창의 토큰을 가입한 사람으로 바꾸세요.");
+            return false;
+        }
+
         static async void Open()
         {
             if (AppRoot.Nav == null)
@@ -63,17 +74,19 @@ namespace Scrun.App.Editor
             }
             try
             {
-                if (!Api.Session.IsLoggedIn)
+                if (!Api.Session.IsLoggedIn && !await LogIn()) return;
+                List<Course> courses;
+                try
                 {
-                    var login = await Api.Auth.KakaoLoginAsync(FakeNative.Config.kakaoToken);
-                    if (login.IsNewUser)
-                    {
-                        Debug.LogWarning($"[인증] 카카오 토큰 {FakeNative.Config.kakaoToken}은 로컬 서버에 없는 사람입니다. " +
-                                         "앱에서 가입을 끝내거나 Fake Native 창의 토큰을 가입한 사람으로 바꾸세요.");
-                        return;
-                    }
+                    courses = await Api.Courses.ListAsync();
                 }
-                var courses = await Api.Courses.ListAsync();
+                catch (ApiException e) when (e.Failure == ApiFailure.NotLoggedIn)
+                {
+                    // 저장된 로그인이 서버에서 이미 무효(다른 곳에서 같은 기기로 로그인 등) → 가짜 토큰으로 다시 로그인하고 한 번 더
+                    Api.ClearSavedLogin();
+                    if (!await LogIn()) return;
+                    courses = await Api.Courses.ListAsync();
+                }
                 if (courses == null || courses.Count == 0)
                 {
                     Debug.LogWarning("[인증] 서버에 코스가 없습니다.");

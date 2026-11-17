@@ -215,11 +215,13 @@ class Verification(_Created, Base):
     method: Mapped[str] = mapped_column(Text)  # PHOTO, SKIP (READING은 11/16 뺌: OCR은 서버, 계획 0038)
     read_distance_m: Mapped[Optional[int]] = mapped_column(Integer)
     read_duration_s: Mapped[Optional[int]] = mapped_column(Integer)
-    status: Mapped[str] = mapped_column(Text)  # VERIFIED, UNVERIFIED, RETAKE_REQUIRED
+    status: Mapped[str] = mapped_column(Text)  # VERIFIED, UNVERIFIED, RETAKE_REQUIRED, CONFIRM_REQUIRED(값 확인 기다림·틀렸어요)
     reason: Mapped[Optional[str]] = mapped_column(Text)
     comparison: Mapped[Any] = mapped_column(JSONB, server_default=text("'[]'::jsonb"))
     # 올린 사진의 SHA-256(사진 자체는 저장 안 함, BL-17 ③). 다른 기록에 같은 사진을 다시 쓰는 것 막기
     photo_hashes: Mapped[list[str]] = mapped_column(PG_ARRAY(Text), server_default=text("'{}'"))
+    # 읽은 값 확인(계획 0045): null = 아직 안 답함(또는 확인 없는 시도), true = 맞아요, false = 틀렸어요(실제 오독률 보는 데 씀)
+    confirmed: Mapped[Optional[bool]] = mapped_column(Boolean)
 
     __table_args__ = (Index("ix_verifications_photo_hashes", "photo_hashes", postgresql_using="gin"),)
 
