@@ -27,8 +27,11 @@ RATE_WORDS = ["KM/H", "KMH", "KPH", "MPH", "/KM", "/MIN", "/분", "MILE"]   # �
 DIST_WORDS = ["거리", "DISTANCE", "DIST", "KM"]
 TIME_WORDS = ["운동시간", "시간", "TIME", "MIN", "분"]
 NOT_WORKOUT_TIME = ["남은", "REMAIN", "LAP", "SPLIT", "구간"]          # 남은 시간·구간 시간은 운동 시간이 아님
-OTHER_WORDS = ["속도", "SPEED", "페이스", "PACE", "칼로리", "KCAL", "CAL", "경사", "INCLINE", "ELEV", "%", "심박", "PULSE",
-               "BPM", "HR", "와트", "WATT", "LEVEL", "레벨"]
+# 거리·시간 낱말과 같이 있어도 그 밖: "PACE MIN"·"페이스(분)"(페이스), "SPEED km/n"(OCR이 km/h를 잘못 읽음)이
+# 시간·거리 칸이 되면 페이스 5:30이 운동 시간 330초로 읽힘(#68 리뷰)
+STRONG_OTHER = ["속도", "SPEED", "페이스", "PACE", "칼로리", "KCAL", "CAL", "경사", "INCLINE", "심박", "PULSE", "BPM",
+                "와트", "WATT"]
+OTHER_WORDS = STRONG_OTHER + ["ELEV", "%", "HR", "LEVEL", "레벨"]   # 뒤 다섯은 거리·시간 낱말보다 약함("TIME HR:MIN"은 시간)
 AMBIGUOUS_GAP = 0.35   # 짝짓기: 다른 종류 라벨(또는 다른 숫자)과의 거리 차가 숫자 높이의 이만큼보다 작으면 애매 → 못 읽음
 
 UNIT = re.compile(r"KM|MIN|KCAL|KM/H|KPH|%|BPM|M|분")   # 숫자 오른쪽에 붙는 단위(그 밖의 오른쪽 라벨은 다음 칸 것)
@@ -40,16 +43,17 @@ def _norm(text: str) -> str:
 
 
 def label_kind(text: str) -> Optional[str]:
-    """라벨 글자 → distance·time·other, 모르면 None. 거리·시간 낱말을 그 밖보다 먼저 봄("TIME HR:MIN"은 시간),
-    남은·구간 시간은 그 밖, 한 라벨에 거리·시간이 다 있으면 모름(#61 리뷰)."""
+    """라벨 글자 → distance·time·other, 모르면 None. 속도·페이스·칼로리 등(STRONG_OTHER)은 거리·시간 낱말이 있어도
+    그 밖, 그 밖의 약한 낱말보다는 거리·시간 낱말을 먼저 봄("TIME HR:MIN"은 시간), 남은·구간 시간은 그 밖,
+    한 라벨에 거리·시간이 다 있으면 모름(#61·#68 리뷰)."""
     t = _norm(text)
     if not re.search(r"[A-Z가-힣%/]", t):
         return None
-    if any(w in t for w in RATE_WORDS):
+    if any(w in t for w in RATE_WORDS) or any(w in t for w in STRONG_OTHER):
         return "other"
     has_dist = any(w in t for w in DIST_WORDS)
     has_time = any(w in t for w in TIME_WORDS)
-    if has_time and any(w in t for w in NOT_WORKOUT_TIME):
+    if has_time and any(w in t.replace("ELAPSED", "") for w in NOT_WORKOUT_TIME):   # "ELAPSED TIME" 안의 LAP은 구간 아님
         return "other"
     if has_dist and has_time:
         return None
@@ -142,10 +146,16 @@ class ConsoleReader:
         """인식 글자 → 숫자. 글자 전체가 (라벨·단위) + 숫자 + (라벨·단위) 모양일 때만("12.345"·"1680"을 잘라 읽지 않게).
         7세그먼트 혼동(S→5 등)은 진짜 숫자가 하나라도 있고 바로잡은 뒤 전부 숫자일 때만("BODY"·"STOP"이 숫자가 되지 않게)."""
         t = re.sub(r"\s+", "", text)
-        if label_kind(t) is None and re.search(r"\d", t):
+        digits = [i for i, ch in enumerate(t) if ch.isdigit()]
+        if label_kind(t) is None and digits:
             fixed = t.translate(SEG_CONFUSION)
             if re.fullmatch(r"[\d.:]+", fixed):
                 t = fixed
+        elif digits:   # 단위·라벨이 붙은 "3.I2km": 첫 숫자와 끝 숫자 사이만 바로잡음(라벨 글자는 그대로, #68 리뷰)
+            a, b = digits[0], digits[-1] + 1
+            core = t[a:b].translate(SEG_CONFUSION)
+            if re.fullmatch(r"[\d.:]+", core):
+                t = t[:a] + core + t[b:]
         m = NUM_IN_TEXT.fullmatch(t.upper())
         if not m:
             return None
@@ -218,8 +228,9 @@ def merge_split(regs: list) -> list:
 
 def pair(labels: list, nums: list) -> None:
     """라벨과 숫자를 가까운 순서로 하나씩 짝짓는다(라벨은 숫자 위·아래·왼쪽, 단위는 오른쪽, 거리는 숫자 높이로 나눔).
-    계기판은 라벨 위치가 한 방향으로 일정하므로, 서로 가장 가까운 짝들이 대부분 한 방향이면 그 방향 짝만 본다
-    (줄 사이 라벨이 위·아래 숫자 어느 쪽인지). 그래도 거리 차·비율이 비슷하게 겨루는 짝이 있으면 그럴듯한 쪽을
+    계기판은 라벨 위치가 한 방향으로 일정하므로, 서로 가장 가까운 짝들이 대부분 한 방향이면 그 방향을 앞세운다
+    (줄 사이 라벨이 위·아래 숫자 어느 쪽인지). 다른 방향 짝은 그 라벨·숫자에 주된 방향 후보가 있을 때만 버림:
+    윗줄은 라벨이 위, 아랫줄은 라벨이 아래인 계기판의 아랫줄을 통째로 버리지 않게(#68 리뷰). 그래도 거리 차·비율이 비슷하게 겨루는 짝이 있으면 그럴듯한 쪽을
     고르지 않고 "ambiguous"(못 읽음, #61 리뷰)."""
     cands = []   # (gap, 라벨 번호, 숫자 번호, 방향)
     for li, L in enumerate(labels):
@@ -251,14 +262,16 @@ def pair(labels: list, nums: list) -> None:
     if ways:
         way, n = ways.most_common(1)[0]
         if n >= 2 and n >= 0.6 * sum(ways.values()):
-            cands = [c for c in cands if c[3] in (way, "unit")]
+            major_l = {c[1] for c in cands if c[3] == way}
+            major_n = {c[2] for c in cands if c[3] == way}
+            cands = [c for c in cands if c[3] in (way, "unit") or (c[1] not in major_l and c[2] not in major_n)]
 
     gaps = {(li, ni): gap for gap, li, ni, _ in cands}
 
     def rivals(g, gap):   # 거리 차도 작고 비율도 비슷해야 겨룸(0.08 대 0.42는 안 겨룸)
         return g - gap < AMBIGUOUS_GAP and g <= gap * 2 + 0.1
 
-    def claimed_elsewhere(g, mine, others):   # 그 라벨·숫자에 분명히 더 가까운 다른 짝이 있음
+    def claimed_elsewhere(g, others):   # 그 라벨·숫자에 분명히 더 가까운 다른 짝이 있음
         return any(g2 < g - AMBIGUOUS_GAP or (g2 < g and not rivals(g, g2)) for g2 in others)
 
     used_l, used_n = set(), set()
@@ -269,10 +282,10 @@ def pair(labels: list, nums: list) -> None:
         used_n.add(ni)
         kind = labels[li].kind
         rival_label = any(lj != li and labels[lj].kind != kind and rivals(g, gap)
-                          and not claimed_elsewhere(g, lj, [g2 for (lk, nk), g2 in gaps.items() if lk == lj and nk != ni])
+                          and not claimed_elsewhere(g, [g2 for (lk, nk), g2 in gaps.items() if lk == lj and nk != ni])
                           for (lj, nj), g in gaps.items() if nj == ni)
         rival_num = any(nj != ni and rivals(g, gap)
-                        and not claimed_elsewhere(g, nj, [g2 for (lk, nk), g2 in gaps.items() if nk == nj and lk != li])
+                        and not claimed_elsewhere(g, [g2 for (lk, nk), g2 in gaps.items() if nk == nj and lk != li])
                         for (lj, nj), g in gaps.items() if lj == li)
         nums[ni].name, nums[ni].how = ("ambiguous", "label") if rival_label or rival_num else (kind, "label")
 
@@ -285,7 +298,10 @@ def decide(regs: list) -> PhotoRead:
         vals = set()
         for r in use:
             parsed = {v for v in map(parse, r.cands) if v is not None}
-            vals |= parsed if len(parsed) == 1 else {None}   # 한 칸을 두 읽기가 다르게 읽음 → 애매(추측하지 않음)
+            if len(parsed) >= 2:
+                vals.add(None)    # 한 칸을 두 읽기가 다르게 읽음 → 애매(추측하지 않음)
+            else:
+                vals |= parsed    # 해석 안 되는 칸(정수 "12" 등)은 다른 칸의 값을 막지 않음(#68 리뷰)
         if len(vals) == 1 and None not in vals:
             return vals.pop(), ""
         return None, f"{name} 후보 {len(use)}개" + (f"({', '.join(r.number for r in use)})" if use else "")
