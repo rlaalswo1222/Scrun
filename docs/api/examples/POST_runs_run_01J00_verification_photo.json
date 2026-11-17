@@ -10,8 +10,9 @@
     "resultType": "SUCCESS",
     "success": {
       "data": {
-        "status": "VERIFIED",
+        "status": "CONFIRM_REQUIRED",
         "reason": null,
+        "attemptId": "01JC0ZB2M5P8T1EXAMPLEVER00",
         "console": {
           "distanceM": 3150,
           "durationS": 1140
@@ -20,24 +21,9 @@
           "distanceM": 3120,
           "durationS": 1080
         },
-        "comparison": [
-          {
-            "item": "distance",
-            "console": 3150.0,
-            "sensor": 3120.0,
-            "diffRatio": 0.0095,
-            "ok": true
-          },
-          {
-            "item": "duration",
-            "console": 1140.0,
-            "sensor": 1080.0,
-            "diffRatio": 0.0526,
-            "ok": true
-          }
-        ],
-        "retakeDeadline": null,
-        "retakesLeft": null,
+        "comparison": [],
+        "retakeDeadline": "2026-11-17T15:38:58.611283Z",
+        "retakesLeft": 3,
         "rewards": null
       }
     },

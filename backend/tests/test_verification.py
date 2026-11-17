@@ -48,6 +48,18 @@ def photo(client, headers, run_id, *names, files=None):
                        files=files or [jpeg(n) for n in names])
 
 
+def confirm(client, headers, run_id, attempt_id, correct=True):
+    return client.post(f"/v1/runs/{run_id}/verification/confirm", headers=headers,
+                       json={"attemptId": attempt_id, "correct": correct})
+
+
+def read_then(client, headers, run_id, *names, files=None, correct=True):
+    """사진 → CONFIRM_REQUIRED(읽은 값 확인, 계획 0045) → 맞아요(또는 틀렸어요)."""
+    shown = data(photo(client, headers, run_id, *names, files=files))
+    assert shown["status"] == "CONFIRM_REQUIRED", shown
+    return confirm(client, headers, run_id, shown["attemptId"], correct)
+
+
 def skip(client, headers, run_id, reason="SKIPPED"):
     return client.post(f"/v1/runs/{run_id}/verification/skip", headers=headers, json={"reason": reason})
 
@@ -103,56 +115,112 @@ def test_policy_from_env():
 
 
 # ---------- 인증 완료·미인증 ----------
-def test_verified_overwrites_official_with_console(db_client, me, db):
+def test_read_values_are_confirmed_before_judging(db_client, me, db):
     run_id = finished(db_client, me)
-    out = data(photo(db_client, me, run_id, "c0.jpg", "c1_d3100_t1060.jpg", "c2.jpg"))
+    shown = data(photo(db_client, me, run_id, "c0.jpg", "c1_d3100_t1060.jpg", "c2.jpg"))
+    assert (shown["status"], shown["reason"], shown["console"], shown["comparison"], shown["retakesLeft"]) == \
+        ("CONFIRM_REQUIRED", None, {"distanceM": 3100, "durationS": 1060}, [], 3)   # 센서 대조는 판정 뒤에
+    assert shown["attemptId"] and shown["retakeDeadline"].endswith("Z")
+    assert run_row(db, run_id).status == "PENDING" and run_row(db, run_id).console_distance_m is None
+
+    out = data(confirm(db_client, me, run_id, shown["attemptId"]))
     assert (out["status"], out["reason"], out["console"], out["sensor"]) == \
         ("VERIFIED", None, {"distanceM": 3100, "durationS": 1060}, {"distanceM": 3000, "durationS": 1000})
     assert [(r["item"], r["ok"]) for r in out["comparison"]] == [("distance", True), ("duration", True)]
     assert out["comparison"][0]["diffRatio"] == pytest.approx(100 / 3100, abs=1e-4)
-    assert out["retakeDeadline"] is None and out["rewards"] is None
+    assert out["retakeDeadline"] is None and out["attemptId"] is None and out["rewards"] is None
     run = run_row(db, run_id)
     assert (run.status, run.official_source, run.official_distance_m, run.official_duration_s) == ("VERIFIED", "CONSOLE", 3100, 1060)
     v = db.scalars(select(Verification).where(Verification.run_id == run_id)).all()
-    assert len(v) == 1 and v[0].method == "PHOTO" and len(v[0].photo_hashes) == 3  # 사진은 해시만
+    assert len(v) == 1 and (v[0].method, v[0].status, v[0].confirmed) == ("PHOTO", "VERIFIED", True)
+    assert len(v[0].photo_hashes) == 3  # 사진은 해시만
 
 
 @pytest.mark.parametrize("name", ["d3600_t1000", "d3000_t1400", "d3000_t900"])
-def test_mismatch_can_retake_then_saved_unverified(db_client, me, db, name):
-    """오차 초과는 바로 정하지 않고 다시 찍기(E-08), 미인증으로 저장하면 MISMATCH로 정함(11/17 Figma대로)."""
+def test_confirmed_mismatch_is_unverified_without_retake(db_client, me, db, name):
+    """맞아요 뒤 오차 초과는 다시 찍기 없이 미인증(계획 0045 정할 것 3: 값이 맞으니 차이는 진짜)."""
     run_id = finished(db_client, me)
-    out = data(photo(db_client, me, run_id, f"{name}.jpg"))
-    assert (out["status"], out["reason"], out["retakesLeft"]) == ("RETAKE_REQUIRED", "MISMATCH", 3)
+    out = data(read_then(db_client, me, run_id, f"{name}.jpg"))
+    assert (out["status"], out["reason"], out["retakesLeft"]) == ("UNVERIFIED", "MISMATCH", None)
     assert out["console"]["distanceM"] == int(name[1:5]) and not all(r["ok"] for r in out["comparison"])
-    assert run_row(db, run_id).status == "PENDING" and run_row(db, run_id).console_distance_m is None
-    saved = data(skip(db_client, me, run_id, "RETAKE_GIVEN_UP"))
-    assert (saved["status"], saved["reason"], saved["console"], saved["comparison"]) == \
-        ("UNVERIFIED", "MISMATCH", out["console"], out["comparison"])
     run = run_row(db, run_id)
     assert (run.status, run.unverified_reason, run.official_source, run.official_distance_m) == \
         ("UNVERIFIED", "MISMATCH", "SENSOR", 3000)
     assert run.console_distance_m == out["console"]["distanceM"]  # 표에 보이려고 읽은 값은 남김
+    assert data(photo(db_client, me, run_id, "d3000_t1000.jpg")) == out  # 정해진 뒤에는 그대로
 
 
-def test_mismatch_retake_then_verified(db_client, me, db):
+def test_rejected_read_retakes_without_using_a_retake(db_client, me, db):
     run_id = finished(db_client, me)
-    assert data(photo(db_client, me, run_id, "d3600_t1000.jpg"))["reason"] == "MISMATCH"  # 잘못 읽힘
-    assert data(photo(db_client, me, run_id, "d3010_t1000.jpg"))["status"] == "VERIFIED"
-    assert run_row(db, run_id).official_distance_m == 3010
+    for i in range(5):   # 틀렸어요는 횟수를 안 씀(정할 것 2 나), 마감까지
+        out = data(read_then(db_client, me, run_id, f"x{i}_d3600_t1000.jpg", correct=False))
+        assert (out["status"], out["reason"], out["retakesLeft"], out["console"]) == \
+            ("RETAKE_REQUIRED", "USER_REJECTED", 3, None)
+    assert data(read_then(db_client, me, run_id, "d3010_t1000.jpg"))["status"] == "VERIFIED"
+    rows = db.scalars(select(Verification).where(Verification.run_id == run_id).order_by(Verification.created_at)).all()
+    assert [r.confirmed for r in rows] == [False] * 5 + [True]   # 틀렸어요는 읽은 값과 함께 남음(실제 오독률)
+    assert rows[0].read_distance_m == 3600 and rows[0].status == "CONFIRM_REQUIRED"
 
 
-def test_mismatch_every_time_ends_mismatch(db_client, me):
+def test_confirm_only_the_latest_attempt_once(db_client, me):
     run_id = finished(db_client, me)
-    outs = [data(photo(db_client, me, run_id, f"x{i}_d3600_t1000.jpg")) for i in range(4)]
-    assert [(o["status"], o["reason"]) for o in outs] == [("RETAKE_REQUIRED", "MISMATCH")] * 3 + [("UNVERIFIED", "MISMATCH")]
-    assert outs[-1]["console"] == {"distanceM": 3600, "durationS": 1000}
+    first = data(photo(db_client, me, run_id, "a_d3000_t1000.jpg"))
+    second = data(photo(db_client, me, run_id, "b_d3000_t1010.jpg"))   # 확인 없이 다시 찍음(앱 꺼짐 등)
+    fail(confirm(db_client, me, run_id, first["attemptId"]), 409, "CONFIRM_NOT_PENDING")
+    assert data(confirm(db_client, me, run_id, second["attemptId"], correct=False))["reason"] == "USER_REJECTED"
+    again = data(confirm(db_client, me, run_id, second["attemptId"], correct=False))   # 응답을 못 받아 다시 보냄
+    assert again["reason"] == "USER_REJECTED"
+    fail(confirm(db_client, me, run_id, second["attemptId"], correct=True), 409, "CONFIRM_NOT_PENDING")   # 다른 답
+    third = data(photo(db_client, me, run_id, "c_d3000_t1020.jpg"))
+    done = data(confirm(db_client, me, run_id, third["attemptId"]))
+    assert done["status"] == "VERIFIED"
+    assert data(confirm(db_client, me, run_id, third["attemptId"])) == done   # 맞아요 재시도 → 처음 결과
+    fail(confirm(db_client, me, run_id, third["attemptId"], correct=False), 409, "CONFIRM_NOT_PENDING")
 
 
-def test_same_mismatch_photo_again_gives_same_answer(db_client, me):
+def test_confirm_checks_attempt_owner_and_shape(db_client, me):
+    run_id = finished(db_client, me)
+    other_run = finished(db_client, me, cid="c2")
+    shown = data(photo(db_client, me, other_run, "d3000_t1000.jpg"))
+    fail(confirm(db_client, me, run_id, shown["attemptId"]), 400, "VALIDATION_ERROR")     # 다른 기록의 시도
+    fail(confirm(db_client, me, run_id, "nope"), 400, "VALIDATION_ERROR")
+    fail(db_client.post(f"/v1/runs/{run_id}/verification/confirm", headers=me, json={"attemptId": "x"}), 400, "VALIDATION_ERROR")
+    other = signup(db_client, "k_2")
+    fail(confirm(db_client, other, other_run, shown["attemptId"]), 403, "FORBIDDEN")
+    blur = data(photo(db_client, me, run_id, "blur.jpg"))   # 못 읽은 시도는 확인할 것이 없음
+    assert blur["attemptId"] is None
+
+
+def test_same_photo_again_gives_same_answer(db_client, me):
     run_id = finished(db_client, me)
     files = [jpeg("d3600_t1000.jpg")]
     first = data(photo(db_client, me, run_id, files=files))
-    assert data(photo(db_client, me, run_id, files=files)) == first
+    assert data(photo(db_client, me, run_id, files=files)) == first   # 같은 시도·같은 값
+    data(confirm(db_client, me, run_id, first["attemptId"], correct=False))
+    again = data(photo(db_client, me, run_id, files=files))
+    assert (again["status"], again["reason"]) == ("RETAKE_REQUIRED", "USER_REJECTED")
+
+
+def test_confirm_after_deadline_is_closed(db_client, me, db):
+    run_id = finished(db_client, me)
+    shown = data(photo(db_client, me, run_id, "d3000_t1000.jpg"))
+    db.execute(update(Run).where(Run.id == run_id).values(verification_deadline=ago(minutes=3)))
+    db.execute(update(Verification).where(Verification.id == shown["attemptId"]).values(created_at=ago(minutes=4)))
+    db.commit()
+    fail(confirm(db_client, me, run_id, shown["attemptId"]), 409, "VERIFICATION_CLOSED")
+    assert (run_row(db, run_id).status, run_row(db, run_id).unverified_reason) == ("UNVERIFIED", "TIMEOUT")
+
+
+def test_photo_sent_just_before_deadline_can_still_be_confirmed(db_client, me, db):
+    """9분 59초에 보낸 사진: 확인하는 사이 마감이 지나도 유예(2분) 안이면 맞아요가 됨."""
+    run_id = finished(db_client, me)
+    shown = data(photo(db_client, me, run_id, "d3000_t1000.jpg"))
+    db.execute(update(Run).where(Run.id == run_id).values(verification_deadline=ago(seconds=30)))
+    db.execute(update(Verification).where(Verification.id == shown["attemptId"]).values(created_at=ago(seconds=40)))
+    db.commit()
+    close_expired(db, run_id=run_id)   # 그 사이 목록 조회 등이 마감으로 닫음
+    db.commit()
+    assert data(confirm(db_client, me, run_id, shown["attemptId"]))["status"] == "VERIFIED"
 
 
 def test_give_up_after_unreadable_is_retake_given_up(db_client, me):
@@ -164,10 +232,10 @@ def test_give_up_after_unreadable_is_retake_given_up(db_client, me):
 
 def test_paused_run_widens_time(db_client, me):
     run_id = finished(db_client, me, pause_s=120)
-    out = data(photo(db_client, me, run_id, "d3050_t1400.jpg"))  # 계기판은 일시정지 중에도 시간이 흐른 기종
+    out = data(read_then(db_client, me, run_id, "d3050_t1400.jpg"))  # 계기판은 일시정지 중에도 시간이 흐른 기종
     assert out["status"] == "VERIFIED"
     other = finished(db_client, me, pause_s=120, cid="c2")
-    assert data(photo(db_client, me, other, "d3050_t1500.jpg"))["reason"] == "MISMATCH"
+    assert data(read_then(db_client, me, other, "d3050_t1500.jpg"))["reason"] == "MISMATCH"
 
 
 # ---------- 재촬영 ----------
@@ -188,7 +256,7 @@ def test_retakes_then_unsupported(db_client, me, db):
 def test_retake_then_verified(db_client, me):
     run_id = finished(db_client, me)
     assert data(photo(db_client, me, run_id, "blur.jpg"))["status"] == "RETAKE_REQUIRED"
-    assert data(photo(db_client, me, run_id, "d3000_t1010.jpg"))["status"] == "VERIFIED"
+    assert data(read_then(db_client, me, run_id, "d3000_t1010.jpg"))["status"] == "VERIFIED"
 
 
 def test_same_photo_again_is_not_counted(db_client, me):
@@ -212,21 +280,21 @@ def test_unsupported_console_can_retake_then_saved(db_client, me):
 
 def test_implausible_read_asks_retake(db_client, me):
     run_id = finished(db_client, me)
-    assert data(photo(db_client, me, run_id, "d9000_t100.jpg"))["status"] == "RETAKE_REQUIRED"
+    assert data(photo(db_client, me, run_id, "d9000_t100.jpg"))["status"] == "RETAKE_REQUIRED"   # 확인 화면에 안 감
 
 
 def test_new_photos_with_an_old_one_are_read(db_client, me):
     run_id = finished(db_client, me)
     old = jpeg("blur.jpg")
     assert data(photo(db_client, me, run_id, files=[old]))["retakesLeft"] == 3
-    out = data(photo(db_client, me, run_id, files=[old, jpeg("d3000_t1000.jpg")]))  # 다시 찍은 장 + 지난 장
+    out = data(read_then(db_client, me, run_id, files=[old, jpeg("d3000_t1000.jpg")]))  # 다시 찍은 장 + 지난 장
     assert out["status"] == "VERIFIED"
 
 
 def test_photo_from_another_run_is_not_read(db_client, me):
     a = finished(db_client, me, cid="a")
     files = [jpeg("d3000_t1000.jpg")]
-    assert data(photo(db_client, me, a, files=files))["status"] == "VERIFIED"
+    assert data(read_then(db_client, me, a, files=files))["status"] == "VERIFIED"
     b = finished(db_client, me, cid="b")
     assert data(photo(db_client, me, b, files=files))["status"] == "RETAKE_REQUIRED"
 
@@ -234,7 +302,7 @@ def test_photo_from_another_run_is_not_read(db_client, me):
 # ---------- 한 번 정해지면 그대로 ----------
 def test_decided_run_returns_first_result(db_client, me, db):
     run_id = finished(db_client, me)
-    first = data(photo(db_client, me, run_id, "d3100_t1060.jpg"))
+    first = data(read_then(db_client, me, run_id, "d3100_t1060.jpg"))
     again = data(photo(db_client, me, run_id, "d5000_t1060.jpg"))
     skipped = data(skip(db_client, me, run_id))
     assert again == first and skipped == first
@@ -306,7 +374,7 @@ def test_photo_validation(db_client, me):
     fail(photo(db_client, me, run_id, files=[jpeg("d3000_t1000.jpg"), ("note", (None, "hi"))]), 400, "VALIDATION_ERROR")
     huge = {**me, "Content-Length": str(vr.BODY_LIMIT + 1), "Content-Type": "multipart/form-data; boundary=x"}
     fail(db_client.post(f"/v1/runs/{run_id}/verification/photo", headers=huge, content=b"x" * 10), 400, "VALIDATION_ERROR")
-    assert data(photo(db_client, me, run_id, "d3000_t1000.jpg"))["status"] == "VERIFIED"  # 실패한 요청은 횟수·상태에 영향 없음
+    assert data(photo(db_client, me, run_id, "d3000_t1000.jpg"))["status"] == "CONFIRM_REQUIRED"  # 실패한 요청은 횟수·상태에 영향 없음
 
 
 def test_no_engine_is_503_and_not_counted(db_client, me):
@@ -383,17 +451,19 @@ class DeadlineOcr:
 def test_deadline_is_judged_at_arrival(db_client, me, db, fresh_ocr):
     run_id = finished(db_client, me)
     app.dependency_overrides[get_ocr] = lambda: DeadlineOcr(db, run_id)
-    assert data(photo(db_client, me, run_id, "d3000_t1000.jpg"))["status"] == "VERIFIED"
+    shown = data(photo(db_client, me, run_id, "d3000_t1000.jpg"))   # 마감 전에 옴 → 읽는 동안 지나도 확인으로
+    assert shown["status"] == "CONFIRM_REQUIRED"
+    assert data(confirm(db_client, me, run_id, shown["attemptId"]))["status"] == "VERIFIED"   # 확인 유예 안
 
 
 def test_pause_widening_is_capped(db_client, me):
     # 앱이 꺼졌다 2시간 뒤 복구: 쉰 시간은 기기 시계라 10분까지만 넓힘
     run_id = started_id(db_client, me, cid="late", started=ago(minutes=59))
     assert finish(db_client, me, run_id, ended=ago(minutes=1), duration=1000).status_code == 200
-    assert data(photo(db_client, me, run_id, "d3000_t1900.jpg"))["status"] == "VERIFIED"   # +5분 + 10분 = +900초
+    assert data(read_then(db_client, me, run_id, "d3000_t1900.jpg"))["status"] == "VERIFIED"   # +5분 + 10분 = +900초
     other = started_id(db_client, me, cid="late2", started=ago(minutes=59))
     finish(db_client, me, other, ended=ago(minutes=1), duration=1000)
-    assert data(photo(db_client, me, other, "d3000_t1901.jpg"))["reason"] == "MISMATCH"
+    assert data(read_then(db_client, me, other, "d3000_t1901.jpg"))["reason"] == "MISMATCH"
 
 
 def test_app_timeout_skip_then_photo_returns_first_result(db_client, me):
@@ -435,9 +505,13 @@ def test_two_photos_at_once_decide_once(db_client, me, db, fresh_ocr):
     run_id = finished(db_client, me)
     app.dependency_overrides[get_ocr] = SlowOcr  # 둘 다 OCR 중일 때 겹치게
     outs = run_together([lambda c, n=n: photo(c, me, run_id, n) for n in ("d3000_t1000.jpg", "d3100_t1000.jpg")])
-    bodies = [data(r) for r in outs]
-    assert bodies[0] == bodies[1] and bodies[0]["status"] == "VERIFIED"
-    assert len(db.scalars(select(Verification).where(Verification.run_id == run_id)).all()) == 1
+    bodies = [data(r) for r in outs]   # 둘 다 확인으로. 나중에 저장된 쪽이 마지막 시도
+    assert [b["status"] for b in bodies] == ["CONFIRM_REQUIRED"] * 2
+    assert len(db.scalars(select(Verification).where(Verification.run_id == run_id)).all()) == 2
+    latest = vr._latest_photo(db, run_id).id
+    stale = next(b["attemptId"] for b in bodies if b["attemptId"] != latest)
+    fail(confirm(db_client, me, run_id, stale), 409, "CONFIRM_NOT_PENDING")
+    assert data(confirm(db_client, me, run_id, latest))["status"] == "VERIFIED"
 
 
 def test_same_retry_during_ocr_counts_once(db_client, me, db, fresh_ocr):
@@ -484,5 +558,5 @@ class ClosedByOtherOcr:
 def test_photo_in_time_wins_over_close_during_ocr(db_client, me, db, fresh_ocr):
     run_id = finished(db_client, me)
     app.dependency_overrides[get_ocr] = lambda: ClosedByOtherOcr(db, run_id)
-    assert data(photo(db_client, me, run_id, "d3000_t1000.jpg"))["status"] == "VERIFIED"
+    assert data(read_then(db_client, me, run_id, "d3000_t1000.jpg"))["status"] == "VERIFIED"
     assert run_row(db, run_id).official_source == "CONSOLE"

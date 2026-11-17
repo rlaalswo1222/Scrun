@@ -171,10 +171,11 @@ erDiagram
 | run_id | → runs (CASCADE) | |
 | method | text | `PHOTO`(서버 OCR)·`SKIP`(촬영 없이·시간 초과·포기). 마감으로 닫힌 것은 시도가 아니라 줄이 없음(앱의 skip `TIMEOUT`과 이걸로 구분). 앱이 읽은 값(`READING`)은 11/16 뺌: OCR은 서버, 추출값은 사용자가 못 고침(BL-17 ①④) |
 | read_distance_m, read_duration_s | int | 계기판에서 읽은 값(OCR 실패면 비움) |
-| status | text | `VERIFIED`·`UNVERIFIED`·`RETAKE_REQUIRED` |
-| reason | text | 미인증 사유. 다시 찍기(`RETAKE_REQUIRED`)면 그 이유: `MISMATCH`·`UNSUPPORTED_CONSOLE`·비움(못 읽음). 그만두고 미인증으로 저장하면 마지막 시도의 이유로 정함(11/17) |
+| status | text | `VERIFIED`·`UNVERIFIED`·`RETAKE_REQUIRED`·`CONFIRM_REQUIRED`(읽은 값을 사용자가 확인할 시도, 계획 0045. 맞아요면 그 줄이 `VERIFIED`·`UNVERIFIED`로 바뀜, 틀렸어요·안 답함은 그대로 남음) |
+| reason | text | 미인증 사유. 다시 찍기(`RETAKE_REQUIRED`)면 그 이유: `UNSUPPORTED_CONSOLE`·비움(못 읽음). 그만두고 미인증으로 저장하면 마지막 시도가 읽을 수 없는 계기판일 때만 그 이유로. 맞아요 뒤 오차 초과는 `MISMATCH`(다시 찍기 없음, 계획 0045) |
 | comparison | jsonb | 대조 표(항목·계기판·센서·차이·통과) |
 | photo_hashes | text[] (GIN) | 올린 사진의 SHA-256. 다른 기록에 같은 사진을 다시 쓰면 못 읽은 것으로 봄, 같은 묶음 재전송은 횟수 안 셈 |
+| confirmed | boolean | 읽은 값 확인(계획 0045): 비움 = 안 답함·확인 없는 시도, `true` = 맞아요, `false` = 틀렸어요(읽은 값과 함께 남아 실제 오독률을 봄). 틀렸어요는 다시 찍기 횟수에 안 셈 |
 
 **run_ghosts** — **③ 고스트 선택은 기록과 분리**: "이 러닝에서 어떤 기록을 고스트로 썼나"
 | 칸 | 형식 | 설명 |

@@ -12,7 +12,8 @@ from .progress import Rewards
 class VerificationStatus(str, Enum):
     VERIFIED = "VERIFIED"
     UNVERIFIED = "UNVERIFIED"
-    RETAKE_REQUIRED = "RETAKE_REQUIRED"  # 진행 중 상태, 저장되지 않음. reason: MISMATCH·UNSUPPORTED_CONSOLE·null(못 읽음)
+    RETAKE_REQUIRED = "RETAKE_REQUIRED"  # 진행 중 상태, 저장되지 않음. reason: UNSUPPORTED_CONSOLE·USER_REJECTED·null(못 읽음)
+    CONFIRM_REQUIRED = "CONFIRM_REQUIRED"  # 진행 중: 읽은 값을 사용자가 확인(계획 0045, E-05b). 판정 전이라 센서 대조는 안 보냄
 
 
 class UnverifiedReason(str, Enum):
@@ -21,6 +22,7 @@ class UnverifiedReason(str, Enum):
     SKIPPED = "SKIPPED"  # 촬영 없이 마무리
     TIMEOUT = "TIMEOUT"  # 촬영 제한 시간 초과
     RETAKE_GIVEN_UP = "RETAKE_GIVEN_UP"
+    USER_REJECTED = "USER_REJECTED"  # 다시 찍기 이유만: 읽은 값이 틀렸다고 함(계획 0045, 다시 찍기 횟수 안 씀)
 
 
 class ComparisonRow(CamelModel):
@@ -33,12 +35,13 @@ class ComparisonRow(CamelModel):
 
 class VerificationResult(CamelModel):
     status: VerificationStatus
-    reason: Optional[UnverifiedReason] = Field(default=None, description="UNVERIFIED면 미인증 사유, RETAKE_REQUIRED면 다시 찍으라는 이유(MISMATCH·UNSUPPORTED_CONSOLE, null은 못 읽음)")
-    console: Optional[RunStats] = Field(default=None, description="계기판에서 읽은 값")
+    reason: Optional[UnverifiedReason] = Field(default=None, description="UNVERIFIED면 미인증 사유, RETAKE_REQUIRED면 다시 찍으라는 이유(UNSUPPORTED_CONSOLE·USER_REJECTED, null은 못 읽음)")
+    attempt_id: Optional[str] = Field(default=None, description="CONFIRM_REQUIRED일 때 확인할 시도. POST …/verification/confirm에 그대로")
+    console: Optional[RunStats] = Field(default=None, description="계기판에서 읽은 값(CONFIRM_REQUIRED면 확인할 값)")
     sensor: RunStats
-    comparison: list[ComparisonRow]
-    retake_deadline: Optional[datetime] = Field(default=None, description="재촬영 필요일 때 마감 시각")
-    retakes_left: Optional[int] = Field(default=None, description="재촬영 필요일 때 남은 다시 찍기 횟수(1 이상, 이만큼 더 못 읽으면 UNVERIFIED)")
+    comparison: list[ComparisonRow] = Field(description="센서 대조 표. 판정 전(CONFIRM_REQUIRED)·못 읽음이면 빈 목록")
+    retake_deadline: Optional[datetime] = Field(default=None, description="재촬영 필요·값 확인일 때 마감 시각")
+    retakes_left: Optional[int] = Field(default=None, description="재촬영 필요·값 확인일 때 남은 다시 찍기 횟수(이만큼 더 못 읽으면 UNVERIFIED. 틀렸어요는 안 씀)")
     rewards: Optional[Rewards] = Field(default=None, description="저장됐을 때(인증 완료·미인증) 반영 결과. 성장 API(BL-32, S8) 전까지 null")
 
 
@@ -50,3 +53,8 @@ class SkipReason(str, Enum):
 
 class SkipRequest(CamelModel):
     reason: SkipReason
+
+
+class ConfirmRequest(CamelModel):
+    attempt_id: str = Field(min_length=1, max_length=64, description="사진 응답(CONFIRM_REQUIRED)의 attemptId")
+    correct: bool = Field(description="true: 맞아요(지금 판정) / false: 틀렸어요(다시 찍기, 횟수 안 씀)")

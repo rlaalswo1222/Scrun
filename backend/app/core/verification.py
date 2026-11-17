@@ -51,19 +51,21 @@ def compare(policy: VerificationPolicy, read: ConsoleRead, sensor_m: int, sensor
     return Outcome(S.UNVERIFIED, R.MISMATCH, read=read, rows=rows)
 
 
-def decide(policy: VerificationPolicy, read: ConsoleRead, sensor_m: int, sensor_s: int, paused_s: float,
-           retakes_used: int) -> Outcome:
-    """OCR 결과 하나 → 결과. VERIFIED만 바로 확정. 오차 초과(MISMATCH)·읽을 수 없는 계기판(UNSUPPORTED_CONSOLE)·못 읽음(이유 없음)은
-    다시 찍기 횟수가 남았으면 RETAKE_REQUIRED + 이유(Figma E-07·08·09의 "다시 촬영", 잘못 읽어 생긴 오차를 다시 찍어 바로잡게,
-    11/17 지환 결정), 다 썼으면 그 이유로 UNVERIFIED(못 읽음은 UNSUPPORTED_CONSOLE)."""
-    last = retakes_used >= policy.max_retakes
+def decide(policy: VerificationPolicy, read: ConsoleRead, retakes_used: int) -> Outcome:
+    """사진 한 번의 OCR 결과 → 결과. 거리·시간을 다 읽었으면 판정하지 않고 CONFIRM_REQUIRED(사용자가 읽은 값을 확인,
+    계획 0045: OCR이 그럴듯하게 틀린 값을 내도 걸러지게. 판정은 "맞아요" 뒤 `confirmed`). 읽을 수 없는 계기판·못 읽음은
+    다시 찍기 횟수가 남았으면 RETAKE_REQUIRED(+ UNSUPPORTED_CONSOLE), 다 썼으면 UNVERIFIED(UNSUPPORTED_CONSOLE).
+    한 칸만 읽힘·말이 안 되는 값은 못 읽음(계획 0045 정할 것 5)."""
     if read.status == ReadStatus.READ and plausible(read.distance_m, read.duration_s):
-        out = compare(policy, read, sensor_m, sensor_s, paused_s)
-        if out.status == S.VERIFIED or last:
-            return out
-        return Outcome(S.RETAKE_REQUIRED, R.MISMATCH, read=read, rows=out.rows)
-    if last:
+        return Outcome(S.CONFIRM_REQUIRED, read=read)
+    if retakes_used >= policy.max_retakes:
         return Outcome(S.UNVERIFIED, R.UNSUPPORTED_CONSOLE)
     if read.status == ReadStatus.UNSUPPORTED:
         return Outcome(S.RETAKE_REQUIRED, R.UNSUPPORTED_CONSOLE)
-    return Outcome(S.RETAKE_REQUIRED, read=read if read.status == ReadStatus.READ else None)
+    return Outcome(S.RETAKE_REQUIRED)
+
+
+def confirmed(policy: VerificationPolicy, read: ConsoleRead, sensor_m: int, sensor_s: int, paused_s: float) -> Outcome:
+    """사용자가 "맞아요"라고 한 읽은 값 → 바로 판정. 오차 초과도 다시 찍기 없이 UNVERIFIED(MISMATCH): 값이 맞다고 했으니
+    차이는 진짜이고, 다시 찍어도 같다(계획 0045 정할 것 3, 11/17 E-08 다시 찍기는 이 확인 단계가 대신함)."""
+    return compare(policy, read, sensor_m, sensor_s, paused_s)

@@ -105,6 +105,7 @@
 | `RUN_ALREADY_FINISHED` | 409 | 이미 끝난 러닝에 종료·시계열 올리기 | | |
 | `RUN_NOT_FINISHED` | 409 | 끝나지 않은 러닝을 인증(종료 먼저) | I-08 | |
 | `VERIFICATION_CLOSED` | 409 | 인증 가능 시간이 지남(종료를 받은 뒤 10분, 서버 설정), 버린 러닝 | E-10 | |
+| `CONFIRM_NOT_PENDING` | 409 | 읽은 값 확인(confirm)을 보냈는데 그 시도가 마지막이 아니거나(새 사진을 보냄) 이미 다른 답을 함 | E-05b → 지금 상태로 | |
 | `SELF_FRIEND_CODE` | 400 | 내 코드를 입력 | G-08 | |
 | `ALREADY_FRIEND` | 409 | 이미 친구 | G-08 | |
 | `FRIEND_LIMIT_EXCEEDED` | 409 | 친구 50명 초과 | G-08 | |
