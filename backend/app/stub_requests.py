@@ -41,7 +41,7 @@ CALLS = [
     ("GET", "/v1/users/me/progress", None, 200),
     ("PUT", "/v1/users/me/impact", {"impactId": "imp_spark"}, 200),
     ("GET", "/v1/friends", None, 200),
-    ("POST", "/v1/friends", {"friendCode": "SCR-ABCD"}, 201),
+    ("POST", "/v1/friends", {"friendCode": "K7Q2M9XA"}, 201),
     ("GET", "/v1/friends/running", None, 200),
     ("GET", "/v1/friends/usr_f1", None, 200),
     ("DELETE", "/v1/friends/usr_f1", None, 204),
@@ -78,6 +78,12 @@ REAL = {
     ("POST", "/v1/runs/{runId}/discard"),
     ("POST", "/v1/runs/{runId}/verification/photo"),
     ("POST", "/v1/runs/{runId}/verification/skip"),
+    ("POST", "/v1/friends"),
+    ("GET", "/v1/friends"),
+    ("GET", "/v1/friends/running"),
+    ("GET", "/v1/friends/{userId}"),
+    ("DELETE", "/v1/friends/{userId}"),
+    ("GET", "/v1/feed"),
 }
 
 

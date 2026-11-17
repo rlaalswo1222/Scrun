@@ -2,6 +2,7 @@
   "request": {
     "method": "GET",
     "path": "/v1/feed",
+    "auth": "Bearer {accessToken}",
     "body": null
   },
   "status": 200,
@@ -11,26 +12,18 @@
       "data": {
         "items": [
           {
-            "feedId": "fd_01",
-            "userId": "usr_f1",
-            "nickname": "바닷바람",
-            "runId": "run_f1_01",
-            "startedAt": "2026-11-05T21:00:00Z",
-            "distanceM": 5000,
-            "durationS": 1620,
-            "avgPaceSPerKm": 324,
-            "verification": "VERIFIED"
-          },
-          {
-            "feedId": "fd_02",
-            "userId": "usr_f2",
-            "nickname": "주말러너",
-            "runId": "run_f2_01",
-            "startedAt": "2026-11-04T19:30:00Z",
-            "distanceM": 2100,
-            "durationS": 840,
-            "avgPaceSPerKm": 400,
-            "verification": "UNVERIFIED"
+            "runId": "01JC0ZA4R7N2X5EXAMPLERUN00",
+            "startedAt": "2026-11-06T12:00:00Z",
+            "endedAt": "2026-11-06T12:15:00Z",
+            "courseId": "crs_lake_loop",
+            "courseName": "노을 호수 한 바퀴",
+            "distanceM": 2400,
+            "durationS": 900,
+            "avgPaceSPerKm": 375,
+            "verification": "UNVERIFIED",
+            "feedId": "01JC0ZA4R7N2X5EXAMPLERUN00",
+            "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000",
+            "nickname": "아침러너"
           }
         ],
         "nextCursor": null

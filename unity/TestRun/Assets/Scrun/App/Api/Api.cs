@@ -17,6 +17,7 @@ namespace Scrun.App
         static UsersApi users;
         static CoursesApi courses;
         static RunsApi runs;
+        static FriendsApi friends;
 
         public static ApiClient Client { get { Ensure(); return client; } }
         public static Session Session => Client.Session;
@@ -24,6 +25,7 @@ namespace Scrun.App
         public static UsersApi Users { get { Ensure(); return users; } }
         public static CoursesApi Courses { get { Ensure(); return courses; } }
         public static RunsApi Runs { get { Ensure(); return runs; } }
+        public static FriendsApi Friends { get { Ensure(); return friends; } }
 
         static void Ensure()
         {
@@ -33,6 +35,7 @@ namespace Scrun.App
             users = new UsersApi(client);
             courses = new CoursesApi(client);
             runs = new RunsApi(client);
+            friends = new FriendsApi(client);
         }
 
         // Play마다 저장된 로그인부터 다시 읽는다(이 프로젝트는 Play 때 도메인 리로드를 꺼 둠).
@@ -117,6 +120,9 @@ namespace Scrun.App
             c.GetAsync<NicknameCheck>("/v1/users/nickname/check?nickname=" + Uri.EscapeDataString(nickname ?? ""),
                                       AuthMode.SignupOrUser);
 
+        public async Task<Me> MeAsync() =>
+            await c.GetAsync<Me>("/v1/users/me", AuthMode.User) ?? throw new ApiException(ApiFailure.BadResponse, "내 정보 응답이 비었습니다.");
+
         // 내 보정(계획 0023). 없으면 null. 저장은 덮어쓰기(서버는 이력으로 쌓고 가장 최근 것이 지금 보정)
         public Task<CalibrationRecord> GetCalibrationAsync() =>
             c.GetAsync<CalibrationRecord>("/v1/users/me/calibration", AuthMode.User);
@@ -200,6 +206,41 @@ namespace Scrun.App
             var r = await c.PostAsync<VerificationResult>($"/v1/runs/{Uri.EscapeDataString(runId)}/verification/skip",
                                                           new { reason }, AuthMode.User);
             return r ?? throw new ApiException(ApiFailure.BadResponse, "인증 응답이 비었습니다.");
+        }
+    }
+
+    // 친구(계획 0044). 친구가 아닌 사람의 ID → 404 USER_NOT_FOUND
+    public sealed class FriendsApi
+    {
+        readonly ApiClient c;
+        public FriendsApi(ApiClient client) => c = client;
+
+        public Task<List<Friend>> ListAsync() => c.GetAsync<List<Friend>>("/v1/friends", AuthMode.User);
+
+        public Task<List<RunningFriend>> RunningAsync() => c.GetAsync<List<RunningFriend>>("/v1/friends/running", AuthMode.User);
+
+        // 받은 코드로 추가 → 서로 바로 친구. 실패: SELF_FRIEND_CODE·FRIEND_CODE_NOT_FOUND·ALREADY_FRIEND·
+        // FRIEND_LIMIT_EXCEEDED(details.who ME/FRIEND)·RATE_LIMITED(틀린 코드 10분에 10번)
+        public async Task<Friend> AddAsync(string friendCode)
+        {
+            var f = await c.PostAsync<Friend>("/v1/friends", new { friendCode }, AuthMode.User);
+            return f ?? throw new ApiException(ApiFailure.BadResponse, "친구 추가 응답이 비었습니다.");
+        }
+
+        public async Task<FriendProfile> ProfileAsync(string userId)
+        {
+            var p = await c.GetAsync<FriendProfile>("/v1/friends/" + Uri.EscapeDataString(userId), AuthMode.User);
+            return p ?? throw new ApiException(ApiFailure.BadResponse, "친구 프로필 응답이 비었습니다.");
+        }
+
+        public Task DeleteAsync(string userId) =>
+            c.SendAsync<object>("DELETE", "/v1/friends/" + Uri.EscapeDataString(userId), null, AuthMode.User);
+
+        // 친구 피드(끝난 시각 최신순, 20개씩). 다음 쪽은 앞 응답의 NextCursor
+        public async Task<FeedPage> FeedAsync(string cursor = null)
+        {
+            var path = cursor == null ? "/v1/feed" : "/v1/feed?cursor=" + Uri.EscapeDataString(cursor);
+            return await c.GetAsync<FeedPage>(path, AuthMode.User) ?? new FeedPage();
         }
     }
 }

@@ -16,8 +16,13 @@ namespace Scrun.App
         VisualElement hero, content, loadFailed;
         bool loading, skipReload, notFound, gating, fromCalibration;
         MapScreen map; // 띄운 맵(돌아올 때 끝낸 기록 ID를 받음)
+        bool enterOnLoad; // 친구 탭 "같이 달리기"(G-03, 계획 0044): 처음 불러오면 바로 "맵 입장"
 
-        public CourseDetailScreen(string courseId) => this.courseId = courseId;
+        public CourseDetailScreen(string courseId, bool enterOnLoad = false)
+        {
+            this.courseId = courseId;
+            this.enterOnLoad = enterOnLoad;
+        }
 
         protected override string Uxml => "UI/CourseDetail";
         public override bool HidesTabBar => true;
@@ -61,11 +66,15 @@ namespace Scrun.App
             CourseDetail got = null;
             bool ok = await Feedback.Run(async () => got = await Api.Courses.GetAsync(courseId), Load, OnLoadFailure);
             loading = false;
+            // 바로 입장은 첫 불러오기 한 번만: 실패했거나 그 사이 다른 화면이 덮였으면 그냥 상세(나중에 다시 불러올 때 몰래 맵으로 가지 않게)
+            bool autoEnter = enterOnLoad && ok && got != null && Nav.Current == this;
+            enterOnLoad = false;
             if (Root.panel == null) return;
             if (ok && got != null)
             {
                 course = got;
                 Render();
+                if (autoEnter) Enter();
             }
             else if (notFound)
             {

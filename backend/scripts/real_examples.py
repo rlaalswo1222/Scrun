@@ -2,7 +2,8 @@
 
 흐름: 카카오 로그인(처음) → 약관 → 닉네임 확인 → 가입 → 내 정보·설정 조회·수정 → 코스 목록·상세 → 보정 저장·조회 → 맵 입장 →
 러닝 시작 → 시계열 올리기 → 끝나지 않은 러닝 → 종료 → 계기판 사진 인증(가짜 OCR) → (다른 러닝 시작 → 버리기) →
-(또 다른 러닝 → 종료 → 인증 없이 마무리) → 기록 목록·상세·공유 끄기·고스트 → 토큰 재발급 → 로그아웃.
+(또 다른 러닝 → 종료 → 인증 없이 마무리) → 기록 목록·상세·공유 끄기·고스트 →
+친구(두 번째 사람이 내 코드로 추가 → 목록·달리는 친구·프로필·피드 → 삭제) → 토큰 재발급 → 로그아웃.
 토큰 값·저장 시각·사용자 ID·친구 코드는 매번 바뀌므로 고정 값으로 바꿔 넣는다. 입장 위치(랜덤)는 시드를 고정한 난수로 바꿔 끼워 매번 같게.
 """
 from app.testenv import use_test_settings
@@ -27,15 +28,15 @@ from app.stub_requests import REAL
 FIXED_META = {"timestamp": "2026-11-06T00:00:00Z", "requestId": "req_example"}
 DEVICE_ID = "6F1A2B3C-0000-4000-8000-000000000001"  # 예시 identifierForVendor
 PLACEHOLDER = {"accessToken": "eyJhbGciOi...(access)", "refreshToken": "(refresh 토큰 원문)", "signupToken": "eyJhbGciOi...(signup)",
-               "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000", "friendCode": "SCR-7K2Q", "runId": "01JC0ZA4R7N2X5EXAMPLERUN00"}
+               "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000", "friendCode": "K7Q2M9XA", "runId": "01JC0ZA4R7N2X5EXAMPLERUN00"}
 
 
 _ULID = re.compile(r"/[0-9A-HJKMNP-TV-Z]{26}(?=/|$)")  # 주소 안의 기록 ID(db.ids.new_id)
 
 
 def _clean_path(path: str) -> str:
-    """실제 요청 주소의 기록 ID를 예시 값으로(다시 만들 때마다 바뀌지 않게)."""
-    return _ULID.sub("/" + PLACEHOLDER["runId"], path)
+    """실제 요청 주소의 기록·사용자 ID를 예시 값으로(다시 만들 때마다 바뀌지 않게)."""
+    return _ULID.sub("/" + PLACEHOLDER["userId" if path.startswith("/v1/friends/") else "runId"], path)
 
 
 def _clean(j):
@@ -44,18 +45,27 @@ def _clean(j):
     j["meta"].update(FIXED_META)
     j["meta"]["path"] = _clean_path(j["meta"]["path"])
     data = (j.get("success") or {}).get("data")
-    if isinstance(data, dict):
+    for row in data if isinstance(data, list) else [data]:  # 친구 목록처럼 배열인 응답도 줄마다
+        if not isinstance(row, dict):
+            continue
         for k, v in PLACEHOLDER.items():
-            if data.get(k):
-                data[k] = v
+            if row.get(k):
+                row[k] = v
+        if row.get("feedId"):
+            row["feedId"] = PLACEHOLDER["runId"]
+    if isinstance(data, dict):
         rt = data.get("realtime")
         if isinstance(rt, dict) and rt.get("token"):  # 실시간 토큰도 다시 만들 때마다 바뀜
             rt["token"] = "eyJhbGciOi...(realtime)"
         if data.get("createdAt"):  # 저장 시각(보정 등)도 다시 만들 때마다 바뀌지 않게
             data["createdAt"] = FIXED_META["timestamp"]
-        for item in data.get("items") or []:  # 기록 목록: 줄마다 기록 ID
-            if isinstance(item, dict) and item.get("runId"):
-                item["runId"] = PLACEHOLDER["runId"]
+        for item in (data.get("items") or []) + (data.get("recentRuns") or []):  # 기록 목록·피드·프로필: 줄마다 ID
+            if isinstance(item, dict):
+                for k in ("runId", "feedId"):
+                    if item.get(k):
+                        item[k] = PLACEHOLDER["runId"]
+                if item.get("userId"):
+                    item["userId"] = PLACEHOLDER["userId"]
         run = data.get("run")  # 끝나지 않은 러닝: 기록 ID·복구 기한(마지막 갱신 + 24시간)
         if isinstance(run, dict):
             run["runId"] = PLACEHOLDER["runId"]
@@ -157,6 +167,22 @@ def collect() -> dict:
         rec("PATCH", "/v1/runs/{runId}", body, "Bearer {accessToken}",
             c.patch(f"/v1/runs/{run_id}", json=body, headers=auth))
         rec("GET", "/v1/runs/{runId}/ghost", None, "Bearer {accessToken}", c.get(f"/v1/runs/{run_id}/ghost", headers=auth))
+        # 친구(계획 0044): 두 번째 사람이 내 코드로 추가 → 둘 다 친구. 피드에 보이게 세 번째 러닝은 공유를 켬(설정에서 기본값을 껐음)
+        c.patch(f"/v1/runs/{third_id}", json={"shared": True}, headers=auth)
+        my = c.get("/v1/users/me", headers=auth).json()["success"]["data"]
+        k2 = c.post("/v1/auth/kakao", json={"kakaoAccessToken": "k_2"}).json()["success"]["data"]
+        r2 = c.post("/v1/auth/signup", headers={"Authorization": f"Bearer {k2['signupToken']}"},
+                    json={"agreedIds": ["terms", "privacy", "age14"], "nickname": "주말러너", "heightCm": 168, "weightKg": 60})
+        auth2 = {"Authorization": f"Bearer {r2.json()['success']['data']['accessToken']}"}
+        body = {"friendCode": my["friendCode"]}
+        rec("POST", "/v1/friends", {"friendCode": "K7Q2M9XA"}, "Bearer {accessToken}",
+            c.post("/v1/friends", json=body, headers=auth2))
+        rec("GET", "/v1/friends", None, "Bearer {accessToken}", c.get("/v1/friends", headers=auth2))
+        rec("GET", "/v1/friends/running", None, "Bearer {accessToken}", c.get("/v1/friends/running", headers=auth2))
+        rec("GET", "/v1/friends/{userId}", None, "Bearer {accessToken}", c.get(f"/v1/friends/{my['userId']}", headers=auth2))
+        rec("GET", "/v1/feed", None, "Bearer {accessToken}", c.get("/v1/feed", headers=auth2))
+        rec("DELETE", "/v1/friends/{userId}", None, "Bearer {accessToken}",
+            c.delete(f"/v1/friends/{my['userId']}", headers=auth2))
         body = {"refreshToken": tok["refreshToken"]}
         tok2 = rec("POST", "/v1/auth/refresh", {"refreshToken": PLACEHOLDER["refreshToken"]}, None,
                    c.post("/v1/auth/refresh", json=body))["success"]["data"]

@@ -231,6 +231,7 @@ namespace Scrun.App
             }
             if (leaving) return;
             mapInstanceId = entry.MapInstanceId;
+            FriendDirectory.RefreshQuietly(); // 러너 카드 "친구" 배지(계획 0044). 실패해도 배지만 빠짐
             calibrationLoad = LoadCalibrationAsync(); // 섬 불러오기와 같이. 센서 준비(D-07)가 끝나길 기다림
             headphones ??= new HeadphoneWatch();
             SetProgress(EntryShare);

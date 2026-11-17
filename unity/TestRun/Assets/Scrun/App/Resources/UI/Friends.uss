@@ -1,0 +1,600 @@
+/* 친구 탭(G-01–G-11, 계획 0044) 모양. Figma "SCRUN" > 스크런 와이어 프레임 G 섹션 기준(11/17 읽음).
+   색·글자 크기는 App.uss 변수. Nav Bar·큰 제목·입력 칸은 Onboarding.uss·OnboardingFig.uss를 같이 씀.
+   USS에 없는 것: 그림자(카드·시트), 배경 흐림 → 빠짐. Figma에 없는 ExtraBold(내 코드)는 Bold로 */
+
+.fr .unity-label {
+    margin: 0;
+    padding: 0;
+}
+
+.fr-page {
+    flex-grow: 1;
+    padding: 8px var(--space-5) var(--space-4) var(--space-5);
+}
+
+.fr-scroll {
+    flex-grow: 1;
+}
+
+/* ---- G-01 위: "친구" + 관리 + 동그란 + ---- */
+.fr-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+}
+
+.fr .fr-title {
+    font-size: var(--font-size-title);
+    letter-spacing: -0.56px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.fr-header-actions {
+    flex-direction: row;
+    align-items: center;
+}
+
+.fr-text-btn {
+    margin: 0 var(--space-4) 0 0;
+    padding: 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.fr-text-btn:hover,
+.fr-text-btn:active {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.fr-round-add {
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    border-radius: 20px;
+    background-color: var(--color-primary-soft);
+    align-items: center;
+    justify-content: center;
+}
+
+.fr-round-add:hover,
+.fr-round-add:active {
+    background-color: var(--color-primary-soft);
+}
+
+.fr-plus {
+    width: 20px;
+    height: 20px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/icon-plus.svg");
+}
+
+/* 당겨서 새로고침 안내(맨 위에서 아래로 끌 때만 보임) */
+.fr .fr-pull {
+    height: 0;
+    overflow: hidden;
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+    -unity-text-align: middle-center;
+}
+
+.fr .fr-pull--on {
+    height: 28px;
+}
+
+.fr .fr-section {
+    margin-top: var(--space-5);
+    font-size: var(--font-size-sub);
+    letter-spacing: -0.27px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+/* ---- 친구 줄(Friend Row 73): 머리 46 + LIVE + 이름·설명 + 오른쪽 버튼 ---- */
+.fr-row {
+    flex-direction: row;
+    align-items: center;
+    height: 73px;
+    margin: var(--space-3) 0 0 0;
+    padding: 0 15px;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+    -unity-text-align: upper-left;
+}
+
+.fr-row:hover,
+.fr-row:active {
+    border-color: var(--color-line);
+    background-color: var(--color-surface);
+}
+
+.fr-head {
+    width: 46px;
+    height: 46px;
+    border-radius: 23px;
+    background-color: var(--color-primary-soft);
+    align-items: center;
+    justify-content: center;
+}
+
+.fr .fr-head-mark {
+    font-size: var(--font-size-sub);
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.fr-head--40 { width: 40px; height: 40px; border-radius: 20px; }
+.fr-head--56 { width: 56px; height: 56px; border-radius: 28px; }
+.fr-head--88 { width: 88px; height: 88px; border-radius: 44px; }
+.fr-head--96 { width: 96px; height: 96px; border-radius: 48px; }
+.fr .fr-head--88 > .fr-head-mark,
+.fr .fr-head--96 > .fr-head-mark { font-size: 36px; }
+
+/* 머리 아래 LIVE(Live pill 43×21, 흰 테두리) */
+.fr .fr-live-pill {
+    position: absolute;
+    left: 2px;
+    bottom: -8px;
+    width: 43px;
+    height: 21px;
+    border-width: 1.5px;
+    border-color: var(--color-surface);
+    border-radius: 11px;
+    background-color: var(--color-lime);
+    font-size: 11px;
+    color: var(--color-text);
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.fr-row-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-left: var(--space-3);
+    overflow: hidden;
+}
+
+.fr .fr-name {
+    font-size: var(--font-size-body);
+    letter-spacing: -0.16px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.fr .fr-sub {
+    margin-top: 4px;
+    font-size: var(--font-size-body-sm);
+    letter-spacing: -0.07px;
+    color: var(--color-body);
+    text-overflow: ellipsis;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* 줄 오른쪽 버튼(Action 96×36): 같이 달리기·삭제 */
+.fr-action {
+    width: 96px;
+    height: 36px;
+    margin: 0 0 0 var(--space-2);
+    padding: 0;
+    border-width: 0;
+    border-radius: 10px;
+    background-color: var(--color-primary-soft);
+    font-size: 15px;
+    color: #2459BC;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.fr-action:hover,
+.fr-action:active {
+    background-color: var(--color-primary-soft);
+}
+
+.fr-action--danger,
+.fr-action--danger:hover,
+.fr-action--danger:active {
+    color: #C23338;
+}
+
+/* G-10 왼쪽으로 밀면 줄이 따라감 */
+.fr-row--swiping {
+    border-color: #F0565B;
+}
+
+/* ---- G-02 달리는 친구 없음 / 피드 없음 ---- */
+.fr-empty-card {
+    height: 91px;
+    margin-top: var(--space-3);
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 16px;
+    background-color: var(--color-surface);
+    align-items: center;
+    justify-content: center;
+}
+
+.fr .fr-empty-title {
+    font-size: var(--font-size-body);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.fr .fr-empty-body {
+    margin-top: 6px;
+    font-size: var(--font-size-body-sm);
+    color: var(--color-body);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* ---- 칩(Chip/Success·Gray·Live) ---- */
+.fr-chip {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 14px;
+    background-color: var(--color-surface-2);
+}
+
+.fr .fr-chip-text {
+    font-size: var(--font-size-caption);
+    color: var(--color-body);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.fr-chip--success { background-color: #E6F7EF; }
+.fr .fr-chip--success > .fr-chip-text { color: #187A4B; }
+.fr-chip--live { background-color: var(--color-lime); }
+.fr .fr-chip--live > .fr-chip-text { color: var(--color-text); }
+
+.fr-chip-dot {
+    width: 7px;
+    height: 7px;
+    margin-right: 6px;
+    border-radius: 3.5px;
+    background-color: var(--color-text);
+}
+
+/* ---- G-01 피드 카드 ---- */
+.fr-feed-card {
+    margin: var(--space-3) 0 0 0;
+    padding: 17px;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+    -unity-text-align: upper-left;
+}
+
+.fr-feed-card:hover,
+.fr-feed-card:active {
+    border-color: var(--color-line);
+    background-color: var(--color-surface);
+}
+
+.fr-feed-top {
+    flex-direction: row;
+    align-items: center;
+}
+
+.fr .fr-time {
+    margin-top: 2px;
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* 카드 아래 어두운 칸: 코스 이름 + "3.51km · 33:02"(Figma는 그림 자리. 코스 이름은 Figma에 없어 더함, 상준 확인) */
+.fr-feed-stats {
+    height: 92px;
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 14px;
+    background-color: var(--color-night);
+    justify-content: space-between;
+}
+
+.fr .fr-feed-course {
+    font-size: var(--font-size-caption);
+    color: rgba(255, 255, 255, 0.7);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.fr .fr-feed-numbers {
+    font-size: var(--font-size-body);
+    color: var(--color-surface);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.fr .fr-hint {
+    margin-top: var(--space-3);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-muted);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.fr-more {
+    margin: var(--space-3) 0 0 0;
+}
+
+/* ---- G-04 친구 없음 ---- */
+.fr-illust {
+    height: 300px;
+    margin-top: var(--space-3);
+    border-radius: 20px;
+    background-color: var(--color-primary-soft);
+    align-items: center;
+    justify-content: center;
+}
+
+.fr-illust-icon {
+    width: 96px;
+    height: 96px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-friends-on.svg");
+}
+
+.fr .fr-big {
+    margin-top: var(--space-3);
+    font-size: var(--font-size-heading);
+    letter-spacing: -0.44px;
+    color: var(--color-text);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.fr .fr-lead {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-body);
+    letter-spacing: -0.16px;
+    color: var(--color-body);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.fr-spacer {
+    flex-grow: 1;
+}
+
+/* Button/Secondary(연한 파랑 바탕, 진한 파랑 글자) */
+.btn-soft {
+    background-color: var(--color-primary-soft);
+    color: #2459BC;
+}
+
+.btn-soft:hover,
+.btn-soft:active {
+    background-color: var(--color-primary-soft);
+}
+
+/* Button/Danger */
+.btn-danger,
+.btn-danger:hover,
+.btn-danger:active {
+    background-color: #FFECEC;
+    color: #C23338;
+}
+
+/* ---- G-05 내 코드 ---- */
+.fr-code-card {
+    margin-top: var(--space-5);
+    padding: 21px;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+    align-items: center;
+}
+
+.fr .fr-code-label {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-muted);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.fr .fr-code {
+    margin-top: 12px;
+    font-size: 36px;
+    letter-spacing: 2px;
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.fr-code-buttons {
+    flex-direction: row;
+    align-self: stretch;
+    margin-top: 14px;
+}
+
+.fr-small-btn {
+    flex-grow: 1;
+    flex-basis: 0;
+    height: 36px;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    border-radius: 10px;
+    background-color: var(--color-primary-soft);
+    font-size: 15px;
+    color: #2459BC;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.fr-small-btn:hover,
+.fr-small-btn:active {
+    background-color: var(--color-primary-soft);
+}
+
+.fr-small-btn--next {
+    margin-left: 12px;
+}
+
+/* 입력 칸 오류(G-08): 빨간 테두리 */
+.fig-field.fr-field--error {
+    border-width: 2px;
+    border-color: #F0565B;
+}
+
+.fr .fr-error {
+    margin-top: 8px;
+    font-size: var(--font-size-body-sm);
+    color: #C23338;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.fr .fr-notice {
+    margin-top: 8px;
+    font-size: var(--font-size-caption);
+    color: var(--color-primary);
+    white-space: normal;
+}
+
+/* ---- G-07 완료 ---- */
+.fr-done {
+    align-items: center;
+    padding-top: var(--space-6);
+}
+
+.fr-done-check {
+    width: 44px;
+    height: 44px;
+    margin-top: 12px; /* Figma G-07: 머리 아래 가운데 */
+    border-radius: 22px;
+    background-color: #2BB673;
+    align-items: center;
+    justify-content: center;
+}
+
+.fr-done-check-icon {
+    width: 22px;
+    height: 22px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/icon-check-white.svg");
+}
+
+.fr .fr-center {
+    -unity-text-align: upper-center;
+}
+
+/* ---- G-09 프로필 ---- */
+.fr-profile-head {
+    align-items: center;
+    margin-top: var(--space-3);
+}
+
+.fr .fr-profile-name {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-title);
+    letter-spacing: -0.56px;
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.fr-chip-row {
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: var(--space-3);
+}
+
+.fr-chip-row > .fr-chip {
+    margin: 0 4px;
+}
+
+.fr-profile-btn {
+    margin: var(--space-4) 0 0 0;
+}
+
+.fr .fr-caption {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-muted);
+    -unity-text-align: upper-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* Record Row 107 */
+.fr-record {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--space-3);
+    padding: 17px 19px;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+}
+
+.fr .fr-record-date {
+    font-size: var(--font-size-caption);
+    color: #646E83;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.fr .fr-record-km {
+    margin-top: 4px;
+    font-size: var(--font-size-heading);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+/* ---- 아래 시트(G-03 같이 달리기, G-11 삭제, G-09 더보기) ---- */
+.fr-dim {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    justify-content: flex-end;
+    background-color: rgba(15, 27, 61, 0.45);
+}
+
+.fr-sheet {
+    padding: 16px var(--space-5) var(--space-5) var(--space-5);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    background-color: var(--color-surface);
+}
+
+.fr-grabber {
+    align-self: center;
+    width: 44px;
+    height: 5px;
+    border-radius: 3px;
+    background-color: #CBD3E1;
+}
+
+.fr-sheet-head {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 12px;
+}
+
+.fr .fr-sheet-title {
+    font-size: var(--font-size-sub);
+    color: var(--color-text);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.fr .fr-sheet-info {
+    margin-top: 12px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background-color: var(--color-primary-soft);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-primary);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.fr-sheet > .btn {
+    margin: 12px 0 0 0;
+}
