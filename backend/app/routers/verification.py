@@ -16,7 +16,7 @@ import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
@@ -183,7 +183,8 @@ def _result(run: Run, status: str, reason: Optional[str] = None, rows: Optional[
     return {"status": status, "reason": reason, "console": console,
             "sensor": {"distanceM": run.sensor_distance_m, "durationS": run.sensor_duration_s},
             "comparison": rows or [],
-            "retakeDeadline": verification_deadline(run) if status == S.RETAKE_REQUIRED else None,
+            "retakeDeadline": (verification_deadline(run).astimezone(timezone.utc)   # API 시각은 UTC(Z)
+                           if status == S.RETAKE_REQUIRED else None),
             "retakesLeft": retakes_left, "rewards": None}
 
 

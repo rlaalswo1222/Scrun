@@ -176,7 +176,8 @@ def test_retakes_then_unsupported(db_client, me, db):
     lefts = []
     for i in range(3):
         out = data(photo(db_client, me, run_id, f"blur{i}.jpg"))
-        assert out["status"] == "RETAKE_REQUIRED" and out["retakeDeadline"]
+        assert out["status"] == "RETAKE_REQUIRED"
+        assert out["retakeDeadline"].endswith("Z")  # API 시각은 UTC(Z), DB 연결 시간대(+09:00)가 새지 않게
         lefts.append(out["retakesLeft"])
         assert run_row(db, run_id).status == "PENDING"  # 저장되는 상태가 아님
     assert lefts == [3, 2, 1]
