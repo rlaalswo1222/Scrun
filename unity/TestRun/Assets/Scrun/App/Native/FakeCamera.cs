@@ -81,6 +81,8 @@ namespace Scrun.App
             }
         }
 
+        static readonly System.Random Noise = new System.Random();
+
         // 노출 흉내: 0 EV는 LED가 타서 하얗게 번지고 꺼진 획이 비침, 어두울수록 빨간 획만 남다가 흐려짐(설명용, 실제 사진 아님)
         static byte[] SamplePhoto(float bias)
         {
@@ -93,7 +95,10 @@ namespace Scrun.App
                 var lit = Color.Lerp(new Color(1f, 0.25f, 0.2f), Color.white, Mathf.Clamp01(gain - 0.4f)) * Mathf.Min(1f, 0.35f + gain);
                 var off = new Color(0.5f, 0.12f, 0.1f) * Mathf.Clamp01(gain - 0.3f); // 꺼진 "888" 획
                 var px = new Color[w * h];
-                for (int i = 0; i < px.Length; i++) px[i] = bg;
+                // 센서 잡음: 진짜 카메라처럼 찍을 때마다 바이트가 달라야 함. 서버는 같은 사진을 재전송·다른 기록에 쓴 사진으로
+                // 보므로(계획 0038), 똑같은 그림이면 두 번째 기록부터 결과가 늘 "못 읽음"이 된다
+                // 노출 배율과 따로 더함(어두운 사진에서 곱한 잡음은 0이 되어 같은 사진이 됨)
+                for (int i = 0; i < px.Length; i++) px[i] = bg + Color.white * (0.03f * (float)Noise.NextDouble());
                 for (int d = 0; d < 3; d++)
                 {
                     int x0 = 50 + d * 80;

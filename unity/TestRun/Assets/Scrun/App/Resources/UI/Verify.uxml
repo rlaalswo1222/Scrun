@@ -1,0 +1,83 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- 계기판 인증(계획 0038, Figma E-02·E-04–E-10·I-06). 단계마다 한 칸만 보임(VerifyScreen). E-03 카메라는 Swift(ADR-0011) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Verify.uss" />
+    <ui:VisualElement class="onb">
+        <ui:VisualElement class="nav-bar">
+            <ui:VisualElement class="nav-side">
+                <ui:Button name="back" class="nav-back" />
+            </ui:VisualElement>
+            <ui:Label name="nav-title" text="계기판 인증" class="nav-title" />
+            <ui:VisualElement class="nav-side nav-side--right" />
+        </ui:VisualElement>
+
+        <!-- E-02 촬영 안내 -->
+        <ui:VisualElement name="guide" class="verify-page">
+            <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+                <ui:Label text="계기판을 촬영해 주세요" class="onb-title" />
+                <ui:Label text="방금 달린 거리와 시간이 화면에 보이도록 찍어 주세요" class="onb-lead" />
+                <ui:VisualElement class="verify-sample">
+                    <ui:VisualElement class="verify-sample-icon" />
+                    <ui:Label text="계기판 예시 사진" class="verify-sample-text" />
+                </ui:VisualElement>
+                <ui:VisualElement class="verify-tips">
+                    <ui:VisualElement class="verify-tip"><ui:VisualElement class="verify-check" /><ui:Label text="계기판 전체가 보이도록 정면에서 찍어요" class="verify-tip-text" /></ui:VisualElement>
+                    <ui:VisualElement class="verify-tip"><ui:VisualElement class="verify-check" /><ui:Label text="화면 반사나 흔들림이 없게 찍어요" class="verify-tip-text" /></ui:VisualElement>
+                    <ui:VisualElement class="verify-tip"><ui:VisualElement class="verify-check" /><ui:Label text="갤러리 사진은 사용할 수 없어요 (앱 카메라만 가능)" class="verify-tip-text" /></ui:VisualElement>
+                </ui:VisualElement>
+                <ui:Label name="guide-error" class="verify-error" />
+            </ui:ScrollView>
+            <ui:Button name="open-camera" text="카메라 열기" class="btn btn-primary" />
+        </ui:VisualElement>
+
+        <!-- E-02에서 뒤로: 인증하지 않고 나가기 -->
+        <ui:VisualElement name="leave" class="verify-page">
+            <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+                <ui:Label text="인증하지 않고 나갈까요?" class="onb-title" />
+                <ui:Label text="이번 기록은 미인증으로 저장되고, 나중에 인증할 수 없어요" class="onb-lead" />
+            </ui:ScrollView>
+            <ui:Button name="leave-stay" text="계속 인증하기" class="btn btn-primary" />
+            <ui:Button name="leave-save" text="미인증으로 저장" class="btn btn-ghost" />
+        </ui:VisualElement>
+
+        <!-- E-04 촬영 확인(사진만, 읽은 값은 결과 화면에서 — 11/17 결정) -->
+        <ui:VisualElement name="confirm" class="verify-page">
+            <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+                <ui:Label text="이 사진으로 인증할까요?" class="onb-title" />
+                <ui:Label text="숫자가 잘 보이는지 확인해 주세요" class="onb-lead" />
+                <ui:VisualElement name="photo" class="verify-photo" />
+                <ui:Label text="인식된 값은 수정할 수 없어요. 센서 기록과 그대로 대조해요." class="verify-info" />
+                <ui:Label name="confirm-error" class="verify-error" />
+            </ui:ScrollView>
+            <ui:Button name="send" text="이 사진으로 인증" class="btn btn-primary" />
+            <ui:Button name="retake" text="다시 촬영" class="btn btn-ghost" />
+        </ui:VisualElement>
+
+        <!-- E-05 인증 중 -->
+        <ui:VisualElement name="sending" class="verify-page verify-center">
+            <ui:VisualElement class="verify-spinner" />
+            <ui:Label text="계기판 수치를 확인하고 있어요" class="verify-title" />
+            <ui:Label text="잠시만 기다려 주세요" class="verify-lead" />
+            <ui:VisualElement class="verify-tips">
+                <ui:VisualElement class="verify-tip"><ui:VisualElement class="verify-dot" /><ui:Label text="계기판 수치 읽기" class="verify-tip-text" /></ui:VisualElement>
+                <ui:VisualElement class="verify-tip"><ui:VisualElement class="verify-dot" /><ui:Label text="센서 기록 불러오기" class="verify-tip-text" /></ui:VisualElement>
+                <ui:VisualElement class="verify-tip"><ui:VisualElement class="verify-dot" /><ui:Label text="수치 대조" class="verify-tip-text" /></ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- E-06–E-10·I-06 결과(내용은 VerifyScreen.RenderResult) -->
+        <ui:VisualElement name="result" class="verify-page">
+            <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+                <ui:VisualElement class="verify-head">
+                    <ui:VisualElement name="result-icon" class="verify-icon" />
+                    <ui:Label name="result-title" class="verify-title" />
+                    <ui:Label name="result-lead" class="verify-lead" />
+                    <ui:Label name="result-chip" class="verify-chip" />
+                </ui:VisualElement>
+                <ui:VisualElement name="result-body" />
+            </ui:ScrollView>
+            <ui:Button name="primary" class="btn btn-primary" />
+            <ui:Button name="secondary" class="btn btn-ghost" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

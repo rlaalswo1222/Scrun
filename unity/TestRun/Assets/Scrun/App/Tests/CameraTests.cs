@@ -154,6 +154,22 @@ namespace Scrun.App.Tests
             foreach (var p in shot.Photos) Assert.IsFalse(File.Exists(p.Path));
         }
 
+        // 서버는 같은 사진을 재전송·다른 기록에 쓴 사진으로 본다(계획 0038). 똑같은 그림이면 에디터에서 결과가 늘 "못 읽음"
+        [Test]
+        public void 가짜_찍음은_찍을_때마다_노출마다_다른_사진이다()
+        {
+            var f = Fake(PermissionStatus.Granted);
+            var a = Shoot(f);
+            System.Threading.Thread.Sleep(5); // 파일 이름이 밀리초 시각이라 같은 이름으로 덮지 않게
+            var b = Shoot(f);
+            Assert.AreNotEqual(a.Photos[0].Path, b.Photos[0].Path);
+            for (int i = 0; i < a.Photos.Count; i++)
+                CollectionAssert.AreNotEqual(File.ReadAllBytes(a.Photos[i].Path), File.ReadAllBytes(b.Photos[i].Path),
+                    "노출 " + a.Photos[i].ExposureBias);
+            f.Discard(a);
+            f.Discard(b);
+        }
+
         [Test]
         public void 가짜_지우기는_카메라_폴더_밖_파일을_안_지운다()
         {

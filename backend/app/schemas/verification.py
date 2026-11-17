@@ -12,7 +12,7 @@ from .progress import Rewards
 class VerificationStatus(str, Enum):
     VERIFIED = "VERIFIED"
     UNVERIFIED = "UNVERIFIED"
-    RETAKE_REQUIRED = "RETAKE_REQUIRED"  # 진행 중 상태, 저장되지 않음
+    RETAKE_REQUIRED = "RETAKE_REQUIRED"  # 진행 중 상태, 저장되지 않음. reason: MISMATCH·UNSUPPORTED_CONSOLE·null(못 읽음)
 
 
 class UnverifiedReason(str, Enum):
@@ -33,7 +33,7 @@ class ComparisonRow(CamelModel):
 
 class VerificationResult(CamelModel):
     status: VerificationStatus
-    reason: Optional[UnverifiedReason] = None
+    reason: Optional[UnverifiedReason] = Field(default=None, description="UNVERIFIED면 미인증 사유, RETAKE_REQUIRED면 다시 찍으라는 이유(MISMATCH·UNSUPPORTED_CONSOLE, null은 못 읽음)")
     console: Optional[RunStats] = Field(default=None, description="계기판에서 읽은 값")
     sensor: RunStats
     comparison: list[ComparisonRow]

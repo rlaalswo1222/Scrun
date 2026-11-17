@@ -2,8 +2,9 @@
 
 - 사진: 브래킷 여러 장 → OCR(core/ocr) → 센서 기록과 대조(core/verification). 사진은 메모리에서만 읽고(디스크에 안 씀)
   요청이 끝나면 버려짐, 해시만 남김
-- 못 읽으면 RETAKE_REQUIRED(저장되는 상태 아님). 다시 찍기를 다 쓰면 UNVERIFIED(UNSUPPORTED_CONSOLE)
-- 건너뛰기: 촬영 없이 마무리·촬영 시간 초과·다시 찍기 포기 → UNVERIFIED
+- VERIFIED만 바로 정함. 오차 초과·읽을 수 없는 계기판·못 읽음은 다시 찍기가 남았으면 RETAKE_REQUIRED + 이유(저장되는 상태 아님),
+  다 쓰면 그 이유로 UNVERIFIED(core/verification.decide)
+- 건너뛰기: 촬영 없이 마무리·촬영 시간 초과·다시 찍기 포기 → UNVERIFIED. 포기는 마지막 시도의 이유(오차 초과 등)로
 - 마감(서버가 종료를 받은 뒤 설정 시간, core/run_access)은 요청이 도착한 때로 판단. 지났으면 기록은 UNVERIFIED(TIMEOUT)로 닫히고
   사진은 계속 VERIFICATION_CLOSED(앱이 skip TIMEOUT으로 닫은 기록은 처음 결과)
 - 한 번 정해지면 바뀌지 않는다. 응답을 못 받은 앱이 다시 보내면 처음 결과를 돌려준다
@@ -34,7 +35,7 @@ from ..core.verification import Outcome, decide
 from ..db.ids import new_id
 from ..db.models import Run, User, Verification
 from ..db.session import get_db
-from ..schemas.verification import SkipRequest, UnverifiedReason, VerificationResult, VerificationStatus
+from ..schemas.verification import ComparisonRow, SkipRequest, UnverifiedReason, VerificationResult, VerificationStatus
 
 router = APIRouter(prefix="/v1", tags=["Verification"])
 log = logging.getLogger("scrun.verification")
@@ -172,9 +173,12 @@ _ocr = _OcrRunner()
 
 # ---------- 결과 ----------
 def _result(run: Run, status: str, reason: Optional[str] = None, rows: Optional[list] = None,
-            retakes_left: Optional[int] = None) -> dict:
+            retakes_left: Optional[int] = None, console_read: Optional[tuple[Optional[int], Optional[int]]] = None) -> dict:
+    """console_read: 다시 찍기(아직 정하지 않음)일 때 이번에 읽은 값(기록 칸엔 안 씀)."""
     console = None
-    if run.console_distance_m is not None:
+    if console_read and console_read[0] is not None:
+        console = {"distanceM": console_read[0], "durationS": console_read[1]}
+    elif status != S.RETAKE_REQUIRED and run.console_distance_m is not None:
         console = {"distanceM": run.console_distance_m, "durationS": run.console_duration_s}
     return {"status": status, "reason": reason, "console": console,
             "sensor": {"distanceM": run.sensor_distance_m, "durationS": run.sensor_duration_s},
@@ -205,7 +209,8 @@ def _save(db: Session, run: Run, outcome: Outcome, method: str, hashes: tuple[st
                         read_distance_m=read.distance_m if read else None, read_duration_s=read.duration_s if read else None,
                         comparison=rows, photo_hashes=list(hashes)))
     db.commit()
-    return _result(run, outcome.status.value, reason, rows)
+    shown = (read.distance_m, read.duration_s) if outcome.status == S.RETAKE_REQUIRED and outcome.reason == R.MISMATCH else None
+    return _result(run, outcome.status.value, reason, rows, console_read=shown)
 
 
 def _finished(run: Run) -> Run:
@@ -254,7 +259,19 @@ def _seen(db: Session, run: Run, hashes: tuple[str, ...]) -> tuple[Optional[Veri
 def _retake_again(db: Session, run: Run, attempt: Verification) -> dict:
     """같은 사진 묶음을 다시 보냄(응답을 못 받은 재시도) → 그때와 같은 답, 횟수 안 셈."""
     left = POLICY.max_retakes - _retakes_used(db, run.id, before=attempt.created_at)
-    return _result(run, S.RETAKE_REQUIRED.value, retakes_left=left)
+    shown = (attempt.read_distance_m, attempt.read_duration_s) if attempt.reason == R.MISMATCH.value else None
+    return _result(run, S.RETAKE_REQUIRED.value, attempt.reason, attempt.comparison, left, console_read=shown)
+
+
+def _given_up(db: Session, run: Run) -> Outcome:
+    """다시 찍기를 그만두고 미인증으로 저장(E-07·08·09). 마지막 시도가 오차 초과·읽을 수 없는 계기판이면 그 이유와 대조 표로."""
+    last = db.scalar(select(Verification).where(Verification.run_id == run.id, Verification.status == S.RETAKE_REQUIRED)
+                     .order_by(Verification.created_at.desc()).limit(1))
+    if last is None or last.reason not in (R.MISMATCH.value, R.UNSUPPORTED_CONSOLE.value):
+        return Outcome(S.UNVERIFIED, R.RETAKE_GIVEN_UP)
+    read = ConsoleRead.read(last.read_distance_m, last.read_duration_s) if last.reason == R.MISMATCH.value else None
+    rows = tuple(ComparisonRow.model_validate(r) for r in last.comparison or [])
+    return Outcome(S.UNVERIFIED, R(last.reason), read=read, rows=rows)
 
 
 @router.post(
@@ -265,9 +282,10 @@ def _retake_again(db: Session, run: Run, attempt: Verification) -> dict:
         f"{POLICY.max_photos}장, JPEG, 한 장 {POLICY.max_photo_bytes // MB} MB 이하, 가이드 영역만 잘라서)을 multipart "
         "`photos`로 여러 번 붙여 보낸다. 서버가 읽고 센서 기록과 대조: "
         f"거리 {POLICY.distance_tolerance:.0%} 이내·시간(계기판 − 센서) {POLICY.duration_min_s}초에서 "
-        f"+{POLICY.duration_max_s}초(일시정지가 있었으면 + 쉰 시간, 최대 {POLICY.max_pause_s // 60}분)면 VERIFIED, 넘으면 UNVERIFIED(MISMATCH), "
-        f"못 읽으면 RETAKE_REQUIRED(다시 찍기 {POLICY.max_retakes}번, 남은 횟수 retakesLeft), 다 써도 못 읽거나 "
-        "읽을 수 없는 계기판이면 UNVERIFIED(UNSUPPORTED_CONSOLE). 값은 서버 설정. 사진은 메모리에서 읽고 버림(해시만 남김). "
+        f"+{POLICY.duration_max_s}초(일시정지가 있었으면 + 쉰 시간, 최대 {POLICY.max_pause_s // 60}분)면 VERIFIED(바로 저장). "
+        f"그 밖은 다시 찍기({POLICY.max_retakes}번)가 남았으면 RETAKE_REQUIRED + reason: MISMATCH(오차 초과, 읽은 값·대조 표 포함, "
+        "E-08)·UNSUPPORTED_CONSOLE(읽을 수 없는 계기판, E-09)·null(못 읽음, E-07), retakesLeft·retakeDeadline. 다시 찍기를 "
+        "다 썼으면 그 이유로 UNVERIFIED(못 읽음은 UNSUPPORTED_CONSOLE). 값은 서버 설정. 사진은 메모리에서 읽고 버림(해시만 남김). "
         "다른 기록에 쓴 사진이 섞이면 못 읽은 것으로 봄. "
         f"마감(종료를 받은 뒤 {POLICY.deadline_s // 60}분, 요청이 도착한 때 기준)이 지나면 VERIFICATION_CLOSED"
         "(기록은 UNVERIFIED·TIMEOUT으로 닫힘). OCR 엔진이 없거나 밀렸거나 오류·시간 초과면 503(다시 찍기 횟수에 안 셈)." + OUTCOME),
@@ -326,7 +344,8 @@ def verify_photo(runId: str, request: Request, user: User = Depends(current_user
     "/runs/{runId}/verification/skip",
     summary="인증 없이 마무리",
     description="화면 D-22, E-09, E-10 · BL-16 ⑤, BL-19. 촬영 없이 마무리(SKIPPED)·촬영 시간 초과(TIMEOUT)·다시 찍기 포기"
-    "(RETAKE_GIVEN_UP) → UNVERIFIED로 저장, 공식 값은 센서 값. 나중에 인증할 수 없다. 마감이 지났으면 이유는 TIMEOUT." + OUTCOME,
+    "(RETAKE_GIVEN_UP, E-07·08·09의 미인증으로 저장) → UNVERIFIED로 저장, 공식 값은 센서 값. 포기는 마지막 시도가 오차 초과·"
+    "읽을 수 없는 계기판이면 그 이유(대조 표 포함)로. 나중에 인증할 수 없다. 마감이 지났으면 이유는 TIMEOUT." + OUTCOME,
     response_model=Envelope[VerificationResult],
     responses=ERRS,
 )
@@ -335,5 +354,6 @@ def verify_skip(runId: str, body: SkipRequest, request: Request, user: User = De
     arrived = now_utc()  # 잠금을 기다린 시간 말고 도착한 때로 마감을 봄(사진 API와 같게, #55 리뷰)
     run = _finished(my_run(db, runId, user, lock=True))
     if run.status == PENDING and not _close_if_expired(db, run, arrived):
-        return ok(request, _save(db, run, Outcome(S.UNVERIFIED, R(body.reason.value)), SKIP))
+        outcome = _given_up(db, run) if body.reason.value == R.RETAKE_GIVEN_UP.value else Outcome(S.UNVERIFIED, R(body.reason.value))
+        return ok(request, _save(db, run, outcome, SKIP))
     return ok(request, _stored(db, run))

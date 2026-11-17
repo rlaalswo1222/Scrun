@@ -178,8 +178,28 @@ namespace Scrun.App
             return r;
         }
 
-        // D-22 "촬영 없이 마무리"(미인증으로 저장, 나중에 인증할 수 없음). 인증 API는 지환 BL-18(지금은 서버 스텁)
+        // D-22 "촬영 없이 마무리"(미인증으로 저장, 나중에 인증할 수 없음)
         public Task SkipVerificationAsync(string runId) =>
             c.PostAsync<object>($"/v1/runs/{Uri.EscapeDataString(runId)}/verification/skip", new { reason = "SKIPPED" }, AuthMode.User);
+
+        // ---- 계기판 인증(계획 0038) ----
+        public const int PhotoUploadTimeoutSeconds = 60; // 사진 세 장 + 서버 OCR(시간 제한 15초)
+
+        // E-04 "이 사진으로 인증" → E-05. 브래킷 사진(1–3장, JPEG)을 photos로
+        public async Task<VerificationResult> VerifyPhotoAsync(string runId, IReadOnlyList<MultipartBody.FilePart> photos)
+        {
+            var body = MultipartBody.Files("photos", photos);
+            var r = await c.PostMultipartAsync<VerificationResult>($"/v1/runs/{Uri.EscapeDataString(runId)}/verification/photo",
+                                                                   body, AuthMode.User, PhotoUploadTimeoutSeconds);
+            return r ?? throw new ApiException(ApiFailure.BadResponse, "인증 응답이 비었습니다.");
+        }
+
+        // 미인증으로 저장: SKIPPED(촬영 없이·카메라 권한 없음)·TIMEOUT(E-10)·RETAKE_GIVEN_UP(E-07·08·09에서 그만둠)
+        public async Task<VerificationResult> SaveUnverifiedAsync(string runId, string reason)
+        {
+            var r = await c.PostAsync<VerificationResult>($"/v1/runs/{Uri.EscapeDataString(runId)}/verification/skip",
+                                                          new { reason }, AuthMode.User);
+            return r ?? throw new ApiException(ApiFailure.BadResponse, "인증 응답이 비었습니다.");
+        }
     }
 }

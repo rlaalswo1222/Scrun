@@ -45,12 +45,19 @@ namespace Scrun.App
         public Task<T> GetAsync<T>(string path, AuthMode auth) => SendAsync<T>("GET", path, null, auth);
         public Task<T> PostAsync<T>(string path, object body, AuthMode auth) => SendAsync<T>("POST", path, body, auth);
 
-        public async Task<T> SendAsync<T>(string method, string path, object body, AuthMode auth)
+        public Task<T> SendAsync<T>(string method, string path, object body, AuthMode auth) =>
+            SendCore<T>(method, path, body == null ? null : JsonConvert.SerializeObject(body, JsonSettings), null, auth);
+
+        // multipart/form-data(계기판 사진, 계획 0038). 재발급·오류 처리는 JSON 요청과 같음
+        public Task<T> PostMultipartAsync<T>(string path, MultipartBody body, AuthMode auth, int timeoutSeconds) =>
+            SendCore<T>("POST", path, null, body, auth, timeoutSeconds);
+
+        async Task<T> SendCore<T>(string method, string path, string json, MultipartBody raw, AuthMode auth,
+                                  int timeoutSeconds = ApiConfig.TimeoutSeconds)
         {
-            string json = body == null ? null : JsonConvert.SerializeObject(body, JsonSettings);
             int epoch = Session.Epoch;
             string usedToken = TokenFor(auth);
-            var res = await SendOnce(method, path, json, usedToken);
+            var res = await SendOnce(method, path, json, raw, usedToken, timeoutSeconds);
 
             // access 만료 → (아직 같은 로그인이면) 재발급 한 번 → 원래 요청 한 번 다시
             bool sentAccess = usedToken != null && auth != AuthMode.Signup && usedToken != Session.SignupToken;
@@ -58,7 +65,7 @@ namespace Scrun.App
             {
                 await RefreshAsync(usedToken);
                 if (Session.Epoch != epoch) throw NotLoggedIn("로그인이 바뀌었습니다. 다시 시도하세요.");
-                res = await SendOnce(method, path, json, TokenFor(auth));
+                res = await SendOnce(method, path, json, raw, TokenFor(auth), timeoutSeconds);
             }
             return Parse<T>(res);
         }
@@ -79,9 +86,10 @@ namespace Scrun.App
 
         static ApiException NotLoggedIn(string message) => new ApiException(ApiFailure.NotLoggedIn, message, 401, "UNAUTHORIZED");
 
-        Task<HttpResponse> SendOnce(string method, string path, string json, string token)
+        Task<HttpResponse> SendOnce(string method, string path, string json, MultipartBody raw, string token, int timeoutSeconds)
         {
-            var req = new HttpRequest { Method = method, Url = baseUrl().TrimEnd('/') + path, Body = json };
+            var req = new HttpRequest { Method = method, Url = baseUrl().TrimEnd('/') + path, Body = json,
+                                        RawBody = raw?.Bytes, ContentType = raw?.ContentType, TimeoutSeconds = timeoutSeconds };
             if (token != null) req.Headers["Authorization"] = "Bearer " + token;
             return http.SendAsync(req);
         }
@@ -123,7 +131,7 @@ namespace Scrun.App
             int epoch = Session.Epoch;
             if (refresh == null) return false;
             var body = JsonConvert.SerializeObject(new { refreshToken = refresh }, JsonSettings);
-            var res = await SendOnce("POST", "/v1/auth/refresh", body, null);
+            var res = await SendOnce("POST", "/v1/auth/refresh", body, null, null, ApiConfig.TimeoutSeconds);
 
             if (Session.Epoch != epoch) return false; // 그사이 로그아웃·다른 로그인 → 이 결과는 버림(되살리지 않음)
             if (res.NetworkError == null && (res.Status == 401 || res.Status == 403))

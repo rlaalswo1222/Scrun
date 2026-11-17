@@ -174,6 +174,9 @@ namespace Scrun.App
     }
 
     [Serializable]
+    // 에디터 가짜 카메라 사진을 로컬 서버 가짜 OCR이 어떻게 읽을지(E-06·07·08·09를 에디터에서 보기)
+    public enum FakeOcrResult { Match, Mismatch, Unreadable, Unsupported }
+
     public class FakeNativeConfig
     {
         public static readonly int KindCount = Enum.GetValues(typeof(PermissionKind)).Length;
@@ -190,6 +193,8 @@ namespace Scrun.App
         // 계기판 카메라(FakeCamera, 계획 0033)
         public CameraOutcome cameraResult = CameraOutcome.Taken; // E-03에서 사용자가 한 일(권한 거부는 카메라 권한 상태로)
         public float cameraDelaySec = 1.5f; // 화면을 보고 셔터를 누르기까지
+        // 로컬 서버 가짜 OCR(OCR_ENGINE=fake)이 읽을 값: 앱이 사진 파일 이름으로 알려 줌(계획 0038, 에디터에서만)
+        public FakeOcrResult cameraOcr = FakeOcrResult.Match;
 
         // 속도 센서(FakeSpeedSensor)
         public bool phoneData = true;       // 폰 가속도가 들어옴. 끄면 2초 뒤 끊김
