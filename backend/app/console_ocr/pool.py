@@ -53,6 +53,7 @@ def serve(conn, model_path: str, threads: int) -> None:
 
     cv2.setNumThreads(1)   # 프로세스 2개 × OpenCV 스레드가 2코어를 넘겨 쓰지 않게(onnxruntime도 threads개)
     reader = ConsoleReader(model_path, threads)
+    reader.warm_up()   # 인식 모델까지 지금 올림: 없으면 ready 전에 죽어 시작 실패로 잡히고, 첫 요청이 올리는 시간을 안 냄
     conn.send(("ready", None))
     while True:
         try:
