@@ -43,4 +43,4 @@ E-04 사진 확인 → E-05 읽는 중 → POST photo
 - **11/17 밤 민재 Windows: E-05b 모양 끝**(**PR #67** `feat/verify-confirm-ui`). `Verify.uxml`의 `read` 칸 + `Verify.uss` "E-05b" 묶음. 지금은 `VerifyScreen.Render`가 늘 숨김(모양만), EditMode 397 통과, 에디터 Play에서 아이폰 SE 크기(375×667)로 한 화면에 들어오는 것 확인
   - 모양: 내비 제목 "읽은 값 확인"·뒤로 버튼 없음 → 제목 "계기판 숫자가 맞나요?" / 설명 "사진 속 숫자와 같은지 확인해 주세요" → 사진(`read-photo`, 높이 180) → "이렇게 읽었어요" + 거리·시간 카드(`read-distance`·`read-time`, 파란 큰 글자) → 안내 "숫자는 고칠 수 없어요. 하나라도 다르면 다시 찍어 주세요." → `read-error` → 버튼 `read-yes` "맞아요, 인증하기"(파랑)·`read-no` "틀렸어요, 다시 찍기"(회색). 틀렸어요는 횟수를 안 써서 남은 횟수는 안 적음
   - **지환이 연결할 때**: `VerifyStep.ConfirmRead`에서 `read`를 보이고 내비 제목·뒤로 숨김. 지금 `Send()`는 보낸 직후 `DropPhoto()`로 사진을 지우는데, 확인 화면에서 사진을 보여야 하니 CONFIRM_REQUIRED면 맞아요·틀렸어요까지 들고 있다가 `photo`(Image)를 `read-photo`로 옮기기(`Add`가 옮김). 값은 `FormatKm`·`FormatTime`. 확인 요청 실패 문구는 `read-error`(E-04 `confirm-error`와 같은 문구). 마감이 지나면 `Tick`이 E-10으로(이 단계도 `Tick` 조건에 넣기)
-  - BL-17 줄: 상준 공개 노션은 Claude 노션 연결(민재 워크스페이스)로 못 고침 → 민재가 직접 넣음. 넣을 문구는 인수인계 "다음" 0-1
+  - 11/17 밤 #67 머지(develop 2ae799a). BL-17 "⑤ 읽은 값 확인" 줄은 민재가 상준 공개 노션에 직접 넣음 → **민재 몫 끝**, 남은 것은 지환 서버·흐름
