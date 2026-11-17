@@ -52,6 +52,7 @@
 | 교수님·멘토 문서, HWP | `docs/meeting/`, `docs/hwp/` |
 | 유사 서비스·관련 연구 | `docs/research/` (Zwift 자료는 참고용, 보고서에 "Zwift 분석" 표현 금지. 관련 연구 정리 `treadmill_sensing_papers.md`) |
 | 지난 기록 | `docs/log/` (정리 전 인수인계 전체본, 회고, 팀 논의 `team_discussions.md`) |
+| Claude로 Figma·Unity 에디터·노션·HTML 다루기 | `docs/claude_howto.md` (Figma 파일 주소, 에디터 버튼 누르기·캡처, 노션 API 명세 올리기 등) |
 
 ## 코드 위치
 - Unity 프로젝트 `unity/TestRun` (Unity 6.6 6000.6.7f1, URP, Android). 우리 코드는 `Assets/Scrun/`, 센서 플러그인 `Assets/Plugins/Android/`

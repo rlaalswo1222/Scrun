@@ -17,6 +17,7 @@ namespace Scrun.App
         public static ISpeedSensor Speed => FakeSpeedSensor.Instance;
         public static ICamera Camera => FakeCamera.Instance;
         public static IDeviceStatus Device => FakeNative.Instance;
+        public static IShare Share => FakeShare.Instance;
 #elif UNITY_IOS
         // 아이폰: Swift 브리지(IosChannel → Assets/Plugins/iOS/ScrunBridge.swift, ADR-0009)
         public static IPermissions Permissions => IosChannel.Instance;
@@ -25,6 +26,7 @@ namespace Scrun.App
         public static IKakaoLogin Kakao => IosChannel.Instance;
         public static ICamera Camera => IosChannel.Instance; // E-03 화면은 Swift(ScrunCamera.swift, ADR-0011)
         public static IDeviceStatus Device => IosChannel.Instance; // 발열은 Swift, 배터리는 Unity(계획 0039)
+        public static IShare Share => IosChannel.Instance; // 공유 시트는 Swift, 복사는 Unity 클립보드(계획 0044)
         // Swift 속도 플러그인(ScrunSpeed.swift, 계획 0024). 계산은 Swift, C#은 프레임마다 숫자 칸을 읽음
         public static ISpeedSensor Speed => speed ??= new IosSpeedSensor(new IosSpeedNative());
         static IosSpeedSensor speed;
@@ -39,6 +41,7 @@ namespace Scrun.App
         public static ISpeedSensor Speed => throw NotReady();
         public static ICamera Camera => throw NotReady();
         public static IDeviceStatus Device => throw NotReady();
+        public static IShare Share => throw NotReady();
 
         static Exception NotReady() => new PlatformNotSupportedException(
             "이 플랫폼에는 Native 구현이 없습니다(아이폰만, ADR-0007). 가짜로 보려면 SCRUN_FAKE_NATIVE를 켜세요.");

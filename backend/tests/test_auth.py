@@ -1,4 +1,5 @@
 """로그인 API 5개 + 닉네임 확인 진짜 흐름(테스트 DB + 가짜 카카오). 실행 전 `docker compose up -d`."""
+import re
 import threading
 
 from sqlalchemy import func, select, text
@@ -55,7 +56,7 @@ def test_first_login_signup_then_login_again(db_client, test_db):
 
     with test_db.Session() as db:
         user = db.scalar(select(User))
-        assert user.nickname == "새벽러너" and user.friend_code.startswith("SCR-")
+        assert user.nickname == "새벽러너" and re.fullmatch(r"[2-9A-HJ-NP-Z]{8}", user.friend_code)
         assert db.scalar(select(AuthIdentity.provider_user_id)) == "1"
         assert db.scalar(select(func.count()).select_from(UserAgreement)) == 3  # 이용약관·개인정보·만 14세
         assert db.get(UserProgress, user.id).level == 1
@@ -231,7 +232,7 @@ def test_concurrent_same_nickname_one_wins(db_client, monkeypatch):
 
 def test_concurrent_friend_code_collision_retries(db_client, test_db, monkeypatch, caplog):
     t1, t2 = signup_token(db_client, "k_1"), signup_token(db_client, "k_2")
-    _sync_friend_code(monkeypatch, 2, code="SCR-AAAA")
+    _sync_friend_code(monkeypatch, 2, code="AAAAAAAA")
     caplog.set_level("WARNING", logger="scrun.auth")
     rs = run_together([
         lambda c: c.post("/v1/auth/signup", headers=bearer(t1), json={**SIGNUP_BODY, "nickname": "첫째"}),
@@ -240,7 +241,7 @@ def test_concurrent_friend_code_collision_retries(db_client, test_db, monkeypatc
     assert [r.status_code for r in rs] == [201, 201], [r.text for r in rs]
     with test_db.Session() as db:
         codes = db.scalars(select(User.friend_code)).all()
-        assert len(set(codes)) == 2 and "SCR-AAAA" in codes
+        assert len(set(codes)) == 2 and "AAAAAAAA" in codes
     # 진 쪽이 충돌 → 다시 시도 경로를 탔는지(마이그레이션 뒤에도 로그가 살아 있는지도 같이 확인)
     assert any("가입 중 충돌" in r.getMessage() for r in caplog.records)
 

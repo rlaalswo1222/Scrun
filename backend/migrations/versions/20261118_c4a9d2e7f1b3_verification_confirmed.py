@@ -4,7 +4,7 @@
 null은 아직 안 답했거나 확인 없는 시도(못 읽음·건너뛰기·이 칸 전 기록). 틀렸어요는 실제 오독률을 보는 데 쓴다.
 
 Revision ID: c4a9d2e7f1b3
-Revises: b8e1f0c3d5a7
+Revises: e3a7c1f95b28
 Create Date: 2026-11-18 10:00:00
 
 """
@@ -16,7 +16,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'c4a9d2e7f1b3'
-down_revision: Union[str, Sequence[str], None] = 'b8e1f0c3d5a7'
+down_revision: Union[str, Sequence[str], None] = 'e3a7c1f95b28'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

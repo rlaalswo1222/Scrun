@@ -186,6 +186,8 @@ class Run(_Created, Base):
         UniqueConstraint("user_id", "client_run_id"),
         # 인원 세기(core/occupancy): 코스별 달리는 중·최근 갱신
         Index("ix_runs_course_id_status_updated_at", "course_id", "status", "updated_at"),
+        # 친구 피드·프로필(계획 0044): 친구들의 끝난 기록을 끝난 시각 최신순으로(정렬 없이 거꾸로 읽음)
+        Index("ix_runs_user_id_ended_at_id", "user_id", "ended_at", "id"),
     )
 
 

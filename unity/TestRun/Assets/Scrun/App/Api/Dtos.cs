@@ -64,6 +64,14 @@ namespace Scrun.App
         public DateTime? CreatedAt { get; set; }
     }
 
+    // GET /v1/users/me. 화면에 쓰는 것만(키·몸무게 등은 필요할 때 더함)
+    public sealed class Me
+    {
+        public string UserId { get; set; }
+        public string Nickname { get; set; }
+        public string FriendCode { get; set; } // 친구 코드 8글자(G-05, 계획 0044)
+    }
+
     public sealed class NicknameCheck
     {
         public string Nickname { get; set; } // 서버가 정규화한 닉네임(가입 때 이대로 저장됨) → 화면에 이 값을 보여 줌
@@ -193,6 +201,64 @@ namespace Scrun.App
         public DateTime? RetakeDeadline { get; set; } // 다시 찍기·값 확인일 때 마감(UTC, 값 확인은 유예 포함)
         public int? RetakesLeft { get; set; }
         public string AttemptId { get; set; } // CONFIRM_REQUIRED일 때 확인할 시도(confirm에 그대로, 계획 0045)
+    }
+
+    // ---- 친구(계획 0044, BL-27·28) ----
+
+    // 친구 한 명(GET /v1/friends 목록, POST /v1/friends 응답)
+    public class Friend
+    {
+        public string UserId { get; set; }
+        public string Nickname { get; set; }
+        public int? Level { get; set; }            // 레벨 계산(BL-32) 전까지 null
+        public int VerifiedCount { get; set; }     // 인증 마크 수
+        public bool RunningNow { get; set; }
+        public int? RunningDistanceM { get; set; } // 달리는 중이면 이번 러닝 거리
+        public DateTime? LastRunAt { get; set; }   // 마지막 공유 러닝 종료 시각(UTC)
+    }
+
+    // 친구의 끝난 러닝 한 줄(피드·프로필). verification: PENDING(마크 없음)·VERIFIED·UNVERIFIED("미인증")
+    public class FriendRun
+    {
+        public string RunId { get; set; }
+        public DateTime StartedAt { get; set; }
+        public DateTime EndedAt { get; set; }
+        public string CourseId { get; set; }
+        public string CourseName { get; set; }
+        public int DistanceM { get; set; }
+        public int DurationS { get; set; }
+        public int? AvgPaceSPerKm { get; set; }
+        public string Verification { get; set; }
+    }
+
+    public sealed class FeedItem : FriendRun
+    {
+        public string FeedId { get; set; }
+        public string UserId { get; set; }
+        public string Nickname { get; set; }
+    }
+
+    public sealed class FeedPage
+    {
+        public List<FeedItem> Items { get; set; } = new List<FeedItem>();
+        public string NextCursor { get; set; } // 없으면 null
+    }
+
+    public sealed class FriendProfile : Friend
+    {
+        public int OutfitStage { get; set; }
+        public List<FriendRun> RecentRuns { get; set; } = new List<FriendRun>();
+    }
+
+    // 지금 달리는 친구(GET /v1/friends/running)
+    public sealed class RunningFriend
+    {
+        public string UserId { get; set; }
+        public string Nickname { get; set; }
+        public string CourseId { get; set; }
+        public string CourseName { get; set; }
+        public int DistanceM { get; set; }       // 이번 러닝 거리
+        public int? PaceSPerKm { get; set; }     // 지금 페이스(1 km/h 아래면 null)
     }
 
     // 대조 표 한 줄: item = distance·duration, diffRatio = (계기판 − 센서) / 계기판

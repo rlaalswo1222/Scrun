@@ -69,13 +69,15 @@ async def run(entry: dict, kmh: float, seconds: float) -> None:
                     print(f"왕복 {rtts[-1]:.0f}ms (중앙값 {statistics.median(rtts):.0f}ms, {len(rtts)}번)")
 
         receiver = asyncio.create_task(receive())
+        d0 = d  # 이번 달리기 거리(run, 러너 카드·친구 탭 "3.2km 달리는 중")는 출발점부터
         try:
             while seconds <= 0 or time.monotonic() - start < seconds:
                 now = time.monotonic()
                 d += kmh / 3.6 * (now - last)
                 last = now
                 pos = d % lap if lap else d
-                await ws.send(json.dumps({"type": "state", "d": round(pos, 2), "v": kmh, "running": True}))
+                await ws.send(json.dumps({"type": "state", "d": round(pos, 2), "v": kmh, "running": True,
+                                          "run": round(d - d0, 1)}))
                 if now >= next_ping:
                     next_ping = now + 5
                     await ws.send(json.dumps({"type": "ping", "t": now * 1000}))

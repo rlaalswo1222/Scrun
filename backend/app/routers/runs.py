@@ -8,8 +8,6 @@
 끝나지 않은 러닝은 마지막 갱신(시작·시계열 올리기)부터 24시간 안이면 복구할 수 있다(BL-37 ③). 그 뒤엔 시계열·종료도 받지 않는다.
 복구 화면에 보이는 건 가장 최근에 시작한 러닝이 끝나지 않았을 때 그것 하나(옛 러닝은 남기되 다시 묻지 않음).
 """
-import base64
-import binascii
 import math
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -21,6 +19,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from .. import stub_data as d
+from ..core import cursor as cursors
 from ..core.config import settings
 from ..core.errors import invalid as _invalid
 from ..core.run_access import ACTIVE, DISCARDED, PENDING, UNVERIFIED, VERIFIED, close_expired
@@ -216,23 +215,6 @@ def active_run(request: Request, user: User = Depends(current_user), db: Session
                         "recoverableUntil": run.updated_at + RECOVERABLE})
 
 
-def _encode_cursor(run: Run) -> str:
-    raw = f"{run.started_at.isoformat()}|{run.id}".encode()
-    return base64.urlsafe_b64encode(raw).decode().rstrip("=")
-
-
-def _decode_cursor(cursor: str) -> tuple[datetime, str]:
-    try:
-        raw = base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)).decode()
-        at, run_id = raw.split("|", 1)
-        started = datetime.fromisoformat(at)
-    except (binascii.Error, UnicodeDecodeError, ValueError):
-        raise _invalid("cursor", "잘못된 커서입니다")
-    if started.tzinfo is None or not run_id:
-        raise _invalid("cursor", "잘못된 커서입니다")
-    return started, run_id
-
-
 def _month_range(month: str, tz_name: str) -> tuple[datetime, datetime]:
     """YYYY-MM을 내 시간대의 그 달 [처음, 다음 달 처음)으로."""
     year, mon = int(month[:4]), int(month[5:])
@@ -283,13 +265,13 @@ def list_runs(
         start, end = _month_range(month, user.timezone)
         q = q.where(Run.started_at >= start, Run.started_at < end)
     if cursor is not None:
-        at, run_id = _decode_cursor(cursor)
+        at, run_id = cursors.decode(cursor)
         q = q.where(tuple_(Run.started_at, Run.id) < tuple_(at, run_id))
     rows = db.execute(q.order_by(Run.started_at.desc(), Run.id.desc()).limit(PAGE_SIZE + 1)).all()
     page = rows[:PAGE_SIZE]
     items = [_summary(run, name, run.official_distance_m or 0, run.official_duration_s or 0, run.status)
              for run, name in page]
-    next_cursor = _encode_cursor(page[-1][0]) if len(rows) > PAGE_SIZE else None
+    next_cursor = cursors.encode(page[-1][0].started_at, page[-1][0].id) if len(rows) > PAGE_SIZE else None
     return ok(request, {"items": items, "nextCursor": next_cursor})
 
 
