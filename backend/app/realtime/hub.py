@@ -26,6 +26,7 @@ from ..core.config import BotPolicy, settings
 
 GRACE_S = 30.0       # 끊긴 러너를 남겨 두는 시간(헬스장 와이파이 끊김 대비, 계획 0029)
 MAX_KMH = 30.0       # 받아들이는 속도 상한(그 위는 잘라냄)
+MAX_RUN_M = 300_000.0  # 이번 달리기 거리 상한(그 위는 잘라냄)
 OUTBOX_MAX = 256     # 못 보낸 이벤트가 이만큼 쌓이면 오래된 것부터 버림(느린 연결이 메모리를 잡지 않게)
 
 # 봇을 놓는 자리: 기준 사람에서 BOT_NEAR_M 앞 + (가운데 페이스 − 봇 페이스) × BOT_SPREAD_M_PER_KMH.
@@ -87,16 +88,19 @@ class Runner:
     d: float = 0.0          # 코스 시작점부터 m, [0, 코스 길이)
     v: float = 0.0          # km/h
     running: bool = False
+    run: Optional[float] = None  # 이번 달리기 거리(m, 러너 카드 D-12, 계획 0041). 달리기 전·옛 앱은 없음
     placed: bool = False    # 첫 state를 받음(그 전엔 다른 사람에게 안 보임)
     conn: Optional[Conn] = None
     disconnected_at: Optional[float] = None  # hub clock 기준
 
     def public(self) -> dict:
-        return {"userId": self.user_id, "nickname": self.nickname, "d": round(self.d, 2), "v": round(self.v, 2),
-                "running": self.running}
+        return {"userId": self.user_id, "nickname": self.nickname, **self.motion()}
 
     def motion(self) -> dict:
-        return {"userId": self.user_id, "d": round(self.d, 2), "v": round(self.v, 2), "running": self.running}
+        m = {"userId": self.user_id, "d": round(self.d, 2), "v": round(self.v, 2), "running": self.running}
+        if self.run is not None:
+            m["run"] = round(self.run, 1)
+        return m
 
 
 @dataclass(eq=False)
@@ -201,8 +205,9 @@ class Hub:
                 self._sweep_locked()
             return False
 
-    def update(self, conn: Conn, d: float, v: float, running: bool) -> bool:
-        """내 상태. 숫자가 아니거나(NaN 등) 이 연결이 이미 바뀌었으면 False. 첫 상태면 다른 사람에게 joined."""
+    def update(self, conn: Conn, d: float, v: float, running: bool, run=None) -> bool:
+        """내 상태. 숫자가 아니거나(NaN 등) 이 연결이 이미 바뀌었으면 False. 첫 상태면 다른 사람에게 joined.
+        run(이번 달리기 거리 m)은 선택: 숫자가 아니면 모르는 것으로(옛 앱·달리기 전)."""
         if not (_finite(d) and _finite(v)):
             return False
         with self._lock:
@@ -214,6 +219,7 @@ class Hub:
             runner.d = lap_position(d, room.length_m)
             runner.v = min(max(v, 0.0), MAX_KMH)
             runner.running = bool(running)
+            runner.run = min(max(float(run), 0.0), MAX_RUN_M) if _finite(run) else None
             if not runner.placed:
                 runner.placed = True
                 self._broadcast_locked(room, {"type": "joined", "runner": runner.public()}, except_user=runner.user_id)
@@ -325,7 +331,12 @@ class Hub:
 
 
 def _finite(x) -> bool:
-    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+    if not isinstance(x, (int, float)) or isinstance(x, bool):
+        return False
+    try:
+        return math.isfinite(x)
+    except OverflowError:  # 아주 큰 정수(JSON엔 자릿수 제한이 없음): float로 못 바꿈 → 숫자 아님으로
+        return False
 
 
 hub = Hub(bots=settings.bots)
