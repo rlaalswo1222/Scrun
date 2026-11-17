@@ -21,6 +21,7 @@ namespace Scrun.App
         public bool IsBot { get; } // 서버가 돌리는 페이스 봇(계획 0040, BL-23 ④ '봇' 표시)
         public float SpeedKmh { get; private set; }
         public bool Running { get; private set; }
+        public float? RunDistanceM { get; internal set; } // 그 사람의 이번 달리기 거리(m). 봇·달리기 전·옛 앱은 null
 
         // 이름표·간격 카드에 쓰는 이름. 봇 배지 모양은 상준(Figma D-10 "BOT 페이스메이커" 칩), 지금은 글자 앞에 붙임
         public string DisplayName { get; } // HUD가 매번 읽으므로 만들 때 한 번

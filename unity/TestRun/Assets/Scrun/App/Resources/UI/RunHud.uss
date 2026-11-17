@@ -15,11 +15,132 @@
     background-color: var(--color-glass-dark);
 }
 
-/* 윗줄(코스 이름) 아래 */
+/* 오른쪽 아래(Figma D-10 배치, 계획 0041) */
 .hud-stats {
+    right: var(--space-6);
+    bottom: var(--space-4);
+    min-width: 168px;
+}
+
+/* 왼쪽 위 루프 미니맵: 윗줄(코스 이름) 아래 */
+.hud-map-card {
     left: var(--space-6);
     top: 40px;
-    min-width: 168px;
+    width: 160px;
+    padding: var(--space-2);
+    align-items: center;
+}
+
+.hud-map {
+    width: 144px;
+    height: 72px;
+}
+
+.course .hud-map-progress {
+    font-size: var(--font-size-caption);
+    color: var(--color-surface);
+    margin-top: 2px;
+    padding: 0;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+/* 이름표 층 */
+.hud-tags {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.course .hud-tag {
+    position: absolute;
+    translate: -50% -100%;
+    font-size: var(--font-size-caption);
+    color: var(--color-surface);
+    padding: 3px 8px;
+    border-radius: 10px;
+    background-color: rgba(0, 0, 0, 0.55);
+    border-bottom-width: 2px;
+    border-bottom-color: var(--color-lime);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.course .hud-tag--bot {
+    border-bottom-color: rgba(255, 255, 255, 0.5);
+}
+
+/* 러너 정보 카드(D-12) */
+.hud-runner-card {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    width: 240px;
+    padding: var(--space-4);
+    border-radius: 16px;
+    background-color: var(--color-surface);
+}
+
+.hud-card-head {
+    flex-direction: row;
+    align-items: center;
+}
+
+.course .hud-card-name {
+    font-size: var(--font-size-body);
+    color: var(--color-text);
+    padding: 0;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.course .hud-card-badge {
+    margin-left: var(--space-2);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: var(--font-size-caption);
+    color: #FFFFFF;
+    background-color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.course .hud-card-sub {
+    margin-top: 4px;
+    font-size: var(--font-size-caption);
+    color: var(--color-body);
+    white-space: normal;
+    padding: 0;
+}
+
+.hud-card-row {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: var(--space-3);
+}
+
+.course .hud-card-key {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-body);
+    padding: 0;
+}
+
+.course .hud-card-value {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-text);
+    padding: 0;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.hud-card-close {
+    height: 40px;
+    margin: var(--space-4) 0 0 0;
+    background-color: var(--color-primary-soft);
+    color: #2459BC;
+}
+
+.hud-card-close:hover,
+.hud-card-close:active {
+    background-color: var(--color-primary-soft);
 }
 
 .hud-row {
@@ -135,9 +256,16 @@
     color: var(--color-warn);
 }
 
+/* D-16 끊긴 동안 다른 러너 정보(간격 카드)를 흐리게 */
+.course .hud-dimmed {
+    opacity: 0.4;
+}
+
 .course .hud-dev {
     position: absolute;
-    right: var(--space-6);
+    left: 0;
+    right: 0;
+    -unity-text-align: middle-center;
     bottom: var(--space-2);
     font-size: var(--font-size-caption);
     color: rgba(255, 255, 255, 0.75);

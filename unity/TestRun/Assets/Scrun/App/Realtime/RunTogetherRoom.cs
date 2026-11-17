@@ -140,6 +140,8 @@ namespace Scrun.App
             float? d = (float?)r["d"], v = (float?)r["v"];
             if (d == null || v == null) return;
             runner.Sample(d.Value, v.Value, (bool?)r["running"] ?? false, now);
+            var run = r["run"]; // 이번 달리기 거리(러너 카드 D-12). 숫자가 아니면 모름
+            runner.RunDistanceM = run != null && (run.Type == JTokenType.Float || run.Type == JTokenType.Integer) ? (float?)run : null;
         }
     }
 

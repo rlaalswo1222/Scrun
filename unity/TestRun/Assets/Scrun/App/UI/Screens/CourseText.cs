@@ -38,6 +38,10 @@ namespace Scrun.App
         public static string Empty(bool liveOnly) =>
             liveOnly ? "지금 달리는 사람이 있는 코스가 없어요" : "지금 달릴 수 있는 코스가 없어요";
 
+        // I-07 네트워크 없음(BL-26 ③, 계획 0041): 혼자 달리는 맵이 없어 네트워크 없이는 입장 못 함. Figma 문구 그대로
+        public const string NoNetworkTitle = "인터넷에 연결되어 있지 않아요";
+        public const string NoNetworkBody = "공동 맵에 입장하려면 네트워크 연결이 필요해요.";
+
         // 입장·상세 실패 중 화면이 직접 안내하는 것(제목, 본문). 나머지(네트워크 등)는 null → 공통 안내(Feedback)
         public static (string title, string body)? Failure(string code)
         {
