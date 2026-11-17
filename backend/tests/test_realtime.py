@@ -1,5 +1,6 @@
 """실시간 같이 뛰기(계획 0029): 방 로직(Hub)과 WebSocket 진짜 흐름(테스트 DB)."""
 import math
+import random
 from datetime import timedelta
 
 import pytest
@@ -7,7 +8,8 @@ from starlette.websockets import WebSocketDisconnect
 
 from app.db.models import CourseEntry
 from app.realtime import router as rt
-from app.realtime.hub import Hub, hub
+from app.core.config import BotPolicy
+from app.realtime.hub import Hub, hub, lap_position, pace_name
 from tests.helpers import data, signup
 from tests.test_courses import calibrate, db, enter, user_id_of  # noqa: F401 (db 픽스처)
 
@@ -150,6 +152,122 @@ def test_running_positions_for_entry(h):
     h.leave(c)                                       # 끊김(곧 빠질 수 있음) → 뺌
     assert h.running_positions("crs_lake_loop") == [100.0]
     assert h.running_positions("crs_lake_loop", except_user="a") == []
+
+
+# ---------- 페이스 봇(계획 0040) ----------
+PACES = (9.0, 7.5, 10.5, 6.0, 12.0)
+
+
+@pytest.fixture
+def hb():
+    clock = FakeClock()
+    hub_ = Hub(clock=clock, grace_s=30, bots=BotPolicy(fill_to=6, paces_kmh=PACES), rng=random.Random(1))
+    hub_.clock = clock
+    return hub_
+
+
+def bots_of(msgs):
+    return [m["runner"] for m in msgs if m["type"] == "joined" and m["runner"].get("bot")]
+
+
+def test_bots_appear_when_someone_starts_running(hb):
+    a, wa = join(hb, "a")
+    assert wa["runners"] == [] and hb.states(a)["runners"] == [], "섬에 나타나기 전엔 봇도 없음(놓을 기준이 없음)"
+    hb.update(a, 1000.0, 0.0, False)
+    assert hb.drain(a) == [], "러닝 설정·카운트다운 중(서 있음)엔 아직 없음: 그 사이 봇이 멀리 가 버리지 않게"
+    hb.clock.t += 90
+    hb.update(a, 1000.0, 9.0, True)
+    bots = bots_of(hb.drain(a))
+    assert [b["userId"] for b in bots] == ["bot_1", "bot_2", "bot_3", "bot_4", "bot_5"]
+    assert [b["nickname"] for b in bots] == ["페이스 6:40", "페이스 8:00", "페이스 5:43", "페이스 10:00", "페이스 5:00"]
+    # 느린 봇은 앞, 빠른 봇은 뒤(가운데 9 km/h는 25m 앞)
+    assert [b["d"] for b in bots] == [1025.0, 1085.0, 965.0, 1145.0, 905.0]
+    assert all(b["running"] is True and b["bot"] is True for b in bots)
+    assert len(hb.states(a)["runners"]) == 5
+
+
+def test_bots_are_in_the_same_place_for_everyone(hb):
+    a, _ = placed(hb, "a", 1000.0, 9.0, True)
+    b, wb = placed(hb, "b", 3000.0, 9.0, True)
+    assert [r["userId"] for r in wb["runners"] if r.get("bot")] == ["bot_1", "bot_2", "bot_3", "bot_5"]
+    hb.clock.t += 10
+    bots_a = [r for r in hb.states(a)["runners"] if r.get("bot")]
+    bots_b = [r for r in hb.states(b)["runners"] if r.get("bot")]
+    assert bots_a == bots_b
+    assert bots_a[0]["d"] == round(1025.0 + 9.0 / 3.6 * 10, 2) and bots_a[0]["v"] == 9.0
+
+
+def test_bot_position_wraps_around_the_lap(hb):
+    a, _ = placed(hb, "a", LAKE_M - 10.0, 9.0, True)
+    first = [r for r in hb.states(a)["runners"] if r["userId"] == "bot_1"][0]
+    assert first["d"] == 15.0  # 6661 + 25 → 바퀴를 넘어 15m
+    hb.clock.t += 3600 * 2  # 2시간 = 18 km
+    first = [r for r in hb.states(a)["runners"] if r["userId"] == "bot_1"][0]
+    assert 0.0 <= first["d"] < LAKE_M
+
+
+def test_a_bot_makes_room_for_a_person_and_comes_back(hb):
+    a, _ = placed(hb, "a", 1000.0, 9.0, True)
+    hb.drain(a)
+    b, wb = join(hb, "b")  # 섬을 불러오는 중이어도 자리는 차지
+    assert hb.drain(a) == [{"type": "left", "userId": "bot_4"}], "사람에게서 가장 먼 봇(1145m)부터 빠짐"
+    assert hb.drain(b) == [] and [r["userId"] for r in wb["runners"]] == ["a", "bot_1", "bot_2", "bot_3", "bot_5"]
+    hb.leave(b, intentional=True)
+    back = hb.drain(a)
+    assert [m["type"] for m in back] == ["joined"] and back[0]["runner"]["userId"] == "bot_4"
+
+
+def test_the_bot_beside_you_stays(hb):
+    a, _ = placed(hb, "a", 1000.0, 9.0, True)
+    hb.update(a, 905.0, 12.0, True)  # bot_5(12 km/h) 옆에서 같이 뜀
+    hb.drain(a)
+    join(hb, "b")
+    assert hb.drain(a) == [{"type": "left", "userId": "bot_4"}], "옆의 bot_5가 아니라 가장 먼 bot_4가 빠짐"
+
+
+def test_a_disconnected_runner_is_not_an_anchor(hb):
+    a, _ = placed(hb, "a", 1000.0, 9.0, True)
+    c, _ = placed(hb, "c", 4000.0, 9.0, True)
+    hb.leave(c)                      # 끊김: 30초 동안 4000m에 멈춰 남음
+    b, _ = join(hb, "b")
+    hb.drain(a)
+    hb.leave(b, intentional=True)    # 봇 하나가 다시 들어옴 → 붙어 있는 a 근처에
+    back = bots_of(hb.drain(a))
+    assert len(back) == 1 and abs(back[0]["d"] - 1000.0) < 200.0, back
+
+
+def test_lap_position_stays_below_the_lap():
+    assert lap_position(6670.996, 6671.0) == 0.0 and lap_position(6671.0 + 5.0, 6671.0) == 5.0
+    assert lap_position(-1.0, 6671.0) == 6670.0 and lap_position(5.0, 0.0) == 0.0
+
+
+def test_six_people_means_no_bots(hb):
+    conns = [placed(hb, f"u{i}", i * 100.0, 9.0, True)[0] for i in range(6)]
+    assert [r for r in hb.states(conns[0])["runners"] if r.get("bot")] == []
+    hb.leave(conns[5], intentional=True)
+    assert [r["userId"] for r in hb.states(conns[0])["runners"] if r.get("bot")] == ["bot_1"]
+
+
+def test_bots_are_not_people(hb):
+    a, _ = placed(hb, "a", 100.0, 9.0, True)
+    assert hb.present_user_ids() == {"a"}, "인원(지금 N명)엔 사람만"
+    assert hb.running_positions("crs_lake_loop", except_user="a") == [], "입장 위치는 사람만 기준"
+
+
+def test_bots_go_with_the_room(hb):
+    a, _ = placed(hb, "a", 100.0, 9.0, True)
+    hb.leave(a, intentional=True)
+    a2, w = join(hb, "a")
+    assert w["runners"] == [] and hb.states(a2)["runners"] == []
+
+
+def test_no_bots_when_fill_is_zero(h):
+    a, w = placed(h, "a", 100.0, 9.0, True)
+    assert h.drain(a) == [] and h.states(a)["runners"] == []
+
+
+def test_pace_name():
+    assert pace_name(9.0) == "페이스 6:40" and pace_name(12.0) == "페이스 5:00" and pace_name(10.5) == "페이스 5:43"
 
 
 # ---------- WebSocket ----------
@@ -338,3 +456,17 @@ def test_entry_lands_behind_a_running_runner(db_client, runner):
             _, eb = runner(f"k_{2 + i}")
             behind = (10.0 - eb["entryPositionM"]) % LAKE_M
             assert 20.0 <= behind <= 40.0, eb["entryPositionM"]
+
+
+def test_bots_over_websocket(db_client, runner, monkeypatch):
+    monkeypatch.setattr(hub, "_bots", BotPolicy(fill_to=2, paces_kmh=(9.0,)))
+    _, ea = runner("k_1")
+    with connect(db_client, ea) as wa:
+        assert recv(wa, "welcome")["runners"] == []
+        state(wa, 100.0)
+        state(wa, 100.0, 9.0, True)  # 달리기 시작 → 봇
+        bot = recv(wa, "joined")["runner"]
+        assert bot["bot"] is True and bot["nickname"] == "페이스 6:40" and bot["userId"] == "bot_1"
+        s = recv(wa, "states")
+        assert [r["userId"] for r in s["runners"]] == ["bot_1"] and s["runners"][0]["bot"] is True
+        assert data(db_client.get("/v1/courses/crs_lake_loop", headers=signup(db_client, "k_9")))["runnersNow"] == 1

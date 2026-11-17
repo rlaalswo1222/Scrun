@@ -132,6 +132,25 @@ namespace Scrun.App.Tests
         }
 
         [Test]
+        public void BotFlagIsReadAndShownOnTheName()
+        {
+            var clock = new Clock();
+            var room = new RunTogetherRoom(clock.Now);
+            const string bot = "{\"userId\":\"bot_1\",\"nickname\":\"페이스 6:40\",\"d\":5,\"v\":9,\"running\":true,\"bot\":true}";
+            Assert.IsTrue(room.Apply(Welcome(Runner("a", 10f) + "," + bot)));
+            Assert.IsFalse(room.Runners[0].IsBot, "bot이 없으면 사람");
+            Assert.AreEqual("닉a", room.Runners[0].DisplayName);
+            Assert.IsTrue(room.Runners[1].IsBot);
+            Assert.AreEqual("BOT · 페이스 6:40", room.Runners[1].DisplayName);
+            Assert.AreEqual("페이스 6:40", room.Runners[1].Nickname);
+
+            // 모양이 다른 bot 값은 사람으로(예외로 메시지를 버리지 않음)
+            Assert.IsTrue(room.Apply("{\"type\":\"joined\",\"runner\":{\"userId\":\"x\",\"nickname\":\"닉x\",\"d\":1,\"v\":0,\"running\":true,\"bot\":{\"k\":1}}}"));
+            Assert.AreEqual(3, room.Runners.Count);
+            Assert.IsFalse(room.Runners[2].IsBot);
+        }
+
+        [Test]
         public void ReWelcomeAnnouncesOnlyTheDifference()
         {
             var room = new RunTogetherRoom(new Clock().Now);

@@ -109,8 +109,16 @@ namespace Scrun.App
         // I-03 측정값 이상 띠(계획 0039)
         public void SetUnsteady(bool on) => unsteady.SetVisible(on);
 
-        void OnJoined(RemoteRunner r) => toasts.Enqueue($"{r.Nickname}님이 들어왔어요");
-        void OnLeft(RemoteRunner r) => toasts.Enqueue($"{r.Nickname}님이 나갔어요");
+        // 봇은 사람이 들고 날 때 빈자리를 채우며 따라 들고 나므로(계획 0040) 알리지 않음
+        void OnJoined(RemoteRunner r)
+        {
+            if (!r.IsBot) toasts.Enqueue($"{r.Nickname}님이 들어왔어요");
+        }
+
+        void OnLeft(RemoteRunner r)
+        {
+            if (!r.IsBot) toasts.Enqueue($"{r.Nickname}님이 나갔어요");
+        }
 
         void Refresh()
         {
@@ -141,7 +149,7 @@ namespace Scrun.App
             if (together != null && lap > 0f)
             {
                 double now = RealtimeClock.Now();
-                foreach (var r in together.Runners) others.Add((r.Nickname, r.PositionAt(now)));
+                foreach (var r in together.Runners) others.Add((r.DisplayName, r.PositionAt(now)));
             }
             var (a, b) = LoopMath.Nearest(RunLink.PlayerLapPositionM, others, lap);
             gaps.SetVisible(a != null || b != null);

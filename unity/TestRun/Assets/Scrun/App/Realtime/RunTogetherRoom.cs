@@ -117,7 +117,9 @@ namespace Scrun.App
                 SampleFrom(known, r, now);
                 return false;
             }
-            added = new RemoteRunner(id, (string)r["nickname"], CourseLengthM);
+            // bot은 true/false만 봄(다른 모양이면 사람으로: 형변환 예외로 메시지 전체를 버리지 않게)
+            bool isBot = r["bot"]?.Type == JTokenType.Boolean && (bool)r["bot"];
+            added = new RemoteRunner(id, (string)r["nickname"], CourseLengthM, isBot);
             SampleFrom(added, r, now);
             byId[id] = added;
             runners.Add(added);

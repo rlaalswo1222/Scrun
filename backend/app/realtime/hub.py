@@ -7,21 +7,48 @@
 - 붙은 뒤 첫 state가 오기 전(섬을 불러오는 중)에는 다른 사람에게 안 보인다(placed). 첫 state 때 joined
 - 끊긴 러너는 GRACE_S 동안 방에 남는다(그 사이 다시 붙으면 joined·left 없이 이어짐). 지나면 sweep이 left를 알린다.
   앱이 leave를 보내고 나가면 바로 left
+- 페이스 봇(계획 0040, BL-23): 방마다 사람 + 봇 = BotPolicy.fill_to가 되게 채운다. 사람만 센다(고스트는 각자 폰에만 있어 방에 없음).
+  봇 위치는 출발 위치 + 페이스 × (지금 − 출발 시각)을 welcome·states를 만들 때 계산한다(배경 작업 없음, 모두에게 같은 자리).
+  사람 항목과 같은 모양에 bot: true. 봇은 누가 달리기 시작할 때(running이 처음 켜질 때) 그 사람 근처에 놓는다
+  (섬에 나타날 때 놓으면 러닝 설정·카운트다운 1–2분 동안 봇이 멀리 가 버려 같은 페이스 봇을 영영 못 만남, 11/17 에디터 Play)
 """
 from __future__ import annotations
 
 import math
+import random
 import threading
 import time
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
+from ..core.config import BotPolicy, settings
+
 GRACE_S = 30.0       # 끊긴 러너를 남겨 두는 시간(헬스장 와이파이 끊김 대비, 계획 0029)
 MAX_KMH = 30.0       # 받아들이는 속도 상한(그 위는 잘라냄)
 OUTBOX_MAX = 256     # 못 보낸 이벤트가 이만큼 쌓이면 오래된 것부터 버림(느린 연결이 메모리를 잡지 않게)
 
+# 봇을 놓는 자리: 기준 사람에서 BOT_NEAR_M 앞 + (가운데 페이스 − 봇 페이스) × BOT_SPREAD_M_PER_KMH.
+# 느린 봇은 앞, 빠른 봇은 뒤에 서서 혼자 뛰어도 따라잡거나 추월당한다(가설: 코스 6.7 km에 흩어 놓으면 거의 안 마주침)
+BOT_NEAR_M = 25.0
+BOT_SPREAD_M_PER_KMH = 40.0
+NO_BOTS = BotPolicy(fill_to=0)
+
 Clock = Callable[[], float]
+
+
+def lap_position(d: float, length_m: float) -> float:
+    """코스 위 위치 [0, 길이), 소수 2자리. 6670.996 → round하면 6671.0(= 길이)이 되므로 0으로 감는다."""
+    if length_m <= 0:
+        return 0.0
+    r = round(d % length_m, 2)
+    return 0.0 if r >= length_m else r
+
+
+def loop_gap(a: float, b: float, length_m: float) -> float:
+    """고리 코스 위 두 점 사이 가까운 쪽 거리."""
+    x = abs(a - b) % length_m if length_m > 0 else 0.0
+    return min(x, length_m - x)
 
 
 def server_time_ms() -> int:
@@ -73,17 +100,54 @@ class Runner:
 
 
 @dataclass(eq=False)
+class Bot:
+    """서버가 돌리는 페이스 봇. 늘 달리는 중이고 속도는 일정하다."""
+    user_id: str
+    nickname: str
+    kmh: float
+    d0: float  # 출발 위치(m)
+    t0: float  # 출발 시각(hub clock)
+
+    def d_at(self, now: float, length_m: float) -> float:
+        return lap_position(self.d0 + self.kmh / 3.6 * (now - self.t0), length_m)
+
+    def public(self, now: float, length_m: float) -> dict:
+        return {**self.motion(now, length_m), "nickname": self.nickname}
+
+    def motion(self, now: float, length_m: float) -> dict:
+        return {"userId": self.user_id, "d": self.d_at(now, length_m), "v": round(self.kmh, 2), "running": True,
+                "bot": True}
+
+
+def bot_id(index: int) -> str:
+    return f"bot_{index + 1}"  # 사람 ID(ULID: 숫자·대문자만)와 겹치지 않음
+
+
+def pace_name(kmh: float) -> str:
+    """1 km 페이스 이름: 9 km/h → "페이스 6:40"."""
+    sec = round(3600 / kmh)
+    return f"페이스 {sec // 60}:{sec % 60:02d}"
+
+
+@dataclass(eq=False)
 class Room:
     map_id: str
     course_id: str
     length_m: float
     runners: dict[str, Runner] = field(default_factory=dict)
+    bots: dict[int, Bot] = field(default_factory=dict)  # 페이스 목록 번호 → 봇
+
+    def bot_list(self) -> list[Bot]:
+        return [self.bots[i] for i in sorted(self.bots)]
 
 
 class Hub:
-    def __init__(self, clock: Clock = time.monotonic, grace_s: float = GRACE_S):
+    def __init__(self, clock: Clock = time.monotonic, grace_s: float = GRACE_S, bots: BotPolicy = NO_BOTS,
+                 rng: Optional[random.Random] = None):
         self._clock = clock
         self._grace_s = grace_s
+        self._bots = bots
+        self._rng = rng or random.Random()
         self._lock = threading.Lock()
         self._rooms: dict[str, Room] = {}
         self._where: dict[str, str] = {}  # 사용자 → 지금 있는 방(사람은 한 방에만)
@@ -111,9 +175,12 @@ class Hub:
             runner.conn = conn
             runner.disconnected_at = None
             self._where[user_id] = map_id
+            self._fill_bots_locked(room, except_user=user_id)  # 사람이 늘었으면 봇을 뺌(새로 붙은 사람은 welcome으로 받음)
+            now = self._clock()
             welcome = {"type": "welcome", "you": user_id, "mapInstanceId": map_id, "courseLengthM": room.length_m,
                        "serverTime": server_time_ms(),
-                       "runners": [r.public() for r in room.runners.values() if r.user_id != user_id and r.placed]}
+                       "runners": [r.public() for r in room.runners.values() if r.user_id != user_id and r.placed]
+                       + [b.public(now, room.length_m) for b in room.bot_list()]}
         return conn, welcome
 
     def leave(self, conn: Conn, intentional: bool = False) -> bool:
@@ -143,12 +210,15 @@ class Hub:
             runner = room.runners.get(conn.user_id) if room else None
             if runner is None or runner.conn is not conn:
                 return False
-            runner.d = d % room.length_m if room.length_m > 0 else 0.0
+            started = bool(running) and not runner.running
+            runner.d = lap_position(d, room.length_m)
             runner.v = min(max(v, 0.0), MAX_KMH)
             runner.running = bool(running)
             if not runner.placed:
                 runner.placed = True
                 self._broadcast_locked(room, {"type": "joined", "runner": runner.public()}, except_user=runner.user_id)
+            if started:
+                self._fill_bots_locked(room)  # 달리는 사람이 생김 → 모자란 봇을 그 근처에
         return True
 
     def states(self, conn: Conn) -> Optional[dict]:
@@ -158,8 +228,10 @@ class Hub:
             room = self._rooms.get(conn.map_id)
             if room is None or conn.user_id not in room.runners:
                 return None
+            now = self._clock()
             return {"type": "states", "serverTime": server_time_ms(),
-                    "runners": [r.motion() for r in room.runners.values() if r.user_id != conn.user_id and r.placed]}
+                    "runners": [r.motion() for r in room.runners.values() if r.user_id != conn.user_id and r.placed]
+                    + [b.motion(now, room.length_m) for b in room.bot_list()]}
 
     def drain(self, conn: Conn) -> list[dict]:
         out = []
@@ -211,7 +283,40 @@ class Hub:
         if runner.placed:
             self._broadcast_locked(room, {"type": "left", "userId": user_id})
         if not room.runners:
-            del self._rooms[map_id]
+            del self._rooms[map_id]  # 봇도 같이 사라짐(알릴 사람이 없음)
+        else:
+            self._fill_bots_locked(room)  # 사람이 줄었으면 봇을 넣음
+
+    def _fill_bots_locked(self, room: Room, except_user: Optional[str] = None) -> None:
+        """사람 + 봇 = fill_to로 맞춘다.
+        빼는 건 바로: 섬에 있고 붙어 있는 사람 모두에게서 가장 먼 봇부터(누가 옆에서 같이 뛰는 봇은 남김).
+        넣는 건 달리는 중이고 붙어 있는 사람이 있을 때만(그 사람 근처에 놓으려고), 비어 있는 페이스 중 목록 앞쪽부터.
+        없으면 누가 달리기 시작할 때(update) 넣는다."""
+        paces = self._bots.paces_kmh
+        want = min(len(paces), max(0, self._bots.fill_to - len(room.runners)))
+        # 빼기 기준: 섬에 있고 붙어 있는 사람(끊긴 사람은 30초 동안 마지막 자리에 멈춰 있어 뺌, running_positions와 같은 이유)
+        present = [r for r in room.runners.values() if r.placed and r.conn is not None]
+        # 놓기 기준: 그중 달리는 사람(서 있는 사람 근처에 놓으면 그 사이 봇이 멀리 감)
+        anchors = [r for r in present if r.running]
+        now = self._clock()
+        while len(room.bots) > want:
+            def far(i: int) -> tuple[float, int]:
+                d = room.bots[i].d_at(now, room.length_m)
+                return (min((loop_gap(d, a.d, room.length_m) for a in present), default=0.0), i)
+            gone = room.bots.pop(max(room.bots, key=far))
+            self._broadcast_locked(room, {"type": "left", "userId": gone.user_id}, except_user=except_user)
+        if len(room.bots) >= want or not anchors:
+            return
+        mid = sorted(paces)[len(paces) // 2]  # 이보다 느린 봇은 앞, 빠른 봇은 뒤
+        for i in [i for i in range(len(paces)) if i not in room.bots][:want - len(room.bots)]:
+            kmh = paces[i]
+            anchor = self._rng.choice(anchors)
+            bot = Bot(user_id=bot_id(i), nickname=pace_name(kmh), kmh=kmh,
+                      d0=lap_position(anchor.d + BOT_NEAR_M + (mid - kmh) * BOT_SPREAD_M_PER_KMH, room.length_m),
+                      t0=now)
+            room.bots[i] = bot
+            self._broadcast_locked(room, {"type": "joined", "runner": bot.public(now, room.length_m)},
+                                   except_user=except_user)
 
     def _broadcast_locked(self, room: Room, msg: dict, except_user: Optional[str] = None) -> None:
         for r in room.runners.values():
@@ -223,4 +328,4 @@ def _finite(x) -> bool:
     return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
 
 
-hub = Hub()
+hub = Hub(bots=settings.bots)
