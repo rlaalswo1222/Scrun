@@ -53,9 +53,17 @@ def compare(policy: VerificationPolicy, read: ConsoleRead, sensor_m: int, sensor
 
 def decide(policy: VerificationPolicy, read: ConsoleRead, sensor_m: int, sensor_s: int, paused_s: float,
            retakes_used: int) -> Outcome:
-    """OCR 결과 하나 → 결과. 못 읽었으면 다시 찍기, 다시 찍기를 다 썼으면 UNVERIFIED(UNSUPPORTED_CONSOLE)."""
+    """OCR 결과 하나 → 결과. VERIFIED만 바로 확정. 오차 초과(MISMATCH)·읽을 수 없는 계기판(UNSUPPORTED_CONSOLE)·못 읽음(이유 없음)은
+    다시 찍기 횟수가 남았으면 RETAKE_REQUIRED + 이유(Figma E-07·08·09의 "다시 촬영", 잘못 읽어 생긴 오차를 다시 찍어 바로잡게,
+    11/17 지환 결정), 다 썼으면 그 이유로 UNVERIFIED(못 읽음은 UNSUPPORTED_CONSOLE)."""
+    last = retakes_used >= policy.max_retakes
     if read.status == ReadStatus.READ and plausible(read.distance_m, read.duration_s):
-        return compare(policy, read, sensor_m, sensor_s, paused_s)
-    if read.status == ReadStatus.UNSUPPORTED or retakes_used >= policy.max_retakes:
+        out = compare(policy, read, sensor_m, sensor_s, paused_s)
+        if out.status == S.VERIFIED or last:
+            return out
+        return Outcome(S.RETAKE_REQUIRED, R.MISMATCH, read=read, rows=out.rows)
+    if last:
         return Outcome(S.UNVERIFIED, R.UNSUPPORTED_CONSOLE)
+    if read.status == ReadStatus.UNSUPPORTED:
+        return Outcome(S.RETAKE_REQUIRED, R.UNSUPPORTED_CONSOLE)
     return Outcome(S.RETAKE_REQUIRED, read=read if read.status == ReadStatus.READ else None)
