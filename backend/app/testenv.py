@@ -20,4 +20,5 @@ def use_test_settings() -> None:
         raise RuntimeError("use_test_settings()는 app을 import하기 전에 불러야 합니다.")
     os.environ["JWT_SECRET"] = secrets.token_urlsafe(48)
     os.environ["KAKAO_MODE"] = "fake"
+    os.environ["BOT_FILL_TO"] = "0"  # 실시간 테스트는 사람만(봇은 test_realtime의 봇 테스트가 따로 켬)
     _applied = True
