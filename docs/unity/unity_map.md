@@ -272,6 +272,13 @@
   - 사진은 `VerifyPhotos`가 긴 변 2048로 줄여 `RunsApi.VerifyPhotoAsync`(multipart `photos`, `MultipartBody`, 60초). 보내거나 화면을 떠나면 `Native.Camera.Discard`. 미인증 저장은 `SaveUnverifiedAsync`(SKIPPED·TIMEOUT·RETAKE_GIVEN_UP)
   - 남은 시간(E-07·08·09)은 서버 `retakeDeadline`, 0.5초마다 다시 그리고 지나면 E-10. E-02에서 뒤로는 화면 안 확인("인증하지 않고 나갈까요?")
   - 에디터: Fake Native 창 "서버 가짜 OCR"로 결과를 고르고, 로컬 서버는 `.env`에 `OCR_ENGINE=fake`
+- **친구 탭**(11/18, 계획 0044, Figma G-01–G-11 608:1675 등): 아래 탭 "친구" = `FriendsScreen`(G-01 지금 달리는 친구 + 친구 피드, G-02 달리는 친구 없음, 0명이면 G-04). 보일 때마다 친구 목록·달리는 친구·피드 첫 쪽을 한꺼번에 받고, 보이는 동안 달리는 친구만 15초마다 조용히, 맨 위에서 아래로 70 끌어 놓으면 새로고침(`PullToRefresh`), 피드는 "더 보기"(커서 20개씩)
+  - "+"·"친구 추가하기" → `FriendAddScreen`(G-05 내 코드 복사·공유 / 칸을 누르면 G-06, 오류는 칸 아래 G-08 케이스별 문구 `FriendText.AddError`) → `FriendAddedScreen`(G-07, "친구 보기"·뒤로 = 친구 탭 첫 화면). 코드는 앱이 먼저 정리(`FriendText.NormalizeCode`: 대소문자·공백·하이픈 무시, 공유 문구를 통째로 붙여 넣으면 8글자 코드만 고름)하고 모양이 아니면 서버에 안 보냄(서버의 틀린 코드 횟수를 오타로 쓰지 않게)
+  - 줄·카드를 누르면 `FriendProfileScreen`(G-09, 프로필과 달리는 친구를 같이 받아 달리는 중일 때만 "같이 달리기", 더보기 → G-11), "관리" → `FriendManageScreen`(G-10 "친구 N/50명", 줄 오른쪽 삭제 또는 왼쪽으로 60 밀기 → G-11). 조각·시트는 `FriendParts`(머리·칩·줄·피드 카드·기록 줄·아래 시트), 모양 `Friends.uss`
+  - "같이 달리기"(G-03 시트) → `CourseDetailScreen(courseId, enterOnLoad: true)`: 상세를 불러오면 바로 "맵 입장"(모션 권한·보정 안내는 평소 흐름). 친구 근처에서 시작은 S8(BL-29), 시트 문구 끝 "친구 근처에서 시작해요."도 그때
+  - 내 코드 공유는 `Native.Share`(`IShare`: 복사는 Unity 클립보드, 공유는 Swift `ScrunShare.swift` `app.share` = `UIActivityViewController`, 에디터는 복사만). 러너 카드(D-12) "친구" 배지는 `FriendDirectory`(친구 탭·관리가 목록을 받을 때와 맵 입장 때 채움, 로그아웃이면 비움)
+  - 프로필 그림이 없어(BL-33) 머리는 닉네임 첫 글자. Figma와 다르게 한 것(상준 확인): 피드 카드 어두운 칸에 코스 이름, 기록이 없는 친구 "아직 러닝 기록이 없어요", 오류·복사·공유 문구 임시
+  - 에디터 확인(11/18): 이 브랜치 서버를 8002에 띄우고 `ApiConfig.BaseUrl`·EditorPrefs를 잠깐 8002로 → 가짜 친구 둘(`k_911`·`k_912`, 기록은 DB에 바로)이 내 코드로 추가 + `fake_runner --kakao k_911`(이번 달리기 거리 `run`도 보냄) → G-01·G-03·G-09·G-10·G-11·G-08(없는 코드·이미 친구)·G-07 화면과 "같이 달리기" → 맵 입장·실시간 연결까지 Figma와 맞춤. 끌어 새로고침·밀어 삭제는 손가락이 필요해 아이폰에서
 - **아래 탭 바**(11/10, UI Kit Tab Bar): 아이콘 24 + 글자 12, 홈·친구·기록·마이 순서, 고른 탭은 파란 아이콘(`tab-*-on.svg`)·굵은 글자. 탭 버튼 이름(`tab-home` 등)은 그대로라 `Navigator`는 안 바뀜
 - 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
 
