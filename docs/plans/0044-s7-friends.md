@@ -1,6 +1,6 @@
 # 계획 0044: S7 친구 — 친구 코드 추가·관리, 친구 탭(피드·달리는 친구) (BL-27, BL-28, S7 민재)
 
-- 상태: **승인(11/17 민재: 정할 것 1–5 모두 (가))** · 구현 전 (처음 0042로 썼는데 지환 #61이 0042를 써서 0044로)
+- 상태: **승인(11/17 민재: 정할 것 1–5 모두 (가))** · **구현·에디터 확인·`/code-review` 반영 끝(11/18, 브랜치 `feat/friends`, 커밋 전)**. 남은 것: PR·머지·오라클 배포(마이그레이션 있음), 아이폰 확인(공유 시트·복사·끌어 새로고침·밀어 삭제), 노션 작업 표·API 명세, 상준 문구 (처음 0042로 썼는데 지환 #61이 0042를 써서 0044로)
 - 담당: 민재(서버 API·DB 연결, 앱 화면 G-01–G-11, 연결). 문구·모양은 상준
 - 기간: 11/20–11/21(S7). 순서: 서버 → 친구 추가 → 친구 탭 → 프로필·관리 → 러너 카드 배지
 - 기준(11/17 공개 백로그·Figma 읽음)
@@ -42,3 +42,9 @@
 
 ## 진행
 - 11/17 민재 Windows: 공개 백로그 BL-27·28·29, Figma G-01–G-11(문구·노트), `routers/friends.py`·`schemas/friend.py`·`friendships`·허브 읽고 초안
+- **11/18 민재 Windows (`feat/friends`, develop 2ae799a에서)**
+  - 서버: 6개 DB·허브 연결(같이 달리기만 S8까지 예시 응답, 설명에 적음). 코드 8글자(`core/friend_code.py`, 가입도 이것), 마이그레이션 `e3a7c1f95b28`(기존 코드 새로 + 피드 인덱스 `runs(user_id, ended_at, id)`, 로컬 개발 DB 오르내림·`alembic check` 확인). 틀린 코드 제한 `core/attempts.py`(확인·기록을 잠금 안에서 한 번에, 10분에 10번, `FRIEND_ADD_FAIL_*`). 50명은 두 사람 줄을 `FOR NO KEY UPDATE`로 잠그고 셈, `FRIEND_LIMIT_EXCEEDED`에 `details.who`(ME·FRIEND). 달리는 친구 = `hub.running_now`(끊긴 지 30초 안 포함, 거리 = `run`). 피드·프로필은 공유한 끝난 기록만, 마감 지난 대기는 미인증으로 보임, 인증 마크 수도 공유한 것만. 커서는 `core/cursor.py`로 runs와 같이 씀. `fake_runner`가 `run`도 보냄
+  - 앱: `FriendsScreen`(G-01·G-02·G-04, 달리는 친구 15초마다·끌어 새로고침·피드 더 보기), `FriendAddScreen`(G-05·G-06·G-08, 앱이 코드를 먼저 정리·공유 문구에서 골라냄), `FriendAddedScreen`(G-07), `FriendProfileScreen`(G-09·G-11), `FriendManageScreen`(G-10, 삭제 버튼·왼쪽 밀기), 시트 G-03(→ `CourseDetailScreen(courseId, enterOnLoad: true)` 일반 입장)·G-11, `Native.Share`(Swift `ScrunShare.swift` 새 파일, 에디터는 복사만), 러너 카드 "친구" 배지(`FriendDirectory`). 자세히 `docs/unity/unity_map.md` "친구 탭"
+  - 확인: pytest 전체 통과(친구 15개 새로), Unity EditMode 411 통과(친구 14개 새로). 에디터 Play(이 브랜치 서버 8002 + 가짜 친구 둘 + `fake_runner`): G-01·G-03·G-07·G-08(없는 코드 404·이미 친구 409)·G-09·G-10·G-11 화면이 Figma 배치와 맞고, 동시 401 세 개가 재발급 한 번으로 이어지고, "같이 달리기" → 상세 → 맵 입장·실시간 연결·친구 목록(배지용)까지 됨
+  - `/code-review` 10건: 고친 것 9(동시 요청이 틀린 코드 제한을 넘던 것, 공유 안 한 인증 수가 새던 것, `FOR UPDATE`가 다른 외래 키 넣기를 막던 것, 공유 시트 콜백 여러 번·띄우기 실패 때 버튼 잠김, `enterOnLoad`가 남아 나중에 몰래 입장, 실패 기록 정리 O(n), 공유 문구 붙여 넣기, 피드 인덱스, README 옛 스텁 코드). 안 고친 것 1: `Lm_LampGlass.mat`은 이 작업과 무관한 로컬 변경이라 커밋에서 뺌
+  - Figma와 다르게 한 것(상준 확인): 머리는 닉네임 첫 글자(프로필 그림 BL-33 전), 피드 카드 어두운 칸에 코스 이름, G-03 끝 문장 "친구 근처에서 시작해요."는 S8, 기록 없는 친구 "아직 러닝 기록이 없어요", 오류 문구 4종(없는 코드만 Figma)·복사 알림·공유 문구는 임시
