@@ -125,9 +125,11 @@ namespace Scrun
             // 저사양: 페이스 봇 3명만·무리 없음 / 일반 폰: 무리 6명 / PC: 전부
             int bots = 0, crowd = 0;
             int crowdMax = tier == Tier.Low ? 0 : tier == Tier.Medium ? 6 : 99;
+            // 앱으로 달리는 중엔 섬 봇·무리를 AppRunBridge가 숨겨 둠(봇은 서버 방, 계획 0040). 여기서 다시 켜면
+            // 폰마다 따로 도는 봇이 되살아남(달리는 중 품질 낮추기 0039 I-12). 그때 서버 봇 수는 AppRunBridge가 단계에 맞춤
             foreach (var t in FindObjectsByType<RunnerTag>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID))
             {
-                if (t.kind != RunnerTag.Kind.Bot) continue;
+                if (t.kind != RunnerTag.Kind.Bot || AppRunBridge.HidesIslandRunners) continue;
                 if (t.crowd) t.gameObject.SetActive(crowd++ < crowdMax);
                 else t.gameObject.SetActive(tier != Tier.Low || bots++ < 3);
             }
