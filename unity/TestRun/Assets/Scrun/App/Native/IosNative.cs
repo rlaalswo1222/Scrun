@@ -107,6 +107,7 @@ namespace Scrun.App
                 guideLabel = options.GuideLabel,
                 hint = options.Hint,
                 biases = options.ExposureBiases,
+                maxSide = options.MaxSide,
             });
             return ParseShot(v);
         }

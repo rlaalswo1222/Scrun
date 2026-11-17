@@ -205,7 +205,30 @@ namespace Scrun.App.Tests
             f.OpenCamera(T0);
             f.CameraDone(CameraOutcome.Unavailable);
             Assert.AreEqual(VerifyStep.Guide, f.Step);
-            Assert.AreEqual(VerifyError.Other, f.Error);
+            Assert.AreEqual(VerifyError.Camera, f.Error);
+        }
+
+        [Test]
+        public void Camera_unavailable_on_retake_returns_to_retake_screen_with_error()
+        {
+            var f = Answered(R(VerifyStatus.Retake, "MISMATCH", left: 2));
+            Assert.IsTrue(f.OpenCamera(T0));
+            f.CameraDone(CameraOutcome.Unavailable);
+            Assert.AreEqual(VerifyStep.Mismatch, f.Step);
+            Assert.AreEqual(VerifyError.Camera, f.Error);
+            Assert.IsTrue(f.OpenCamera(T0)); // 다시 누르면 문구가 지워지고 카메라로
+            Assert.AreEqual(VerifyError.None, f.Error);
+        }
+
+        [Test]
+        public void No_permission_on_retake_saves_as_given_up_to_keep_comparison()
+        {
+            var f = Answered(R(VerifyStatus.Retake, "MISMATCH", left: 2));
+            Assert.IsTrue(f.OpenCamera(T0));
+            f.CameraDone(CameraOutcome.NoPermission);
+            Assert.AreEqual(VerifyStep.NoCamera, f.Step);
+            Assert.IsTrue(f.SaveUnverified());
+            Assert.AreEqual("RETAKE_GIVEN_UP", f.SavingReason); // SKIPPED면 서버가 대조 표를 남기지 않음
         }
 
         [Test]
