@@ -223,6 +223,24 @@ def test_photo_sent_just_before_deadline_can_still_be_confirmed(db_client, me, d
     assert data(confirm(db_client, me, run_id, shown["attemptId"]))["status"] == "VERIFIED"
 
 
+@pytest.mark.parametrize("closed_first", [False, True])
+def test_reject_in_grace_closes_instead_of_reopening(db_client, me, db, closed_first):
+    """마감 뒤 유예 안의 틀렸어요: 다시 찍을 시간이 없으니 오독만 남기고 마감으로 닫음(기록을 PENDING으로 다시 열지 않음)."""
+    run_id = finished(db_client, me)
+    shown = data(photo(db_client, me, run_id, "d3000_t1000.jpg"))
+    db.execute(update(Run).where(Run.id == run_id).values(verification_deadline=ago(seconds=30)))
+    db.execute(update(Verification).where(Verification.id == shown["attemptId"]).values(created_at=ago(seconds=40)))
+    db.commit()
+    if closed_first:
+        close_expired(db, run_id=run_id)   # 그 사이 목록 조회 등이 마감으로 닫음
+        db.commit()
+    for _ in range(2):   # 응답을 못 받은 재시도도 같음
+        fail(confirm(db_client, me, run_id, shown["attemptId"], correct=False), 409, "VERIFICATION_CLOSED")
+        db.expire_all()
+        assert (run_row(db, run_id).status, run_row(db, run_id).unverified_reason) == ("UNVERIFIED", "TIMEOUT")
+        assert db.get(Verification, shown["attemptId"]).confirmed is False
+
+
 def test_give_up_after_unreadable_is_retake_given_up(db_client, me):
     run_id = finished(db_client, me)
     assert data(photo(db_client, me, run_id, "blur.jpg"))["reason"] is None

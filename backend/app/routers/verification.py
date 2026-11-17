@@ -404,6 +404,15 @@ def verify_confirm(runId: str, body: ConfirmRequest, request: Request, user: Use
             _close_if_expired(db, run, arrived)
         if run.status == PENDING or _closed_by_deadline(db, run):
             raise ApiError(E.VERIFICATION_CLOSED)
+    elif not body.correct and arrived > verification_deadline(run) and (run.status == PENDING or _closed_by_deadline(db, run)):
+        # 유예는 맞아요를 누를 시간이지 다시 찍을 시간이 아님: 마감 뒤 틀렸어요는 오독만 남기고 마감으로 닫음(앱은 E-10).
+        # 기록을 다시 열면 PENDING인 채 남고, 지난 마감으로 다시 찍기를 안내하게 됨
+        latest = _latest_photo(db, run.id)
+        if latest is not None and latest.id == attempt.id and attempt.status == S.CONFIRM_REQUIRED and attempt.confirmed is None:
+            attempt.confirmed = False
+        if not (run.status == PENDING and _close_if_expired(db, run, arrived)):
+            db.commit()
+        raise ApiError(E.VERIFICATION_CLOSED)
     elif _closed_by_deadline(db, run):
         # 마감 전에 받은 사진을 유예 안에 확인했는데 그 사이 다른 요청·목록 조회가 마감으로 닫음 → 이 확인으로 정함(사진과 같게)
         run.status, run.unverified_reason = PENDING, None
