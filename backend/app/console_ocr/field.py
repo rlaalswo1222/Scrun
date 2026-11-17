@@ -123,6 +123,16 @@ class ConsoleReader:
         self.seg = OnnxReader(seg_onnx, threads)
         self.prefer = prefer   # seg: 7세그먼트 읽기 먼저, 안 되면 인식 글자 / rec: 반대
 
+    def warm_up(self) -> None:
+        """검출·인식 모델을 지금 다 올린다. RapidOCR은 인식 모델을 글자를 처음 찾았을 때 올리므로(없으면 그때 받음),
+        빈 그림으로는 인식 모델이 안 올라온다(11/18 오라클: 빌드 때 한국어 인식 모델을 안 받아 요청 중 Permission denied).
+        글자를 그린 그림을 읽혀 확인하고, 못 읽으면 RuntimeError(빌드·프로세스 시작을 실패시킴)."""
+        img = np.zeros((160, 640, 3), np.uint8)
+        cv2.putText(img, "DISTANCE 12.34", (20, 105), cv2.FONT_HERSHEY_SIMPLEX, 2.0, (255, 255, 255), 4, cv2.LINE_AA)
+        r = self.ocr(img)
+        if r.txts is None or not any("12" in t for t in r.txts):
+            raise RuntimeError(f"OCR 예열 실패: 글자를 그린 그림을 못 읽음({r.txts})")
+
     def regions(self, img: np.ndarray) -> list:
         r = self.ocr(img)
         if r.boxes is None:

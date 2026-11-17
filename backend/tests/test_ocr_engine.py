@@ -148,6 +148,21 @@ SAMPLE = Path(__file__).parent / "data" / "console_synth_sample.jpg"   # 합성:
 
 
 @needs_models
+def test_warm_up_loads_the_recognition_model_too():
+    """RapidOCR은 인식 모델을 글자를 처음 찾았을 때 올림(없으면 그때 받음). 빈 그림으로는 안 올라와 11/18 오라클 빌드가
+    한국어 인식 모델 없이 끝났음 → 예열은 글자를 그린 그림으로, 빌드(fetch_models)·프로세스 시작(serve)이 이걸 부름."""
+    import numpy as np
+    from app.console_ocr.field import ConsoleReader
+    from app.console_ocr.pool import MODEL
+    blank = ConsoleReader(str(MODEL), threads=1)
+    blank.read(np.zeros((200, 400, 3), np.uint8))
+    assert blank.ocr.text_rec is None   # 옛 fetch_models가 한 것: 인식 모델을 안 건드림
+    reader = ConsoleReader(str(MODEL), threads=1)
+    reader.warm_up()
+    assert reader.ocr.text_rec is not None
+
+
+@needs_models
 def test_real_engine_reads_a_synthetic_console_in_a_child_process():
     engine = OnnxOcr(ReaderPool(workers=1))
     try:
