@@ -16,6 +16,8 @@ cd speedlab/ocr
 - `data/`, `runs/`, 모델 파일, `*.log`는 `.gitignore`. 사람이 비친 실사진은 절대 올리지 않는다
 
 ## 파일
+읽기 규칙(상자 → 글자, 칸 찾기, 전처리, 분류 순서)은 **서버 `backend/app/console_ocr/`가 원본**이고 이 폴더는 `_backend.py`로 경로를 더해 가져다 쓴다(학습·채점과 서버가 다르게 읽지 않게, 계획 0043). 여기 남은 것은 학습·채점·합성. 새 모델을 서버에 넣으려면 `console_ocr/models/`에 복사하고 그 README 표를 고친다
+
 | 파일 | 하는 일 |
 |---|---|
 | `synth7seg.py` | 7세그먼트 칸 합성(COCO). 꺼진 88·글자·단위는 상자 없이, 색·번짐·과노출·LCD·기울기·원근·흐림·JPEG·작게 찍힘. 콜론(`:`)은 공개 데이터에 없어서 합성으로만 |
@@ -23,9 +25,9 @@ cd speedlab/ocr
 | `dataset.py` | 공개 + 합성을 같은 분류(`0–9 - . :`)로, 입력 가로 320 × 세로 160(비율 유지·회색 채움), 색만 흔듦(뒤집기 없음: 2↔5) |
 | `mps_patch.py` | YOLOX의 글자 형 변환(`'torch.mps.FloatTensor'`)을 맥 GPU에서 받게(학습·채점에서만) |
 | `train_yolox.py` | YOLOX 모델·손실 + 자체 학습 루프(YOLOX Trainer는 CUDA 전용). 5 에포크마다 글자 정확도 |
-| `readout.py` | 상자 → 글자: 점수 문턱, 겹침 정리, 아래쪽 점만 소수점, 작은 글자 줄 버림 |
-| `onnx_engine.py` | torch 없이 onnxruntime·OpenCV로 칸 하나 읽기(서버 엔진의 바탕) |
-| `field.py` | **계기판 전체 사진 → 거리·시간**(계획 0042): PP-OCRv5 글자 영역 찾기 → 라벨은 PP-OCRv5 한국어 인식, 숫자는 YOLOX → 가까운 라벨로 이름(라벨 없으면 형식 규칙) → 후보가 하나씩일 때만 READ. 센서 값은 안 씀 |
+| `readout.py` | 상자 → 글자: 점수 문턱, 겹침 정리, 아래쪽 점만 소수점, 작은 글자 줄 버림 — **원본은 서버 `backend/app/console_ocr/seg.py`**(계획 0043, 여기선 가져다 씀) |
+| `onnx_engine.py` | torch 없이 onnxruntime·OpenCV로 칸 하나 읽기 — 원본은 서버 `console_ocr/seg.py` |
+| `field.py` | **계기판 전체 사진 → 거리·시간**(계획 0042): PP-OCRv5 글자 영역 찾기 → 라벨은 PP-OCRv5 한국어 인식, 숫자는 YOLOX → 가까운 라벨로 이름(라벨 없으면 형식 규칙) → 후보가 하나씩일 때만 READ. 센서 값은 안 씀 — 원본은 서버 `console_ocr/field.py` |
 | `console_synth.py` | 계기판 전체 합성(칸 4–6개, 한·영 라벨 위·아래·왼쪽, 시간 점·콜론, 페이스·km/h, 아이콘뿐, 반사·원근) |
 | `eval_console.py` | 사진 단위 채점(거리·시간 둘 다 맞음 / 틀린 READ / UNREADABLE), `--fails`로 틀린 그림 |
 | `eval.py` | ONNX로 내보내 채점: 공개 test·합성 val·(있으면) 새 기종 실사진, 2스레드 처리 시간 |

@@ -11,8 +11,8 @@ import numpy as np
 import torch
 
 from synth7seg import CLASSES
+from app.console_ocr.seg import IN_H, IN_W, letterbox  # noqa: F401  서버와 같은 전처리(synth7seg가 경로를 더함)
 
-IN_H, IN_W = 160, 320
 MAX_LABELS = 32
 
 
@@ -53,20 +53,6 @@ def text_from_boxes(boxes: np.ndarray) -> str:
     """정답 상자 → 왼쪽부터 읽은 글자(공개 데이터엔 정답 글자가 없어 상자로 만듦)."""
     order = np.argsort((boxes[:, 1] + boxes[:, 3]) / 2) if len(boxes) else []
     return "".join(CLASSES[int(boxes[i, 0])] for i in order)
-
-
-def letterbox(img: np.ndarray, scale_jitter: float = 0.0, rng=None):
-    """비율 유지로 IN_W×IN_H 안에 넣음. (입력 그림, 배율, 왼쪽 위 위치)."""
-    h, w = img.shape[:2]
-    r = min(IN_H / h, IN_W / w)
-    if rng is not None and scale_jitter:
-        r *= rng.uniform(1 - scale_jitter, 1.0)
-    nh, nw = max(1, int(round(h * r))), max(1, int(round(w * r)))
-    canvas = np.full((IN_H, IN_W, 3), 114, np.uint8)
-    oy = (IN_H - nh) // 2 if rng is None else int(rng.integers(0, IN_H - nh + 1))
-    ox = (IN_W - nw) // 2 if rng is None else int(rng.integers(0, IN_W - nw + 1))
-    canvas[oy:oy + nh, ox:ox + nw] = cv2.resize(img, (nw, nh), interpolation=cv2.INTER_AREA if r < 1 else cv2.INTER_LINEAR)
-    return canvas, r, (ox, oy)
 
 
 def to_tensor(img: np.ndarray) -> torch.Tensor:
