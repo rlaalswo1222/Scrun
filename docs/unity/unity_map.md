@@ -254,7 +254,8 @@
   - **앱 쪽 `App/Realtime/`**: 화면은 `IRunTogether`만 봄(진짜 구현 `WsRunTogether` = .NET `ClientWebSocket`, 토큰은 헤더). 메시지 처리는 `RunTogetherRoom`, 다른 사람 위치는 `RemoteRunner`(받은 d에서 속도로 내다보고 새 값은 0.5초에 걸쳐 맞춤, 25m 넘게 다르면 바로 옮김), 고리 코스 계산 `LoopMath`. 맵 입장 응답을 받자마자 붙고(섬 불러오는 동안), 섬이 열려 입장 위치에 선 뒤부터 내 상태를 보냄. 맵을 나가면 `leave`
   - **HUD `RunHudView`**(`RunHud.uxml/uss`, 맵 화면 안의 층): 거리·시간·목표 진행 막대, 왼쪽 아래 앞뒤 가장 가까운 사람 간격, 위 가운데 들어옴·나감 토스트(3초, 하나씩)·연결 상태. 속도·페이스는 안 보임(BL-12 ②), 개발 빌드만 오른쪽 아래 속도·왕복 지연. 시간·거리는 `RunSession`(카운트다운 끝 `MapScreen.StartRunning()`, 지금은 `OnSetupDone`이 임시로 바로 부름)
   - 다른 사람 없이 확인: `backend/scripts/fake_runner.py`(로컬 가짜 카카오 서버에 가짜 계정으로 들어가 일정한 속도로 달림)
-  - 아직: 에디터 Play 전체 흐름, 아이폰(`ClientWebSocket` IL2CPP·왕복 지연), 상준 모양 다듬기, 미니맵·멈춤·종료(S5), 페이스 봇(S4 이후)
+  - 아직: 에디터 Play 전체 흐름, 아이폰(`ClientWebSocket` IL2CPP·왕복 지연), 상준 모양 다듬기, 미니맵·멈춤·종료(S5)
+  - **페이스 봇**(11/17, 계획 0040, BL-23): 서버 방이 돌리는 봇이 사람과 같은 `states`로 옴(`bot: true`). 앱은 `RemoteRunner.IsBot`, 이름표·간격 카드는 `DisplayName`("BOT · 페이스 6:40", 배지 모양은 상준), 봇의 들어옴·나감 토스트는 안 띄움. 섬 몸은 `Kind.Remote` 그대로(`Kind.Bot`은 섬의 가짜 봇이라 품질 단계·순간이동 도구가 건드림). 저사양 단계면 가까운 봇 3명만 몸을 그림(`AppRunBridge.LowTierBotBodies`, 섬 봇 시절 저사양 3명과 같은 비용). 달리는 중 품질 낮추기(0039)가 숨긴 섬 봇을 다시 켜던 것도 막음(`AppRunBridge.HidesIslandRunners`면 `ScrunQuality.Apply`가 섬 봇을 안 건드림)
 - **멈춤·끝·기록 올리기**(11/16, 계획 0037, Figma D-17·D-18·D-19·D-22): 달리는 동안 맵 윗줄 오른쪽 버튼이 멈춤 모양(`map-round-btn--pause`) → `RunEndView`(`RunEnd.uxml/uss`, 맵 화면 안의 층)
   - D-17 일시정지(거리·시간, 종료하기·계속 달리기) → D-18 종료 확인 → D-22 인증 안내(계기판 촬영하기·촬영 없이 마무리). 목표에 처음 닿으면 D-19(계속·마무리하기, 달리기는 안 멈춤). 패널이 뜨면 윗줄 숨김. Esc: 달리는 중 → D-17, D-18 → D-17, D-17·D-19 닫기, D-22는 버튼으로만
   - `RunSession`: 일시정지면 `RunLink.Moving` 꺼짐(아바타·남의 화면 멈춤), "계속"은 아바타가 1 km/h 이상이 되면(걸음 다시 잡힘) 시간이 다시 흐름. 시간은 달린 시간만, 시계열은 달린 시간 1초마다(일시정지 구간 빼고 이어 붙임)
