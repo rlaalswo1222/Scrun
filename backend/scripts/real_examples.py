@@ -2,7 +2,7 @@
 
 흐름: 카카오 로그인(처음) → 약관 → 닉네임 확인 → 가입 → 내 정보·설정 조회·수정 → 코스 목록·상세 → 보정 저장·조회 → 맵 입장 →
 러닝 시작 → 시계열 올리기 → 끝나지 않은 러닝 → 종료 → 계기판 사진 인증(가짜 OCR) → (다른 러닝 시작 → 버리기) →
-(또 다른 러닝 → 종료 → 인증 없이 마무리) → 토큰 재발급 → 로그아웃.
+(또 다른 러닝 → 종료 → 인증 없이 마무리) → 기록 목록·상세·공유 끄기·고스트 → 토큰 재발급 → 로그아웃.
 토큰 값·저장 시각·사용자 ID·친구 코드는 매번 바뀌므로 고정 값으로 바꿔 넣는다. 입장 위치(랜덤)는 시드를 고정한 난수로 바꿔 끼워 매번 같게.
 """
 from app.testenv import use_test_settings
@@ -53,6 +53,9 @@ def _clean(j):
             rt["token"] = "eyJhbGciOi...(realtime)"
         if data.get("createdAt"):  # 저장 시각(보정 등)도 다시 만들 때마다 바뀌지 않게
             data["createdAt"] = FIXED_META["timestamp"]
+        for item in data.get("items") or []:  # 기록 목록: 줄마다 기록 ID
+            if isinstance(item, dict) and item.get("runId"):
+                item["runId"] = PLACEHOLDER["runId"]
         run = data.get("run")  # 끝나지 않은 러닝: 기록 ID·복구 기한(마지막 갱신 + 24시간)
         if isinstance(run, dict):
             run["runId"] = PLACEHOLDER["runId"]
@@ -147,6 +150,13 @@ def collect() -> dict:
         body = {"reason": "SKIPPED"}
         rec("POST", "/v1/runs/{runId}/verification/skip", body, "Bearer {accessToken}",
             c.post(f"/v1/runs/{third_id}/verification/skip", json=body, headers=auth))
+        # 기록 읽기(계획 0043): 목록 → 상세(사진 인증한 첫 러닝) → 공유 끄기 → 고스트
+        rec("GET", "/v1/runs", None, "Bearer {accessToken}", c.get("/v1/runs", params={"month": "2026-11"}, headers=auth))
+        rec("GET", "/v1/runs/{runId}", None, "Bearer {accessToken}", c.get(f"/v1/runs/{run_id}", headers=auth))
+        body = {"shared": False}
+        rec("PATCH", "/v1/runs/{runId}", body, "Bearer {accessToken}",
+            c.patch(f"/v1/runs/{run_id}", json=body, headers=auth))
+        rec("GET", "/v1/runs/{runId}/ghost", None, "Bearer {accessToken}", c.get(f"/v1/runs/{run_id}/ghost", headers=auth))
         body = {"refreshToken": tok["refreshToken"]}
         tok2 = rec("POST", "/v1/auth/refresh", {"refreshToken": PLACEHOLDER["refreshToken"]}, None,
                    c.post("/v1/auth/refresh", json=body))["success"]["data"]

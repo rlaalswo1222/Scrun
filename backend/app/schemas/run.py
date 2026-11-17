@@ -92,7 +92,7 @@ class OfficialSource(str, Enum):
 class RunDetail(RunSummary):
     official_source: OfficialSource
     sensor: RunStats
-    console: Optional[RunStats] = Field(default=None, description="계기판 값(인증 완료일 때)")
+    console: Optional[RunStats] = Field(default=None, description="계기판에서 읽은 값(사진을 읽었을 때. 값이 어긋난 미인증이어도 있음)")
     speed_series: SpeedSeries = Field(description="그래프용으로 줄인 시계열")
     companions: list[Companion]
     ghost_run_id: Optional[str] = None
