@@ -1,6 +1,5 @@
 """로그인 API 5개 — 진짜 구현(계획 0016). DB에 저장하고 토큰을 발급한다."""
 import logging
-import secrets
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request, Response
@@ -8,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from ..core import friend_code
 from ..core import nickname as nick
 from ..core import sessions, tokens
 from ..core.envelope import Envelope, error_responses, ok
@@ -30,7 +30,6 @@ from ..schemas.auth import (
 router = APIRouter(prefix="/v1", tags=["Auth"])
 E = ErrorCode
 KAKAO = "KAKAO"
-FRIEND_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"  # 헷갈리는 0·O·1·I 뺌
 SIGNUP_ATTEMPTS = 3  # 친구 코드가 동시에 겹치면 다시 시도
 log = logging.getLogger("scrun.auth")
 
@@ -41,11 +40,7 @@ def _identity(db: Session, provider: str, provider_user_id: str) -> Optional[Aut
 
 
 def _new_friend_code(db: Session) -> str:
-    for _ in range(10):
-        code = "SCR-" + "".join(secrets.choice(FRIEND_CODE_ALPHABET) for _ in range(4))
-        if db.scalar(select(User.id).where(User.friend_code == code)) is None:
-            return code
-    raise ApiError(E.INTERNAL_ERROR, "친구 코드를 만들지 못했습니다.")
+    return friend_code.new_code(db)  # 8글자(계획 0044). 테스트가 이 이름을 바꿔 끼워 동시 가입 충돌을 만든다
 
 
 @router.post(

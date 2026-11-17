@@ -11,7 +11,7 @@ ME = {
     "nickname": "새벽러너",
     "heightCm": 175,
     "weightKg": 70,
-    "friendCode": "SCR-7K2Q",
+    "friendCode": "K7Q2M9XA",
     "timezone": "Asia/Seoul",
     "createdAt": "2026-11-01T09:00:00Z",
 }
@@ -144,39 +144,6 @@ REWARDS = {
 FRIENDS = [
     {"userId": "usr_f1", "nickname": "바닷바람", "level": 3, "verifiedCount": 6, "runningNow": True},
     {"userId": "usr_f2", "nickname": "주말러너", "level": 1, "verifiedCount": 1, "runningNow": False},
-]
-
-FRIEND_PROFILE = {
-    **FRIENDS[0],
-    "outfitStage": 3,
-    "recentVerifiedRuns": [
-        {"runId": "run_f1_01", "startedAt": "2026-11-05T21:00:00Z", "distanceM": 5000, "durationS": 1620, "avgPaceSPerKm": 324},
-    ],
-}
-
-FEED = [
-    {
-        "feedId": "fd_01",
-        "userId": "usr_f1",
-        "nickname": "바닷바람",
-        "runId": "run_f1_01",
-        "startedAt": "2026-11-05T21:00:00Z",
-        "distanceM": 5000,
-        "durationS": 1620,
-        "avgPaceSPerKm": 324,
-        "verification": "VERIFIED",
-    },
-    {
-        "feedId": "fd_02",
-        "userId": "usr_f2",
-        "nickname": "주말러너",
-        "runId": "run_f2_01",
-        "startedAt": "2026-11-04T19:30:00Z",
-        "distanceM": 2100,
-        "durationS": 840,
-        "avgPaceSPerKm": 400,
-        "verification": "UNVERIFIED",
-    },
 ]
 
 RUNNING_FRIENDS = [

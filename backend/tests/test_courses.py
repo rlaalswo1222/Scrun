@@ -43,7 +43,7 @@ def me(db_client):
 
 def add_user(db) -> str:
     uid = new_id()
-    db.add(User(id=uid, nickname=f"u{uid[-8:]}", height_cm=170, weight_kg=60, friend_code=f"SCR-{uid[-6:]}"))
+    db.add(User(id=uid, nickname=f"u{uid[-8:]}", height_cm=170, weight_kg=60, friend_code=uid[-8:]))
     db.commit()
     return uid
 

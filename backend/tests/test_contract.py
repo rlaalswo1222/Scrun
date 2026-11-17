@@ -98,10 +98,6 @@ def test_unknown_path_and_method():
 @pytest.mark.parametrize("method,path,body,status,code", [
     ("GET", "/v1/runs/run_x/rewards", None, 404, "RUN_NOT_FOUND"),
     ("GET", "/v1/runs/run_other/rewards", None, 403, "FORBIDDEN"),
-    ("POST", "/v1/friends", {"friendCode": "SCR-7K2Q"}, 400, "SELF_FRIEND_CODE"),
-    ("POST", "/v1/friends", {"friendCode": "SCR-NONE"}, 404, "FRIEND_CODE_NOT_FOUND"),
-    ("POST", "/v1/friends", {"friendCode": "SCR-FRND"}, 409, "ALREADY_FRIEND"),
-    ("POST", "/v1/friends", {"friendCode": "SCR-FULL"}, 409, "FRIEND_LIMIT_EXCEEDED"),
     ("POST", "/v1/friends/usr_f2/run-together", None, 409, "FRIEND_NOT_RUNNING"),
     ("PUT", "/v1/users/me/impact", {"impactId": "imp_aurora"}, 400, "VALIDATION_ERROR"),
 ])

@@ -2,22 +2,14 @@
   "request": {
     "method": "GET",
     "path": "/v1/friends/running",
+    "auth": "Bearer {accessToken}",
     "body": null
   },
   "status": 200,
   "response": {
     "resultType": "SUCCESS",
     "success": {
-      "data": [
-        {
-          "userId": "usr_f1",
-          "nickname": "바닷바람",
-          "courseId": "crs_lake_loop",
-          "courseName": "노을 호수 한 바퀴",
-          "distanceM": 1800,
-          "paceSPerKm": 330
-        }
-      ]
+      "data": []
     },
     "error": null,
     "meta": {

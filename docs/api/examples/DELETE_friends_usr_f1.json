@@ -1,7 +1,8 @@
 {
   "request": {
     "method": "DELETE",
-    "path": "/v1/friends/usr_f1",
+    "path": "/v1/friends/01JC0Z8H3K6Q2W9EXAMPLE0000",
+    "auth": "Bearer {accessToken}",
     "body": null
   },
   "status": 204,

@@ -49,7 +49,7 @@ erDiagram
 | height_cm | smallint | 아바타 크기 |
 | weight_kg | smallint | 속도 추정엔 안 씀(용도는 개인정보처리방침에) |
 | timezone | text | `Asia/Seoul` 등 |
-| friend_code | text | 유일. `SCR-XXXX` |
+| friend_code | text | 유일. 8글자(`K7Q2M9XA`, 헷갈리는 0·O·1·I 뺀 32자, 계획 0044). 11/17 전 `SCR-XXXX`는 마이그레이션에서 새로 만듦 |
 | feed_share_default | bool | 새 기록 공유 기본값(PRD: 켜짐) |
 | updated_at | timestamptz | |
 
@@ -204,13 +204,13 @@ erDiagram
 **impacts**(운영 데이터: **id**, name, unlock_at_count, sort) / **user_impacts**(**user_id** → users CASCADE, **impact_id** → impacts, unlocked_at)
 
 ### 친구·지표
-**friendships** — 두 사람 한 줄(작은 ID를 앞에). 50명 제한은 서버 코드에서
+**friendships** — 두 사람 한 줄(작은 ID를 앞에). 코드를 넣으면 요청·수락 없이 바로 한 줄(계획 0044). 50명 제한은 서버 코드에서(두 사람 `users` 줄을 잠그고 셈)
 | 칸 | 형식 | 설명 |
 |---|---|---|
 | **user_a_id** | → users (CASCADE) | user_a_id < user_b_id |
 | **user_b_id** | → users (CASCADE) | |
 
-피드는 따로 저장하지 않음: 친구들의 `runs`(`shared`, 상태 `VERIFIED`·`UNVERIFIED`)를 시각순으로 조회.
+피드는 따로 저장하지 않음(인덱스 `runs(user_id, ended_at, id)`): 친구들의 `runs`(`shared`, 상태 `PENDING`·`VERIFIED`·`UNVERIFIED`)를 `ended_at` 최신순으로 조회. 마감 지난 `PENDING`은 응답에서 `UNVERIFIED`로 보임(DB는 주인이 읽을 때 닫힘). 틀린 코드 횟수(맞혀 보기 막기)는 DB가 아니라 서버 메모리.
 
 **events** — PRD 2.4 지표(목표 완주율·재방문율·인증 성공률·지루함)
 | 칸 | 형식 | 설명 |
@@ -225,7 +225,7 @@ erDiagram
 | 값 | 계산 |
 |---|---|
 | 주간 목표 달성 횟수 | 이번 주기(사용자 시간대) 안 `runs`: `status = VERIFIED` 그리고 `official_duration_s ≥ 300` |
-| 지금 달리는 친구 | 친구의 `runs.status = ACTIVE`(실시간 서버가 생기면 그쪽 상태로) |
+| 지금 달리는 친구 | 실시간 방(`app/realtime/hub.py` `running_now`)에서 달리는 중인 친구. 이번 러닝 거리·속도도 거기서 |
 | 코스별 지금 러너 수 | 실시간 서버 연결 수(ADR-0010). 그 전에는 최근 10분 안에 입장(`course_entries`)했거나 달리는 중(`runs.status = ACTIVE`, `updated_at` 최근 10분)인 사람 수. 세는 곳은 `app/core/occupancy.py` 한 곳 |
 | 피드 | 위 친구 피드 조회 |
 | 평균 페이스 | 공식 시간 ÷ 공식 거리 |
@@ -264,12 +264,12 @@ R = 읽기, W = 쓰기. (노션 API 명세 42개)
 | GET /v1/users/me/progress | R user_progress, impacts, user_impacts |
 | PUT /v1/users/me/impact | W user_progress · R user_impacts |
 | POST /v1/friends | R users(friend_code) · W friendships |
-| GET /v1/friends | R friendships, users, user_progress, runs |
-| GET /v1/friends/running | R friendships, runs, courses |
-| GET /v1/friends/{userId} | R friendships, users, user_progress, runs |
+| GET /v1/friends | R friendships, users, runs (+ 실시간 방) |
+| GET /v1/friends/running | R friendships, users, courses (+ 실시간 방) |
+| GET /v1/friends/{userId} | R friendships, users, user_progress, runs, courses (+ 실시간 방) |
 | DELETE /v1/friends/{userId} | W friendships |
 | POST /v1/friends/{userId}/run-together | R friendships, runs, courses (+ 실시간 서버) |
-| GET /v1/feed | R friendships, runs, users |
+| GET /v1/feed | R friendships, runs, users, courses |
 | POST /v1/events | W events |
 
 ## PRD 09장 대응
