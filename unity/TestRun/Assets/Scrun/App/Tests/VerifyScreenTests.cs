@@ -17,7 +17,9 @@ namespace Scrun.App.Tests
             s.Create(null); // UXML에 이름이 없으면 Q가 바로 예외
             bool Shown(string n) => s.Root.Q(n).style.display != DisplayStyle.None;
             Assert.IsTrue(Shown("guide"));
-            foreach (var n in new[] { "leave", "confirm", "sending", "result" }) Assert.IsFalse(Shown(n), n);
+            foreach (var n in new[] { "leave", "confirm", "sending", "read", "result" }) Assert.IsFalse(Shown(n), n);
+            // E-05b(계획 0045) 모양: 지환이 연결할 이름들
+            foreach (var n in new[] { "read-photo", "read-distance", "read-time", "read-error", "read-yes", "read-no" }) Assert.IsNotNull(s.Root.Q(n), n);
             Assert.AreEqual("계기판 인증", s.Root.Q<Label>("nav-title").text);
         }
 

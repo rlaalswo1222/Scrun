@@ -165,6 +165,27 @@
     color: var(--color-text);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
+/* ---- E-05b 읽은 값 확인(계획 0045): 사진은 E-04보다 낮게(값·버튼이 한 화면에), 값 카드는 테두리로 강조 ---- */
+.verify-photo--read {
+    height: 180px; /* 아이폰 SE(약 390×645)에서도 값 카드까지 스크롤 없이 */
+}
+.onb .verify-read-caption {
+    margin-top: var(--space-5);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-body);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+.verify-stats--read {
+    margin-top: var(--space-2);
+}
+.verify-stat--read {
+    border-width: 1.5px;
+    border-color: var(--color-primary-soft);
+}
+.onb .verify-read-value {
+    font-size: var(--font-size-title);
+    color: var(--color-primary);
+}
 /* ---- E-08 대조 표 ---- */
 .verify-table {
     margin-top: var(--space-5);

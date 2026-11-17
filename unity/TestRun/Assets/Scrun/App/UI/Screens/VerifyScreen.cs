@@ -21,7 +21,7 @@ namespace Scrun.App
         Texture2D preview;          // E-04 미리보기
         IVisualElementScheduledItem ticker;
         bool busy, finished;
-        VisualElement guide, leave, confirm, sending, result;
+        VisualElement guide, leave, confirm, sending, read, result;
         Label navTitle, chip, resultTitle, resultLead, confirmError, guideError, resultError;
         Button back, primary, secondary;
         VisualElement resultIcon, resultBody;
@@ -46,6 +46,7 @@ namespace Scrun.App
             leave = Q<VisualElement>("leave");
             confirm = Q<VisualElement>("confirm");
             sending = Q<VisualElement>("sending");
+            read = Q<VisualElement>("read");
             result = Q<VisualElement>("result");
             photo = new Image { scaleMode = ScaleMode.ScaleAndCrop };
             photo.AddToClassList("verify-photo-img");
@@ -303,6 +304,7 @@ namespace Scrun.App
             leave.SetVisible(s == VerifyStep.ConfirmLeave);
             confirm.SetVisible(s == VerifyStep.Confirm);
             sending.SetVisible(s == VerifyStep.Sending);
+            read.SetVisible(false); // E-05b 읽은 값 확인(계획 0045): 모양만 있음, 단계·버튼 연결은 지환
             bool isResult = s >= VerifyStep.Verified && s <= VerifyStep.NoCamera;
             result.SetVisible(isResult);
             back.SetVisible(s == VerifyStep.Guide || s == VerifyStep.ConfirmLeave || s == VerifyStep.Confirm || s == VerifyStep.NoCamera);
