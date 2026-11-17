@@ -4,7 +4,8 @@
 - JWT_SECRET: 꼭 있어야 하고 32자 이상, 저장소에 공개된 예전 기본값 금지
 - KAKAO_MODE: real(기본) 또는 fake. fake는 적어야만 켜짐(아무 `k_숫자`로 로그인되므로 로컬·테스트 전용)
 - KAKAO_APP_ID: real일 때 꼭 있어야 함(카카오 개발자 앱 ID, 숫자). 다른 앱에서 받은 토큰을 거르는 데 씀
-- OCR_ENGINE: none(기본, 사진 인증은 503) 또는 fake(파일 이름으로 값을 정하는 가짜, 로컬·테스트 전용). 진짜 엔진은 ADR-0012 뒤
+- OCR_ENGINE: none(기본, 사진 인증은 503), fake(파일 이름으로 값을 정하는 가짜, 로컬·테스트 전용),
+  onnx(진짜 엔진, 계획 0046: app/console_ocr 자식 프로세스 2개, 서버 compose가 켬. requirements의 onnxruntime·rapidocr 필요)
 - VERIFY_*: 계기판 인증 판정 값(계획 0038). 없으면 아래 VerificationPolicy 기본값
 - BOT_FILL_TO·BOT_PACES_KMH: 페이스 봇(계획 0040). 없으면 아래 BotPolicy 기본값, BOT_FILL_TO=0이면 봇 없음
 - FRIEND_ADD_FAIL_LIMIT·FRIEND_ADD_FAIL_WINDOW_S: 틀린 친구 코드 제한(계획 0044). 없으면 아래 FriendPolicy 기본값
@@ -24,7 +25,7 @@ MIN_JWT_SECRET_LEN = 32
 # 저장소(공개)에 한 번이라도 적힌 값. 이 값으로 서명하면 누구나 토큰을 만들 수 있다
 PUBLIC_JWT_SECRETS = frozenset({"local-dev-secret-change-me-0123456789abcdef"})
 KAKAO_MODES = ("real", "fake")
-OCR_ENGINES = ("none", "fake")
+OCR_ENGINES = ("none", "fake", "onnx")   # onnx: 진짜 엔진(계획 0046, app/console_ocr)
 GENERATE_HINT = '../.venv/Scripts/python -c "import secrets; print(secrets.token_urlsafe(48))"'
 
 

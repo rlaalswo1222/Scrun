@@ -2,9 +2,10 @@
 
 칸 4–6개(거리·시간 + 경사·속도·칼로리·심박·페이스 중 몇 개)를 격자로 놓고, 라벨(한·영, 칸 위·아래·왼쪽)을 붙인다.
 헷갈리는 경우를 일부러 넣는다: 시간을 점으로("28.40", 10/29 기종), 페이스는 콜론("6:30"), 속도 라벨 km/h,
-라벨이 아이콘뿐(글자 없음)인 계기판. 글꼴은 맥 기본(AppleSDGothicNeo), 다른 곳에선 --font로.
+라벨이 아이콘뿐(글자 없음)인 계기판. 글꼴은 맥 기본(AppleSDGothicNeo), 다른 곳에선 네 번째 인자로.
 
     python console_synth.py data/console_synth 200 1     → 그림 + truth.json
+    python console_synth.py data/console_synth 200 1 C:/Windows/Fonts/malgun.ttf   (Windows)
 """
 import json
 import sys
@@ -158,4 +159,4 @@ def write(out: Path, n: int, seed: int, font_path=FONT):
 
 
 if __name__ == "__main__":
-    write(Path(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]))
+    write(Path(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), *sys.argv[4:5])

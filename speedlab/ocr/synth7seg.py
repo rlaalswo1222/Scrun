@@ -13,7 +13,9 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-CLASSES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-", ".", ":"]
+import _backend  # noqa: E402,F401
+from app.console_ocr.seg import CLASSES  # noqa: E402  모델 출력 순서의 원본(서버)
+
 DIGIT_SEGS = {"0": "abcdef", "1": "bc", "2": "abdeg", "3": "abcdg", "4": "bcfg", "5": "acdfg", "6": "acdefg",
               "7": "abc", "8": "abcdefg", "9": "abcdfg", "-": "g"}
 # 숫자와 모양이 같은 글자는 넣지 않음('S' = 5, 'O' = 0, 'b' = 6, 'g' = 9 — 상자 없는 글자로 그리면 숫자를 안 읽게 배움, 11/17)

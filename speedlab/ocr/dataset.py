@@ -11,8 +11,8 @@ import numpy as np
 import torch
 
 from synth7seg import CLASSES
+from app.console_ocr.seg import IN_H, IN_W, letterbox  # noqa: F401  서버와 같은 전처리(synth7seg가 경로를 더함)
 
-IN_H, IN_W = 160, 320
 MAX_LABELS = 32
 
 
@@ -20,18 +20,18 @@ MAX_LABELS = 32
 # 이름 '2' 상자가 실제 0, '1'이 소수점, '0'이 '-', '-'가 8, '.'이 9). 원래 순서 '- . 0 … 9'에 이름만 '0 … 9 - .'로 붙은 것(가설)
 PUBLIC_NAME_FIX = {"0": "-", "1": ".", "2": "0", "3": "1", "4": "2", "5": "3", "6": "4", "7": "5", "8": "6", "9": "7",
                    "-": "8", ".": "9"}
-PUBLIC_DIR = "7seg_v3"   # 이름 바로잡기는 이 공개 데이터 폴더에만. 우리가 Roboflow로 정답을 단 실사진(채점용)엔 걸지 않는다
 
 
-def load_coco(folder: Path, images_dir: str = "images") -> list[tuple[Path, np.ndarray, str]]:
+def load_coco(folder: Path, images_dir: str = "images", public: bool = False) -> list[tuple[Path, np.ndarray, str]]:
     """COCO 폴더 → [(그림 경로, 상자[N,5](분류, x0, y0, x1, y1), 정답 글자)]. 분류 이름으로 우리 CLASSES에 맞춤.
-    Roboflow 내보내기(_annotations.coco.json)도 받는다. 이름 바로잡기(PUBLIC_NAME_FIX)는 공개 데이터 폴더(PUBLIC_DIR) 안에서만:
-    우리 헬스장 사진에 Roboflow로 정답을 달아 채점할 때 정답이 뒤섞이지 않게(#61 리뷰)."""
+    Roboflow 내보내기(_annotations.coco.json)도 받는다. 이름 바로잡기(PUBLIC_NAME_FIX)는 public=True(공개 7segmentrecognition_v3)로 부를 때만:
+    우리 헬스장 사진에 Roboflow로 정답을 달아 채점할 때 정답이 뒤섞이지 않게(#61 리뷰). 폴더 이름으로 고르지 않음:
+    Roboflow 기본 폴더 이름(7SegmentRecognition_v3-1)으로 받으면 바로잡기가 조용히 꺼졌음(#68 리뷰)."""
     ann_file = folder / "annotations.json"
     if not ann_file.exists():
         ann_file = folder / "_annotations.coco.json"
         images_dir = "."
-    fix = PUBLIC_NAME_FIX if PUBLIC_DIR in Path(folder).resolve().parts else {}
+    fix = PUBLIC_NAME_FIX if public else {}
     j = json.loads(ann_file.read_text())
     name_of = {c["id"]: fix.get(c["name"], c["name"]) for c in j["categories"]}
     by_img: dict[int, list] = {im["id"]: [] for im in j["images"]}
@@ -53,20 +53,6 @@ def text_from_boxes(boxes: np.ndarray) -> str:
     """정답 상자 → 왼쪽부터 읽은 글자(공개 데이터엔 정답 글자가 없어 상자로 만듦)."""
     order = np.argsort((boxes[:, 1] + boxes[:, 3]) / 2) if len(boxes) else []
     return "".join(CLASSES[int(boxes[i, 0])] for i in order)
-
-
-def letterbox(img: np.ndarray, scale_jitter: float = 0.0, rng=None):
-    """비율 유지로 IN_W×IN_H 안에 넣음. (입력 그림, 배율, 왼쪽 위 위치)."""
-    h, w = img.shape[:2]
-    r = min(IN_H / h, IN_W / w)
-    if rng is not None and scale_jitter:
-        r *= rng.uniform(1 - scale_jitter, 1.0)
-    nh, nw = max(1, int(round(h * r))), max(1, int(round(w * r)))
-    canvas = np.full((IN_H, IN_W, 3), 114, np.uint8)
-    oy = (IN_H - nh) // 2 if rng is None else int(rng.integers(0, IN_H - nh + 1))
-    ox = (IN_W - nw) // 2 if rng is None else int(rng.integers(0, IN_W - nw + 1))
-    canvas[oy:oy + nh, ox:ox + nw] = cv2.resize(img, (nw, nh), interpolation=cv2.INTER_AREA if r < 1 else cv2.INTER_LINEAR)
-    return canvas, r, (ox, oy)
 
 
 def to_tensor(img: np.ndarray) -> torch.Tensor:

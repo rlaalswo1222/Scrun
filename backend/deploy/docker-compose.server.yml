@@ -27,6 +27,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET을 .env에}
       KAKAO_MODE: real # 공개 서버라 고정. fake면 아무나 아무 계정으로 로그인됨
       KAKAO_APP_ID: ${KAKAO_APP_ID:?KAKAO_APP_ID를 .env에}
+      OCR_ENGINE: onnx # 계기판 OCR 진짜 엔진(계획 0046): 읽기 프로세스 2개, 사진 3장 15초 제한
     depends_on:
       db:
         condition: service_healthy
