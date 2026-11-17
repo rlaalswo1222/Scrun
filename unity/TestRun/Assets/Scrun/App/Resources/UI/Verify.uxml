@@ -40,7 +40,7 @@
             <ui:Button name="leave-save" text="미인증으로 저장" class="btn btn-ghost" />
         </ui:VisualElement>
 
-        <!-- E-04 촬영 확인(사진만, 읽은 값은 결과 화면에서 — 11/17 결정) -->
+        <!-- E-04 촬영 확인(사진만, 읽은 값은 보낸 뒤 E-05b에서, 계획 0045) -->
         <ui:VisualElement name="confirm" class="verify-page">
             <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
                 <ui:Label text="이 사진으로 인증할까요?" class="onb-title" />
@@ -65,6 +65,32 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
+        <!-- E-05b 읽은 값 확인(계획 0045, 모양은 민재 11/18). 판정 전이라 읽은 값만 보여 주고 센서 값·결과는 안 보임.
+             값은 고칠 수 없음(BL-17 4번). 사진은 E-04 사진을 그대로(read-photo), 값은 read-distance·read-time에 FormatKm·FormatTime으로.
+             뒤로 버튼 없음(맞아요·틀렸어요 중 하나). 틀렸어요는 다시 찍기 횟수를 안 써서 남은 횟수를 적지 않음 -->
+        <ui:VisualElement name="read" class="verify-page">
+            <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+                <ui:Label text="계기판 숫자가 맞나요?" class="onb-title" />
+                <ui:Label text="사진 속 숫자와 같은지 확인해 주세요" class="onb-lead" />
+                <ui:VisualElement name="read-photo" class="verify-photo verify-photo--read" />
+                <ui:Label text="이렇게 읽었어요" class="verify-read-caption" />
+                <ui:VisualElement class="verify-stats verify-stats--read">
+                    <ui:VisualElement class="verify-stat verify-stat--read">
+                        <ui:Label text="거리" class="verify-stat-label" />
+                        <ui:Label name="read-distance" text="-" class="verify-stat-value verify-read-value" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="verify-stat verify-stat--read verify-stat--second">
+                        <ui:Label text="시간" class="verify-stat-label" />
+                        <ui:Label name="read-time" text="-" class="verify-stat-value verify-read-value" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:Label text="숫자는 고칠 수 없어요. 하나라도 다르면 다시 찍어 주세요." class="verify-info" />
+                <ui:Label name="read-error" class="verify-error" />
+            </ui:ScrollView>
+            <ui:Button name="read-yes" text="맞아요, 인증하기" class="btn btn-primary" />
+            <ui:Button name="read-no" text="틀렸어요, 다시 찍기" class="btn btn-ghost" />
+        </ui:VisualElement>
+
         <!-- E-06–E-10·I-06 결과(내용은 VerifyScreen.RenderResult) -->
         <ui:VisualElement name="result" class="verify-page">
             <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
@@ -73,6 +99,7 @@
                     <ui:Label name="result-title" class="verify-title" />
                     <ui:Label name="result-lead" class="verify-lead" />
                     <ui:Label name="result-chip" class="verify-chip" />
+                    <ui:Label name="result-error" class="verify-error" />
                 </ui:VisualElement>
                 <ui:VisualElement name="result-body" />
             </ui:ScrollView>

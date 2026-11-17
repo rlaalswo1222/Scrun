@@ -21,8 +21,8 @@ namespace Scrun.App
         Texture2D preview;          // E-04 미리보기
         IVisualElementScheduledItem ticker;
         bool busy, finished;
-        VisualElement guide, leave, confirm, sending, result;
-        Label navTitle, chip, resultTitle, resultLead, confirmError, guideError;
+        VisualElement guide, leave, confirm, sending, read, result;
+        Label navTitle, chip, resultTitle, resultLead, confirmError, guideError, resultError;
         Button back, primary, secondary;
         VisualElement resultIcon, resultBody;
         Image photo;
@@ -46,12 +46,14 @@ namespace Scrun.App
             leave = Q<VisualElement>("leave");
             confirm = Q<VisualElement>("confirm");
             sending = Q<VisualElement>("sending");
+            read = Q<VisualElement>("read");
             result = Q<VisualElement>("result");
             photo = new Image { scaleMode = ScaleMode.ScaleAndCrop };
             photo.AddToClassList("verify-photo-img");
             Q<VisualElement>("photo").Add(photo);
             confirmError = Q<Label>("confirm-error");
             guideError = Q<Label>("guide-error");
+            resultError = Q<Label>("result-error");
             resultIcon = Q<VisualElement>("result-icon");
             resultTitle = Q<Label>("result-title");
             resultLead = Q<Label>("result-lead");
@@ -106,8 +108,12 @@ namespace Scrun.App
         {
             var before = flow.Step;
             flow.Tick(DateTime.UtcNow);
-            if (flow.Step != before) DropPhoto();
-            if (flow.Step != before || chip.IsVisible()) Render();
+            if (flow.Step != before)
+            {
+                DropPhoto();
+                Render();
+            }
+            else if (chip.IsVisible()) UpdateChip(); // 남은 시간만 바뀜(화면 전체를 다시 그리지 않음)
         }
 
         // I-06에서 설정 앱으로 가서 카메라를 켜고 돌아오면 안내로(다시 "카메라 열기")
@@ -187,7 +193,7 @@ namespace Scrun.App
             Render();
             try
             {
-                var parts = VerifyPhotos.Prepare(shot, sensor, Application.isEditor ? FakeNative.Config.cameraOcr : (FakeOcrResult?)null);
+                var parts = await VerifyPhotos.PrepareAsync(shot, sensor, Application.isEditor ? FakeNative.Config.cameraOcr : (FakeOcrResult?)null);
                 var r = await Api.Runs.VerifyPhotoAsync(runId, parts);
                 DropPhoto();
                 flow.Answer(r);
@@ -298,6 +304,7 @@ namespace Scrun.App
             leave.SetVisible(s == VerifyStep.ConfirmLeave);
             confirm.SetVisible(s == VerifyStep.Confirm);
             sending.SetVisible(s == VerifyStep.Sending);
+            read.SetVisible(false); // E-05b 읽은 값 확인(계획 0045): 모양만 있음, 단계·버튼 연결은 지환
             bool isResult = s >= VerifyStep.Verified && s <= VerifyStep.NoCamera;
             result.SetVisible(isResult);
             back.SetVisible(s == VerifyStep.Guide || s == VerifyStep.ConfirmLeave || s == VerifyStep.Confirm || s == VerifyStep.NoCamera);
@@ -313,8 +320,12 @@ namespace Scrun.App
                 VerifyStep.NoCamera => "카메라 권한 거부",
                 _ => "계기판 인증",
             };
-            guideError.SetVisible(s == VerifyStep.Guide && flow.Error != VerifyError.None);
-            guideError.text = "카메라를 열지 못했어요. 다시 눌러 주세요.";
+            // 카메라를 못 엶: 안내(E-02)나 다시 찍기 화면(E-07·08·09)으로 돌아와 문구를 보여 줌
+            const string cameraFailed = "카메라를 열지 못했어요. 다시 눌러 주세요.";
+            guideError.SetVisible(s == VerifyStep.Guide && flow.Error == VerifyError.Camera);
+            guideError.text = cameraFailed;
+            resultError.SetVisible(isResult && flow.Error == VerifyError.Camera);
+            resultError.text = cameraFailed;
             confirmError.SetVisible(s == VerifyStep.Confirm && flow.Error != VerifyError.None);
             confirmError.text = flow.Error switch
             {
@@ -336,9 +347,7 @@ namespace Scrun.App
             resultBody.Clear();
             resultIcon.ClearClassList();
             resultIcon.AddToClassList("verify-icon");
-            int? left = flow.SecondsLeft(DateTime.UtcNow);
-            chip.SetVisible(flow.CanRetake && left.HasValue && (s == VerifyStep.Unreadable || s == VerifyStep.Mismatch || s == VerifyStep.Unsupported));
-            if (left.HasValue) chip.text = $"남은 시간 {left.Value / 60}:{left.Value % 60:00}";
+            UpdateChip();
             secondary.SetVisible(true);
             switch (s)
             {
@@ -353,7 +362,9 @@ namespace Scrun.App
                     Buttons(flow.CanRetake ? $"다시 촬영 (남은 {r?.RetakesLeft ?? 0}번)" : "확인", flow.CanRetake ? "미인증으로 저장" : null);
                     break;
                 case VerifyStep.Mismatch:
-                    Head("verify-icon--bad", "미인증 기록", "계기판과 센서 기록이 달라요");
+                    // 다시 찍을 수 있으면 아직 미인증이 아님(Figma E-08 제목은 다 쓴 뒤). 문구는 상준 확인
+                    if (flow.CanRetake) Head("verify-icon--bad", "기록이 서로 달라요", "계기판을 다시 찍거나 미인증으로 저장할 수 있어요");
+                    else Head("verify-icon--bad", "미인증 기록", "계기판과 센서 기록이 달라요");
                     resultBody.Add(Table(r));
                     resultBody.Add(Notice());
                     Buttons(flow.CanRetake ? $"다시 촬영 (남은 {r?.RetakesLeft ?? 0}번)" : "확인", flow.CanRetake ? "미인증으로 저장" : null);
@@ -373,6 +384,15 @@ namespace Scrun.App
                     Buttons("설정 열기", "미인증으로 저장");
                     break;
             }
+        }
+
+        // 다시 찍기 화면(E-07·08·09)의 남은 시간 칩
+        void UpdateChip()
+        {
+            var s = flow.Step;
+            int? left = flow.SecondsLeft(DateTime.UtcNow);
+            chip.SetVisible(flow.CanRetake && left.HasValue && (s == VerifyStep.Unreadable || s == VerifyStep.Mismatch || s == VerifyStep.Unsupported));
+            if (left.HasValue) chip.text = $"남은 시간 {left.Value / 60}:{left.Value % 60:00}";
         }
 
         void Head(string iconClass, string title, string lead)
@@ -492,7 +512,8 @@ namespace Scrun.App
             return box;
         }
 
-        public static string FormatKm(int meters) => (meters / 1000.0).ToString("0.00") + "km";
+        // 달리기 HUD·결과와 같은 글자(10 m 아래 버림, 로케일과 무관하게 점)
+        public static string FormatKm(int meters) => RunSession.DistanceText(meters) + "km";
         public static string FormatTime(int sec) => sec >= 3600 ? $"{sec / 3600}:{sec / 60 % 60:00}:{sec % 60:00}" : $"{sec / 60}:{sec % 60:00}";
         static string FormatDiffSec(int sec) => sec < 60 ? sec + "초" : FormatTime(sec);
     }

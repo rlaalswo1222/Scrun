@@ -340,3 +340,38 @@ def test_hub_without_tracking_collects_nothing():
     h.update(join(h, "a"), 0.0, 9.0, True)
     h.update(join(h, "b"), 0.0, 9.0, True)
     assert h.companions("b", "r1") == []
+
+
+# ---------- 시각은 UTC(Z) ----------
+KST = timezone(timedelta(hours=9))
+
+
+def test_times_go_out_in_utc_even_if_sent_with_offset(db_client, me):
+    """앱이 +09:00으로 보내도 응답은 Z"""
+    when = ago(minutes=20).astimezone(KST)
+    r = db_client.post("/v1/runs", headers=me, json={
+        "clientRunId": "c1", "mapInstanceId": LAKE, "goal": {"type": "DISTANCE", "value": 3000},
+        "startedAt": when.isoformat()})
+    assert r.status_code == 201, r.text
+    assert data(r)["startedAt"] == iso(when)
+
+
+def test_times_read_from_db_go_out_in_utc_whatever_the_connection_timezone(db_client, me, test_db):
+    """서버 DB 연결 시간대가 Asia/Seoul이어도(읽은 값에 +09:00이 붙음) 응답은 Z"""
+    from sqlalchemy import event
+
+    run_id = finished_id(db_client, me)
+
+    def seoul(dbapi_conn, _record):
+        with dbapi_conn.cursor() as cur:
+            cur.execute("SET TIME ZONE 'Asia/Seoul'")
+
+    test_db.engine.dispose()
+    event.listen(test_db.engine, "connect", seoul)
+    try:
+        listed = runs(db_client, me)["items"][0]["startedAt"]
+        detail = data(db_client.get(f"/v1/runs/{run_id}", headers=me))["startedAt"]
+    finally:
+        event.remove(test_db.engine, "connect", seoul)
+        test_db.engine.dispose()
+    assert listed.endswith("Z") and detail == listed

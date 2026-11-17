@@ -64,6 +64,15 @@ enum ScrunBridge {
         return v
     }
 
+    /// 지금 맨 위에 보이는 화면(시트·카메라를 그 위에 띄움). 메인 스레드에서만
+    static func topViewController() -> UIViewController? {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let windows = scenes.flatMap { $0.windows }
+        var vc = (windows.first { $0.isKeyWindow } ?? windows.first)?.rootViewController
+        while let p = vc?.presentedViewController, !p.isBeingDismissed { vc = p } // 사라지는 중인 창 위엔 못 띄움(카메라·공유 시트)
+        return vc
+    }
+
     static func permissionKind(_ a: [String: Any]) throws -> ScrunPermissionKind {
         let s = try string(a, "kind")
         guard let k = ScrunPermissionKind(rawValue: s) else { throw ScrunError("모르는 권한: \(s)") }
@@ -105,6 +114,9 @@ public func scrun_call(_ reqId: Int32, _ name: UnsafePointer<CChar>, _ json: Uns
             case "camera.shoot":
                 // 계기판 촬영 E-03(ScrunCamera.swift, 계획 0033). 사용자가 찍거나 닫으면 답
                 try ScrunCamera.shoot(a) { result in ScrunBridge.ok(reqId, result) }
+            case "app.share":
+                // 내 친구 코드 공유(G-05, 계획 0044). 시트가 닫히면 보냈는지(true)·취소(false)
+                try ScrunShare.share(try ScrunBridge.string(a, "text")) { sent in ScrunBridge.ok(reqId, sent) }
             default:
                 throw ScrunError("모르는 요청: \(n)")
             }

@@ -48,5 +48,7 @@ namespace Scrun.App
         public string Hint = "숫자가 선명하게 보이도록 맞춰 주세요";
         // 노출(EV). 7세그먼트 LED가 하얗게 타지 않게 어두운 장을 함께 찍는다(console_ocr.md, 값은 첫 실기기 시험에서 정함)
         public float[] ExposureBiases = { 0f, -1.5f, -3f };
+        // 저장할 사진의 긴 변(px, 0 = 원본). Swift가 픽셀을 세우고(EXIF 방향 반영) 이 크기로 줄여 쓴다 → C#은 다시 디코딩하지 않음
+        public int MaxSide = VerifyPhotos.MaxSide;
     }
 }

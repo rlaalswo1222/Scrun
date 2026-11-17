@@ -1,0 +1,9 @@
+# OCR 학습 환경·데이터·모델은 저장소에 올리지 않음(계획 0038, ADR-0012)
+.venv/
+data/
+runs/
+models/
+*.onnx
+*.pth
+*.pt
+*.log

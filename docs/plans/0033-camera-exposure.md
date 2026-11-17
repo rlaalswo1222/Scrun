@@ -4,6 +4,8 @@
 - **맥 할 일**(Windows가 적고 맥이 읽음. 맥은 `git pull --rebase` 뒤 위에서부터, 끝낸 줄은 지우고 결과는 아래 "진행"의 맥 줄에. 사용자는 맥에 "0033 맥 할 일 해 줘"만 침)
   (11/13 맥: 컴파일·아이폰 확인·사진 받기 끝, 결과는 "진행"의 11/13 맥 줄)
   (11/17 맥: Swift 8건 고침·리뷰 반영·아이폰 확인 → `fix/camera-swift` PR. 결과는 "진행"의 11/17 맥 줄. **8번 셔터 상한은 어두운 곳에서 안 지켜짐, 원인 미확인 → 남음**)
+    - **11/18 맥 할 일 — `fix/camera-swift`(#66) 빌드 확인**: Windows가 develop을 합침(충돌: #64 사진 세우기 `upright`·`maxSide`, #69가 `topViewController`를 `ScrunBridge`로 옮김 → #66의 "사라지는 중인 창 건너뛰기"를 `ScrunBridge.topViewController`로 옮기고 카메라·공유 시트가 같이 씀). `git checkout fix/camera-swift && git pull` → Xcode 빌드(경고 0) → 아이폰에서 찍기 한 번·친구 코드 공유 시트 한 번 → 되면 #66 머지는 Windows가
+  - **남은 맥 할 일 — 사진 세우기 확인(11/17 Windows가 고침, #64. 11/18 `fix/camera-swift`에 develop을 합쳐 같이 들어감)** 사진 세우기: 카메라는 세로 사진도 가로 픽셀 + EXIF 방향 태그로 써서, C#(`Texture2D.LoadImage`)·서버가 90° 누운 사진을 받았음(#62 리뷰). `ScrunCamera.upright`가 사진 콜백 스레드에서 ImageIO로 픽셀을 돌리고 긴 변 2048(`CameraShootOptions.MaxSide`)로 줄여 씀(메타데이터는 버림, 7번의 쓰기 크기도 줄어듦). 맥에서: Swift 컴파일 → 아이폰에서 계기판 인증 E-02 → 찍기 → E-04 미리보기가 **세로로 바로** 보이는지, 받은 파일(`scrun-camera/`)이 1536×2048 정도·장당 1 MB 안팎인지, `[ScrunCamera] 사진을 세우지 못해` 로그가 없는지
 - 담당: 민재(11/12 지환 S3 줄 "카메라 노출 제어 Swift"를 가져옴 → 지환에게 알림, 0017 표 고치기). 촬영 화면 E-02·E-04와 OCR·인증(BL-16 화면·17·18)은 지환 S4 그대로, 모양은 상준
 - 기준: 공개 백로그 BL-16 ①–⑥, `docs/product/console_ocr.md`(10/29 첫 시험: **병목은 인식기보다 노출**, LED가 하얗게 타고 꺼진 획이 비침), Figma E-02(607:1115)·E-03(607:1174)·E-04(607:1216) 노트, ADR-0009(네이티브 통로), OCR은 서버에서(BL-17 ①, 11/06 확정)
 

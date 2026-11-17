@@ -21,7 +21,8 @@ namespace Scrun.App
     }
 
     // 서버 오류를 흐름이 아는 만큼만(화면이 ApiException을 이걸로 바꿈)
-    public enum VerifyError { None, Network, Closed, Busy, NotFound, Other }
+    // Camera는 서버가 아니라 카메라를 못 연 것(안내·다시 찍기 화면에 문구)
+    public enum VerifyError { None, Network, Closed, Busy, NotFound, Other, Camera }
 
     // 흐름 판단만(순수 C#, EditMode 테스트). 카메라·서버·시계는 밖에서 결과만 넣는다(RunReadyFlow와 같은 방식)
     public sealed class VerifyFlow
@@ -70,7 +71,7 @@ namespace Scrun.App
                     Step = VerifyStep.NoCamera;
                     break;
                 case CameraOutcome.Unavailable:
-                    Error = VerifyError.Other;
+                    Error = VerifyError.Camera;
                     Step = before;
                     break;
                 default: // 취소(X) → 열기 전 화면
@@ -114,11 +115,12 @@ namespace Scrun.App
 
         VerifyStep savingFrom = VerifyStep.Guide;
 
-        // 미인증으로 저장: E-07·08·09(그만둠), E-10(시간 초과), I-06·나가기 확인(촬영 없이)
+        // 미인증으로 저장: E-07·08·09(그만둠), E-10(시간 초과), I-06·나가기 확인(촬영 없이).
+        // 다시 찍으려다 I-06(권한 거부)에서 저장하면 그만둔 것 — 서버가 마지막 시도의 대조 표를 남김(SKIPPED면 잃음)
         public bool SaveUnverified()
         {
             string reason;
-            if (IsRetakeScreen) reason = "RETAKE_GIVEN_UP";
+            if (IsRetakeScreen || Step == VerifyStep.NoCamera && Result != null) reason = "RETAKE_GIVEN_UP";
             else if (Step == VerifyStep.TimeOver) reason = "TIMEOUT";
             else if (Step == VerifyStep.NoCamera || Step == VerifyStep.ConfirmLeave) reason = "SKIPPED";
             else return false;

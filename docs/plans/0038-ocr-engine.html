@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OCR 엔진 고르기</title>
+<style>
+:root {
+  --bg: #fbfaf7; --surface: #ffffff; --ink: #1d232b; --muted: #5d6673; --line: #e3e0d8;
+  --accent: #1f6feb; --good: #1a7f37; --warn: #9a6700; --bad: #c62828; --chip: #f1efe9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171c; --surface: #1b2027; --ink: #e8eaed; --muted: #a2abb7; --line: #2c333d;
+    --accent: #6ea8fe; --good: #56d364; --warn: #e3b341; --bad: #ff7b72; --chip: #232a33;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171c; --surface: #1b2027; --ink: #e8eaed; --muted: #a2abb7; --line: #2c333d;
+  --accent: #6ea8fe; --good: #56d364; --warn: #e3b341; --bad: #ff7b72; --chip: #232a33;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 -apple-system, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif; }
+main { max-width: 920px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 26px; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 36px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+p, li { color: var(--ink); }
+.lead { color: var(--muted); margin: 0 0 18px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 12px 0; }
+.rec { border-left: 4px solid var(--accent); }
+.tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--chip); color: var(--muted); margin-right: 4px; }
+.good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+.table-wrap { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; width: 100%; min-width: 640px; background: var(--surface); }
+th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; font-size: 14.5px; }
+th { background: var(--chip); font-weight: 600; }
+svg { width: 100%; height: auto; display: block; }
+svg text { fill: var(--ink); font-size: 13px; font-family: inherit; }
+svg .box { fill: var(--surface); stroke: var(--line); }
+svg .hot { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+svg .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; marker-end: url(#ah); }
+svg .sub { fill: var(--muted); font-size: 11.5px; }
+small, .src { color: var(--muted); font-size: 13.5px; }
+a { color: var(--accent); }
+code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
+</style>
+</head>
+<body>
+<main>
+<h1>계기판 숫자를 읽는 엔진 고르기</h1>
+<p class="lead">계획 0038 정할 것 1 → ADR-0012. 2026-11-16 지환. 서버(오라클)에서 계기판 사진의 거리·시간을 읽을 "숫자 검출 모델"을 고른다.</p>
+
+<div class="card rec">
+<b>한 줄 요약</b><br>
+10/29에 잘 됐던 건 Ultralytics YOLO인데, 라이선스(AGPL-3.0) 때문에 서버에 올리면 서버 코드와 학습한 가중치까지 공개해야 한다는 것이 Ultralytics의 해석이다.
+같은 데이터·생성기로 <b>Apache-2.0 모델(YOLOX)을 먼저 학습</b>하고, RF-DETR을 같은 채점으로 비교하는 것을 추천한다. YOLO11은 로컬 실험의 기준선으로만 쓴다.
+</div>
+
+<h2>1. 무엇을 고르는지</h2>
+<p>엔진은 아래 그림의 <b>파란 칸 하나</b>다. 나머지(자르기, 합성 생성기, 칸 묶기·소수점 규칙, 판정)는 어느 엔진이든 같고, 서버 코드도 <code>core/ocr.py</code>의 엔진 자리 하나만 바뀐다.</p>
+<svg viewBox="0 0 880 150" role="img" aria-label="사진에서 판정까지의 흐름">
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="color: var(--muted)"/></marker></defs>
+  <rect class="box" x="4" y="30" width="140" height="70" rx="10"/>
+  <text x="74" y="60" text-anchor="middle">브래킷 3장</text><text class="sub" x="74" y="80" text-anchor="middle">앱 E-03(민재 0033)</text>
+  <path class="arrow" d="M146,65 H176"/>
+  <rect class="box" x="178" y="30" width="130" height="70" rx="10"/>
+  <text x="243" y="60" text-anchor="middle">가이드 영역</text><text class="sub" x="243" y="80" text-anchor="middle">앱이 잘라 줄임</text>
+  <path class="arrow" d="M310,65 H340"/>
+  <rect class="hot" x="342" y="20" width="170" height="90" rx="10"/>
+  <text x="427" y="55" text-anchor="middle" font-weight="600">숫자 검출 모델</text><text class="sub" x="427" y="75" text-anchor="middle">0–9 · 소수점 · 콜론 상자</text><text class="sub" x="427" y="93" text-anchor="middle">← 이번에 고르는 것</text>
+  <path class="arrow" d="M514,65 H544"/>
+  <rect class="box" x="546" y="30" width="150" height="70" rx="10"/>
+  <text x="621" y="60" text-anchor="middle">칸 묶기·규칙</text><text class="sub" x="621" y="80" text-anchor="middle">소수점 위치·형식</text>
+  <path class="arrow" d="M698,65 H728"/>
+  <rect class="box" x="730" y="30" width="146" height="70" rx="10"/>
+  <text x="803" y="60" text-anchor="middle">거리·시간 → 판정</text><text class="sub" x="803" y="80" text-anchor="middle">PR #55</text>
+</svg>
+
+<h2>2. 우리가 아는 것 (10/29 시험)</h2>
+<ul>
+<li>일반 OCR(Apple Vision, Windows OCR, Tesseract)은 7세그먼트를 거의 못 읽었다. 공개 모델·규칙 해독기도 다른 기종에서 무너졌다 (<code>docs/product/console_ocr.md</code>, 계획 초안 0011).</li>
+<li><b>YOLO11n + 공개 데이터 + 합성 4,000장 + 소수점·형식 규칙</b>이 세 기종 사진 3장의 44칸을 모두 맞혔다.</li>
+<li class="warn">단, 사진이 3장뿐이고 생성기·규칙을 그 사진의 실패를 보고 만들었다. 정확도는 아직 말할 수 없고, 새 기종 사진으로 다시 재야 한다.</li>
+<li>그때 모델·코드는 남아 있지 않다(11/08 확인). 어느 엔진을 고르든 데이터·생성기·채점은 다시 만든다.</li>
+</ul>
+
+<h2>3. 후보 비교</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th></th><th>(가) YOLO11n<br><small>Ultralytics</small></th><th>(나) YOLOX-Nano·Tiny<br><small>Megvii</small></th><th>(다) RF-DETR-Nano<br><small>Roboflow</small></th><th>(라) 규칙 해독기<br><small>학습 없음</small></th></tr></thead>
+<tbody>
+<tr><td>라이선스</td><td class="bad">AGPL-3.0. Ultralytics는 학습한 모델도 AGPL이라고 해석</td><td class="good">Apache-2.0(코드). 공개 가중치의 조건은 따로 확인 필요</td><td class="good">Apache-2.0(Nano·Small·Medium. XL·2XL은 별도 라이선스)</td><td class="good">우리 코드</td></tr>
+<tr><td>크기</td><td>2.6M 파라미터</td><td>Nano 0.91M, Tiny 5.06M</td><td>약 30M(제3자 표기)</td><td>없음</td></tr>
+<tr><td>우리 문제에서</td><td class="good">10/29 44/44칸(사진 3장, 과대평가 가능)</td><td>안 해 봄. 같은 계열(앵커 없는 YOLO)이라 데이터 형식·입력 크기를 그대로 씀</td><td>안 해 봄. 작은 소수점(1–2 px)을 잘 잡는지 모름</td><td class="bad">한 기종에 맞춘 규칙이라 다른 기종 0/4, 0/3</td></tr>
+<tr><td>서버(오라클 ARM 2코어·11GiB) CPU 시간</td><td>재야 함</td><td>가장 가벼움(가설)</td><td>CPU 수치 공개 없음. 가장 무거움(가설)</td><td>가벼움</td></tr>
+<tr><td>도구</td><td>학습·내보내기가 가장 쉬움</td><td>2021년 공개, 최근 관리 상태는 확인 못 함. ONNX·onnxruntime 예제 있음</td><td>활발히 관리, ONNX 내보내기 있음</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+<p class="src">서버 실행은 셋 다 ONNX로 내보내 <code>onnxruntime</code>(MIT)으로 돌린다. 학습은 로컬(맥)에서 하고 서버엔 모델 파일만 올린다.</p>
+
+<h2>4. AGPL이 우리에게 뜻하는 것</h2>
+<div class="card">
+<ul>
+<li><b>Ultralytics의 해석</b>: 그 코드로 학습한 모델은 처음부터 학습해도 AGPL이다. 공개하지 않으려면 유료 Enterprise License가 필요하고, 지키려면 "파생 저작물 전체 소스(해당하면 모델 가중치 포함)"를 공개해야 한다 (<a href="https://ultralytics.com/license">Ultralytics License</a>, <a href="https://community.ultralytics.com/t/yolov11-agpl-license-for-on-premises-use/1529">공식 포럼 답변</a>).</li>
+<li><b>AGPL 13조</b>: 프로그램을 고쳐서 네트워크로 서비스하면 사용자에게 소스를 받을 길을 줘야 한다 (<a href="https://www.gnu.org/licenses/agpl-3.0.html">GNU AGPL v3 원문</a>). 가중치까지 해당하는지는 다툼이 있고 판례는 못 찾았다. <b>법률 판단이 아니다.</b></li>
+<li><b>우리 저장소</b>: 공개 저장소지만 <code>LICENSE</code> 파일이 없다. 그래서 지금은 "공개돼 있지만 모든 권리 보유" 상태다. (가)를 서버에 쓰려면 서버(최소 <code>backend/</code>)를 AGPL로 내고 가중치도 공개해야 하고, 나중에 비공개로 돌리거나 상용으로 가면 라이선스를 사야 한다.</li>
+<li>로컬에서 비교 실험만 하는 건(배포·서비스 안 함) 이 의무가 생기지 않는다(13조는 "고쳐서 원격 사용자와 상호작용할 때").</li>
+</ul>
+</div>
+
+<h2>5. 추천과 순서</h2>
+<div class="card rec">
+<ol>
+<li><b>엔진과 상관없는 것 먼저</b>: <code>speedlab/ocr/</code>에 공개 데이터 받기 → 7세그먼트 합성 생성기 → 칸 묶기·소수점 규칙 → 채점 스크립트.</li>
+<li><b>(나) YOLOX를 먼저 학습</b>: 10/29와 같은 데이터 형식. 서버 2코어에서 가장 가벼울 것(가설).</li>
+<li><b>같은 채점으로 비교</b>: (다) RF-DETR-Nano와, 기준선으로 (가) YOLO11n(로컬에서만).</li>
+<li>세 가지를 잰다. YOLOX가 기준선보다 확실히 못하면 그때 (다)나 (가)의 라이선스 비용을 다시 본다.
+  <ul>
+    <li>칸 단위 정확도</li>
+    <li>사진 단위로 거리·시간이 둘 다 맞은 비율</li>
+    <li>오라클 ARM 2코어에서 3장 처리 시간</li>
+  </ul>
+</li>
+</ol>
+<p><small>채점 사진: 학습에 안 쓴 새 기종(상준 BL-45 사진 + 헬스장 앱 브래킷 사진). 사람이 비친 사진은 저장소에 올리지 않고 결과만 <code>console_ocr.md</code>에.</small></p>
+</div>
+
+<h2>참고</h2>
+<ul class="src">
+<li><a href="https://ultralytics.com/license">Ultralytics License</a> · <a href="https://community.ultralytics.com/t/yolov11-agpl-license-for-on-premises-use/1529">Ultralytics 포럼: AGPL on-prem</a> · <a href="https://docs.ultralytics.com/models/yolo11/">YOLO11 문서</a></li>
+<li><a href="https://www.gnu.org/licenses/agpl-3.0.html">GNU AGPL v3</a></li>
+<li><a href="https://github.com/Megvii-BaseDetection/YOLOX/blob/main/LICENSE">YOLOX LICENSE(Apache-2.0)</a> · <a href="https://arxiv.org/abs/2107.08430">YOLOX 논문(Nano 0.91M·Tiny 5.06M)</a></li>
+<li><a href="https://roboflow.com/model-licenses/rf-detr">RF-DETR 라이선스(크기별)</a> · <a href="https://rfdetr.roboflow.com/latest/cookbooks/inference-latency-benchmark/">RF-DETR 지연 측정 방법</a></li>
+<li>우리 기록: <code>docs/product/console_ocr.md</code>, <code>docs/plans/0011-dashboard-photo-ocr.md</code>(로컬 초안), ADR-0008(오라클 ARM 2코어·11GiB), ADR-0011(브래킷 3장)</li>
+</ul>
+</main>
+</body>
+</html>

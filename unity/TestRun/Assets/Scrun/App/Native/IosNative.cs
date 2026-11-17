@@ -8,7 +8,7 @@ namespace Scrun.App
     // 아이폰 진짜 구현. 실제 일은 Swift(Assets/Plugins/iOS/Scrun*.swift)가 하고, 여기서는 이름·JSON만 오간다.
     // 통로(INativeChannel)만 바꿔 끼우면 에디터 테스트에서도 같은 코드가 돈다(IosNativeTests).
     // 이름·값 문자열은 Swift ScrunBridge.swift와 짝이다. 바꾸면 양쪽을 같이 고친다.
-    internal sealed class IosNative : IPermissions, IHeadphones, ISecureStore, IKakaoLogin, ICamera, IDeviceStatus
+    internal sealed class IosNative : IPermissions, IHeadphones, ISecureStore, IKakaoLogin, ICamera, IDeviceStatus, IShare
     {
         readonly NativeBridge bridge;
 
@@ -107,6 +107,7 @@ namespace Scrun.App
                 guideLabel = options.GuideLabel,
                 hint = options.Hint,
                 biases = options.ExposureBiases,
+                maxSide = options.MaxSide,
             });
             return ParseShot(v);
         }
@@ -118,6 +119,15 @@ namespace Scrun.App
             if (paths == null || paths.Length == 0) return;
             bridge.Query("camera.discard", new { paths });
         }
+
+        // ---- IShare (내 친구 코드, 계획 0044) ----
+
+        // UIPasteboard는 Unity가 이미 잇는다(systemCopyBuffer)
+        public void Copy(string text) => GUIUtility.systemCopyBuffer = text ?? "";
+
+        // 공유 시트가 닫히면 Swift가 보냈는지(true)·취소(false)를 줌
+        public async Awaitable<bool> ShareTextAsync(string text) =>
+            (bool?)await bridge.CallAsync("app.share", new { text = text ?? "" }) ?? false;
 
         // ---- 이벤트 ----
 

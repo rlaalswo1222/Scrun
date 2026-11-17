@@ -2412,7 +2412,7 @@
           "Friend"
         ],
         "summary": "친구 목록",
-        "description": "화면 G-04, G-09 · BL-27. 없으면 빈 배열(G-04 빈 상태)",
+        "description": "화면 G-04, G-10 · BL-27. 달리는 친구 먼저, 그다음 최근에 달린 순, 닉네임 순. 없으면 빈 배열(G-04 빈 상태). '친구 N/50명'의 50은 정해진 값(BL-27 ⑤)",
         "operationId": "list_friends_v1_friends_get",
         "responses": {
           "200": {
@@ -2457,7 +2457,7 @@
           "Friend"
         ],
         "summary": "친구 코드로 추가",
-        "description": "화면 G-05에서 G-08(Figma 확인 필요) · BL-27. 최대 50명.\n\n스텁: 내 코드 `SCR-7K2Q` → SELF_FRIEND_CODE, `SCR-NONE` → FRIEND_CODE_NOT_FOUND, `SCR-FRND` → ALREADY_FRIEND, `SCR-FULL` → FRIEND_LIMIT_EXCEEDED, 그 밖 → 추가됨",
+        "description": "화면 G-05에서 G-08 · BL-27. 받은 코드(8글자, 대소문자·공백·하이픈 무시)를 넣으면 요청·수락 없이 서로 바로 친구. 한쪽이라도 50명이면 FRIEND_LIMIT_EXCEEDED(details.who: ME 또는 FRIEND). 없는 코드를 10분 안에 10번 넣으면 그 뒤로는 맞는 코드도 RATE_LIMITED(맞혀 보기 막기). 응답은 새 친구",
         "operationId": "add_friend_v1_friends_post",
         "requestBody": {
           "content": {
@@ -2564,7 +2564,7 @@
           "Friend"
         ],
         "summary": "지금 달리는 친구",
-        "description": "화면 G-01, G-02, B-01 · BL-28, BL-31",
+        "description": "화면 G-01, G-02, B-01 · BL-28, BL-31. 지금 섬에서 달리는 친구(실시간 방 기준, 와이파이가 잠깐 끊긴 사람 30초 포함). 이번 러닝 거리가 긴 순. 없으면 빈 배열(G-02)",
         "operationId": "running_friends_v1_friends_running_get",
         "responses": {
           "200": {
@@ -2611,7 +2611,7 @@
           "Friend"
         ],
         "summary": "친구 프로필",
-        "description": "화면 G-09(Figma 확인 필요) · BL-27. 최근 인증 러닝·인증 마크·레벨",
+        "description": "화면 G-09 · BL-27. 친구 줄 + 옷 단계 + 최근 공유 러닝 10개. 친구가 아니면 USER_NOT_FOUND",
         "operationId": "friend_profile_v1_friends__userId__get",
         "security": [
           {
@@ -2687,7 +2687,7 @@
           "Friend"
         ],
         "summary": "친구 삭제",
-        "description": "화면 G-10 · BL-27",
+        "description": "화면 G-09, G-10, G-11 · BL-27. 양쪽 모두에서 지워짐(상대에게 알리지 않음). 다시 맺으려면 코드가 필요. 친구가 아니면 USER_NOT_FOUND",
         "operationId": "delete_friend_v1_friends__userId__delete",
         "security": [
           {
@@ -2758,7 +2758,7 @@
           "Friend"
         ],
         "summary": "같이 달리기",
-        "description": "화면 G-03, D-20 · BL-29. 친구가 있는 맵 인스턴스로 입장, 친구 근처 위치(Q-22). 응답은 맵 입장과 같은 모양.\n\n스텁: 달리지 않는 친구(`usr_f2`) → FRIEND_NOT_RUNNING(앱은 일반 입장으로)",
+        "description": "화면 G-03, D-20 · BL-29(S8). 친구가 있는 맵 인스턴스로 입장, 친구 근처 위치(Q-22). 응답은 맵 입장과 같은 모양.\n\n**아직 예시 응답**(S8에 DB 연결). S7 앱은 GET /friends/running의 courseId로 일반 입장(POST /courses/{courseId}/entries)\n\n스텁: 달리지 않는 친구(`usr_f2`) → FRIEND_NOT_RUNNING(앱은 일반 입장으로)",
         "operationId": "run_together_v1_friends__userId__run_together_post",
         "security": [
           {
@@ -2846,7 +2846,7 @@
           "Friend"
         ],
         "summary": "친구 러닝 피드",
-        "description": "화면 G-01 · BL-28. 커서 방식. 미인증 기록도 공유됨(앱이 '미인증' 마크). 친구에게만 공개",
+        "description": "화면 G-01 · BL-28. 친구들이 공유한 끝난 러닝, 끝난 시각 최신순, 커서 방식(한 쪽 20개). 미인증 기록도 보임(앱이 '미인증' 마크), 인증 대기는 마크 없음. 친구에게만 공개(내 기록은 안 나옴). 친구가 없으면 items=[]",
         "operationId": "feed_v1_feed_get",
         "security": [
           {
@@ -2867,8 +2867,10 @@
                   "type": "null"
                 }
               ],
+              "description": "앞 쪽 응답의 nextCursor",
               "title": "Cursor"
-            }
+            },
+            "description": "앞 쪽 응답의 nextCursor"
           }
         ],
         "responses": {
@@ -2894,6 +2896,16 @@
           },
           "403": {
             "description": "SIGNUP_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
@@ -4226,18 +4238,6 @@
       },
       "FeedItem": {
         "properties": {
-          "feedId": {
-            "type": "string",
-            "title": "Feedid"
-          },
-          "userId": {
-            "type": "string",
-            "title": "Userid"
-          },
-          "nickname": {
-            "type": "string",
-            "title": "Nickname"
-          },
           "runId": {
             "type": "string",
             "title": "Runid"
@@ -4246,6 +4246,19 @@
             "type": "string",
             "format": "date-time",
             "title": "Startedat"
+          },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Endedat"
+          },
+          "courseId": {
+            "type": "string",
+            "title": "Courseid"
+          },
+          "courseName": {
+            "type": "string",
+            "title": "Coursename"
           },
           "distanceM": {
             "type": "integer",
@@ -4268,19 +4281,35 @@
           },
           "verification": {
             "$ref": "#/components/schemas/Verification",
-            "description": "미인증이면 앱이 '미인증' 마크"
+            "description": "UNVERIFIED면 앱이 '미인증' 마크, PENDING(인증 대기)은 마크 없음"
+          },
+          "feedId": {
+            "type": "string",
+            "title": "Feedid",
+            "description": "피드 줄 ID(지금은 runId와 같음)"
+          },
+          "userId": {
+            "type": "string",
+            "title": "Userid"
+          },
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
           }
         },
         "type": "object",
         "required": [
-          "feedId",
-          "userId",
-          "nickname",
           "runId",
           "startedAt",
+          "endedAt",
+          "courseId",
+          "courseName",
           "distanceM",
           "durationS",
-          "verification"
+          "verification",
+          "feedId",
+          "userId",
+          "nickname"
         ],
         "title": "FeedItem"
       },
@@ -4295,23 +4324,56 @@
             "title": "Nickname"
           },
           "level": {
-            "type": "integer",
-            "title": "Level"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level",
+            "description": "레벨(BL-32). 레벨 계산이 생기기 전까지 null"
           },
           "verifiedCount": {
             "type": "integer",
-            "title": "Verifiedcount"
+            "title": "Verifiedcount",
+            "description": "인증 마크 수(공유한 인증 완료 러닝 수)"
           },
           "runningNow": {
             "type": "boolean",
             "title": "Runningnow"
+          },
+          "runningDistanceM": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runningdistancem",
+            "description": "달리는 중이면 이번 러닝 거리(m, G-10 '3.2km 달리는 중'). 안 달리거나 옛 앱이면 null"
+          },
+          "lastRunAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastrunat",
+            "description": "마지막으로 끝낸 공유 러닝의 종료 시각(G-10 '20분 전 러닝'). 없으면 null"
           }
         },
         "type": "object",
         "required": [
           "userId",
           "nickname",
-          "level",
           "verifiedCount",
           "runningNow"
         ],
@@ -4321,8 +4383,10 @@
         "properties": {
           "friendCode": {
             "type": "string",
+            "maxLength": 32,
             "minLength": 1,
-            "title": "Friendcode"
+            "title": "Friendcode",
+            "description": "받은 코드 8글자. 대소문자·공백·하이픈은 무시. 공유 문구에서 코드를 골라내는 건 앱이 함"
           }
         },
         "type": "object",
@@ -4342,38 +4406,72 @@
             "title": "Nickname"
           },
           "level": {
-            "type": "integer",
-            "title": "Level"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level",
+            "description": "레벨(BL-32). 레벨 계산이 생기기 전까지 null"
           },
           "verifiedCount": {
             "type": "integer",
-            "title": "Verifiedcount"
+            "title": "Verifiedcount",
+            "description": "인증 마크 수(공유한 인증 완료 러닝 수)"
           },
           "runningNow": {
             "type": "boolean",
             "title": "Runningnow"
           },
+          "runningDistanceM": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runningdistancem",
+            "description": "달리는 중이면 이번 러닝 거리(m, G-10 '3.2km 달리는 중'). 안 달리거나 옛 앱이면 null"
+          },
+          "lastRunAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastrunat",
+            "description": "마지막으로 끝낸 공유 러닝의 종료 시각(G-10 '20분 전 러닝'). 없으면 null"
+          },
           "outfitStage": {
             "type": "integer",
             "title": "Outfitstage"
           },
-          "recentVerifiedRuns": {
+          "recentRuns": {
             "items": {
               "$ref": "#/components/schemas/FriendRun"
             },
             "type": "array",
-            "title": "Recentverifiedruns"
+            "title": "Recentruns",
+            "description": "최근 공유 러닝 10개(최신순, 인증 상태 무관)"
           }
         },
         "type": "object",
         "required": [
           "userId",
           "nickname",
-          "level",
           "verifiedCount",
           "runningNow",
           "outfitStage",
-          "recentVerifiedRuns"
+          "recentRuns"
         ],
         "title": "FriendProfile"
       },
@@ -4387,6 +4485,19 @@
             "type": "string",
             "format": "date-time",
             "title": "Startedat"
+          },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Endedat"
+          },
+          "courseId": {
+            "type": "string",
+            "title": "Courseid"
+          },
+          "courseName": {
+            "type": "string",
+            "title": "Coursename"
           },
           "distanceM": {
             "type": "integer",
@@ -4406,16 +4517,25 @@
               }
             ],
             "title": "Avgpacesperkm"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/Verification",
+            "description": "UNVERIFIED면 앱이 '미인증' 마크, PENDING(인증 대기)은 마크 없음"
           }
         },
         "type": "object",
         "required": [
           "runId",
           "startedAt",
+          "endedAt",
+          "courseId",
+          "courseName",
           "distanceM",
-          "durationS"
+          "durationS",
+          "verification"
         ],
-        "title": "FriendRun"
+        "title": "FriendRun",
+        "description": "친구의 끝난 러닝 한 줄(피드·프로필). 친구가 공유한 기록만."
       },
       "Gait": {
         "type": "string",
@@ -5383,7 +5503,7 @@
           "distanceM": {
             "type": "integer",
             "title": "Distancem",
-            "description": "지금까지 달린 거리"
+            "description": "이번 러닝에서 지금까지 달린 거리(m). 옛 앱이면 0"
           },
           "paceSPerKm": {
             "anyOf": [
@@ -5394,7 +5514,8 @@
                 "type": "null"
               }
             ],
-            "title": "Pacesperkm"
+            "title": "Pacesperkm",
+            "description": "지금 속도의 1 km 페이스(초). 1 km/h 아래면 null"
           }
         },
         "type": "object",

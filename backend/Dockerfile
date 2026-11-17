@@ -13,6 +13,9 @@ COPY app app
 COPY migrations migrations
 COPY scripts scripts
 
+# 계기판 OCR(계획 0046): PP-OCRv5 모델을 빌드 때 받아 넣는다(요청 중에 받지 않게). 우리 YOLOX 모델은 app/console_ocr/models에 들어 있음
+RUN python -m app.console_ocr.fetch_models
+
 RUN useradd --uid 1000 --create-home app
 USER app
 
