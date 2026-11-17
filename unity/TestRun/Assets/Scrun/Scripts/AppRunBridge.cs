@@ -19,6 +19,10 @@ namespace Scrun
             new Color(0.95f, 0.45f, 0.70f), new Color(0.98f, 0.62f, 0.15f),
         };
         static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
+        public const int LowTierBotBodies = 3; // 저사양 단계에서 그리는 서버 봇 몸 수(섬 봇 시절 저사양 3명과 같게)
+
+        // 섬 봇·무리를 숨긴 채 앱으로 달리는 중. ScrunQuality.Apply가 이걸 보고 섬 봇을 다시 켜지 않음
+        public static bool HidesIslandRunners { get; private set; }
 
         RunnerTag player;
         RouteTrack route;
@@ -27,6 +31,8 @@ namespace Scrun
         readonly Dictionary<string, RemoteBody> bodies = new Dictionary<string, RemoteBody>();
         readonly List<string> gone = new List<string>();
         readonly HashSet<string> seen = new HashSet<string>();
+        readonly List<(string id, float gap)> botGaps = new List<(string, float)>();
+        readonly HashSet<string> shownBots = new HashSet<string>();
         MaterialPropertyBlock block;
 
         public static void Attach(Scene scene)
@@ -65,6 +71,7 @@ namespace Scrun
 
         void HideIslandRunners()
         {
+            HidesIslandRunners = true;
             var bots = new List<RunnerTag>();
             var ghosts = new List<RunnerTag>();
             foreach (var t in RunnerTag.All)
@@ -106,8 +113,10 @@ namespace Scrun
                 WarnIfLapDiffers(together.CourseLengthM, lap);
                 double now = RealtimeClock.Now();
                 float myLap = LoopMath.Wrap(myDistance, lap);
+                PickBotsToDraw(together, myLap, lap, now);
                 foreach (var r in together.Runners)
                 {
+                    if (r.IsBot && !shownBots.Contains(r.UserId)) continue; // 저사양: 가까운 봇만 그림(간격 카드엔 다 나옴)
                     seen.Add(r.UserId);
                     if (!bodies.TryGetValue(r.UserId, out var body)) bodies[r.UserId] = body = Spawn(r);
                     // 내 누적 거리 근처로 펴서 놓음(이름표 간격 계산이 내 거리와 같은 기준이 되게)
@@ -125,6 +134,19 @@ namespace Scrun
                 Destroy(bodies[id].runner.gameObject);
                 bodies.Remove(id);
             }
+        }
+
+        // 저사양 단계(처음부터든 달리는 중 품질 낮추기든)면 서버 봇은 나와 가까운 LowTierBotBodies명만 그림.
+        // 섬 봇 시절 저사양이 봇 3명이었던 것과 같은 비용(봇이 서버 방으로 옮겨 품질 단계가 못 줄이게 된 것을 여기서)
+        void PickBotsToDraw(IRunTogether together, float myLap, float lap, double now)
+        {
+            shownBots.Clear();
+            botGaps.Clear();
+            foreach (var r in together.Runners)
+                if (r.IsBot) botGaps.Add((r.UserId, Mathf.Abs(LoopMath.Delta(myLap, r.PositionAt(now), lap))));
+            int max = ScrunQuality.Current == ScrunQuality.Tier.Low ? LowTierBotBodies : int.MaxValue;
+            if (botGaps.Count > max) botGaps.Sort((a, b) => a.gap.CompareTo(b.gap));
+            for (int i = 0; i < botGaps.Count && i < max; i++) shownBots.Add(botGaps[i].id);
         }
 
         bool lapChecked;
@@ -154,7 +176,7 @@ namespace Scrun
             var tag = go.GetComponent<RunnerTag>();
             tag.kind = RunnerTag.Kind.Remote;
             tag.crowd = false;
-            tag.displayName = r.Nickname;
+            tag.displayName = r.DisplayName; // 봇이어도 kind는 Remote: Bot은 섬 봇(품질 단계·순간이동 도구가 건드림)
             tag.color = color;
             block ??= new MaterialPropertyBlock();
             foreach (var smr in go.GetComponentsInChildren<Renderer>(true))
@@ -167,7 +189,11 @@ namespace Scrun
             return new RemoteBody { runner = rc, speed = speed };
         }
 
-        void OnDestroy() => RunLink.IslandGone();
+        void OnDestroy()
+        {
+            HidesIslandRunners = false;
+            RunLink.IslandGone();
+        }
 
         T FindInScene<T>() where T : Component
         {
