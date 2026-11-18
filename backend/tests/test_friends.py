@@ -254,3 +254,92 @@ def test_feed_pages_by_end_time_with_ties(db_client, db, two):
     seen = [i["runId"] for i in first["items"] + second["items"]]
     assert sorted(seen) == sorted(ids) and len(set(seen)) == 23
     fail(db_client.get("/v1/feed", headers=a, params={"cursor": "!!"}), 400, "VALIDATION_ERROR")
+
+
+# ---------- 같이 달리기(계획 0047) ----------
+def together(client, headers, user_id, course="crs_lake_loop"):
+    return client.post(f"/v1/friends/{user_id}/run-together", headers=headers, json={"courseId": course})
+
+
+@pytest.fixture
+def running_friend(db_client, db, two):
+    """a(보정 있음)와 친구 b가 노을 호수에서 달리는 중. (a 헤더, b ID, b 연결, 코스 길이)"""
+    from app.db.models import Course
+    from tests.test_courses import calibrate
+    a, b = two
+    befriend(db_client, a, b)
+    calibrate(db, my_id(db_client, a))
+    ub = my_id(db_client, b)
+    conn, _ = hub.join("map_crs_lake_loop", "crs_lake_loop", LAKE_M, ub, "러너2")
+    hub.update(conn, 1000.0, 10.0, True, run=800.0)
+    lap = db.scalar(select(Course.length_m).where(Course.id == "crs_lake_loop"))
+    return a, ub, conn, lap
+
+
+def test_run_together_puts_me_just_behind_the_friend(db_client, running_friend):
+    a, ub, _, _ = running_friend
+    out = data(together(db_client, a, ub))
+    assert out["courseId"] == "crs_lake_loop" and out["mapInstanceId"] == "map_crs_lake_loop"
+    assert out["nearFriend"]["userId"] == ub and 10.0 <= out["nearFriend"]["behindM"] <= 20.0
+    assert out["entryPositionM"] == pytest.approx(1000.0 - out["nearFriend"]["behindM"], abs=0.11)
+    assert out["realtime"]["token"]
+    plain = data(db_client.post("/v1/courses/crs_lake_loop/entries", headers=a))
+    assert plain["nearFriend"] is None, "일반 입장은 nearFriend 없음"
+
+
+def test_run_together_wraps_past_the_start_line(db_client, running_friend):
+    a, ub, conn, lap = running_friend
+    hub.update(conn, 5.0, 10.0, True)
+    out = data(together(db_client, a, ub))
+    assert out["entryPositionM"] == pytest.approx(lap + 5.0 - out["nearFriend"]["behindM"], abs=0.11)
+
+
+def test_run_together_needs_the_friend_in_that_map(db_client, db, running_friend):
+    a, ub, conn, _ = running_friend
+    fail(together(db_client, a, ub, "crs_island_tour"), 409, "FRIEND_NOT_RUNNING")   # 그새 다른 코스로(시트와 다름)
+    hub.update(conn, 1000.0, 0.0, False)
+    assert data(together(db_client, a, ub))["nearFriend"]["userId"] == ub, "잠깐 멈춘 친구(물 마시기)도 같이"
+    hub.leave(conn, intentional=True)
+    fail(together(db_client, a, ub), 409, "FRIEND_NOT_RUNNING")   # 섬을 나감
+    hub.join("map_crs_lake_loop", "crs_lake_loop", LAKE_M, ub, "러너2")   # 붙었지만 아직 첫 state 전(섬을 여는 중)
+    fail(together(db_client, a, ub), 409, "FRIEND_NOT_RUNNING")
+
+
+def test_run_together_twice_keeps_one_seat(db_client, db, running_friend):
+    """응답을 못 받은 앱의 재시도·두 번 누름: 둘 다 들어가고 자리는 하나."""
+    from app.db.models import CourseEntry
+    a, ub, _, _ = running_friend
+    data(together(db_client, a, ub))
+    data(together(db_client, a, ub))
+    me = my_id(db_client, a)
+    assert db.scalar(select(func.count()).select_from(CourseEntry).where(CourseEntry.user_id == me)) == 1
+
+
+def test_entry_position_never_equals_the_lap_length():
+    """6669.97은 소수 1자리로 반올림하면 6670.0(= 길이) → 0으로 감음(코스 위 [0, 길이))."""
+    from app.routers.courses import _on_lap
+    assert _on_lap(-0.03, 6670.0) == 0.0
+    assert _on_lap(6670.0, 6670.0) == 0.0
+    assert _on_lap(-10.0, 6670.0) == 6660.0
+
+
+def test_run_together_only_with_friends(db_client, running_friend):
+    a, ub, _, _ = running_friend
+    stranger = signup(db_client, "k_9")
+    fail(together(db_client, stranger, ub), 404, "USER_NOT_FOUND")
+    fail(together(db_client, a, my_id(db_client, a)), 404, "USER_NOT_FOUND")
+    fail(together(db_client, a, "01NOSUCHUSER0000000000000"), 404, "USER_NOT_FOUND")
+
+
+def test_run_together_checks_like_a_normal_entry(db_client, db, running_friend):
+    from app.db.models import Calibration, Course
+    from tests.test_courses import add_entry
+    a, ub, _, _ = running_friend
+    add_entry(db, ub)   # 친구는 입장해서 방에 있음(인원은 입장 줄 + 방으로 셈)
+    db.execute(update(Course).where(Course.id == "crs_lake_loop").values(max_runners_per_map=1))
+    db.commit()
+    fail(together(db_client, a, ub), 409, "COURSE_FULL")   # 친구가 한 자리
+    db.execute(update(Course).where(Course.id == "crs_lake_loop").values(max_runners_per_map=20))
+    db.query(Calibration).delete()
+    db.commit()
+    fail(together(db_client, a, ub), 409, "CALIBRATION_REQUIRED")

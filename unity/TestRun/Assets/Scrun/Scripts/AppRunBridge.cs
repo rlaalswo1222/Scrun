@@ -62,6 +62,17 @@ namespace Scrun
             RunLink.RouteShape = SampleRoute(route, RouteShapePoints);
             remoteRoot = new GameObject("RemoteRunners").transform;
             remoteRoot.SetParent(transform, false);
+            RunLink.TeleportPlayer = TeleportPlayer;
+        }
+
+        // 같이 달리기: 3·2·1이 끝날 때 친구 뒤로(계획 0047). 달리기 전이라 누적 거리 대신 한 바퀴 안 위치로 옮기고 카메라도 바로 따라감
+        void TeleportPlayer(float lapM)
+        {
+            if (player == null || player.runner == null || route == null) return;
+            player.runner.Teleport(Mathf.Repeat(lapM, route.LapLength));
+            var follow = FindInScene<FollowCamera>();
+            if (follow != null) follow.Snap();
+            RunLink.ReportPlayer(player.runner.Distance, player.runner.SpeedKmh, route.LapLength);
         }
 
         void UseSensorSpeed()
@@ -232,6 +243,7 @@ namespace Scrun
         void OnDestroy()
         {
             HidesIslandRunners = false;
+            RunLink.TeleportPlayer = null;
             RunLink.IslandGone();
         }
 

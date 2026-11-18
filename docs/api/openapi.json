@@ -2876,7 +2876,7 @@
           "Friend"
         ],
         "summary": "같이 달리기",
-        "description": "화면 G-03, D-20 · BL-29(S8). 친구가 있는 맵 인스턴스로 입장, 친구 근처 위치(Q-22). 응답은 맵 입장과 같은 모양.\n\n**아직 예시 응답**(S8에 DB 연결). S7 앱은 GET /friends/running의 courseId로 일반 입장(POST /courses/{courseId}/entries)\n\n스텁: 달리지 않는 친구(`usr_f2`) → FRIEND_NOT_RUNNING(앱은 일반 입장으로)",
+        "description": "화면 G-03, D-20, D-21 · BL-29, 계획 0047. 친구가 courseId에서 달리는 중이면 그 맵에 입장하고 친구 뒤 10–20m에 선다(entryPositionM, nearFriend). 응답은 맵 입장과 같은 모양이고 판정도 같다(보정 없음 CALIBRATION_REQUIRED, 가득 참 COURSE_FULL, 다른 코스에 있던 자리는 옮겨짐). 친구가 아니면 USER_NOT_FOUND, 섬을 나갔거나 그 코스를 떠났으면 FRIEND_NOT_RUNNING(앱은 D-21 안내 뒤 그 코스로 일반 입장, 잠깐 멈춘 친구는 같이). 코스가 숨겨졌으면 COURSE_NOT_FOUND. 섬을 불러오고 3·2·1을 하는 동안 친구가 앞서가므로 앱은 달리기를 시작할 때 실시간 방의 친구 위치로 다시 맞춘다",
         "operationId": "run_together_v1_friends__userId__run_together_post",
         "security": [
           {
@@ -2894,6 +2894,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunTogetherRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Successful Response",
@@ -2925,8 +2935,18 @@
               }
             }
           },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
-            "description": "USER_NOT_FOUND",
+            "description": "USER_NOT_FOUND, COURSE_NOT_FOUND",
             "content": {
               "application/json": {
                 "schema": {
@@ -4979,6 +4999,17 @@
               }
             ],
             "description": "실시간 방 접속 정보. 진짜 서버는 늘 줌(스텁 예시에도 있음)"
+          },
+          "nearFriend": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NearFriend"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "같이 달리기(POST /friends/{userId}/run-together)로 들어왔을 때만. 일반 입장은 null"
           }
         },
         "type": "object",
@@ -5117,6 +5148,26 @@
           "requestId"
         ],
         "title": "Meta"
+      },
+      "NearFriend": {
+        "properties": {
+          "userId": {
+            "type": "string",
+            "title": "Userid",
+            "description": "같이 달리는 친구"
+          },
+          "behindM": {
+            "type": "number",
+            "title": "Behindm",
+            "description": "친구 뒤 이만큼에 선다(m). 앱은 3·2·1이 끝날 때 친구의 그때 위치로 다시 맞춤(계획 0047)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "userId",
+          "behindM"
+        ],
+        "title": "NearFriend"
       },
       "NicknameCheck": {
         "properties": {
@@ -5608,6 +5659,22 @@
           "shared"
         ],
         "title": "RunSummary"
+      },
+      "RunTogetherRequest": {
+        "properties": {
+          "courseId": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Courseid",
+            "description": "G-03 시트에 보인 친구의 코스(GET /friends/running의 courseId). 친구가 그새 다른 코스로 옮겼으면 FRIEND_NOT_RUNNING"
+          }
+        },
+        "type": "object",
+        "required": [
+          "courseId"
+        ],
+        "title": "RunTogetherRequest"
       },
       "RunUpdate": {
         "properties": {

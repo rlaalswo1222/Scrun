@@ -22,6 +22,7 @@ from app.core.ocr import FakeOcr, get_ocr
 from app.db.models import CourseEntry
 from app.db.testing import TestDatabase
 from app.main import app
+from app.realtime.hub import hub
 from app.routers.courses import get_rng
 from app.stub_requests import REAL
 
@@ -58,6 +59,9 @@ def _clean(j):
         rt = data.get("realtime")
         if isinstance(rt, dict) and rt.get("token"):  # 실시간 토큰도 다시 만들 때마다 바뀜
             rt["token"] = "eyJhbGciOi...(realtime)"
+        near = data.get("nearFriend")  # 같이 달리기: 친구 ID
+        if isinstance(near, dict) and near.get("userId"):
+            near["userId"] = PLACEHOLDER["userId"]
         if data.get("createdAt"):  # 저장 시각(보정 등)도 다시 만들 때마다 바뀌지 않게
             data["createdAt"] = FIXED_META["timestamp"]
         if data.get("retakeDeadline"):  # 인증 마감(다시 찍기·값 확인)도
@@ -186,6 +190,18 @@ def collect() -> dict:
             c.post("/v1/friends", json=body, headers=auth2))
         rec("GET", "/v1/friends", None, "Bearer {accessToken}", c.get("/v1/friends", headers=auth2))
         rec("GET", "/v1/friends/running", None, "Bearer {accessToken}", c.get("/v1/friends/running", headers=auth2))
+        # 같이 달리기(계획 0047): 첫 사람이 섬에서 달리는 중 → 두 번째 사람(보정 있음)이 그 뒤로 입장
+        c.put("/v1/users/me/calibration", json=cal, headers=auth2)
+        conn, _ = hub.join("map_crs_lake_loop", "crs_lake_loop", 6670.0, my["userId"], my["nickname"])
+        hub.update(conn, 1240.0, 10.0, True, run=820.0)
+        app.dependency_overrides[get_rng] = lambda: random.Random(21)
+        try:
+            body = {"courseId": "crs_lake_loop"}
+            rec("POST", "/v1/friends/{userId}/run-together", body, "Bearer {accessToken}",
+                c.post(f"/v1/friends/{my['userId']}/run-together", json=body, headers=auth2))
+        finally:
+            app.dependency_overrides.pop(get_rng, None)
+            hub.leave(conn, intentional=True)
         rec("GET", "/v1/friends/{userId}", None, "Bearer {accessToken}", c.get(f"/v1/friends/{my['userId']}", headers=auth2))
         rec("GET", "/v1/feed", None, "Bearer {accessToken}", c.get("/v1/feed", headers=auth2))
         rec("DELETE", "/v1/friends/{userId}", None, "Bearer {accessToken}",

@@ -98,7 +98,6 @@ def test_unknown_path_and_method():
 @pytest.mark.parametrize("method,path,body,status,code", [
     ("GET", "/v1/runs/run_x/rewards", None, 404, "RUN_NOT_FOUND"),
     ("GET", "/v1/runs/run_other/rewards", None, 403, "FORBIDDEN"),
-    ("POST", "/v1/friends/usr_f2/run-together", None, 409, "FRIEND_NOT_RUNNING"),
     ("PUT", "/v1/users/me/impact", {"impactId": "imp_aurora"}, 400, "VALIDATION_ERROR"),
 ])
 def test_stub_error_triggers(method, path, body, status, code):

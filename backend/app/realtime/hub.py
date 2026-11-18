@@ -319,6 +319,15 @@ class Hub:
                     for r in room.runners.values()
                     if r.placed and r.running and r.conn is not None and r.user_id != except_user]
 
+    def in_map(self, user_id: str) -> Optional[tuple[str, float]]:
+        """그 사람이 섬에 서 있으면(첫 state를 보냄) (코스, 지금 위치 m). 같이 달리기 입장(계획 0047): 잠깐 멈춤·3·2·1 전도,
+        끊긴 지 GRACE_S 안도 포함(다른 폰엔 마지막 d·v로 계속 보이고 앱도 그렇게 내다봄, 러닝머신은 계속 돈다고 봄)."""
+        with self._lock:
+            self._sweep_locked()
+            room = self._rooms.get(self._where.get(user_id, ""))
+            r = room.runners.get(user_id) if room else None
+            return (room.course_id, r.d) if r is not None and r.placed else None
+
     def running_now(self, user_ids) -> dict[str, RunningNow]:
         """그중 지금 섬에서 달리는 중인 사람(친구 탭, 계획 0044). 끊긴 지 GRACE_S 안이면 마지막 상태로 남긴다
         (헬스장 와이파이가 잠깐 끊길 때마다 친구 목록에서 깜빡이지 않게. 그 뒤엔 sweep이 뺌)."""

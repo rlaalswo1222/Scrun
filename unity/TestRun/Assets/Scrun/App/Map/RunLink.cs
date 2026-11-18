@@ -30,6 +30,9 @@ namespace Scrun.App
 
         // ---- 앱 안 ----
         public static float? MyRunM { get; set; } // 이번 달리기 거리(m, HUD가 채움, 실시간 state의 run)
+        // 앱 → 섬: 내 아바타를 코스 위 한 바퀴 안 위치(m)로 옮김(같이 달리기, 계획 0047). 섬이 열려 있을 때만 있음(AppRunBridge가 넣음).
+        // 부르면 바로 ReportPlayer까지 해서 PlayerDistanceM이 새 자리
+        public static Action<float> TeleportPlayer { get; set; }
 
         public static float PlayerLapPositionM => LoopMath.Wrap(PlayerDistanceM, LapLengthM);
 
@@ -56,6 +59,7 @@ namespace Scrun.App
             RouteShape = null;
             Heads.Clear();
             MyRunM = null;
+            TeleportPlayer = null;
         }
 
         public static void ReportPlayer(float distanceM, float speedKmh, float lapLengthM)
