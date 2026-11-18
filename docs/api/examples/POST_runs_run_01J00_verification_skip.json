@@ -23,7 +23,21 @@
         "comparison": [],
         "retakeDeadline": null,
         "retakesLeft": null,
-        "rewards": null
+        "rewards": {
+          "xpBeforeM": 3150,
+          "xpAfterM": 3150,
+          "levelBefore": 2,
+          "levelAfter": 2,
+          "leveledUp": false,
+          "outfitStageAfter": 2,
+          "nextLevelRemainingM": 6850,
+          "impactsUnlocked": [],
+          "weeklyGoal": {
+            "counted": false,
+            "doneCount": 0,
+            "targetCount": null
+          }
+        }
       }
     },
     "error": null,

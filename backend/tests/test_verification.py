@@ -128,7 +128,9 @@ def test_read_values_are_confirmed_before_judging(db_client, me, db):
         ("VERIFIED", None, {"distanceM": 3100, "durationS": 1060}, {"distanceM": 3000, "durationS": 1000})
     assert [(r["item"], r["ok"]) for r in out["comparison"]] == [("distance", True), ("duration", True)]
     assert out["comparison"][0]["diffRatio"] == pytest.approx(100 / 3100, abs=1e-4)
-    assert out["retakeDeadline"] is None and out["attemptId"] is None and out["rewards"] is None
+    assert out["retakeDeadline"] is None and out["attemptId"] is None
+    r = out["rewards"]   # 성장 반영(계획 0048): 3.1 km로 Lv.2
+    assert (r["xpBeforeM"], r["xpAfterM"], r["levelBefore"], r["levelAfter"], r["leveledUp"], r["outfitStageAfter"]) ==         (0, 3100, 1, 2, True, 2)
     run = run_row(db, run_id)
     assert (run.status, run.official_source, run.official_distance_m, run.official_duration_s) == ("VERIFIED", "CONSOLE", 3100, 1060)
     v = db.scalars(select(Verification).where(Verification.run_id == run_id)).all()

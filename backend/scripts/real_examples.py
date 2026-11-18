@@ -178,6 +178,11 @@ def collect() -> dict:
         rec("PATCH", "/v1/runs/{runId}", body, "Bearer {accessToken}",
             c.patch(f"/v1/runs/{run_id}", json=body, headers=auth))
         rec("GET", "/v1/runs/{runId}/ghost", None, "Bearer {accessToken}", c.get(f"/v1/runs/{run_id}/ghost", headers=auth))
+        # 성장(계획 0048): 사진 인증한 첫 러닝의 반영 결과 → 레벨 → 임팩트 끄기(목록이 정해지기 전이라 null만)
+        rec("GET", "/v1/runs/{runId}/rewards", None, "Bearer {accessToken}", c.get(f"/v1/runs/{run_id}/rewards", headers=auth))
+        rec("GET", "/v1/users/me/progress", None, "Bearer {accessToken}", c.get("/v1/users/me/progress", headers=auth))
+        body = {"impactId": None}
+        rec("PUT", "/v1/users/me/impact", body, "Bearer {accessToken}", c.put("/v1/users/me/impact", json=body, headers=auth))
         # 친구(계획 0044): 두 번째 사람이 내 코드로 추가 → 둘 다 친구. 피드에 보이게 세 번째 러닝은 공유를 켬(설정에서 기본값을 껐음)
         c.patch(f"/v1/runs/{third_id}", json={"shared": True}, headers=auth)
         my = c.get("/v1/users/me", headers=auth).json()["success"]["data"]

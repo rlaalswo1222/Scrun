@@ -95,15 +95,6 @@ def test_unknown_path_and_method():
     assert_fail(client.put("/v1/courses", headers=AUTH), 405, "METHOD_NOT_ALLOWED")
 
 
-@pytest.mark.parametrize("method,path,body,status,code", [
-    ("GET", "/v1/runs/run_x/rewards", None, 404, "RUN_NOT_FOUND"),
-    ("GET", "/v1/runs/run_other/rewards", None, 403, "FORBIDDEN"),
-    ("PUT", "/v1/users/me/impact", {"impactId": "imp_aurora"}, 400, "VALIDATION_ERROR"),
-])
-def test_stub_error_triggers(method, path, body, status, code):
-    assert_fail(call(method, path, body, AUTH), status, code)
-
-
 def test_error_codes_match_readme():
     """docs/api/README.md 오류 코드 표와 ErrorCode가 같아야 한다."""
     documented = set(re.findall(r"^\| `([A-Z_]+)` \|", README.read_text(encoding="utf-8"), re.M))
