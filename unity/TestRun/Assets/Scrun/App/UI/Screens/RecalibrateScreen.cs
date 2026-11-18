@@ -9,7 +9,7 @@ namespace Scrun.App
     public sealed class RecalibrateScreen : AppScreen
     {
         Label last, speeds;
-        bool loading;
+        bool loading, loaded;
 
         protected override string Uxml => "UI/Recalibrate";
         public override bool HidesTabBar => true;
@@ -50,9 +50,12 @@ namespace Scrun.App
             if (loading) return;
             loading = true;
             CalibrationRecord got = null;
-            bool ok = await Feedback.Run(async () => got = await Api.Users.GetCalibrationAsync(), Load);
+            // 처음만 덮개, 보정을 마치고 돌아오면 지금 값을 둔 채 조용히
+            bool ok = await Feedback.Load(loaded, async () => got = await Api.Users.GetCalibrationAsync(), Load);
             loading = false;
-            if (ok && Root.panel != null) Show(got);
+            if (!ok || Root.panel == null) return;
+            loaded = true;
+            Show(got);
         }
 
         void Show(CalibrationRecord c)

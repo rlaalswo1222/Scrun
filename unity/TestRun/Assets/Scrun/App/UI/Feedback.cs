@@ -56,10 +56,11 @@ namespace Scrun.App
         public static bool IsBlocking => IsShown(loading) || IsShown(errorBox);
 
         // 서버 호출 하나를 로딩 표시와 함께 돌리고, 실패하면 알맞은 안내를 띄운다. 성공하면 true.
-        // onError가 true를 돌려주면 그 화면이 직접 처리한 것(예: 닉네임 중복은 입력 칸 아래에)이라 안내창을 띄우지 않음
-        public static async Task<bool> Run(Func<Task> work, Action retry = null, Func<ApiException, bool> onError = null)
+        // onError가 true를 돌려주면 그 화면이 직접 처리한 것(예: 닉네임 중복은 입력 칸 아래에)이라 안내창을 띄우지 않음.
+        // overlay: false면 덮개(I-07) 없이(끌어서 새로고침처럼 화면이 자기 표시를 가질 때). 실패 안내는 그대로
+        public static async Task<bool> Run(Func<Task> work, Action retry = null, Func<ApiException, bool> onError = null, bool overlay = true)
         {
-            ShowLoading(true);
+            if (overlay) ShowLoading(true);
             try
             {
                 await work();
@@ -79,7 +80,34 @@ namespace Scrun.App
             }
             finally
             {
-                ShowLoading(false);
+                if (overlay) ShowLoading(false);
+            }
+        }
+
+        // 화면이 보일 때마다 다시 받는 곳의 규칙 하나: 아직 보여 줄 게 없으면(처음) 덮개·실패 안내(Run), 이미 보이면 조용히(RunQuiet).
+        // 탭을 누를 때마다 "잠시만요"가 화면을 덮지 않게
+        public static Task<bool> Load(bool shown, Func<Task> work, Action retry = null, Func<ApiException, bool> onError = null) =>
+            shown ? RunQuiet(work, onError) : Run(work, retry, onError);
+
+        // 이미 보이는 화면을 뒤에서 다시 받을 때(탭에 다시 들어옴·뒤 화면에서 돌아옴): 덮개·오류창 없이, 실패하면 지난 값 그대로.
+        // 로그인이 풀렸으면 로그인으로 보내고, onError는 화면이 직접 처리할 실패(없어진 친구·코스 등)에만 불림
+        public static async Task<bool> RunQuiet(Func<Task> work, Func<ApiException, bool> onError = null)
+        {
+            try
+            {
+                await work();
+                return true;
+            }
+            catch (ApiException e)
+            {
+                if (e.Failure == ApiFailure.NotLoggedIn) Handle(e);
+                else if (onError == null || !onError(e)) Debug.LogWarning("[Api] 조용히 다시 받기 실패(지난 값 그대로): " + e);
+                return false;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                return false;
             }
         }
 

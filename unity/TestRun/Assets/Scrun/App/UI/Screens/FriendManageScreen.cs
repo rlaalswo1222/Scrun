@@ -15,6 +15,7 @@ namespace Scrun.App
         List<Friend> friends;
         FriendParts.Sheet sheet;
         bool loading;
+        int edits; // 받는 동안 지운 친구가 있으면 그 전에 받은 목록으로 되살리지 않게
 
         protected override string Uxml => "UI/FriendManage";
         public override bool HidesTabBar => true;
@@ -43,9 +44,16 @@ namespace Scrun.App
             if (loading) return;
             loading = true;
             List<Friend> got = null;
-            bool ok = await Feedback.Run(async () => got = await Api.Friends.ListAsync(), Load);
+            int editsAtStart = edits;
+            // 처음만 덮개, 프로필에서 돌아오면 지금 목록을 둔 채 조용히(그동안 밀어서 지울 수 있음)
+            bool ok = await Feedback.Load(friends != null, async () => got = await Api.Friends.ListAsync(), Load);
             loading = false;
             if (!ok || Root.panel == null) return;
+            if (edits != editsAtStart)
+            {
+                Load(); // 받는 사이 지웠음 → 지운 뒤 목록으로 다시
+                return;
+            }
             friends = got ?? new List<Friend>();
             FriendDirectory.Set(friends);
             Build();
@@ -77,6 +85,7 @@ namespace Scrun.App
             if (sheet?.Open == true) return;
             sheet = FriendParts.ConfirmDelete(this, f.UserId, f.Nickname, friends.Count, () =>
             {
+                edits++;
                 friends.RemoveAll(x => x.UserId == f.UserId);
                 Build();
             });
