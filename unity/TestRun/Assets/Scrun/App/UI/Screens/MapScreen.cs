@@ -325,7 +325,7 @@ namespace Scrun.App
         void OnSetupDone(RunSetup setup)
         {
             Setup = setup;
-            LoadGhost(setup.GhostRunId);
+            ghostLoad = LoadGhost(setup.GhostRunId);
             if (readyView == null)
             {
                 var view = new RunReadyView(Root, course.Name, () => together, CalibrationNow, RetryCalibration);
@@ -346,7 +346,8 @@ namespace Scrun.App
             backdrop = null;
             mapTop.SetVisible(true);
             hud?.Dispose();
-            // 고스트 시계열을 못 받았으면(실패) 서버 기록에도 고스트를 안 남김. 아직 받는 중이면 받는 대로 출발(내 달린 시간에 맞춰 따라잡음)
+            // 고스트 시계열을 못 받았으면(실패) 서버 기록에도 고스트를 안 남김. 아직 받는 중이면 받는 대로 출발(내 달린 시간에 맞춰 따라잡음),
+            // POST /runs는 받기를 기다렸다가 보냄(SendRunStart) → 늦게 실패해도 서버에 고스트가 남지 않음
             session = new RunSession(Setup.Goal) { GhostRunId = ghostFailed ? null : Setup.GhostRunId };
             hud = new RunHudView(Root, session, together);
             PlaceNearFriend();
@@ -358,12 +359,13 @@ namespace Scrun.App
 
         // ---- 고스트(계획 0050) ----
         GhostTrack ghostTrack;   // 고른 기록의 재생 거리(받기 전 null)
+        Task ghostLoad = Task.CompletedTask; // 지금 받는 중인 시계열(예외 없이 끝남)
         bool ghostFailed;        // 못 받음 → 혼자 달림
         float ghostStartM;
         int ghostRequest;        // 설정을 다시 하면 늦게 온 옛 응답을 버림
 
         // 러닝 설정이 끝나면 미리 받음(센서 준비·3·2·1 동안). 로딩 덮개 없이: 못 받아도 달리기는 막지 않음
-        async void LoadGhost(string runId)
+        async Task LoadGhost(string runId)
         {
             int request = ++ghostRequest;
             ghostTrack = null;
@@ -389,7 +391,9 @@ namespace Scrun.App
                 ghostFailed = true;
                 Debug.LogException(e);
             }
-            StartGhost(); // 이미 달리기 시작했으면 지금 출발(아직이면 3·2·1 끝에)
+            // 이미 달리기 시작했으면: 받았으면 지금 출발, 못 받았으면 여기서 알림(3·2·1 끝의 알림은 그때 실패를 알았을 때만). 아직이면 3·2·1 끝에
+            if (ghostFailed && session != null && session.Started && hud != null) hud.Notice(GhostText.LoadFailed);
+            StartGhost();
         }
 
         void StartGhost()
@@ -752,6 +756,13 @@ namespace Scrun.App
             var ct = runStart.Token;
             try
             {
+                // 고스트 시계열을 아직 받는 중이면 끝날 때까지 기다렸다가 보냄(시작 시각은 이미 정해짐). 못 받았으면 고스트 없이
+                if (s.GhostRunId != null)
+                {
+                    await ghostLoad;
+                    ct.ThrowIfCancellationRequested();
+                    if (ghostTrack == null) s.GhostRunId = null;
+                }
                 var r = await new RunStartSender().SendAsync(s.StartBody(mapInstanceId), ct);
                 if (r != null && session == s) s.RunId = r.RunId;
             }

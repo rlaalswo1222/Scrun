@@ -157,7 +157,7 @@ namespace Scrun.App
 
             RunLink.MyRunM = session.Started ? session.DistanceM(me) : (float?)null; // 다른 사람의 러너 카드 "누적 거리"
             RefreshGhost(me);
-            RefreshGaps();
+            RefreshGaps(me);
             RefreshMinimap(me);
             if (session.Phase == RunPhase.Running)
                 moment = moments.Check(session.DistanceM(me), session.ElapsedSec, NearestPerson()) ?? moment;
@@ -188,7 +188,7 @@ namespace Scrun.App
             ghostBanner.text = GhostText.Banner(session.DistanceM(me), g.Track.DistanceAt(t), g.Track.FinishedAt(t));
         }
 
-        void RefreshGaps()
+        void RefreshGaps(float me)
         {
             float lap = RunLink.LapLengthM;
             others.Clear();
@@ -197,9 +197,9 @@ namespace Scrun.App
                 double now = RealtimeClock.Now();
                 foreach (var r in together.Runners) others.Add((r.DisplayName, r.PositionAt(now)));
             }
-            if (Ghost != null && session.Started && lap > 0f) // 앞뒤 간격 줄에 "어제의 나"(D-13)
-                others.Add((GhostText.Name, LoopMath.Wrap(Ghost.PoseAt(session.ElapsedSec, false).IslandDistanceM, lap)));
             var (a, b) = LoopMath.Nearest(RunLink.PlayerLapPositionM, others, lap);
+            if (Ghost != null && session.Started) // 앞뒤 간격 줄에 "어제의 나"(D-13). 바퀴로 접지 않은 차이(배너와 같은 값)
+                (a, b) = LoopMath.WithExact((a, b), GhostText.Name, Ghost.Track.DistanceAt(session.ElapsedSec) - session.DistanceM(me));
             gaps.SetVisible(a != null || b != null);
             ahead.SetVisible(a != null);
             behind.SetVisible(b != null);

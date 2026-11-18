@@ -60,21 +60,7 @@ namespace Scrun.App
                     if (tags.TryGetValue(r.UserId, out var hidden)) Show(hidden, false);
                     continue;
                 }
-                var tag = TagFor(r);
-                // 화면 픽셀(아래에서 위) → 패널 좌표(위에서 아래)
-                var at = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(screen.x, Screen.height - screen.y));
-                // 다른 이름표와 겹치면 위로 쌓음(섬 RunnerLabels와 같게, 6칸까지). 크기는 지난 프레임 배치 값
-                float w = tag.resolvedStyle.width, h = tag.resolvedStyle.height;
-                if (w > 0f && h > 0f)
-                {
-                    var rect = new Rect(at.x - w / 2f, at.y - h, w, h);
-                    for (int k = 0; k < 6 && Overlaps(rect); k++) rect.y -= h + StackGap;
-                    placed.Add(rect);
-                    at.y = rect.yMax;
-                }
-                tag.style.left = at.x;
-                tag.style.top = at.y;
-                Show(tag, true);
+                Place(TagFor(r), screen, panel);
             }
 
             TickGhost(panel);
@@ -109,8 +95,16 @@ namespace Scrun.App
                 ghostTag.AddToClassList("hud-tag--ghost");
                 layer.Add(ghostTag);
             }
+            Place(ghostTag, screen, panel);
+        }
+
+        // 머리 위 화면 자리에 이름표를 놓음
+        void Place(Label tag, Vector2 screen, IPanel panel)
+        {
+            // 화면 픽셀(아래에서 위) → 패널 좌표(위에서 아래)
             var at = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(screen.x, Screen.height - screen.y));
-            float w = ghostTag.resolvedStyle.width, h = ghostTag.resolvedStyle.height;
+            // 다른 이름표와 겹치면 위로 쌓음(섬 RunnerLabels와 같게, 6칸까지). 크기는 지난 프레임 배치 값
+            float w = tag.resolvedStyle.width, h = tag.resolvedStyle.height;
             if (w > 0f && h > 0f)
             {
                 var rect = new Rect(at.x - w / 2f, at.y - h, w, h);
@@ -118,9 +112,9 @@ namespace Scrun.App
                 placed.Add(rect);
                 at.y = rect.yMax;
             }
-            ghostTag.style.left = at.x;
-            ghostTag.style.top = at.y;
-            Show(ghostTag, true);
+            tag.style.left = at.x;
+            tag.style.top = at.y;
+            Show(tag, true);
         }
 
         bool Overlaps(Rect rect)

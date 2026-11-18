@@ -187,7 +187,6 @@ namespace Scrun.App
             return r;
         }
 
-        // 달리는 동안 60초마다(계획 0037). 같은 offsetS 묶음을 다시 보내면 덮어씀(다시 보내도 하나)
         // 내 끝난 기록(최신순 20개씩). cursor는 앞 쪽의 NextCursor
         public async Task<RunListPage> ListAsync(string cursor = null) =>
             await c.GetAsync<RunListPage>(cursor == null ? "/v1/runs" : "/v1/runs?cursor=" + Uri.EscapeDataString(cursor), AuthMode.User)
@@ -198,6 +197,7 @@ namespace Scrun.App
             await c.GetAsync<GhostTrackBody>("/v1/runs/" + Uri.EscapeDataString(runId) + "/ghost", AuthMode.User)
             ?? throw new ApiException(ApiFailure.BadResponse, "고스트 응답이 비었습니다.");
 
+        // 달리는 동안 60초마다(계획 0037). 같은 offsetS 묶음을 다시 보내면 덮어씀(다시 보내도 하나)
         public Task PutSamplesAsync(string runId, RunSamplesBody body) =>
             c.SendAsync<object>("PUT", $"/v1/runs/{Uri.EscapeDataString(runId)}/samples", body, AuthMode.User);
 

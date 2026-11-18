@@ -207,7 +207,6 @@ namespace Scrun.App
         public RunStatsBody Sensor { get; set; }
     }
 
-    // 기록 요약(종료 응답 등). verification: PENDING(인증 대기)·VERIFIED·UNVERIFIED
     // GET /v1/runs(최신순 20개씩, 계획 0043). 고스트 고르기(D-03, 계획 0050)에도 씀
     public sealed class RunListPage
     {
@@ -230,6 +229,7 @@ namespace Scrun.App
         public List<float> SpeedsKmh { get; set; } = new List<float>();
     }
 
+    // 기록 요약(종료 응답 등). verification: PENDING(인증 대기)·VERIFIED·UNVERIFIED
     public sealed class RunSummary
     {
         public string RunId { get; set; }

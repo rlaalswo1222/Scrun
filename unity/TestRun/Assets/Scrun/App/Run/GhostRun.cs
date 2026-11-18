@@ -23,7 +23,8 @@ namespace Scrun.App
             DurationS = (cum.Length - 1) * interval;
         }
 
-        // 속도 칸을 거리로 쌓고, 끝이 기록의 공식 거리(인증 완료면 계기판)와 같게 맞춘다(목록·요약에 보인 "5.1km"에서 끝나게).
+        // 속도 칸을 거리로 쌓고, 끝이 기록의 공식 거리(인증 완료면 계기판)·공식 시간과 같게 맞춘다(목록·요약에 보인 "5.1km · 31:20"에서 끝나게).
+        // 시간도 맞추는 건 칸 수 × 간격이 공식 시간과 다를 수 있어서(못 올린 60초 묶음 등): 칸 모양(빨라지고 느려진 곳)은 두고 길이만 늘이고 줄임.
         // 칸이 없거나 거리가 0이면(옛 기록·시계열 없음) 공식 거리·시간의 일정한 페이스로
         public static GhostTrack From(int distanceM, int durationS, double intervalS, IReadOnlyList<float> speedsKmh)
         {
@@ -36,7 +37,7 @@ namespace Scrun.App
             if (raw <= 0f) return Even(distanceM, durationS);
             float scale = distanceM / raw;
             for (int i = 1; i < cum.Length; i++) cum[i] *= scale;
-            return new GhostTrack(cum, intervalS);
+            return new GhostTrack(cum, (double)durationS / speedsKmh.Count);
         }
 
         static GhostTrack Even(int distanceM, int durationS) => new GhostTrack(new[] { 0f, (float)distanceM }, durationS);
@@ -105,7 +106,7 @@ namespace Scrun.App
         public const string LoadFailed = "고스트 기록을 불러오지 못해 혼자 달려요"; // 임시
 
         // D-02 요약 둘째 줄 "5.1km · 31:20"
-        public static string Summary(RunSummary r) => Km(r.DistanceM) + " · " + FriendText.Duration(r.DurationS);
+        public static string Summary(RunSummary r) => FriendText.KmShort(r.DistanceM) + " · " + FriendText.Duration(r.DurationS);
 
         // D-03 줄 아래 "31:20 · 평균 6'08"/km"
         public static string Detail(RunSummary r)
@@ -113,10 +114,6 @@ namespace Scrun.App
             var pace = FriendText.Pace(r.AvgPaceSPerKm);
             return FriendText.Duration(r.DurationS) + (pace != null ? " · 평균 " + pace : "");
         }
-
-        // 5.1km(소수 한 자리, 버림: 목록·요약과 HUD 배너가 같은 반올림)
-        public static string Km(int meters) =>
-            (Math.Floor(Math.Max(0, meters) / 100.0) / 10.0).ToString("0.0", CultureInfo.InvariantCulture) + "km";
 
         // D-13 배너. 앞서면 "+42m 앞서요", 뒤처지면 몇 m 뒤인지 분명히(11/18 민재), 고스트가 끝났으면 멈춘 곳 기준(정할 것 3 가)
         public static string Banner(float myM, float ghostM, bool ghostFinished)

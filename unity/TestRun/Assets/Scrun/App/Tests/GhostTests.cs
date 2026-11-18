@@ -37,6 +37,32 @@ namespace Scrun.App.Tests
         }
 
         [Test]
+        public void GhostEndsAtTheOfficialDurationEvenIfSamplesAreMissing()
+        {
+            // 공식 31:20(1880초)인데 칸이 1700개(못 올린 묶음): 기록에 보인 시간에 끝나야 함(3분 일찍 멈추지 않게)
+            var t = Steady(10f, 1700, 5130);
+            var stretched = GhostTrack.From(5130, 1880, 1.0, new List<float>(new float[1700]).ConvertAll(_ => 10f));
+            Assert.AreEqual(1880.0, stretched.DurationS, 1e-6);
+            Assert.IsFalse(stretched.FinishedAt(1800));
+            Assert.AreEqual(2565f, stretched.DistanceAt(940), 0.5f, "일정 속도면 시간 절반에 거리 절반");
+            Assert.AreEqual(1700.0, t.DurationS, 1e-6, "칸 수와 공식 시간이 같으면 그대로");
+        }
+
+        [Test]
+        public void GapRowUsesTheTrueGhostDistanceNotTheLap()
+        {
+            // 한 바퀴 6.7 km, 고스트가 4.0 km 앞 → 접으면 "2.7km 뒤"가 되지만 배너처럼 "4.0km 앞"
+            var (a, b) = LoopMath.WithExact((null, null), GhostText.Name, 4000f);
+            Assert.AreEqual(GhostText.Name, a.Value.Name);
+            Assert.AreEqual(4000f, a.Value.GapM);
+            Assert.IsNull(b);
+            // 더 가까운 사람이 이미 앞에 있으면 그대로
+            var near = (new LoopMath.Neighbor("친구", 30f), (LoopMath.Neighbor?)null);
+            Assert.AreEqual("친구", LoopMath.WithExact(near, GhostText.Name, 50f).ahead.Value.Name);
+            Assert.AreEqual(GhostText.Name, LoopMath.WithExact(near, GhostText.Name, -12f).behind.Value.Name);
+        }
+
+        [Test]
         public void RecordsWithoutSamplesRunAtAnEvenPace()
         {
             var t = GhostTrack.From(3000, 1200, 1.0, new List<float>());
