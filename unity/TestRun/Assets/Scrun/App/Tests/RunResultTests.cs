@@ -128,7 +128,7 @@ namespace Scrun.App.Tests
             var s = new RunResultScreen("run_1");
             s.Create(null);
             bool Shown(string n) => s.Root.Q(n).style.display != DisplayStyle.None;
-            Assert.IsFalse(Shown("records"), "F-01 전엔 숨김(정할 것 3 가)");
+            Assert.IsTrue(Shown("records"), "기록 탭(F-01, 계획 0053)으로");
             var d = new RunDetail
             {
                 RunId = "run_1", StartedAt = new DateTime(2026, 11, 3, 22, 40, 0, DateTimeKind.Utc), DistanceM = 3020, DurationS = 1721,

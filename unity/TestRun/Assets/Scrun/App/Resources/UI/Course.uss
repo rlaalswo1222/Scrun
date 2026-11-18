@@ -91,6 +91,22 @@
     padding: 8px var(--space-5) var(--space-4) var(--space-5);
 }
 
+/* 기록 탭에서 왔을 때 뒤로(Onboarding.uss의 .nav-back과 같은 그림) */
+.course-back {
+    width: 28px;
+    height: 28px;
+    margin: 0 0 var(--space-2) 0;
+    padding: 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/nav-back.svg");
+}
+
+.course-back:hover,
+.course-back:active {
+    background-color: rgba(0, 0, 0, 0);
+}
+
 .course .page-title {
     font-size: var(--font-size-title);
     letter-spacing: -0.56px;

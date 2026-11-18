@@ -19,12 +19,14 @@ namespace Scrun.App
         MapScreen map; // 띄운 맵(돌아올 때 끝낸 기록 ID를 받음)
         bool enterOnLoad; // 친구 탭 "같이 달리기"(G-03, 계획 0044): 처음 불러오면 바로 "맵 입장"
         RunningFriend together; // 같이 달리기로 왔으면 그 친구(계획 0047): 다음 맵 한 번만 친구 뒤로 입장(X로 나와도 비워짐)
+        readonly RunSummary ghost; // 기록 상세 "이 기록으로 고스트 달리기"로 왔으면 그 기록(계획 0053): 러닝 설정에 고스트를 켜 둠(다시 입장해도)
 
-        public CourseDetailScreen(string courseId, bool enterOnLoad = false, RunningFriend together = null)
+        public CourseDetailScreen(string courseId, bool enterOnLoad = false, RunningFriend together = null, RunSummary ghost = null)
         {
             this.courseId = courseId;
             this.enterOnLoad = enterOnLoad;
             this.together = together;
+            this.ghost = ghost;
         }
 
         protected override string Uxml => "UI/CourseDetail";
@@ -156,7 +158,7 @@ namespace Scrun.App
         void PushMap()
         {
             if (Nav.Current != this) return;
-            map = new MapScreen(course, ReturnFromMap, together);
+            map = new MapScreen(course, ReturnFromMap, together, ghost);
             together = null; // 이번 맵이 가져감. 나중에 "맵 입장"을 직접 누르면 일반 입장
             Nav.Push(map);
         }

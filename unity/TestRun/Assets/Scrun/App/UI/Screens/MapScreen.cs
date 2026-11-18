@@ -45,6 +45,7 @@ namespace Scrun.App
         readonly CourseDetail course;
         readonly Action<MapExit, ApiException> onExit;
         RunningFriend friend;        // 같이 달리기(G-03, 계획 0047)로 왔으면 그 친구. 친구가 그새 끝냈으면 null로(일반 입장)
+        readonly RunSummary presetGhost; // 기록 상세에서 고른 고스트(계획 0053): 러닝 설정에 켜 둔 채로
         NearFriend nearFriend;       // 같이 달리기 입장 응답: 3·2·1이 끝날 때 친구 뒤로 다시 맞춤(한 번)
         string startNotice;          // 달리기를 시작할 때 HUD에 띄울 안내(친구가 입장 전에 끝냄)
         VisualElement loadingView, progress, unavailable;
@@ -99,11 +100,12 @@ namespace Scrun.App
         // 이번 달리기(3·2·1이 끝나야 생김, 계획 0035)
         public RunSession Session => session;
 
-        public MapScreen(CourseDetail course, Action<MapExit, ApiException> onExit, RunningFriend friend = null)
+        public MapScreen(CourseDetail course, Action<MapExit, ApiException> onExit, RunningFriend friend = null, RunSummary ghost = null)
         {
             this.course = course ?? throw new ArgumentNullException(nameof(course));
             this.onExit = onExit;
             this.friend = friend;
+            presetGhost = ghost;
         }
 
         protected override string Uxml => "UI/Map";
@@ -304,7 +306,7 @@ namespace Scrun.App
             {
                 if (setupView == null)
                 {
-                    var view = new RunSetupView(Root, course, RunSetupPrefs.Device()); // 다 만든 뒤에야 Root에 붙음
+                    var view = new RunSetupView(Root, course, RunSetupPrefs.Device(), presetGhost); // 다 만든 뒤에야 Root에 붙음
                     view.Done += OnSetupDone;
                     view.Exit += () => Nav.Pop();
                     setupView = view;

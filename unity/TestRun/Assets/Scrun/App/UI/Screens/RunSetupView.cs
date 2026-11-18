@@ -39,7 +39,8 @@ namespace Scrun.App
         string runsCursor;
         int ghostRequest;
 
-        public RunSetupView(VisualElement host, CourseDetail course, RunSetupPrefs prefs)
+        // ghost: 기록 상세 "이 기록으로 고스트 달리기"(계획 0053)로 왔으면 그 기록을 고른 채 고스트 카드를 켜 둠(바꾸기·끄기는 그대로)
+        public RunSetupView(VisualElement host, CourseDetail course, RunSetupPrefs prefs, RunSummary ghost = null)
         {
             if (host == null) throw new ArgumentNullException(nameof(host));
             if (course == null) throw new ArgumentNullException(nameof(course));
@@ -134,6 +135,11 @@ namespace Scrun.App
 
             ghostPick.SetVisible(false);
             ghostEmpty.SetVisible(false);
+            if (ghost != null)
+            {
+                ghostRun = ghost;
+                ghostOn = true;
+            }
             RenderGhost();
             root.SetVisible(false);
             host.Add(root);
@@ -313,7 +319,7 @@ namespace Scrun.App
 
         // 곁들이는 기능이라 로딩 덮개·오류창으로 설정을 막지 않음(주간 목표 줄과 같은 이유). 못 받으면 카드에 안내.
         // 기다리는 동안 다음 단계로 넘어갔으면 늦게 온 목록으로 D-04를 띄우거나 켜지 않음(그 단계 위에 시트가 뜨고 "고스트 없이 입장"이 엉뚱한 단계를 넘김)
-        async void LoadRuns(bool turnOn, bool more = false)
+        async void LoadRuns(bool turnOn, bool more = false, bool openPick = false)
         {
             if (ghostLoading) return;
             ghostLoading = true;
@@ -325,10 +331,14 @@ namespace Scrun.App
                 var page = await Api.Runs.ListAsync(more ? runsCursor : null);
                 if (request != ghostRequest) return;
                 if (!more || runs == null) runs = new List<RunSummary>();
-                runs.AddRange(page.Items ?? new List<RunSummary>());
+                foreach (var r in page.Items ?? new List<RunSummary>())
+                    if (!runs.Exists(x => x.RunId == r.RunId)) runs.Add(r); // 맨 위에 넣어 둔 미리 고른 기록과 겹치지 않게
+                // 기록 상세에서 고른 기록이 첫 쪽 밖(옛 기록)이면 맨 위에 넣어 D-03에서 고른 줄이 보이게(계획 0053 리뷰)
+                if (!more && ghostRun != null && !runs.Exists(x => x.RunId == ghostRun.RunId)) runs.Insert(0, ghostRun);
                 runsCursor = page.NextCursor;
                 ghostLoading = false;
                 if (turnOn && steps.Current == SetupStep.Goal) TurnOn();
+                if (openPick && steps.Current == SetupStep.Goal) OpenPick();
                 if (more && ghostPick.IsVisible()) BuildPick();
             }
             catch (ApiException e)
@@ -353,6 +363,7 @@ namespace Scrun.App
             }
             RenderGhost(); // "불러오는 중"을 실패·로그아웃에서도 지움
             if (failed != null && !ghostOn) ghostNote.text = failed;
+            else if (failed != null && openPick) Feedback.ShowError("기록을 불러오지 못했어요", "잠시 후 \"변경\"을 다시 눌러 주세요."); // 고른 기록이 보여 안내 줄이 숨은 때(임시 문구)
         }
 
         void RenderGhost()
@@ -370,7 +381,12 @@ namespace Scrun.App
         // D-03: 내 기록 줄(날짜·거리·인증 칩·시간·평균 페이스), 고르면 테두리, "선택 완료"
         void OpenPick()
         {
-            if (runs == null || runs.Count == 0) return;
+            if (runs == null) // 기록 상세에서 고스트를 골라 왔으면(계획 0053) 목록을 아직 안 받음 → 받고 열기
+            {
+                LoadRuns(turnOn: false, openPick: true);
+                return;
+            }
+            if (runs.Count == 0) return;
             pickSel = ghostRun ?? runs[0];
             BuildPick();
             ghostPick.SetVisible(true);

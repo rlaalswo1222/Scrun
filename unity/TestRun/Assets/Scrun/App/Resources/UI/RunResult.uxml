@@ -1,14 +1,17 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <!-- E-12 운동 결과·E-14 미인증(계획 0051, Figma 607:1673·699:2563). 날짜·인증 칩 → 거리·함께 달린 러너 → 시간·페이스·목표 →
-         속도 변화 → 친구 피드에 공유 → (미인증 안내) → 대조 자세히(E-15 시트) → 홈으로·기록 보기 -->
+         속도 변화 → 친구 피드에 공유 → (미인증 안내) → 대조 자세히(E-15 시트) → 홈으로·기록 보기.
+         기록 상세(F-03·F-04, 계획 0053)도 이 화면: 위는 ‹ 기록 상세, 아래는 "이 기록으로 고스트 달리기"(홈으로·기록 보기·닫기 숨김) -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
     <Style src="project://database/Assets/Scrun/App/Resources/UI/My.uss" />
     <Style src="project://database/Assets/Scrun/App/Resources/UI/RunResult.uss" />
     <ui:VisualElement class="onb fr my rr">
         <ui:VisualElement class="nav-bar">
-            <ui:VisualElement class="nav-side" />
-            <ui:Label text="운동 결과" class="nav-title" />
+            <ui:VisualElement class="nav-side">
+                <ui:Button name="back" class="nav-back" />
+            </ui:VisualElement>
+            <ui:Label name="title" text="운동 결과" class="nav-title" />
             <ui:VisualElement class="nav-side nav-side--right">
                 <ui:Button name="close" text="닫기" class="nav-action" />
             </ui:VisualElement>
@@ -72,6 +75,7 @@
 
             <ui:Button name="home" text="홈으로" class="btn btn-primary rr-home" />
             <ui:Button name="records" text="기록 보기" class="btn btn-ghost rr-records" />
+            <ui:Button name="ghost" class="btn btn-primary rr-home" />
         </ui:ScrollView>
         <ui:VisualElement name="load-failed" class="empty-state">
             <ui:Label text="기록을 불러오지 못했어요" class="hint-text" />

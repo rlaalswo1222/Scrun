@@ -127,6 +127,29 @@ namespace Scrun.App
             ShowTop();
         }
 
+        // 지금 탭에 쌓인 화면(예: 결과 화면들)을 정리하고 tab의 첫 화면으로. tab에 전에 쌓아 둔 화면도 정리한다.
+        // SelectTab 뒤 PopToRoot와 달리 중간 화면(남의 탭에 옛 상세 등)을 잠깐 보이지 않음(OnShow로 요청을 보내고 바로 없어지던 것, #94 리뷰)
+        public void ShowTabRoot(AppTab tab)
+        {
+            if (!InTabs) return;
+            Hide(Current);
+            TrimToRoot(CurrentTab);
+            EnsureTab(tab);
+            TrimToRoot(tab);
+            SetTab(tab);
+            ShowTop();
+        }
+
+        void TrimToRoot(AppTab tab)
+        {
+            if (!tabStacks.TryGetValue(tab, out var stack)) return;
+            for (int i = stack.Count - 1; i >= 1; i--)
+            {
+                Destroy(stack[i]);
+                stack.RemoveAt(i);
+            }
+        }
+
         // 앱 화면을 끌 때: 지금 화면을 숨기고 전부 정리
         public void Dispose()
         {
