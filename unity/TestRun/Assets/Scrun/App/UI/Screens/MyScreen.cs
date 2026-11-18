@@ -7,7 +7,7 @@ namespace Scrun.App
     // H-01 마이 메인(계획 0049, Figma 610:1894). 아래 탭 "마이"의 첫 화면.
     // 닉네임·Lv·인증 마크·다음 레벨까지(GET /users/me·/users/me/progress), 누적 거리·인증·레벨 세 칸, 메뉴.
     // 보일 때마다 다시 받음(인증 직후 레벨이 바로 보이게): 처음만 로딩 덮개, 그다음은 조용히(실패하면 지난 값 그대로).
-    // 아직 없는 기능(인증 마크 H-06·주간 목표 H-07)은 메뉴는 보이고 누르면 "준비 중"(정할 것 1 나)
+    // 아직 없는 기능(인증 마크 H-06)은 메뉴는 보이고 누르면 "준비 중"(정할 것 1 나). 주간 목표 H-07은 계획 0054
     public sealed class MyScreen : AppScreen
     {
         Label name, levelChip, marksChip, next, statDistance, statVerified, statLevel;
@@ -36,7 +36,8 @@ namespace Scrun.App
             menu.Add(MyParts.Row("러닝복 · 임팩트", "레벨별 러닝복과 해금한 임팩트", null,
                                  () => { if (progress != null && CanPush) Nav.Push(new LevelScreen(progress)); }));
             menu.Add(MyParts.Row("인증 마크", "인증 횟수와 임팩트 해금 현황", MyText.Soon, () => sheet = MyParts.Soon(this)));
-            menu.Add(MyParts.Row("주간 목표", "이번 주 목표와 진행", MyText.Soon, () => sheet = MyParts.Soon(this)));
+            menu.Add(MyParts.Row("주간 목표", "이번 주 목표와 진행", null,
+                                 () => { if (CanPush) Nav.Push(new WeeklyGoalStatusScreen()); })); // H-07(계획 0054)
             var recal = MyParts.Row("속도 재보정", MyText.LastCalibration(null), null,
                                     () => { if (CanPush) Nav.Push(new RecalibrateScreen()); });
             calibrationSub = recal.Q<Label>(className: "my-row-sub");

@@ -1,0 +1,49 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- H-07 주간 목표 현황(계획 0054, Figma 610:2409). 이번 주 카드(N / M회 · 동그라미 · 예약 줄) → 최근 8주 막대 → 목표 변경(H-08 시트).
+         목표가 없으면 빈 카드 + "목표 정하기"(정할 것 1 가). 동그라미·막대·시트는 WeeklyGoalStatusScreen이 코드로 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/WeeklyStatus.uss" />
+    <ui:VisualElement class="onb fr wg">
+        <ui:VisualElement class="nav-bar">
+            <ui:VisualElement class="nav-side">
+                <ui:Button name="back" class="nav-back" />
+            </ui:VisualElement>
+            <ui:Label text="주간 목표" class="nav-title" />
+            <ui:VisualElement class="nav-side nav-side--right" />
+        </ui:VisualElement>
+        <ui:ScrollView name="content" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+            <!-- 이번 주 -->
+            <ui:VisualElement name="week-card" class="wg-week">
+                <ui:Label text="이번 주" class="wg-week-label" />
+                <ui:VisualElement class="wg-week-count">
+                    <ui:Label name="done" class="wg-done" />
+                    <ui:Label name="of" class="wg-of" />
+                </ui:VisualElement>
+                <ui:VisualElement name="dots" class="wg-dots" />
+                <ui:Label name="next" class="wg-next" />
+            </ui:VisualElement>
+            <!-- 목표 없음 -->
+            <ui:VisualElement name="empty" class="wg-card wg-empty">
+                <ui:Label text="아직 주간 목표가 없어요" class="wg-empty-title" />
+                <ui:Label text="정하면 오늘부터 7일이 한 주예요" class="wg-empty-body" />
+            </ui:VisualElement>
+            <!-- 최근 8주 -->
+            <ui:VisualElement name="bars-card" class="wg-card">
+                <ui:VisualElement class="wg-bars-head">
+                    <ui:Label text="최근 8주" class="wg-bars-title" />
+                    <ui:VisualElement class="fr-chip fr-chip--success">
+                        <ui:Label text="7일 주기" class="fr-chip-text" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="bars" class="wg-bars" />
+                <ui:Label text="파랑은 달성, 연한색은 미달성, 라임은 이번 주 진행 중" class="wg-legend" />
+            </ui:VisualElement>
+        </ui:ScrollView>
+        <ui:Button name="action" class="btn btn-primary wg-action" />
+        <ui:VisualElement name="load-failed" class="empty-state">
+            <ui:Label text="주간 목표를 불러오지 못했어요" class="hint-text" />
+            <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
