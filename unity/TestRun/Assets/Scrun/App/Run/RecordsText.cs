@@ -43,10 +43,26 @@ namespace Scrun.App
             var z = zone ?? TimeZoneInfo.Local;
             var local = Local(nowUtc, z);
             int back = ((int)local.DayOfWeek + 6) % 7; // 월 0 … 일 6
-            var monday = DateTime.SpecifyKind(local.Date.AddDays(-back), DateTimeKind.Unspecified);
-            // 자정에 서머타임이 시작되는 곳은 그 0시가 없음 → 그날 처음 있는 시각(ConvertTimeToUtc가 예외를 내지 않게)
-            for (int i = 0; i < 4 && z.IsInvalidTime(monday); i++) monday = monday.AddMinutes(30);
-            return TimeZoneInfo.ConvertTimeToUtc(monday, z);
+            return MidnightUtc(local.Date.AddDays(-back), z);
+        }
+
+        // 이번 주 처음: 주간 목표가 있으면 그 주기 첫날 0시(서버 cycleStart, 설정한 날부터 7일), 없으면 월요일 0시.
+        // 목표가 있으면 요약 세 칸이 모두 주간 목표 주기를 따름(11/19 민재 결정: 한 카드에 주 기준이 둘이면 숫자가 어긋남)
+        public static DateTime WeekStartUtc(DateTime nowUtc, WeeklyGoal goal, TimeZoneInfo zone = null) =>
+            HasGoal(goal) ? MidnightUtc(goal.CycleStart.Value.Date, zone ?? TimeZoneInfo.Local) : WeekStartUtc(nowUtc, zone);
+
+        public static bool HasGoal(WeeklyGoal goal) => goal?.TargetCount != null && goal.CycleStart != null;
+
+        // 셋째 칸: 목표가 있으면 서버가 센 "N/목표"(인증 완료 + 5분 이상, 주간 목표 화면 H-07과 같은 수), 없으면 인증 완료 횟수
+        public static string VerifiedCell(int verified, WeeklyGoal goal) =>
+            HasGoal(goal) ? $"{goal.DoneCount}/{goal.TargetCount}" : Count(verified);
+
+        // 그날 0시(폰 시간대)를 UTC로. 자정에 서머타임이 시작되는 곳은 그 0시가 없음 → 그날 처음 있는 시각(ConvertTimeToUtc가 예외를 내지 않게)
+        static DateTime MidnightUtc(DateTime day, TimeZoneInfo z)
+        {
+            var t = DateTime.SpecifyKind(day.Date, DateTimeKind.Unspecified);
+            for (int i = 0; i < 4 && z.IsInvalidTime(t); i++) t = t.AddMinutes(30);
+            return TimeZoneInfo.ConvertTimeToUtc(t, z);
         }
 
         // 이번 주 요약(정할 것 1 가): 횟수·거리(공식 거리 합, 인증 완료 + 미인증 + 대기. 대기는 마감 10분 안의 방금 기록이라 같이 셈)·인증 완료 횟수

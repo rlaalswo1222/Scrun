@@ -43,6 +43,20 @@ namespace Scrun.App.Tests
             Assert.AreEqual(Utc(2026, 11, 22, 15), RecordsText.WeekStartUtc(Utc(2026, 11, 22, 15), Seoul), "다음 월요일 0시면 새 주");
         }
 
+        // 11/19 민재 결정: 주간 목표가 있으면 요약 세 칸이 모두 그 주기(설정한 날부터 7일), 셋째 칸은 서버가 센 "N/목표"
+        [Test]
+        public void WithAGoalTheWeekIsTheGoalCycle()
+        {
+            var goal = new WeeklyGoal { TargetCount = 3, CycleStart = new DateTime(2026, 11, 19), DoneCount = 2 };
+            Assert.AreEqual(Utc(2026, 11, 18, 15), RecordsText.WeekStartUtc(Utc(2026, 11, 20, 3), goal, Seoul), "목요일에 정했으면 목요일 0시부터");
+            Assert.AreEqual("2/3", RecordsText.VerifiedCell(1, goal), "앱이 센 인증 횟수가 아니라 서버 doneCount(5분 이상만)");
+
+            var none = new WeeklyGoal { TargetCount = null, DoneCount = 0 };
+            Assert.AreEqual(Utc(2026, 11, 15, 15), RecordsText.WeekStartUtc(Utc(2026, 11, 20, 3), none, Seoul), "목표가 없으면 월요일");
+            Assert.AreEqual(Utc(2026, 11, 15, 15), RecordsText.WeekStartUtc(Utc(2026, 11, 20, 3), (WeeklyGoal)null, Seoul), "못 받았으면 월요일");
+            Assert.AreEqual("1회", RecordsText.VerifiedCell(1, none));
+        }
+
         [Test]
         public void WeekSummaryCountsThisWeekOnly()
         {

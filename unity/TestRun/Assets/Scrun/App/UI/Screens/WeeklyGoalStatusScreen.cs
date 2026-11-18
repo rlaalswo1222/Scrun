@@ -14,7 +14,7 @@ namespace Scrun.App
         bool loading, saving;
         FriendParts.Sheet sheet;
         Label sheetNumber;
-        Button minus, plus, saveButton;
+        Button minus, plus, saveButton, cancelButton;
         VisualElement chips;
         int picked;
 
@@ -51,7 +51,7 @@ namespace Scrun.App
         protected internal override bool OnBack()
         {
             if (!SheetOpen) return false;
-            sheet.Close();
+            if (!saving) sheet.Close(); // 저장 중엔 닫지 않음(실패하면 그 시트에서 다시 시도)
             return true;
         }
 
@@ -161,7 +161,8 @@ namespace Scrun.App
             sheet.Body.Add(UiExtensions.Text(WeeklyGoalText.SheetNote(goal), "wg-sheet-note"));
             saveButton = sheet.Button(WeeklyGoalText.Save, "btn-primary", Save, "goal-save");
             saveButton.AddToClassList("wg-sheet-button");
-            sheet.Button(WeeklyGoalText.Cancel, "btn-ghost", sheet.Close, "goal-cancel").AddToClassList("wg-sheet-button");
+            cancelButton = sheet.Button(WeeklyGoalText.Cancel, "btn-ghost", sheet.Close, "goal-cancel");
+            cancelButton.AddToClassList("wg-sheet-button");
             Pick(WeeklyGoalText.SheetStart(goal));
         }
 
@@ -178,16 +179,22 @@ namespace Scrun.App
         {
             if (saving || !SheetOpen) return;
             saving = true;
-            var mine = sheet; // 저장 중 뒤로 닫혀도 이 시트만 다룸
+            // 저장 중엔 바깥·뒤로·취소로 닫히지 않게(닫힌 뒤 실패하면 오류창의 "다시 시도"가 아무것도 안 하던 것, #95 리뷰)
+            var mine = sheet;
+            mine.Locked = true;
             var button = saveButton;
+            var cancel = cancelButton;
             button.SetEnabled(false);
+            cancel.SetEnabled(false);
             int target = picked;
             WeeklyGoal got = null;
             bool ok = await Feedback.Run(async () => got = await Api.Users.PutWeeklyGoalAsync(new WeeklyGoalUpdate { TargetCount = target }),
                                          Save);
             saving = false;
+            mine.Locked = false;
             if (Root.panel == null) return;
             button.SetEnabled(true);
+            cancel.SetEnabled(true);
             if (!ok) return;
             mine.Close();
             if (got != null) Show(got);

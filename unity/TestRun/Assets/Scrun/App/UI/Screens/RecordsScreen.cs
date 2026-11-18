@@ -7,6 +7,7 @@ namespace Scrun.App
 {
     // 기록 탭 첫 화면(F-01 기록 목록·F-02 빈 상태, 계획 0053, BL-20). GET /runs(끝난 기록 최신순 20개씩)를 그대로 그림.
     // 달 칩(이번 달·지난 달·전체)은 month로 서버가 자르고, 이번 주 요약 3칸은 전체 목록 첫 쪽에서 앱이 셈(정할 것 1 가, 한 주가 20개를 넘으면 다음 쪽까지).
+    // 주간 목표가 있으면 "이번 주"는 그 주기(설정한 날부터 7일)이고 셋째 칸은 서버가 센 "N/목표"(11/19 민재 결정, 계획 0054), 없으면 월요일부터·인증 횟수.
     // 기록이 하나도 없으면 F-02. 카드 → 기록 상세(RunResultScreen 상세 모양, F-03·F-04). 보일 때마다(탭에 다시 들어옴·상세에서 돌아옴) 조용히 새로 받음
     public sealed class RecordsScreen : AppScreen
     {
@@ -104,15 +105,19 @@ namespace Scrun.App
             int seq = ++loadSeq;
             if (fromPull) pull.Busy(true);
             string month = chips[selected].month;
-            DateTime weekStart = RecordsText.WeekStartUtc(DateTime.UtcNow);
+            DateTime weekStart = default;
             RunListPage gotMonth = null;
             List<RunSummary> week = null;
+            WeeklyGoal goal = null;
             Func<Task> work = async () =>
             {
                 var all = Api.Runs.ListAsync();
                 var byMonth = month == null ? all : Api.Runs.ListAsync(month: month);
-                await Task.WhenAll(all, byMonth);
+                var goalTask = GoalOrNull();
+                await Task.WhenAll(all, byMonth, goalTask);
                 gotMonth = byMonth.Result;
+                goal = goalTask.Result;
+                weekStart = RecordsText.WeekStartUtc(DateTime.UtcNow, goal);
                 week = new List<RunSummary>(all.Result.Items ?? new List<RunSummary>());
                 string next = all.Result.NextCursor;
                 while (RecordsText.WeekNeedsMore(week, next, weekStart)) // 한 주에 20번 넘게 달린 드문 경우
@@ -136,18 +141,30 @@ namespace Scrun.App
                 if (shown == null) ShowState(failed: true);
                 return;
             }
-            Show(week, gotMonth, weekStart, keepLoaded: !fromPull && !chipChanged);
+            Show(week, gotMonth, weekStart, keepLoaded: !fromPull && !chipChanged, goal: goal);
+        }
+
+        // 요약 카드의 주 기준(주간 목표 주기)과 셋째 칸. 곁들이는 값이라 못 받으면 월요일부터·인증 횟수로(목록을 막지 않음)
+        static async Task<WeeklyGoal> GoalOrNull()
+        {
+            try { return await Api.Users.GetWeeklyGoalAsync(); }
+            catch (ApiException e) when (e.Failure != ApiFailure.NotLoggedIn)
+            {
+                UnityEngine.Debug.LogWarning("[기록] 주간 목표를 못 받음: " + e);
+                return null;
+            }
         }
 
         // 받은 값으로 그림(테스트도 이걸로).
         // keepLoaded: 다시 보일 때(탭·상세에서 돌아옴) "더 보기"로 받아 둔 쪽을 버리지 않고 첫 쪽만 합침(#94 리뷰). 당겨 새로고침·칩 바꿈은 처음부터
-        internal void Show(List<RunSummary> recentAll, RunListPage page, DateTime weekStartUtc, bool keepLoaded = false)
+        internal void Show(List<RunSummary> recentAll, RunListPage page, DateTime weekStartUtc, bool keepLoaded = false,
+                           WeeklyGoal goal = null)
         {
             hasAny = recentAll != null && recentAll.Count > 0;
             var w = RecordsText.Summarize(recentAll, weekStartUtc);
             weekCount.text = RecordsText.Count(w.Count);
             weekKm.text = RecordsText.WeekKm(w.DistanceM);
-            weekVerified.text = RecordsText.Count(w.Verified); // 주간 목표(BL-30)가 생기면 "N/목표"
+            weekVerified.text = RecordsText.VerifiedCell(w.Verified, goal); // 목표가 있으면 "N/목표"(weekStartUtc도 그 주기)
             if (keepLoaded && shown != null && shown.Count > (page?.Items?.Count ?? 0))
             {
                 Merge(page);
