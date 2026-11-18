@@ -32,7 +32,7 @@ from ..schemas.user import (
 
 router = APIRouter(prefix="/v1", tags=["User"])
 E = ErrorCode
-AUTH = error_responses(E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)
+AUTH = (E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)   # 코드 묶음, 문서는 error_responses 한 번에(dict 합치기는 같은 상태 코드를 덮어씀)
 
 
 @router.get(
@@ -51,7 +51,7 @@ def nickname_check(request: Request, nickname: str = Query(min_length=1, max_len
 
 
 @router.get("/users/me", summary="내 정보", description="화면 B-01, H-01 · BL-36",
-            response_model=Envelope[Me], responses=AUTH)
+            response_model=Envelope[Me], responses=error_responses(*AUTH))
 def get_me(request: Request, user: User = Depends(current_user)):
     return ok(request, _me_out(user))
 
@@ -63,7 +63,7 @@ def get_me(request: Request, user: User = Depends(current_user)):
     "닉네임은 가입·닉네임 확인과 같은 판정(정규화 → 형식 400 → 금칙어 400 → 중복 409), 지금 내 닉네임은 사용 가능. "
     f"시간대는 {tz.RULE}(주간 목표 주기 계산용)",
     response_model=Envelope[Me],
-    responses={**AUTH, **error_responses(E.VALIDATION_ERROR, E.NICKNAME_DUPLICATED, E.NICKNAME_NOT_ALLOWED)},
+    responses=error_responses(*AUTH, E.VALIDATION_ERROR, E.NICKNAME_DUPLICATED, E.NICKNAME_NOT_ALLOWED),
 )
 def patch_me(body: MeUpdate, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     if body.nickname is not None:
@@ -90,21 +90,21 @@ def patch_me(body: MeUpdate, request: Request, user: User = Depends(current_user
     status_code=204,
     summary="계정 삭제",
     description="화면 H-10 · BL-48 · 계획 0015. 모든 데이터 삭제 + 카카오 연결 해제, 유예 없이 바로. 카카오가 응답하지 않으면 아무것도 지우지 않고 503",
-    responses={**AUTH, **error_responses(E.SERVICE_UNAVAILABLE)},
+    responses=error_responses(*AUTH, E.SERVICE_UNAVAILABLE),
 )
 def delete_me(_: Principal = Depends(stub_user)):
     return Response(status_code=204)
 
 
 @router.get("/users/me/settings", summary="설정 보기", description="화면 H-10 · BL-36. 알림은 폰 로컬이라 서버에 없음",
-            response_model=Envelope[Settings], responses=AUTH)
+            response_model=Envelope[Settings], responses=error_responses(*AUTH))
 def get_settings(request: Request, user: User = Depends(current_user)):
     return ok(request, _settings_out(user))
 
 
 @router.patch("/users/me/settings", summary="설정 바꾸기",
               description="화면 H-10 · BL-36, BL-40 · 계획 0028. 보낸 칸만 바뀜(빈 본문이면 그대로, null은 안 보낸 것과 같음)",
-              response_model=Envelope[Settings], responses={**AUTH, **error_responses(E.VALIDATION_ERROR)})
+              response_model=Envelope[Settings], responses=error_responses(*AUTH, E.VALIDATION_ERROR))
 def patch_settings(body: SettingsUpdate, request: Request, user: User = Depends(current_user),
                    db: Session = Depends(get_db)):
     if body.feed_share_default is not None:
@@ -118,7 +118,7 @@ def patch_settings(body: SettingsUpdate, request: Request, user: User = Depends(
     summary="내 보정값",
     description="화면 A-11, D-07, H-09 · BL-4, BL-10. 가장 최근에 올린 보정. 없으면 data=null → 맵 입장 전에 보정 화면으로",
     response_model=Envelope[Optional[Calibration]],
-    responses=AUTH,
+    responses=error_responses(*AUTH),
 )
 def get_calibration(request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     row = _latest_calibration(db, user.id)
@@ -132,7 +132,7 @@ def get_calibration(request: Request, user: User = Depends(current_user), db: Se
     "올린 뒤부터 맵 입장(CALIBRATION_REQUIRED 해제). OCR 값은 받지 않음(독립성 원칙). "
     "보정 단계(6·8·10 km/h vs 걷기 1 + 달리기 3점)는 PRD 검토 대기",
     response_model=Envelope[Calibration],
-    responses={**AUTH, **error_responses(E.VALIDATION_ERROR)},
+    responses=error_responses(*AUTH, E.VALIDATION_ERROR),
 )
 def put_calibration(body: CalibrationUpload, request: Request, user: User = Depends(current_user),
                     db: Session = Depends(get_db)):
@@ -171,7 +171,7 @@ def _calibration_out(row: CalibrationRow) -> dict:
     summary="주간 목표 진행",
     description="화면 B-01, B-02, B-03, H-07 · BL-30. 주기는 설정일부터 7일, 1회 = 인증 완료 + 5분 이상(서버 집계). 목표를 안 정했으면 targetCount=null",
     response_model=Envelope[WeeklyGoal],
-    responses=AUTH,
+    responses=error_responses(*AUTH),
 )
 def get_weekly_goal(request: Request, _: Principal = Depends(stub_user)):
     return ok(request, d.WEEKLY_GOAL)
@@ -182,13 +182,13 @@ def get_weekly_goal(request: Request, _: Principal = Depends(stub_user)):
     summary="주간 목표 설정·변경",
     description="화면 A-16, H-08 · BL-30. 1에서 7회. 처음 설정은 바로, 변경은 현재 주기가 끝난 뒤 적용(nextTargetCount)",
     response_model=Envelope[WeeklyGoal],
-    responses={**AUTH, **error_responses(E.VALIDATION_ERROR)},
+    responses=error_responses(*AUTH, E.VALIDATION_ERROR),
 )
 def put_weekly_goal(body: WeeklyGoalUpdate, request: Request, _: Principal = Depends(stub_user)):
     return ok(request, {**d.WEEKLY_GOAL, "nextTargetCount": body.target_count})
 
 
 @router.get("/home", summary="홈 한 번에", description="화면 B-01에서 B-04 · BL-31. 각 항목 API도 따로 있음",
-            response_model=Envelope[Home], responses=AUTH)
+            response_model=Envelope[Home], responses=error_responses(*AUTH))
 def home(request: Request, _: Principal = Depends(stub_user)):
     return ok(request, d.HOME)

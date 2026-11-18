@@ -48,8 +48,9 @@ from ..schemas.run import (
 
 router = APIRouter(prefix="/v1", tags=["Run"])
 E = ErrorCode
-AUTH = error_responses(E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)
-RUN_ERRORS = error_responses(E.RUN_NOT_FOUND, E.FORBIDDEN)
+# 오류 코드 묶음. 문서는 error_responses 한 번에 모아 넘긴다: dict를 {**a, **b}로 합치면 같은 상태 코드(403 SIGNUP_REQUIRED·FORBIDDEN)가 덮어써짐
+AUTH = (E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)
+RUN_ERRORS = (E.RUN_NOT_FOUND, E.FORBIDDEN)
 FINISHED = (PENDING, VERIFIED, UNVERIFIED)  # 읽는 API에 보이는 기록
 READ_NOTE = "\n\n남의 기록이면 FORBIDDEN, 없거나 아직 달리는 중·버린 기록이면 RUN_NOT_FOUND"
 
@@ -153,7 +154,7 @@ def _series(db: Session, run_id: str, max_points: Optional[int] = None) -> dict:
     "ghostRunId는 내 끝난 기록만. 공유 여부는 내 설정 feedShareDefault로 시작. "
     "끝나지 않은 이전 러닝이 있어도 그대로 두고 새로 만듦(서버가 몰래 버리지 않음, 계획 0037)",
     response_model=Envelope[RunStarted],
-    responses={**AUTH, **error_responses(E.VALIDATION_ERROR)},
+    responses=error_responses(*AUTH, E.VALIDATION_ERROR),
 )
 def start_run(body: RunStartRequest, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     existing = db.scalar(select(Run).where(Run.user_id == user.id, Run.client_run_id == body.client_run_id))
@@ -204,7 +205,7 @@ def _started(run: Run) -> dict:
     description="화면 I-04 · BL-37. 앱 재실행 때. 가장 최근에 시작한 러닝이 끝나지 않았고 마지막 갱신(시작·시계열 올리기)부터 "
     "24시간 안이면 그것. 그보다 옛 러닝은 다시 묻지 않음. 거리·시간은 지금까지 올라온 시계열로 셈. 없으면 run=null",
     response_model=Envelope[ActiveRun],
-    responses=AUTH,
+    responses=error_responses(*AUTH),
 )
 def active_run(request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     run = db.scalar(select(Run).where(Run.user_id == user.id).order_by(Run.started_at.desc(), Run.id.desc()).limit(1))
@@ -248,7 +249,7 @@ def _read_run(db: Session, run_id: str, user: User, lock: bool = False) -> Run:
     description="화면 F-01, F-02, D-03 · BL-20, BL-24. 끝난 기록(인증 대기·완료·미인증)만 최신순, 커서 방식(한 쪽 20개). "
     "month(YYYY-MM)는 내 시간대 기준 달. 고스트 고르기에도 씀. 기록이 없으면 items=[]",
     response_model=Envelope[CursorPage[RunSummary]],
-    responses={**AUTH, **error_responses(E.VALIDATION_ERROR)},
+    responses=error_responses(*AUTH, E.VALIDATION_ERROR),
 )
 def list_runs(
     request: Request,
@@ -301,7 +302,7 @@ def _companions(db: Session, run: Run) -> list[dict]:
             description="화면 F-03, F-04, E-12 · BL-19, BL-20. 공식 값과 출처(계기판/센서), 센서 값, 계기판에서 읽은 값(사진을 읽었을 때), "
             f"그래프용 시계열(최대 {GRAPH_POINTS}칸, 칸 간격은 정수 초), 함께 달린 러너(같은 맵에서 같이 달린 사람·봇, 친구 표시)"
             + READ_NOTE,
-            response_model=Envelope[RunDetail], responses={**AUTH, **RUN_ERRORS})
+            response_model=Envelope[RunDetail], responses=error_responses(*AUTH, *RUN_ERRORS))
 def get_run(runId: str, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     run = _read_run(db, runId, user)
     ghost_id = db.scalar(select(RunGhost.ghost_run_id).where(RunGhost.run_id == run.id))
@@ -321,7 +322,7 @@ def get_run(runId: str, request: Request, user: User = Depends(current_user), db
 
 @router.patch("/runs/{runId}", summary="피드 공유 바꾸기",
               description="화면 E-12 · BL-19. 공유만. 기록 값 수정·삭제는 없음(PRD). 끄면 친구 피드에서 빠짐" + READ_NOTE,
-              response_model=Envelope[RunSummary], responses={**AUTH, **RUN_ERRORS, **error_responses(E.VALIDATION_ERROR)})
+              response_model=Envelope[RunSummary], responses=error_responses(*AUTH, *RUN_ERRORS, E.VALIDATION_ERROR))
 def patch_run(runId: str, body: RunUpdate, request: Request, user: User = Depends(current_user),
               db: Session = Depends(get_db)):
     run = _read_run(db, runId, user, lock=True)
@@ -338,7 +339,7 @@ def patch_run(runId: str, body: RunUpdate, request: Request, user: User = Depend
     description="화면 D-10 · BL-12 ⑥, BL-19 ④. 고스트 재생·인증 대조 근거. 앱은 60초마다 묶음으로 올림. "
     "offsetS는 달린 시간 기준(일시정지 구간은 빠짐). 같은 offsetS 묶음이 다시 오면 덮어씀(다시 보내도 하나). "
     "달리는 중(ACTIVE)인 기록만. 끝났거나 버렸거나 복구 기한(24시간)이 지났으면 RUN_ALREADY_FINISHED",
-    responses={**AUTH, **RUN_ERRORS, **error_responses(E.VALIDATION_ERROR, E.RUN_ALREADY_FINISHED)},
+    responses=error_responses(*AUTH, *RUN_ERRORS, E.VALIDATION_ERROR, E.RUN_ALREADY_FINISHED),
 )
 def put_samples(runId: str, body: SamplesUpload, user: User = Depends(current_user), db: Session = Depends(get_db)):
     run = _my_run(db, runId, user, lock=True)
@@ -360,7 +361,7 @@ def put_samples(runId: str, body: SamplesUpload, user: User = Depends(current_us
     "공식 값은 인증 전까지 센서 값. 응답이 안 와서 같은 endedAt으로 다시 보내면 처음 결과를 돌려줌. "
     "다른 값으로 다시 끝내거나 버렸거나 복구 기한(24시간)이 지났으면 RUN_ALREADY_FINISHED. 평균 속도가 30 km/h를 넘으면 400",
     response_model=Envelope[RunSummary],
-    responses={**AUTH, **RUN_ERRORS, **error_responses(E.VALIDATION_ERROR, E.RUN_ALREADY_FINISHED)},
+    responses=error_responses(*AUTH, *RUN_ERRORS, E.VALIDATION_ERROR, E.RUN_ALREADY_FINISHED),
 )
 def finish_run(runId: str, body: RunFinishRequest, request: Request, user: User = Depends(current_user),
                db: Session = Depends(get_db)):
@@ -420,7 +421,7 @@ def _save_companions(db: Session, run: Run) -> None:
     status_code=204,
     summary="복구한 러닝 버리기",
     description="화면 I-04 · BL-37 ②. 끝나지 않은 러닝만. 이미 버렸으면 그대로 204. 끝난 기록은 지울 수 없음(PRD) → RUN_ALREADY_FINISHED",
-    responses={**AUTH, **RUN_ERRORS, **error_responses(E.RUN_ALREADY_FINISHED)},
+    responses=error_responses(*AUTH, *RUN_ERRORS, E.RUN_ALREADY_FINISHED),
 )
 def discard_run(runId: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     run = _my_run(db, runId, user, lock=True)
@@ -436,7 +437,7 @@ def discard_run(runId: str, user: User = Depends(current_user), db: Session = De
 @router.get("/runs/{runId}/ghost", summary="고스트 재생용 시계열",
             description="화면 D-13 · BL-24. 본인 끝난 기록만, 코스와 무관하게 씀(PRD F04). 시계열은 정수 초 칸(앱은 1초 그대로), "
             "빠진 칸은 앞 칸 값" + READ_NOTE,
-            response_model=Envelope[GhostTrack], responses={**AUTH, **RUN_ERRORS})
+            response_model=Envelope[GhostTrack], responses=error_responses(*AUTH, *RUN_ERRORS))
 def ghost(runId: str, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     run = _read_run(db, runId, user)
     return ok(request, {"runId": run.id, "distanceM": run.official_distance_m or 0,

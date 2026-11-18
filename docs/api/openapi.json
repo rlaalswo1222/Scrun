@@ -1459,7 +1459,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN",
+            "description": "SIGNUP_REQUIRED, FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -1545,7 +1545,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN",
+            "description": "SIGNUP_REQUIRED, FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -1636,7 +1636,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN",
+            "description": "SIGNUP_REQUIRED, FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -1744,7 +1744,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN",
+            "description": "SIGNUP_REQUIRED, FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -1835,7 +1835,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN",
+            "description": "SIGNUP_REQUIRED, FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -1923,7 +1923,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN",
+            "description": "SIGNUP_REQUIRED, FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -2172,7 +2172,7 @@
             }
           },
           "409": {
-            "description": "CONFIRM_NOT_PENDING",
+            "description": "RUN_NOT_FINISHED, VERIFICATION_CLOSED, CONFIRM_NOT_PENDING",
             "content": {
               "application/json": {
                 "schema": {
@@ -2368,7 +2368,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN",
+            "description": "SIGNUP_REQUIRED, FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
