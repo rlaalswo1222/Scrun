@@ -90,6 +90,9 @@ namespace Scrun.App
         // 러닝 설정에서 고른 것(안내를 끝내기 전에는 null). S3 센서 준비·카운트다운이 쓴다
         public RunSetup Setup { get; private set; }
 
+        // 같이 달리기 친구(친구가 그새 끝냈으면 null). 보정 안내를 거쳐 다시 들어갈 때 상세 화면이 돌려받음
+        public RunningFriend Friend => friend;
+
         // 이번 달리기(3·2·1이 끝나야 생김, 계획 0035)
         public RunSession Session => session;
 
@@ -358,9 +361,11 @@ namespace Scrun.App
                 {
                     return await Api.Friends.RunTogetherAsync(friend.UserId, course.CourseId);
                 }
-                catch (ApiException e) when (e.Failure == ApiFailure.Server && (e.Code == "FRIEND_NOT_RUNNING" || e.Code == "USER_NOT_FOUND"))
+                catch (ApiException e) when (e.Failure == ApiFailure.Server &&
+                                             (e.Code == FriendText.FriendNotRunning || e.Code == FriendText.UserNotFound))
                 {
-                    startNotice = FriendText.FriendFinished(friend.Nickname);
+                    startNotice = e.Code == FriendText.UserNotFound ? FriendText.CannotRunTogether(friend.Nickname)
+                                                                    : FriendText.FriendFinished(friend.Nickname);
                     friend = null; // "다시 입장하기"도 일반 입장으로
                 }
             }
@@ -374,12 +379,15 @@ namespace Scrun.App
             nearFriend = null;
             string notice = startNotice;
             startNotice = null;
-            if (near != null)
+            // 방에 붙어 있고 섬 코스 길이를 알 때만 판단(끊겼거나 섬 쪽 오류면 친구가 있는지 모름 → 옮기지도, "마쳤어요"라고 하지도 않음)
+            bool canTell = together != null && together.Status == RunTogetherStatus.Connected && RunLink.LapLengthM > 0f &&
+                           RunLink.TeleportPlayer != null;
+            if (near != null && canTell)
             {
-                float? target = NearFriendStart.Target(together?.Runners, near.UserId, near.BehindM, RunLink.LapLengthM, RealtimeClock.Now());
+                float? target = NearFriendStart.Target(together.Runners, near.UserId, near.BehindM, RunLink.LapLengthM, RealtimeClock.Now());
                 string name = friend?.Nickname ?? "친구";
                 if (target == null) notice = FriendText.FriendFinished(name);
-                else if (RunLink.TeleportPlayer != null) // 섬이 없으면(섬 쪽 오류) 옮기지 않고 안내도 안 함
+                else
                 {
                     Debug.Log($"[같이 달리기] {RunLink.PlayerLapPositionM:0}m → 친구 {near.BehindM:0.0}m 뒤 {target.Value:0}m");
                     RunLink.TeleportPlayer(target.Value);

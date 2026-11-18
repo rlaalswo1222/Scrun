@@ -17,7 +17,7 @@ namespace Scrun.App
         bool loading, skipReload, notFound, gating, fromCalibration;
         MapScreen map; // 띄운 맵(돌아올 때 끝낸 기록 ID를 받음)
         bool enterOnLoad; // 친구 탭 "같이 달리기"(G-03, 계획 0044): 처음 불러오면 바로 "맵 입장"
-        RunningFriend together; // 같이 달리기로 왔으면 그 친구(계획 0047): 맵이 친구 뒤로 입장. 달리기를 끝내고 나오면 비움
+        RunningFriend together; // 같이 달리기로 왔으면 그 친구(계획 0047): 다음 맵 한 번만 친구 뒤로 입장(X로 나와도 비워짐)
 
         public CourseDetailScreen(string courseId, bool enterOnLoad = false, RunningFriend together = null)
         {
@@ -155,6 +155,7 @@ namespace Scrun.App
         {
             if (Nav.Current != this) return;
             map = new MapScreen(course, ReturnFromMap, together);
+            together = null; // 이번 맵이 가져감. 나중에 "맵 입장"을 직접 누르면 일반 입장
             Nav.Push(map);
         }
 
@@ -163,11 +164,11 @@ namespace Scrun.App
         void ReturnFromMap(MapExit exit, ApiException error)
         {
             string finishedRunId = map?.FinishedRunId; // 인증 화면에 넘길 기록(지환 E-02)
+            RunningFriend friendBack = map?.Friend; // 보정 안내를 거쳐 다시 들어가면 같이 달리기를 이어 감
             RunStatsBody sensor = map?.Session?.FinishBody?.Sensor; // 인증 결과 표의 센서 값(서버 답에도 있음, 에디터 가짜 OCR용)
             string clientRunId = map?.Session?.ClientRunId;
             map = null;
-            // 같이 달리기는 이번 입장까지(보정 안내를 거쳐 다시 들어갈 때만 이어 감). 나중에 "맵 입장"을 직접 누르면 일반 입장
-            if (exit != MapExit.NeedsCalibration) together = null;
+            if (exit == MapExit.NeedsCalibration) together = friendBack;
             skipReload = exit != MapExit.Finished; // 끝내고 나오면 인원이 바뀌어 다시 불러옴. 인증 안내 때는 안내창이 로딩에 덮이지 않게
             try { Nav.Pop(); }
             finally { skipReload = false; }

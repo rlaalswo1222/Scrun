@@ -315,6 +315,8 @@ namespace Scrun.App.Tests
         {
             StringAssert.Contains("바닷바람", FriendText.StartBehindFriend("바닷바람"));
             StringAssert.Contains("바닷바람", FriendText.FriendFinished("바닷바람"));
+            StringAssert.Contains("바닷바람", FriendText.CannotRunTogether("바닷바람"));
+            Assert.AreNotEqual(FriendText.FriendFinished("바닷바람"), FriendText.CannotRunTogether("바닷바람"), "친구가 아니게 된 것과 끝낸 것은 다른 말");
         }
     }
 }

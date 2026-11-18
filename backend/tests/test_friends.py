@@ -294,13 +294,33 @@ def test_run_together_wraps_past_the_start_line(db_client, running_friend):
     assert out["entryPositionM"] == pytest.approx(lap + 5.0 - out["nearFriend"]["behindM"], abs=0.11)
 
 
-def test_run_together_needs_a_running_friend_on_that_course(db_client, db, running_friend):
+def test_run_together_needs_the_friend_in_that_map(db_client, db, running_friend):
     a, ub, conn, _ = running_friend
     fail(together(db_client, a, ub, "crs_island_tour"), 409, "FRIEND_NOT_RUNNING")   # 그새 다른 코스로(시트와 다름)
     hub.update(conn, 1000.0, 0.0, False)
-    fail(together(db_client, a, ub), 409, "FRIEND_NOT_RUNNING")   # 멈춤·달리기 전
+    assert data(together(db_client, a, ub))["nearFriend"]["userId"] == ub, "잠깐 멈춘 친구(물 마시기)도 같이"
     hub.leave(conn, intentional=True)
     fail(together(db_client, a, ub), 409, "FRIEND_NOT_RUNNING")   # 섬을 나감
+    hub.join("map_crs_lake_loop", "crs_lake_loop", LAKE_M, ub, "러너2")   # 붙었지만 아직 첫 state 전(섬을 여는 중)
+    fail(together(db_client, a, ub), 409, "FRIEND_NOT_RUNNING")
+
+
+def test_run_together_twice_keeps_one_seat(db_client, db, running_friend):
+    """응답을 못 받은 앱의 재시도·두 번 누름: 둘 다 들어가고 자리는 하나."""
+    from app.db.models import CourseEntry
+    a, ub, _, _ = running_friend
+    data(together(db_client, a, ub))
+    data(together(db_client, a, ub))
+    me = my_id(db_client, a)
+    assert db.scalar(select(func.count()).select_from(CourseEntry).where(CourseEntry.user_id == me)) == 1
+
+
+def test_entry_position_never_equals_the_lap_length():
+    """6669.97은 소수 1자리로 반올림하면 6670.0(= 길이) → 0으로 감음(코스 위 [0, 길이))."""
+    from app.routers.courses import _on_lap
+    assert _on_lap(-0.03, 6670.0) == 0.0
+    assert _on_lap(6670.0, 6670.0) == 0.0
+    assert _on_lap(-10.0, 6670.0) == 6660.0
 
 
 def test_run_together_only_with_friends(db_client, running_friend):

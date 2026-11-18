@@ -211,20 +211,20 @@ def delete_friend(userId: str, user: User = Depends(current_user), db: Session =
     description="화면 G-03, D-20, D-21 · BL-29, 계획 0047. 친구가 courseId에서 달리는 중이면 그 맵에 입장하고 친구 뒤 "
     f"{FRIEND_BEHIND_M[0]:.0f}–{FRIEND_BEHIND_M[1]:.0f}m에 선다(entryPositionM, nearFriend). 응답은 맵 입장과 같은 모양이고 판정도 같다"
     "(보정 없음 CALIBRATION_REQUIRED, 가득 참 COURSE_FULL, 다른 코스에 있던 자리는 옮겨짐). 친구가 아니면 USER_NOT_FOUND, "
-    "달리는 중이 아니거나 그 코스를 떠났으면 FRIEND_NOT_RUNNING(앱은 D-21 안내 뒤 그 코스로 일반 입장). "
+    "섬을 나갔거나 그 코스를 떠났으면 FRIEND_NOT_RUNNING(앱은 D-21 안내 뒤 그 코스로 일반 입장, 잠깐 멈춘 친구는 같이). "
+    "코스가 숨겨졌으면 COURSE_NOT_FOUND. "
     "섬을 불러오고 3·2·1을 하는 동안 친구가 앞서가므로 앱은 달리기를 시작할 때 실시간 방의 친구 위치로 다시 맞춘다",
     response_model=Envelope[MapEntry],
-    responses=error_responses(*AUTH, E.VALIDATION_ERROR, E.USER_NOT_FOUND, E.FRIEND_NOT_RUNNING, E.COURSE_FULL,
-                              E.CALIBRATION_REQUIRED),
+    responses=error_responses(*AUTH, E.VALIDATION_ERROR, E.USER_NOT_FOUND, E.COURSE_NOT_FOUND, E.FRIEND_NOT_RUNNING,
+                              E.COURSE_FULL, E.CALIBRATION_REQUIRED),
 )
 def run_together(userId: str, body: RunTogetherRequest, request: Request, user: User = Depends(current_user),
                  db: Session = Depends(get_db), rng: random.Random = Depends(get_rng)):
     _require_friend(db, user, userId)
-    friend = hub.running_now([userId]).get(userId)
-    if friend is None or friend.course_id != body.course_id:
+    where = hub.in_map(userId)   # 잠깐 멈춘 친구도(물 마시기), 맵에 있으면 같이
+    if where is None or where[0] != body.course_id:
         raise ApiError(E.FRIEND_NOT_RUNNING)
-    behind = round(rng.uniform(*FRIEND_BEHIND_M), 1)
-    return ok(request, enter_course(db, request, user, friend.course_id, rng, near_friend=(userId, friend.d, behind)))
+    return ok(request, enter_course(db, request, user, body.course_id, rng, near_friend=(userId, where[1])))
 
 
 @router.get("/feed", summary="친구 러닝 피드",

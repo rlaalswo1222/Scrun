@@ -198,7 +198,7 @@ namespace Scrun.App
                 bool ok = await Feedback.Run(() => Api.Friends.DeleteAsync(userId), onError: e =>
                 {
                     // 그 사이 상대가 먼저 끊음 → 이미 친구가 아님: 지운 것과 같게
-                    alreadyGone = e.Failure == ApiFailure.Server && e.Code == "USER_NOT_FOUND";
+                    alreadyGone = e.Failure == ApiFailure.Server && e.Code == FriendText.UserNotFound;
                     return alreadyGone;
                 });
                 busy = false;

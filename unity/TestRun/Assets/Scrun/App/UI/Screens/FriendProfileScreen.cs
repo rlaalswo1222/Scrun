@@ -111,7 +111,7 @@ namespace Scrun.App
         // 그 사이 끊긴 친구(친구가 아니면 404): 화면 안에서 알림
         bool OnLoadFailure(ApiException e)
         {
-            if (e.Failure != ApiFailure.Server || e.Code != "USER_NOT_FOUND") return false;
+            if (e.Failure != ApiFailure.Server || e.Code != FriendText.UserNotFound) return false;
             gone = true;
             return true;
         }

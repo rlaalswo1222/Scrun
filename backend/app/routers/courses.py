@@ -94,9 +94,9 @@ def enter_map(courseId: str, request: Request, user: User = Depends(current_user
 
 
 def enter_course(db: Session, request: Request, user: User, course_id: str, rng: random.Random,
-                 near_friend: Optional[tuple[str, float, float]] = None) -> dict:
-    """맵 입장 한 번(일반 입장·같이 달리기가 같이 씀). near_friend = (친구 ID, 친구의 지금 위치 m, 친구 뒤 m)이면
-    그 뒤에 세우고 응답에 nearFriend. 판정·자리 잡기·실시간 토큰은 같다."""
+                 near_friend: Optional[tuple[str, float]] = None) -> dict:
+    """맵 입장 한 번(일반 입장·같이 달리기가 같이 씀). near_friend = (친구 ID, 친구의 지금 위치 m)이면 FRIEND_BEHIND_M 뒤에
+    세우고 응답에 nearFriend(앱은 3·2·1이 끝날 때 같은 거리로 다시 맞춤). 판정·자리 잡기·실시간 토큰은 같다."""
     course = _active_course(db, course_id, lock=True)  # 같은 코스 입장은 여기서 한 줄로 선다(커밋까지)
     if not db.scalar(select(exists().where(Calibration.user_id == user.id))):
         raise ApiError(E.CALIBRATION_REQUIRED)
@@ -110,8 +110,9 @@ def enter_course(db: Session, request: Request, user: User, course_id: str, rng:
     if near_friend is None:
         position, near = _entry_position(course, user.id, rng), None
     else:
-        friend_id, friend_d, behind = near_friend
-        position, near = round((friend_d - behind) % course.length_m, 1), {"userId": friend_id, "behindM": behind}
+        friend_id, friend_d = near_friend
+        behind = round(rng.uniform(*FRIEND_BEHIND_M), 1)
+        position, near = _on_lap(friend_d - behind, course.length_m), {"userId": friend_id, "behindM": behind}
     return {"mapInstanceId": map_id, "courseId": course.id, "entryPositionM": position,
             "realtime": {"url": _realtime_url(request), "token": tokens.issue_realtime(user.id, map_id)},
             "nearFriend": near}
@@ -120,9 +121,15 @@ def enter_course(db: Session, request: Request, user: User, course_id: str, rng:
 def _entry_position(course: CourseRow, user_id: str, rng: random.Random) -> float:
     runners = hub.running_positions(course.id, except_user=user_id)
     if not runners:
-        return round(rng.uniform(0, course.length_m), 1)
+        return _on_lap(rng.uniform(0, course.length_m), course.length_m)
     ahead = rng.choice(sorted(runners))  # 정렬: 같은 시드면 같은 결과(예시 만들기)
-    return round((ahead - rng.uniform(*BEHIND_M)) % course.length_m, 1)
+    return _on_lap(ahead - rng.uniform(*BEHIND_M), course.length_m)
+
+
+def _on_lap(d: float, length_m: float) -> float:
+    """코스 위 [0, 길이), 소수 1자리. 6669.97 → round하면 6670.0(= 길이)이 되므로 0으로 감는다(hub.lap_position과 같게)."""
+    r = round(d % length_m, 1)
+    return 0.0 if r >= length_m else r
 
 
 def _realtime_url(request: Request) -> str:
