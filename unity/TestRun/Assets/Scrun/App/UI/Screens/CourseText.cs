@@ -14,6 +14,9 @@ namespace Scrun.App
         // 실사 영상 코스(자리만, 아직 달릴 수 없음) → 목록에서 뺀다
         public const string VideoType = "VIDEO";
 
+        // 기록 상세 "이 기록으로 고스트 달리기"로 왔을 때 C-01 안내(계획 0053, 임시 문구 상준 확인)
+        public const string GhostLead = "고른 기록이 고스트로 함께 달려요. 코스를 골라 주세요";
+
         // 6671 → "6.7km", 1050 → "1.1km"(0.05는 올림. float로 나누면 1.0499…가 돼 내려가던 것)
         public static string Km(int meters) =>
             (Math.Round(meters / 100.0, MidpointRounding.AwayFromZero) / 10).ToString("0.0", CultureInfo.InvariantCulture) + "km";

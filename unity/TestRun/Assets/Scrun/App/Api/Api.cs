@@ -187,10 +187,15 @@ namespace Scrun.App
             return r;
         }
 
-        // 내 끝난 기록(최신순 20개씩). cursor는 앞 쪽의 NextCursor
-        public async Task<RunListPage> ListAsync(string cursor = null) =>
-            await c.GetAsync<RunListPage>(cursor == null ? "/v1/runs" : "/v1/runs?cursor=" + Uri.EscapeDataString(cursor), AuthMode.User)
-            ?? new RunListPage();
+        // 내 끝난 기록(최신순 20개씩). cursor는 앞 쪽의 NextCursor, month(YYYY-MM)는 그 달만(F-01 달 칩, 서버가 사용자 시간대로 자름)
+        public async Task<RunListPage> ListAsync(string cursor = null, string month = null)
+        {
+            var query = new List<string>();
+            if (month != null) query.Add("month=" + Uri.EscapeDataString(month));
+            if (cursor != null) query.Add("cursor=" + Uri.EscapeDataString(cursor));
+            return await c.GetAsync<RunListPage>(query.Count == 0 ? "/v1/runs" : "/v1/runs?" + string.Join("&", query), AuthMode.User)
+                   ?? new RunListPage();
+        }
 
         // 기록 상세(E-12 결과·F-03, 계획 0051). 내 끝난 기록만
         public async Task<RunDetail> GetAsync(string runId) =>

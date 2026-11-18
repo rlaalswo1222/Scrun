@@ -4,8 +4,10 @@
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
     <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="course course-list">
         <ui:VisualElement class="course-list-page">
+            <!-- 기록 상세 "이 기록으로 고스트 달리기"로 기록 탭에 쌓였을 때만 보임(계획 0053) -->
+            <ui:Button name="back" class="course-back" />
             <ui:Label text="어디서 달릴까요?" class="page-title" />
-            <ui:Label text="코스를 고르면 같은 코스의 러너들과 함께 달려요" class="page-lead" />
+            <ui:Label name="lead" text="코스를 고르면 같은 코스의 러너들과 함께 달려요" class="page-lead" />
             <ui:VisualElement class="chip-row">
                 <ui:Button name="filter-all" text="전체" class="chip chip--active" />
                 <ui:Button name="filter-live" text="지금 달리는 중" class="chip" />

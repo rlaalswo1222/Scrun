@@ -5,13 +5,15 @@ using UnityEngine.UIElements;
 namespace Scrun.App
 {
     // E-12 운동 결과·E-14 미인증(계획 0051, Figma 607:1673·699:2563). 기록 ID로 GET /v1/runs/{id}를 받아 그림.
-    // 피드 공유(PATCH), 대조 자세히(E-15 시트, 계기판 값이 있을 때만), 닫기·홈으로 → 홈 탭. "기록 보기"(F-01)는 다음 계획 전까지 숨김(정할 것 3 가).
+    // 피드 공유(PATCH), 대조 자세히(E-15 시트, 계기판 값이 있을 때만), 닫기·홈으로 → 홈 탭, "기록 보기" → 기록 탭(F-01, 계획 0053).
     // 기록을 서버에 못 올렸으면(오프라인 종료) 이 폰의 값으로 간이 결과(정할 것 1 가): 공유·그래프·러너·대조 없이 안내만.
-    // 기록 상세(F-03, 다음 계획 BL-20)에서 같은 화면을 다시 쓴다
+    // 기록 상세(F-03·F-04, 계획 0053 정할 것 2 가)도 이 화면(Detail): 내용은 같고 위는 ‹ 기록 상세(뒤로 → 목록), 아래는
+    // "이 기록으로 고스트 달리기"(→ 코스 목록 → 코스 상세 → 러닝 설정에 고스트를 켜고 이 기록, 정할 것 3 가)
     public sealed class RunResultScreen : AppScreen
     {
         readonly string runId;
         readonly bool offline;
+        readonly bool asRecord; // 기록 탭에서 연 기록 상세(F-03·F-04)
         Task before; // 미인증 마무리(skip)를 서버에 알리는 중이면 끝난 뒤 불러옴(인증 대기로 보이지 않게)
         RunDetail detail;
         VisualElement content, loadFailed, chip, companions, heads, graphCard, shareSwitch;
@@ -21,11 +23,18 @@ namespace Scrun.App
         FriendParts.Sheet sheet;
         bool loading, sharing;
 
-        public RunResultScreen(string runId, Task before = null)
+        public RunResultScreen(string runId, Task before = null) : this(runId, before, asRecord: false) { }
+
+        RunResultScreen(string runId, Task before, bool asRecord)
         {
             this.runId = runId;
             this.before = before;
+            this.asRecord = asRecord;
         }
+
+        // 기록 탭 카드 → F-03·F-04
+        public static RunResultScreen Detail(string runId) =>
+            new RunResultScreen(runId ?? throw new System.ArgumentNullException(nameof(runId)), null, asRecord: true);
 
         RunResultScreen(RunDetail local)
         {
@@ -77,9 +86,24 @@ namespace Scrun.App
             graph.style.flexGrow = 1;
             Q<VisualElement>("graph").Add(graph);
 
-            Q<Button>("close").clicked += GoHome;
-            Q<Button>("home").clicked += GoHome;
-            Q<Button>("records").SetVisible(false); // F-01은 다음 계획(BL-20)
+            var back = Q<Button>("back");
+            var close = Q<Button>("close");
+            var home = Q<Button>("home");
+            var records = Q<Button>("records");
+            var ghost = Q<Button>("ghost");
+            ghost.text = RecordsText.GhostButton;
+            back.clicked += () => { if (Nav.Current == this) Nav.Pop(); };
+            close.clicked += GoHome;
+            home.clicked += GoHome;
+            records.clicked += GoRecords;
+            ghost.clicked += RunWithGhost;
+            Q<Label>("title").text = asRecord ? RecordsText.DetailTitle : "운동 결과";
+            back.SetVisible(asRecord);
+            close.SetVisible(!asRecord);
+            home.SetVisible(!asRecord);
+            ghost.SetVisible(asRecord);
+            ghost.SetEnabled(false); // 기록을 받은 뒤에(Render) 켬. 그 전엔 넘길 기록이 없음
+            records.SetVisible(!asRecord && !offline); // 서버에 못 올린 기록은 아직 목록에 없음
             Q<Button>("reload").clicked += Load;
             share.clicked += ToggleShare;
             compare.clicked += OpenCompare;
@@ -94,10 +118,11 @@ namespace Scrun.App
             if (!offline) Load();
         }
 
-        // 뒤로(아이폰 밀기·Esc) = 닫기. 코스 상세로 돌아가 같은 기록을 다시 볼 일이 없음
+        // 뒤로(아이폰 밀기·Esc) = 닫기. 코스 상세로 돌아가 같은 기록을 다시 볼 일이 없음. 기록 상세면 그냥 목록으로
         protected internal override bool OnBack()
         {
             if (sheet?.Open == true) sheet.Close();
+            else if (asRecord) return false;
             else GoHome();
             return true;
         }
@@ -108,6 +133,27 @@ namespace Scrun.App
             if (nav == null || nav.Current != this) return;
             nav.PopToRoot();
             if (nav.CurrentTab != AppTab.Home) nav.SelectTab(AppTab.Home);
+        }
+
+        // E-12 "기록 보기": 결과 화면들을 내리고 기록 탭 첫 화면(목록은 보일 때 새로 받아 방금 기록이 맨 위).
+        // 기록 탭에 전에 열어 둔 상세가 쌓여 있어도 목록으로(리뷰: 옛 상세가 보이던 것)
+        internal void GoRecords()
+        {
+            var nav = Nav;
+            if (nav == null || nav.Current != this) return;
+            nav.PopToRoot();
+            if (nav.CurrentTab != AppTab.Records)
+            {
+                nav.SelectTab(AppTab.Records);
+                nav.PopToRoot();
+            }
+        }
+
+        // F-03 "이 기록으로 고스트 달리기": 코스를 고르면 러닝 설정에 고스트가 켜진 채 이 기록(기록 탭 안에 쌓음)
+        void RunWithGhost()
+        {
+            if (!asRecord || detail == null || Nav == null || Nav.Current != this) return;
+            Nav.Push(new CourseListScreen(ghost: detail));
         }
 
         async void Load()
@@ -150,7 +196,7 @@ namespace Scrun.App
             var (chipLabel, verified) = RunResultText.Chip(d.Verification);
             chipText.text = chipLabel;
             chip.EnableInClassList("fr-chip--success", verified);
-            chip.EnableInClassList("rr-chip--warn", !verified);
+            chip.EnableInClassList("rr-chip--warn", RunResultText.ChipWarn(d.Verification));
             km.text = RunResultText.BigKm(d.DistanceM);
             unit.text = RunResultText.Unit(d.Verification);
 
@@ -170,6 +216,7 @@ namespace Scrun.App
             pace.text = RunResultText.Pace(d.AvgPaceSPerKm);
             goal.text = RunResultText.Goal(d.Goal);
 
+            Q<Button>("ghost").SetEnabled(asRecord && !offline);
             graph.Set(d.SpeedSeries?.SpeedsKmh);
             graphCard.SetVisible(graph.HasData);
 

@@ -136,7 +136,7 @@ namespace Scrun.App
         static AppScreen TabRoot(AppTab tab) => tab switch
         {
             AppTab.Home => new HomeScreen(),
-            AppTab.Records => new PlaceholderScreen("기록", "달린 기록 목록이 들어갈 자리"),
+            AppTab.Records => new RecordsScreen(), // F-01(계획 0053)
             AppTab.Friends => new FriendsScreen(), // G-01(계획 0044)
             _ => new MyScreen(), // H-01(계획 0049)
         };
