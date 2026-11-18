@@ -16,7 +16,6 @@ from typing import Optional
 import cv2
 import numpy as np
 
-from .seg import OnnxReader
 
 SEG_CONFUSION = str.maketrans({"S": "5", "s": "5", "O": "0", "o": "0", "D": "0", "I": "1", "l": "1", "|": "1",
                                "B": "8", "Z": "2", "z": "2", "G": "6", "q": "9", ",": "."})
@@ -113,7 +112,10 @@ class PhotoRead:
 
 class ConsoleReader:
     def __init__(self, seg_onnx: str, threads: int = 2, prefer: str = "seg"):
+        # 무거운 엔진은 여기서만(칸 찾기 규칙·테스트는 onnxruntime·rapidocr 없이 돌게)
         from rapidocr import LangDet, LangRec, ModelType, OCRVersion, RapidOCR
+
+        from .seg import OnnxReader
         self.ocr = RapidOCR(params={
             "Det.ocr_version": OCRVersion.PPOCRV5, "Det.model_type": ModelType.MOBILE, "Det.lang_type": LangDet.CH,
             "Rec.ocr_version": OCRVersion.PPOCRV5, "Rec.model_type": ModelType.MOBILE, "Rec.lang_type": LangRec.KOREAN,
