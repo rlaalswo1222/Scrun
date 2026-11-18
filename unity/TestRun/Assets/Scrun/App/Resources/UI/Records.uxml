@@ -1,0 +1,51 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- F-01 기록 목록·F-02 빈 상태(계획 0053, Figma 608:1332·608:1427). 위: "기록" + 달 칩(이번 달·지난 달·전체) + 이번 주 요약 3칸,
+         아래: 기록 카드(RecordsScreen이 코드로). 기록이 하나도 없으면 F-02 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/RunResult.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Records.uss" />
+    <ui:VisualElement class="fr rr rc fr-page">
+        <ui:VisualElement class="fr-header">
+            <ui:Label text="기록" class="fr-title" />
+        </ui:VisualElement>
+
+        <!-- F-01 -->
+        <ui:ScrollView name="scroll" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="fr-scroll">
+            <ui:Label name="pull" class="fr-pull" />
+            <ui:VisualElement name="months" class="rc-months" />
+            <ui:VisualElement class="rc-week">
+                <ui:VisualElement class="rc-tile">
+                    <ui:Label text="이번 주" class="rc-tile-label" />
+                    <ui:Label name="week-count" class="rc-tile-value" />
+                </ui:VisualElement>
+                <ui:VisualElement class="rc-tile rc-tile--mid">
+                    <ui:Label text="거리" class="rc-tile-label" />
+                    <ui:Label name="week-km" class="rc-tile-value" />
+                </ui:VisualElement>
+                <ui:VisualElement class="rc-tile">
+                    <ui:Label text="인증" class="rc-tile-label" />
+                    <ui:Label name="week-verified" class="rc-tile-value" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="list" />
+            <ui:Label name="month-empty" class="fr-hint" />
+            <ui:Button name="more" text="더 보기" class="btn btn-ghost fr-more" />
+        </ui:ScrollView>
+
+        <!-- F-02 기록 없음 -->
+        <ui:VisualElement name="empty" class="fr-scroll">
+            <ui:VisualElement class="rc-illust">
+                <ui:VisualElement class="rc-illust-image" />
+            </ui:VisualElement>
+            <ui:Label name="empty-title" class="fr-big rc-center rc-empty-title" />
+            <ui:Label name="empty-body" class="fr-lead rc-center" />
+            <ui:VisualElement class="fr-spacer" />
+            <ui:Button name="start" class="btn btn-primary" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="load-failed" class="empty-state">
+            <ui:Label text="기록을 불러오지 못했어요" class="hint-text" />
+            <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

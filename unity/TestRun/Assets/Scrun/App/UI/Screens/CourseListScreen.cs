@@ -6,8 +6,13 @@ namespace Scrun.App
 {
     // C-01 코스 선택(GET /v1/courses). 홈 탭에 쌓이는 화면이라 Figma대로 뒤로 가기 버튼이 없다(아래 탭 "홈"을 다시 누르면 홈).
     // 보일 때마다 다시 불러 "지금 달리는 사람 수"를 새로 보여 준다. 칩으로 지금 달리는 코스만 거르고, 카드를 누르면 상세(C-02).
+    // 기록 상세 "이 기록으로 고스트 달리기"(F-03, 계획 0053)로 오면 기록 탭에 쌓이고, 고른 코스의 러닝 설정에 그 기록을 고스트로 켜 둠
     public sealed class CourseListScreen : AppScreen
     {
+        readonly RunSummary ghost;
+
+        public CourseListScreen(RunSummary ghost = null) => this.ghost = ghost;
+
         VisualElement list, loadFailed;
         Label empty;
         Button filterAll, filterLive;
@@ -26,6 +31,10 @@ namespace Scrun.App
             filterAll.clicked += () => SetFilter(false);
             filterLive.clicked += () => SetFilter(true);
             Q<Button>("reload").clicked += Load;
+            if (ghost != null) Q<Label>("lead").text = CourseText.GhostLead;
+            var back = Q<Button>("back");
+            back.SetVisible(ghost != null); // 홈 탭에선 Figma대로 없음, 기록 탭에 쌓였을 땐 상세로 돌아갈 길
+            back.clicked += () => { if (Nav.Current == this) Nav.Pop(); };
             loadFailed.SetVisible(false);
             empty.SetVisible(false);
         }
@@ -76,7 +85,7 @@ namespace Scrun.App
         {
             var id = c.CourseId;
             // 두 번 눌러 상세가 둘 쌓이지 않게(맨 위일 때만)
-            var card = new Button(() => { if (Nav.Current == this) Nav.Push(new CourseDetailScreen(id)); }) { name = "course-" + id };
+            var card = new Button(() => { if (Nav.Current == this) Nav.Push(new CourseDetailScreen(id, ghost: ghost)); }) { name = "course-" + id };
             card.AddToClassList("course-card");
             var thumb = CourseParts.Thumb(c);
             thumb.pickingMode = PickingMode.Ignore;

@@ -37,6 +37,9 @@ namespace Scrun.App
         public static (string text, bool verified) Chip(string verification) =>
             FriendText.VerificationChip(verification) ?? ("인증 대기", false);
 
+        // 칩 주황(경고)은 미인증만. 인증 대기는 회색(아직 결과가 아님). 결과·기록 상세·기록 목록이 같이 씀(계획 0053 리뷰)
+        public static bool ChipWarn(string verification) => verification == VerifyStatus.Unverified;
+
         // 큰 숫자 "3.02"(기록 목록·피드와 같은 반올림)
         public static string BigKm(int meters) => FriendText.Km(meters, unit: false);
 
