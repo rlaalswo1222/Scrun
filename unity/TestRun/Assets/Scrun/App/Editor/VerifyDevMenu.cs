@@ -114,7 +114,7 @@ namespace Scrun.App.Editor
                 var sensor = new RunStatsBody { DistanceM = 1000, DurationS = 280 };
                 await Api.Runs.FinishAsync(started.RunId, new RunFinishBody { EndedAt = now, Sensor = sensor });
                 Debug.Log($"[인증] 기록 {started.RunId} (센서 1.00 km · 4:40) → 인증 화면. 결과는 Fake Native 창 '서버 가짜 OCR'");
-                AppRoot.Nav.Push(new VerifyScreen(started.RunId, sensor, () =>
+                AppRoot.Nav.Push(new VerifyScreen(started.RunId, sensor, _ =>
                 {
                     if (AppRoot.Nav.Current is VerifyScreen) AppRoot.Nav.Pop();
                     Debug.Log("[인증] 끝");

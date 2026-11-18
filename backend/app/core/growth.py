@@ -192,4 +192,5 @@ def progress_payload(db: Session, user_id: str) -> dict:
     level = level_of(xp)
     return {"level": level, "xpM": xp, "nextLevelAtM": next_level_at(xp), "nextLevelRemainingM": remaining_m(xp),
             "outfitStage": outfit_of(level), "verifiedCount": p.verified_count if p else 0,
-            "impacts": _impact_rows(db, user_id), "selectedImpactId": p.selected_impact_id if p else None}
+            "impacts": _impact_rows(db, user_id), "selectedImpactId": p.selected_impact_id if p else None,
+            "levelStartsM": [0, *POLICY.level_m]}

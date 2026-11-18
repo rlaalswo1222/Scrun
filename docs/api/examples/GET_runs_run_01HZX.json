@@ -19,6 +19,10 @@
         "avgPaceSPerKm": 362,
         "verification": "VERIFIED",
         "shared": false,
+        "goal": {
+          "type": "DISTANCE",
+          "value": 3000
+        },
         "officialSource": "CONSOLE",
         "sensor": {
           "distanceM": 3120,

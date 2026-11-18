@@ -1,0 +1,84 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- E-11 인증 후 반영(계획 0051, Figma 607:1602): 주간 목표 → 레벨(러닝복 전후·경험치 바) → 인증 마크(임팩트) → 운동 결과 보기.
+         레벨업이면 바가 다 찬 뒤 3초에 E-13 덮개(699:2357) → 계속하기 → E-12 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/RunResult.uss" />
+    <ui:VisualElement class="onb fr rr">
+        <ui:VisualElement class="nav-bar">
+            <ui:VisualElement class="nav-side" />
+            <ui:Label text="인증 완료" class="nav-title" />
+            <ui:VisualElement class="nav-side nav-side--right" />
+        </ui:VisualElement>
+        <ui:ScrollView name="content" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+            <ui:Label text="기록이 인증됐어요" class="onb-title" />
+
+            <ui:VisualElement name="weekly" class="rr-card">
+                <ui:VisualElement class="rr-card-head">
+                    <ui:Label text="주간 목표" class="rr-card-title" />
+                    <ui:VisualElement name="weekly-chip" class="fr-chip fr-chip--success">
+                        <ui:Label name="weekly-text" class="fr-chip-text" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="weekly-dots" class="rr-dots" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="rr-card">
+                <ui:VisualElement class="rr-card-head">
+                    <ui:Label text="레벨" class="rr-card-title" />
+                    <ui:Label name="level-line" class="rr-accent" />
+                </ui:VisualElement>
+                <ui:VisualElement class="rr-outfits">
+                    <ui:VisualElement name="outfit-before" class="rr-outfit">
+                        <ui:VisualElement class="rr-outfit-img" />
+                        <ui:Label name="outfit-before-name" class="rr-outfit-name" />
+                    </ui:VisualElement>
+                    <ui:Label name="outfit-arrow" text="→" class="rr-outfit-arrow" />
+                    <ui:VisualElement name="outfit-after" class="rr-outfit rr-outfit--now">
+                        <ui:VisualElement class="rr-outfit-img" />
+                        <ui:Label name="outfit-after-name" class="rr-outfit-name" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="rr-xp-row">
+                    <ui:Label name="xp-gain" class="rr-sub" />
+                    <ui:Label name="xp-next" class="rr-accent rr-small" />
+                </ui:VisualElement>
+                <ui:VisualElement class="rr-bar">
+                    <ui:VisualElement name="xp-fill" class="rr-bar-fill" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement class="rr-card">
+                <ui:VisualElement class="rr-card-head">
+                    <ui:Label text="인증 마크" class="rr-card-title" />
+                    <ui:Label name="marks" class="rr-accent" />
+                </ui:VisualElement>
+                <ui:Label name="impact-unlocked" class="rr-impact" />
+                <ui:Label name="impact-next" class="rr-sub" />
+            </ui:VisualElement>
+
+            <ui:Button name="next" text="운동 결과 보기" class="btn btn-primary rr-home" />
+        </ui:ScrollView>
+        <ui:VisualElement name="load-failed" class="empty-state">
+            <ui:Label text="반영 결과를 불러오지 못했어요" class="hint-text" />
+            <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
+            <ui:Button name="skip" text="운동 결과 보기" class="btn btn-ghost" />
+        </ui:VisualElement>
+
+        <!-- E-13 레벨업(풀스크린). 러닝복 그림은 BL-34 에셋 전까지 메인 캐릭터(정할 것 2 가) -->
+        <ui:VisualElement name="levelup" class="rr-levelup">
+            <ui:Label text="LEVEL UP!" class="rr-levelup-title" />
+            <ui:VisualElement class="rr-levelup-levels">
+                <ui:Label name="levelup-before" class="rr-levelup-chip" />
+                <ui:Label text="→" class="rr-levelup-arrow" />
+                <ui:Label name="levelup-after" class="rr-levelup-chip rr-levelup-chip--now" />
+            </ui:VisualElement>
+            <ui:VisualElement class="rr-levelup-char" />
+            <ui:Label name="levelup-outfit" class="rr-levelup-outfit" />
+            <ui:Label text="러닝복이 업그레이드됐어요" class="rr-levelup-lead" />
+            <ui:Label name="levelup-xp" class="rr-levelup-xp" />
+            <ui:Label name="levelup-impact" class="rr-levelup-impact" />
+            <ui:Button name="levelup-continue" text="계속하기" class="btn rr-levelup-btn" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

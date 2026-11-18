@@ -63,7 +63,15 @@
               "unlocked": false
             }
           ],
-          "selectedImpactId": "imp_wind"
+          "selectedImpactId": "imp_wind",
+          "levelStartsM": [
+            0,
+            3000,
+            10000,
+            25000,
+            50000,
+            100000
+          ]
         },
         "runningFriends": [
           {

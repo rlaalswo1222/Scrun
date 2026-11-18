@@ -130,6 +130,7 @@ def test_detail_has_sensor_values_and_graph_series(db_client, me, db):
     assert series["intervalS"] == 9.0 and len(series["speedsKmh"]) == 114, "1020초를 120칸 안으로(9초 칸)"
     assert set(series["speedsKmh"]) == {9.0}
     assert out["companions"] == [] and out["ghostRunId"] is None
+    assert out["goal"] == {"type": "DISTANCE", "value": 3000}, "결과 화면 '목표' 칸(E-12)"
 
 
 def test_detail_shows_console_values_and_ghost(db_client, me, db):

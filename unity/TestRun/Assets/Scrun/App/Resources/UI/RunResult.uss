@@ -1,0 +1,463 @@
+/* 운동 결과(E-12·E-14)·인증 후 반영(E-11)·레벨업(E-13)(계획 0051). Figma "SCRUN" > 스크런 와이어 프레임 E 섹션(11/18 화면을 보고 맞춤).
+   카드는 마이 탭(My.uss)과 같은 흰 바탕·테두리·모서리 20, 큰 제목·칩·시트·머리는 Friends.uss(.fr …). 상준이 Figma와 나란히 놓고 다듬음 */
+
+.rr .unity-label {
+    margin: 0;
+    padding: 0;
+}
+
+.rr-card {
+    margin-top: var(--space-3);
+    padding: 16px;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+}
+
+.rr-card-head {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rr .rr-card-title {
+    font-size: var(--font-size-body);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.rr .rr-label {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+}
+
+.rr .rr-sub {
+    font-size: var(--font-size-caption);
+    color: var(--color-body);
+}
+
+.rr .rr-accent {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.rr .rr-small {
+    font-size: var(--font-size-caption);
+}
+
+/* ---- E-12 위: 날짜 + 인증 칩 ---- */
+.rr-top {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-2);
+}
+
+.rr .rr-date {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-body);
+}
+
+/* 미인증·인증 대기 칩(노랑, E-14) */
+.rr-chip--warn {
+    background-color: rgba(255, 176, 32, 0.18);
+}
+
+.rr .rr-chip--warn .fr-chip-text {
+    color: #B26A00;
+}
+
+/* ---- 거리 + 함께 달린 러너 ---- */
+.rr-hero {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 16px;
+}
+
+.rr-distance {
+    flex-direction: row;
+    align-items: flex-end;
+    flex-shrink: 1;
+}
+
+.rr .rr-km {
+    font-size: 52px;
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.rr .rr-unit {
+    margin: 0 0 10px 6px;
+    font-size: var(--font-size-body);
+    color: var(--color-body);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.rr-companions {
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.rr-heads {
+    flex-direction: row;
+    margin: 6px 0 4px 0;
+}
+
+.rr-heads > .fr-head {
+    border-width: 2px;
+    border-color: var(--color-surface);
+}
+
+/* 두 번째 머리부터 겹침(UI Toolkit은 :first-child를 몰라서 코드가 붙임) */
+.rr-head--overlap {
+    margin-left: -8px;
+}
+
+.rr .rr-companion-line {
+    font-size: var(--font-size-caption);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+/* ---- 시간·평균 페이스·목표 ---- */
+.rr-stats {
+    flex-direction: row;
+}
+
+.rr-stat {
+    flex-grow: 1;
+    flex-basis: 0;
+    padding: 12px 14px;
+}
+
+.rr-stat--mid {
+    margin-left: var(--space-2);
+    margin-right: var(--space-2);
+}
+
+.rr .rr-stat-value {
+    margin-top: 4px;
+    font-size: var(--font-size-sub);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+/* ---- 속도 변화 ---- */
+.rr-graph {
+    height: 64px;
+    margin-top: 8px;
+}
+
+/* ---- 친구 피드에 공유 ---- */
+.rr-share {
+    flex-direction: row;
+    align-items: center;
+    -unity-text-align: upper-left;
+}
+
+.rr-share:hover,
+.rr-share:active {
+    border-color: var(--color-line);
+    background-color: var(--color-surface);
+}
+
+.rr-share-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rr .rr-share-title {
+    font-size: var(--font-size-body);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.rr .rr-share-sub {
+    margin-top: 2px;
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+}
+
+/* ---- 미인증·오프라인 안내(E-14 노랑 상자) ---- */
+.rr .rr-note {
+    margin-top: var(--space-3);
+    padding: 12px 14px;
+    border-radius: 14px;
+    background-color: rgba(255, 176, 32, 0.14);
+    font-size: var(--font-size-caption);
+    color: #8A5600;
+    white-space: normal;
+}
+
+/* ---- 대조 자세히(E-15) ---- */
+.rr-link {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--space-3);
+    padding: 14px 16px;
+    border-width: 0;
+    border-radius: 16px;
+    background-color: var(--color-primary-tint);
+    -unity-text-align: middle-left;
+}
+
+.rr-link:hover,
+.rr-link:active {
+    background-color: var(--color-primary-tint);
+}
+
+.rr .rr-link-text {
+    flex-grow: 1;
+    font-size: var(--font-size-body-sm);
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.rr .rr-link-chevron {
+    font-size: var(--font-size-sub);
+    color: var(--color-primary);
+}
+
+.rr-home {
+    margin-top: var(--space-5);
+    margin-bottom: 0;
+}
+
+.rr-records {
+    margin-top: var(--space-2);
+}
+
+/* E-15 시트 표 */
+.rr-compare-row {
+    flex-direction: row;
+    padding: 10px 2px;
+    border-bottom-width: 1px;
+    border-color: var(--color-line);
+}
+
+.rr-compare-row--head {
+    padding-top: 4px;
+}
+
+.fr .rr-compare-cell {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: 0;
+    font-size: var(--font-size-body-sm);
+    color: var(--color-text);
+}
+
+.fr .rr-compare-row--head .rr-compare-cell {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+}
+
+/* ---- E-11 주간 목표 점 ---- */
+.rr-dots {
+    flex-direction: row;
+    margin-top: 12px;
+}
+
+.rr-dot {
+    width: 28px;
+    height: 28px;
+    margin-right: 8px;
+    border-radius: 14px;
+    background-color: var(--color-line);
+    align-items: center;
+    justify-content: center;
+}
+
+.rr-dot--done {
+    background-color: var(--color-lime);
+}
+
+.rr .rr-dot-mark {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+/* ---- E-11 러닝복 전후 ---- */
+.rr-outfits {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.rr-outfit {
+    width: 110px;
+    padding: 10px;
+    align-items: center;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 16px;
+    background-color: var(--color-primary-tint);
+}
+
+.rr-outfit--now {
+    border-width: 2px;
+    border-color: var(--color-primary);
+}
+
+.rr-outfit-img {
+    width: 56px;
+    height: 72px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/CharacterRun.png");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rr .rr-outfit-name {
+    margin-top: 6px;
+    font-size: var(--font-size-caption);
+    color: var(--color-text);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.rr .rr-outfit-arrow {
+    margin: 0 12px;
+    font-size: var(--font-size-sub);
+    color: var(--color-primary);
+}
+
+.rr-xp-row {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 12px;
+}
+
+.rr-bar {
+    height: 8px;
+    margin-top: 8px;
+    border-radius: 4px;
+    background-color: var(--color-line);
+    overflow: hidden;
+}
+
+.rr-bar-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 4px;
+    background-color: var(--color-primary);
+}
+
+.rr .rr-impact {
+    margin-top: 10px;
+    font-size: var(--font-size-body-sm);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    white-space: normal;
+}
+
+/* ---- E-13 레벨업(풀스크린, 파란 바탕) ---- */
+.rr-levelup {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    padding: 64px 24px 32px 24px;
+    background-color: var(--color-primary);
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.35s;
+}
+
+.rr-levelup--in {
+    opacity: 1;
+}
+
+.rr .rr-levelup-title {
+    font-size: 36px;
+    color: #FFFFFF;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.rr-levelup-levels {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 12px;
+}
+
+.rr .rr-levelup-chip {
+    padding: 4px 12px;
+    border-radius: 12px;
+    background-color: rgba(255, 255, 255, 0.2);
+    font-size: var(--font-size-body-sm);
+    color: #FFFFFF;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.rr .rr-levelup-chip--now {
+    background-color: var(--color-lime);
+    color: var(--color-text);
+}
+
+.rr .rr-levelup-arrow {
+    margin: 0 10px;
+    color: #FFFFFF;
+}
+
+.rr-levelup-char {
+    width: 180px;
+    height: 220px;
+    margin-top: 20px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/CharacterRun.png");
+    -unity-background-scale-mode: scale-to-fit;
+    scale: 0.85 0.85;
+    transition-property: scale;
+    transition-duration: 0.5s;
+    transition-timing-function: ease-out-back;
+}
+
+.rr-levelup--in .rr-levelup-char {
+    scale: 1 1;
+}
+
+.rr .rr-levelup-outfit {
+    margin-top: 16px;
+    font-size: var(--font-size-heading);
+    color: #FFFFFF;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.rr .rr-levelup-lead {
+    margin-top: 4px;
+    font-size: var(--font-size-body-sm);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.rr .rr-levelup-xp {
+    margin-top: 16px;
+    font-size: var(--font-size-caption);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.rr .rr-levelup-impact {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background-color: rgba(255, 255, 255, 0.16);
+    font-size: var(--font-size-body-sm);
+    color: #FFFFFF;
+    white-space: normal;
+}
+
+.rr-levelup-btn {
+    align-self: stretch;
+    margin-top: auto;
+    background-color: #FFFFFF;
+    color: var(--color-primary);
+}
+
+.rr-levelup-btn:hover,
+.rr-levelup-btn:active {
+    background-color: #FFFFFF;
+}

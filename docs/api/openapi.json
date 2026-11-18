@@ -1419,7 +1419,7 @@
           "Run"
         ],
         "summary": "기록 상세",
-        "description": "화면 F-03, F-04, E-12 · BL-19, BL-20. 공식 값과 출처(계기판/센서), 센서 값, 계기판에서 읽은 값(사진을 읽었을 때), 그래프용 시계열(최대 120칸, 칸 간격은 정수 초), 함께 달린 러너(같은 맵에서 같이 달린 사람·봇, 친구 표시)\n\n남의 기록이면 FORBIDDEN, 없거나 아직 달리는 중·버린 기록이면 RUN_NOT_FOUND",
+        "description": "화면 F-03, F-04, E-12 · BL-19, BL-20. 시작할 때 고른 목표, 공식 값과 출처(계기판/센서), 센서 값, 계기판에서 읽은 값(사진을 읽었을 때), 그래프용 시계열(최대 120칸, 칸 간격은 정수 초), 함께 달린 러너(같은 맵에서 같이 달린 사람·봇, 친구 표시)\n\n남의 기록이면 FORBIDDEN, 없거나 아직 달리는 중·버린 기록이면 RUN_NOT_FOUND",
         "operationId": "get_run_v1_runs__runId__get",
         "security": [
           {
@@ -5289,6 +5289,14 @@
               }
             ],
             "title": "Selectedimpactid"
+          },
+          "levelStartsM": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Levelstartsm",
+            "description": "레벨별 시작 경험치(m, Lv.1 = 0부터). 결과 화면 경험치 바·레벨 표가 서버 임계값을 그대로 쓰게"
           }
         },
         "type": "object",
@@ -5445,6 +5453,10 @@
             "title": "Shared",
             "description": "친구 피드 공유 여부"
           },
+          "goal": {
+            "$ref": "#/components/schemas/Goal",
+            "description": "시작할 때 고른 목표(결과·기록 상세의 \"목표\" 칸)"
+          },
           "officialSource": {
             "$ref": "#/components/schemas/OfficialSource"
           },
@@ -5495,6 +5507,7 @@
           "durationS",
           "verification",
           "shared",
+          "goal",
           "officialSource",
           "sensor",
           "speedSeries",

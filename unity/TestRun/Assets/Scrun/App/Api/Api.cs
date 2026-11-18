@@ -192,6 +192,21 @@ namespace Scrun.App
             await c.GetAsync<RunListPage>(cursor == null ? "/v1/runs" : "/v1/runs?cursor=" + Uri.EscapeDataString(cursor), AuthMode.User)
             ?? new RunListPage();
 
+        // 기록 상세(E-12 결과·F-03, 계획 0051). 내 끝난 기록만
+        public async Task<RunDetail> GetAsync(string runId) =>
+            await c.GetAsync<RunDetail>("/v1/runs/" + Uri.EscapeDataString(runId), AuthMode.User)
+            ?? throw new ApiException(ApiFailure.BadResponse, "기록 응답이 비었습니다.");
+
+        // 친구 피드 공유 켜기·끄기(E-12). 기록 값은 못 바꿈
+        public async Task<RunSummary> SetSharedAsync(string runId, bool shared) =>
+            await c.SendAsync<RunSummary>("PATCH", "/v1/runs/" + Uri.EscapeDataString(runId), new { shared }, AuthMode.User)
+            ?? throw new ApiException(ApiFailure.BadResponse, "공유 응답이 비었습니다.");
+
+        // 이번 운동 반영 결과(E-11, 계획 0048). 정해지기 전이면 RUN_NOT_FINISHED
+        public async Task<RunRewards> RewardsAsync(string runId) =>
+            await c.GetAsync<RunRewards>("/v1/runs/" + Uri.EscapeDataString(runId) + "/rewards", AuthMode.User)
+            ?? throw new ApiException(ApiFailure.BadResponse, "반영 결과 응답이 비었습니다.");
+
         // 고스트 재생용 시계열(계획 0050). 내 끝난 기록만
         public async Task<GhostTrackBody> GhostAsync(string runId) =>
             await c.GetAsync<GhostTrackBody>("/v1/runs/" + Uri.EscapeDataString(runId) + "/ghost", AuthMode.User)

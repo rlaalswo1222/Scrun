@@ -90,6 +90,7 @@ class OfficialSource(str, Enum):
 
 
 class RunDetail(RunSummary):
+    goal: Goal = Field(description="시작할 때 고른 목표(결과·기록 상세의 \"목표\" 칸)")
     official_source: OfficialSource
     sensor: RunStats
     console: Optional[RunStats] = Field(default=None, description="계기판에서 읽은 값(사진을 읽었을 때. 값이 어긋난 미인증이어도 있음)")

@@ -299,7 +299,7 @@ def _companions(db: Session, run: Run) -> list[dict]:
 
 
 @router.get("/runs/{runId}", summary="기록 상세",
-            description="화면 F-03, F-04, E-12 · BL-19, BL-20. 공식 값과 출처(계기판/센서), 센서 값, 계기판에서 읽은 값(사진을 읽었을 때), "
+            description="화면 F-03, F-04, E-12 · BL-19, BL-20. 시작할 때 고른 목표, 공식 값과 출처(계기판/센서), 센서 값, 계기판에서 읽은 값(사진을 읽었을 때), "
             f"그래프용 시계열(최대 {GRAPH_POINTS}칸, 칸 간격은 정수 초), 함께 달린 러너(같은 맵에서 같이 달린 사람·봇, 친구 표시)"
             + READ_NOTE,
             response_model=Envelope[RunDetail], responses=error_responses(*AUTH, *RUN_ERRORS))
@@ -311,6 +311,7 @@ def get_run(runId: str, request: Request, user: User = Depends(current_user), db
         console = {"distanceM": run.console_distance_m, "durationS": run.console_duration_s or 0}
     return ok(request, {
         **_finished_summary(db, run),
+        "goal": {"type": run.goal_type, "value": run.goal_value},
         "officialSource": run.official_source or "SENSOR",
         "sensor": {"distanceM": run.sensor_distance_m or 0, "durationS": run.sensor_duration_s or 0},
         "console": console,
