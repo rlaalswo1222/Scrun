@@ -96,9 +96,11 @@ erDiagram
 | **user_id** | → users (CASCADE) | |
 | target_count | smallint | 1에서 7 |
 | anchor_date | date | 처음 설정한 날. 주기 = 이날부터 7일 단위 |
-| next_target_count | smallint | 변경 예약값, 다음 주기부터 |
+| next_target_count | smallint | 바꿀 때 이번 주기 목표와 다르면 그 값, 같으면 null(기록용). 주기가 지나도 지우지 않으므로 읽지 않는다 — 응답의 예약값은 이번 주기 목표와 `target_count`가 다를 때 `target_count`로 계산 |
 
-**weekly_goal_cycles** — 주기별 목표 기록(이력 8주기를 그때 목표로 보여 주려고). 주기가 시작될 때 만들어짐. 달성 횟수는 저장 안 하고 `runs`에서 셈
+목표를 바꾸면(계획 0054) `target_count`가 바로 새 값이 되고, 설정일부터 이번 주기까지 줄이 없는 주기에 옛 목표를 `weekly_goal_cycles`로 굳혀 이번·지난 주기는 그대로 둔다(다음 주기부터 새 값).
+
+**weekly_goal_cycles** — 주기별 목표 기록(이력 8주기를 그때 목표로 보여 주려고). 목표를 바꿀 때 그때까지의 주기를 굳히며 만들어짐(줄이 없는 주기는 지금 목표). 달성 횟수는 저장 안 하고 `runs`에서 셈
 | 칸 | 형식 | 설명 |
 |---|---|---|
 | **user_id** | → users (CASCADE) | |
