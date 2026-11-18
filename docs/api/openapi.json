@@ -6437,7 +6437,7 @@
                 "type": "null"
               }
             ],
-            "description": "저장됐을 때(인증 완료·미인증) 반영 결과. 성장 API(BL-32, S8) 전까지 null"
+            "description": "정해졌을 때(인증 완료·미인증) 성장 반영 결과(계획 0048, GET /runs/{runId}/rewards와 같음). 정하기 전(값 확인·다시 찍기)은 null"
           }
         },
         "type": "object",
