@@ -33,10 +33,10 @@ from ..core.ocr import UNREADABLE, BadPhoto, ConsoleRead, EngineUnavailable, Ocr
 from ..core.run_access import (ACTIVE, DISCARDED, PENDING, TIMEOUT, UNVERIFIED, close_expired, is_expired, my_run, now_utc,
                                verification_deadline)
 from ..core.security import current_user
-from ..core.growth import DECIDED, rewards_payload, settle
+from ..core.growth import rewards_for, settle
 from ..core.verification import Outcome, confirmed, decide
 from ..db.ids import new_id
-from ..db.models import Run, RunReward, User, Verification
+from ..db.models import Run, User, Verification
 from ..db.session import get_db
 from ..schemas.verification import (ConfirmRequest, SkipRequest, UnverifiedReason, VerificationResult,
                                     VerificationStatus)
@@ -210,22 +210,12 @@ def _result(run: Run, status: str, reason: Optional[str] = None, rows: Optional[
             "retakesLeft": retakes_left, "attemptId": attempt_id, "rewards": rewards}
 
 
-def _rewards(db: Session, run: Run) -> Optional[dict]:
-    """정해진 기록의 성장 반영 결과(계획 0048). 반영 줄이 없으면(그 전 배포에서 정해짐 등) 지금 반영하고 커밋."""
-    if run.status not in DECIDED:
-        return None
-    reward = db.get(RunReward, run.id)
-    if reward is None:
-        reward = settle(db, run)
-        db.commit()
-    return rewards_payload(db, run, reward)
-
 
 def _stored(db: Session, run: Run) -> dict:
     """이미 정해진 기록의 결과(정한 시도의 대조 표)."""
     last = db.scalar(select(Verification).where(Verification.run_id == run.id, Verification.status.not_in(OPEN))
                      .order_by(Verification.created_at.desc()).limit(1))
-    return _result(run, run.status, run.unverified_reason, last.comparison if last else [], rewards=_rewards(db, run))
+    return _result(run, run.status, run.unverified_reason, last.comparison if last else [], rewards=rewards_for(db, run))
 
 
 def _decide_run(db: Session, run: Run, outcome: Outcome) -> None:
@@ -255,7 +245,7 @@ def _save(db: Session, run: Run, outcome: Outcome, method: str, hashes: tuple[st
     if outcome.status == S.CONFIRM_REQUIRED:
         return _result(run, S.CONFIRM_REQUIRED.value, console_read=(read.distance_m, read.duration_s), attempt_id=attempt.id,
                        deadline=_confirm_deadline(run, attempt))
-    return _result(run, outcome.status.value, reason, rows, rewards=_rewards(db, run))
+    return _result(run, outcome.status.value, reason, rows, rewards=rewards_for(db, run))
 
 
 def _finished(run: Run) -> Run:
@@ -456,7 +446,7 @@ def verify_confirm(runId: str, body: ConfirmRequest, request: Request, user: Use
                                                           outcome.reason.value if outcome.reason else None, rows)
     _decide_run(db, run, outcome)
     db.commit()
-    return ok(request, _result(run, run.status, run.unverified_reason, rows, rewards=_rewards(db, run)))
+    return ok(request, _result(run, run.status, run.unverified_reason, rows, rewards=rewards_for(db, run)))
 
 
 @router.post(

@@ -127,6 +127,27 @@ def test_new_user_starts_at_level_one(db_client):
                  "verifiedCount": 0, "impacts": [], "selectedImpactId": None}
 
 
+def test_verified_reward_is_never_redone(db_client, me, db):
+    """반영 줄의 판정으로 구분: 인증 완료 줄은 다시 정산해도 그대로(경험치를 두 번 안 더함)."""
+    run_id = finished(db_client, me)
+    data(read_then(db_client, me, run_id, "d3000_t1000.jpg"))
+    run = db.get(Run, run_id)
+    assert growth.settle(db, run).status == "VERIFIED"
+    db.commit()
+    assert progress(db_client, me)["xpM"] == 3000
+
+
+def test_level_follows_xp_even_if_thresholds_change(db_client, me, db, monkeypatch):
+    """레벨은 저장값이 아니라 경험치로 계산 → GROWTH_LEVEL_M을 늘리면 다음 인증을 기다리지 않고 바로."""
+    uid = my_id(db_client, me)
+    db.merge(UserProgress(user_id=uid, xp_m=250000, level=6, outfit_stage=6, verified_count=40))
+    db.commit()
+    assert (progress(db_client, me)["level"], progress(db_client, me)["nextLevelAtM"]) == (6, None)
+    monkeypatch.setattr(growth, "POLICY", load_growth({"GROWTH_LEVEL_M": "3000,10000,25000,50000,100000,200000,400000"}))
+    p = progress(db_client, me)
+    assert (p["level"], p["nextLevelAtM"], p["outfitStage"]) == (7, 400000, 6)
+
+
 # ---------- 주간 목표 ----------
 def test_weekly_cycle_from_the_day_the_goal_was_set(db_client, me, db):
     """BL-30 ③④: 설정한 날부터 7일 주기(사용자 시간대), 인증 완료 + 5분 이상만 1회."""
@@ -173,6 +194,10 @@ def test_backfill_migration_recomputes_in_time_order(db_client, me, db):
     a = add_run(db, uid, ago(days=3), status="VERIFIED", distance=2500, duration=900)
     b = add_run(db, uid, ago(days=2), status="UNVERIFIED", distance=9000, duration=3000, unverified_reason="SKIPPED")
     c = add_run(db, uid, ago(days=1), status="VERIFIED", distance=8000, duration=200)
+    # 기록만 있고 반영이 없는 상태(이 기능 전 배포)로: 반영 줄·레벨을 지우고 칸을 내렸다 올림(내리기는 줄을 안 지움)
+    db.query(RunReward).delete()
+    db.query(UserProgress).delete()
+    db.commit()
     env = {**os.environ, "ALEMBIC_DATABASE_URL": TEST_DATABASE_URL}
     backend = Path(__file__).resolve().parents[1]
     for step in (["downgrade", "c4a9d2e7f1b3"], ["upgrade", "head"]):
@@ -181,8 +206,25 @@ def test_backfill_migration_recomputes_in_time_order(db_client, me, db):
         assert r.returncode == 0, r.stderr
     db.expire_all()
     got = {rid: db.get(RunReward, rid) for rid in (a, b, c)}
-    assert (got[a].xp_before_m, got[a].xp_after_m, got[a].level_after, got[a].weekly_counted) == (0, 2500, 1, True)
+    assert (got[a].status, got[a].xp_before_m, got[a].xp_after_m, got[a].level_after, got[a].weekly_counted) ==         ("VERIFIED", 0, 2500, 1, True)
     assert (got[b].xp_before_m, got[b].xp_after_m, got[b].weekly_counted) == (2500, 2500, False)
     assert (got[c].xp_after_m, got[c].level_before, got[c].level_after, got[c].weekly_counted) == (10500, 1, 3, False)
     p = db.get(UserProgress, uid)
     assert (p.xp_m, p.level, p.outfit_stage, p.verified_count) == (10500, 3, 3, 2)
+
+
+def test_weekly_count_in_rewards_does_not_change_later(db_client, me, db):
+    """결과 화면을 다시 열어도 같음: 먼저 끝난 기록이 나중에 인증돼도 이미 본 반영 결과의 횟수는 그대로(반영할 때 저장)."""
+    uid = my_id(db_client, me)
+    user = db.get(User, uid)
+    db.add(WeeklyGoal(user_id=uid, target_count=3, anchor_date=growth.local_date(datetime.now(timezone.utc), user) - timedelta(days=1)))
+    db.commit()
+    first = finished(db_client, me)                       # 먼저 끝났지만 인증은 나중
+    shown = data(photo(db_client, me, first, "d3000_t1000.jpg"))
+    second = finished(db_client, me, cid="c2")            # 뒤에 끝났는데 먼저 인증
+    db.execute(update(Run).where(Run.id == second).values(ended_at=datetime.now(timezone.utc) - timedelta(seconds=30)))
+    db.commit()
+    seen = data(read_then(db_client, me, second, "d3000_t1000.jpg"))["rewards"]["weeklyGoal"]
+    assert seen == {"counted": True, "doneCount": 1, "targetCount": 3}
+    data(confirm(db_client, me, first, shown["attemptId"]))
+    assert data(rewards(db_client, me, second))["weeklyGoal"] == seen

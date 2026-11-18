@@ -4,10 +4,10 @@ from sqlalchemy.orm import Session
 
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
-from ..core.growth import DECIDED, POLICY, locked_progress, progress_payload, rewards_payload, settle
+from ..core.growth import POLICY, locked_progress, progress_payload, rewards_for
 from ..core.run_access import close_expired, my_run, now_utc
 from ..core.security import current_user
-from ..db.models import RunReward, User, UserImpact
+from ..db.models import User, UserImpact
 from ..db.session import get_db
 from ..schemas.progress import ImpactSelect, Progress, Rewards
 from .runs import RUN_ERRORS
@@ -15,7 +15,7 @@ from .runs import RUN_ERRORS
 router = APIRouter(prefix="/v1", tags=["Progress"])
 E = ErrorCode
 AUTH = (E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)   # 코드 묶음(runs.py와 같게, 문서는 error_responses 한 번에)
-LEVELS = "·".join(f"{m // 1000:g}" for m in POLICY.level_m)
+LEVELS = "·".join(f"{m / 1000:g}" for m in POLICY.level_m)
 
 
 @router.get("/runs/{runId}/rewards", summary="이번 운동 반영 결과",
@@ -28,13 +28,10 @@ def rewards(runId: str, request: Request, user: User = Depends(current_user), db
     if close_expired(db, now_utc(), run_id=run.id):
         db.commit()
         db.refresh(run)
-    if run.status not in DECIDED:
+    out = rewards_for(db, run)
+    if out is None:
         raise ApiError(E.RUN_NOT_FINISHED)
-    reward = db.get(RunReward, run.id)
-    if reward is None:  # 이 기능 전에 정해진 기록(마이그레이션이 채우지만 혹시)
-        reward = settle(db, run)
-        db.commit()
-    return ok(request, rewards_payload(db, run, reward))
+    return ok(request, out)
 
 
 @router.get("/users/me/progress", summary="레벨·인증 마크",

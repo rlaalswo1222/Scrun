@@ -66,28 +66,38 @@ def _unlock_impacts(db: Session, user_id: str, verified_count: int) -> list[str]
 
 def settle(db: Session, run: Run) -> Optional[RunReward]:
     """정해진 기록(VERIFIED·UNVERIFIED)을 반영한다. 커밋은 부른 쪽(판정과 같은 트랜잭션). 이미 반영했으면 그 줄.
-    마감으로 닫혔다가(미인증 줄) 유예 안의 사진·확인으로 인증 완료가 되면 미인증 줄은 아무것도 더하지 않았으니 지우고 다시."""
+    마감으로 닫혀 미인증으로 반영됐다가(아무것도 안 더함) 유예 안의 사진·확인으로 인증 완료가 되면 그 줄을 지우고 다시.
+    잠금은 인증 완료일 때만(경험치를 더할 때). 미인증은 지금 값을 읽어 전후 같은 줄만 씀."""
     if run.status not in DECIDED:
         return None
+    db.flush()  # 방금 정한 판정·공식 값을 아래 집계(이번 주기 횟수)가 보게(세션이 자동으로 안 내보냄)
     done = db.get(RunReward, run.id)
     if done is not None:
-        if not (run.status == VERIFIED and done.xp_after_m == done.xp_before_m and done.level_after == done.level_before
-                and not done.weekly_counted):
+        if not (done.status == UNVERIFIED and run.status == VERIFIED):
             return done
         db.delete(done)
         db.flush()
-    p = locked_progress(db, run.user_id)
-    xp_before, level_before = p.xp_m, p.level
     unlocked: list[str] = []
     if run.status == VERIFIED:
+        p = locked_progress(db, run.user_id)
+        xp_before = p.xp_m
         p.xp_m += run.official_distance_m or 0
         p.verified_count += 1
         p.level = level_of(p.xp_m)
         p.outfit_stage = outfit_of(p.level)
         unlocked = _unlock_impacts(db, run.user_id, p.verified_count)
-    reward = RunReward(run_id=run.id, xp_before_m=xp_before, xp_after_m=p.xp_m, level_before=level_before,
-                       level_after=p.level, outfit_stage_after=p.outfit_stage, impacts_unlocked=unlocked,
-                       weekly_counted=counts_for_week(run))
+        xp_after = p.xp_m
+    else:
+        p = db.get(UserProgress, run.user_id)
+        xp_before = xp_after = p.xp_m if p is not None else 0
+    counted = counts_for_week(run)
+    user = db.get(User, run.user_id)
+    cycle = cycle_at(db, user, local_date(run.ended_at, user)) if run.ended_at is not None else None
+    reward = RunReward(run_id=run.id, status=run.status, xp_before_m=xp_before, xp_after_m=xp_after,
+                       level_before=level_of(xp_before), level_after=level_of(xp_after),
+                       outfit_stage_after=outfit_of(level_of(xp_after)), impacts_unlocked=unlocked, weekly_counted=counted,
+                       weekly_done_count=counted_in(db, user, cycle, until=run.ended_at) if cycle else 0,
+                       weekly_target_count=cycle.target if cycle else None)
     db.add(reward)
     db.flush()
     return reward
@@ -154,22 +164,32 @@ def _impact_rows(db: Session, user_id: str, only: Optional[list[str]] = None) ->
 
 
 def rewards_payload(db: Session, run: Run, reward: RunReward) -> dict:
-    """결과 화면(E-11) 연출용 반영 결과. 주간 목표 칸은 그 기록이 끝난 주기에서 그 기록까지 센 횟수."""
-    user = db.get(User, run.user_id)
-    cycle = cycle_at(db, user, local_date(run.ended_at, user)) if run.ended_at is not None else None
+    """결과 화면(E-11) 연출용 반영 결과. 모두 반영할 때 저장한 값(다시 열어도 같음)."""
     return {"xpBeforeM": reward.xp_before_m, "xpAfterM": reward.xp_after_m,
             "levelBefore": reward.level_before, "levelAfter": reward.level_after,
             "leveledUp": reward.level_after > reward.level_before, "outfitStageAfter": reward.outfit_stage_after,
             "nextLevelRemainingM": remaining_m(reward.xp_after_m),
             "impactsUnlocked": _impact_rows(db, run.user_id, list(reward.impacts_unlocked or [])),
-            "weeklyGoal": {"counted": reward.weekly_counted,
-                           "doneCount": counted_in(db, user, cycle, until=run.ended_at) if cycle else 0,
-                           "targetCount": cycle.target if cycle else None}}
+            "weeklyGoal": {"counted": reward.weekly_counted, "doneCount": reward.weekly_done_count,
+                           "targetCount": reward.weekly_target_count}}
+
+
+def rewards_for(db: Session, run: Run) -> Optional[dict]:
+    """정해진 기록의 반영 결과(인증 응답·GET rewards). 반영 줄이 없으면(이 기능 전에 정해진 기록) 지금 반영하고 커밋."""
+    if run.status not in DECIDED:
+        return None
+    reward = db.get(RunReward, run.id)
+    if reward is None:
+        reward = settle(db, run)
+        db.commit()
+    return rewards_payload(db, run, reward)
 
 
 def progress_payload(db: Session, user_id: str) -> dict:
+    """레벨·러닝복은 저장한 값이 아니라 경험치로 매번 계산(임계값 설정을 바꿔도 다음 인증을 기다리지 않음)."""
     p = db.get(UserProgress, user_id)
-    xp, level = (p.xp_m, p.level) if p else (0, 1)
+    xp = p.xp_m if p else 0
+    level = level_of(xp)
     return {"level": level, "xpM": xp, "nextLevelAtM": next_level_at(xp), "nextLevelRemainingM": remaining_m(xp),
-            "outfitStage": p.outfit_stage if p else 1, "verifiedCount": p.verified_count if p else 0,
+            "outfitStage": outfit_of(level), "verifiedCount": p.verified_count if p else 0,
             "impacts": _impact_rows(db, user_id), "selectedImpactId": p.selected_impact_id if p else None}
