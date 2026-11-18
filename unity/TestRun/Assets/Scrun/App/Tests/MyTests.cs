@@ -31,14 +31,15 @@ namespace Scrun.App.Tests
         // ---- 글자 ----
 
         [Test]
-        public void KilometersRoundDownSoALevelIsNeverShownEarly()
+        public void TotalsRoundDownAndRemainingRoundsUp()
         {
             Assert.AreEqual("4.4km", MyText.Km(4420));
             Assert.AreEqual("2.9km", MyText.Km(2999), "3.0km로 보이면 Lv.2가 된 것처럼 보임");
             Assert.AreEqual("0.0km", MyText.Km(-5));
-            Assert.AreEqual("다음 레벨까지 5.5km", MyText.NextLevel(5580));
+            Assert.AreEqual("다음 레벨까지 5.6km", MyText.NextLevel(5580), "남은 거리는 올림");
+            Assert.AreEqual("다음 레벨까지 0.1km", MyText.NextLevel(50), "50 m 남았는데 0.0km면 이미 된 것처럼 보임");
             Assert.AreEqual("러닝복을 모두 모았어요", MyText.NextLevel(null));
-            Assert.AreEqual("누적 4.4km · 다음 레벨까지 5.5km", MyText.LevelLead(Lv2));
+            Assert.AreEqual("누적 4.4km · 다음 레벨까지 5.6km", MyText.LevelLead(Lv2));
         }
 
         [Test]
@@ -107,6 +108,26 @@ namespace Scrun.App.Tests
             s.Root.Q<TextField>("nickname").value = "새러너";
             s.Refresh();
             Assert.IsFalse(submit.enabledSelf, "새 닉네임은 서버 확인 전엔 저장 못 함");
+        }
+
+        [Test]
+        public void EmptyBodyFieldSaysWhySaveIsOff()
+        {
+            Assert.IsNull(ProfileForm.BodyMessage("", "65", show: false), "칸을 벗어나기 전엔 조용히");
+            Assert.AreEqual("키와 몸무게를 모두 적어 주세요", ProfileForm.BodyMessage("", "65", show: true));
+            StringAssert.StartsWith("키는", ProfileForm.BodyMessage("90", "65", show: true));
+            Assert.IsNull(ProfileForm.BodyMessage("170", "65", show: true));
+            Assert.IsFalse(ProfileForm.BodyFilled("", "65"));
+        }
+
+        [Test]
+        public void FeedSwitchIsLockedUntilSettingsLoad()
+        {
+            var s = new SettingsScreen();
+            s.Create(null);
+            var sw = s.Root.Q("feed-share").Q("switch");
+            Assert.IsTrue(sw.ClassListContains("my-switch--locked"), "서버 값을 받기 전엔 켜짐·꺼짐을 보이지 않음");
+            Assert.IsFalse(sw.ClassListContains("my-switch--on"));
         }
 
         // ---- 요청 모양 ----

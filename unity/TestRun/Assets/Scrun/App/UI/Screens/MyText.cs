@@ -27,11 +27,15 @@ namespace Scrun.App
 
         // H-01 "다음 레벨까지 5.6km", 마지막 레벨이면 Figma H-05 "러닝복 완성"(임시)
         public static string NextLevel(int? remainingM) =>
-            remainingM.HasValue ? "다음 레벨까지 " + Km(remainingM.Value) : "러닝복을 모두 모았어요";
+            remainingM.HasValue ? "다음 레벨까지 " + KmLeft(remainingM.Value) : "러닝복을 모두 모았어요";
 
         // 4.4km(누적 거리·남은 거리): 소수 한 자리, 버림(올려 보이면 아직 안 된 레벨이 된 것처럼 보임)
         public static string Km(int meters) =>
             (Math.Floor(Math.Max(0, meters) / 100.0) / 10.0).ToString("0.0", CultureInfo.InvariantCulture) + "km";
+
+        // 남은 거리는 올림(50 m 남았는데 "0.0km"면 이미 된 것처럼 보임)
+        public static string KmLeft(int meters) =>
+            (Math.Ceiling(Math.Max(0, meters) / 100.0) / 10.0).ToString("0.0", CultureInfo.InvariantCulture) + "km";
 
         public static string Count(int n) => $"{Math.Max(0, n)}회";
 
@@ -40,7 +44,7 @@ namespace Scrun.App
 
         // H-04 위 "누적 4.4km · 다음 레벨까지 5.6km"
         public static string LevelLead(Progress p) =>
-            "누적 " + Km(p.XpM) + (p.NextLevelRemainingM.HasValue ? " · 다음 레벨까지 " + Km(p.NextLevelRemainingM.Value) : "");
+            "누적 " + Km(p.XpM) + (p.NextLevelRemainingM.HasValue ? " · 다음 레벨까지 " + KmLeft(p.NextLevelRemainingM.Value) : "");
 
         // H-01·H-09 "마지막 보정 11.01", H-09 값 "11.01 (토)". 폰 시간대 날짜. 보정이 없으면 "아직 안 했어요"(임시)
         public static string LastCalibration(DateTime? atUtc, TimeZoneInfo tz = null) =>
@@ -66,6 +70,6 @@ namespace Scrun.App
         // H-11 안내. Figma "키·몸무게를 바꾸면 … 재보정하면 속도 추정이 더 정확해져요"는 지금 사실이 아님(속도 추정은 보정값만 쓰고
         // 키·몸무게는 안 씀, 계획 0049 정할 것 2) → 위 설명은 가입 화면과 같은 문구, 재보정 안내는 H-09 Figma 문구에서(상준 확인)
         public const string RecalibrateTitle = "속도가 맞지 않게 느껴지나요?";              // 임시
-        public const string RecalibrateBody = "기기나 이어폰을 바꿨거나 속도가 맞지 않는다고 느껴질 때 다시 보정해요."; // H-09 Figma
+        public const string RecalibrateBody = "기기나 이어폰을 바꿨거나, 속도가 맞지 않는다고 느껴질 때 다시 보정해요"; // H-09 Figma 그대로(H-09·H-11 같이 씀)
     }
 }

@@ -21,7 +21,7 @@ namespace Scrun.App
             var head = new VisualElement();
             head.AddToClassList("head");
             head.Add(UiExtensions.Text("속도를 다시 맞춰요", "onb-title"));                                       // Figma H-09
-            head.Add(UiExtensions.Text("기기나 이어폰을 바꿨거나, 속도가 맞지 않는다고 느껴질 때 다시 보정해요", "onb-lead")); // Figma H-09
+            head.Add(UiExtensions.Text(MyText.RecalibrateBody, "onb-lead"));
             content.Add(head);
 
             var group = MyParts.Group(content);

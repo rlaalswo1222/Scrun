@@ -31,9 +31,10 @@ namespace Scrun.App
             MyParts.MarkLast(alerts);
 
             var open = MyParts.Group(content, "공개 설정");
-            var feed = MyParts.SwitchRow("친구에게 러닝 피드 공개", "새로 달린 기록을 친구 피드에 보여줘요", true, SetFeedShare);
+            var feed = MyParts.SwitchRow("친구에게 러닝 피드 공개", "새로 달린 기록을 친구 피드에 보여줘요", false, SetFeedShare);
             feed.name = "feed-share";
             feedSwitch = feed.Q<VisualElement>("switch");
+            feedSwitch.AddToClassList("my-switch--locked"); // 서버 값을 받기 전엔 흐리게(켜짐·꺼짐을 지어내지 않음)
             open.Add(feed);
             open.Add(MyParts.SwitchRow("공동 맵에서 인증 마크 보이기", null, false, null, locked: true, onLocked: Soon));
             MyParts.MarkLast(open);
@@ -110,12 +111,14 @@ namespace Scrun.App
             loading = false;
             if (!ok || Root.panel == null) return;
             settings = got;
+            feedSwitch.RemoveFromClassList("my-switch--locked");
             MyParts.SetSwitch(feedSwitch, settings.FeedShareDefault);
         }
 
         async void SetFeedShare(bool on)
         {
-            if (saving || settings == null) return;
+            if (saving) return;
+            if (settings == null) { Load(); return; } // 아직 못 받음(실패해 닫음 등) → 다시 받기(로딩·오류 안내가 뜸)
             saving = true;
             MyParts.SetSwitch(feedSwitch, on); // 바로 바꿔 보이고, 실패하면 되돌림
             UserSettings got = null;
@@ -156,17 +159,17 @@ namespace Scrun.App
             sheet.Button("취소", "btn-ghost", sheet.Close, "logout-cancel");
         }
 
+        // 서버에 못 알려도 이 기기 토큰은 지움(AuthApi.LogoutAsync). 무슨 일이 있어도 로그인 화면으로(정리는 AppRoot.GoToLogin 한 곳)
         async void Logout()
         {
             if (loggingOut) return;
             loggingOut = true;
             sheet?.Close();
             Feedback.ShowLoading(true);
-            try { await Api.Auth.LogoutAsync(); } // 서버에 못 알려도 이 기기 토큰은 지움(AuthApi.LogoutAsync)
+            try { await Api.Auth.LogoutAsync(); }
+            catch (System.Exception e) { Debug.LogException(e); }
             finally { Feedback.ShowLoading(false); }
-            Onboarding.ForgetNewUser();
-            FriendDirectory.Clear();
-            if (Nav != null) Nav.StartFlow(new LoginScreen());
+            AppRoot.GoToLogin(null);
         }
 
         void Soon()

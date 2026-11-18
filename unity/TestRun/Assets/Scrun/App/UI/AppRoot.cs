@@ -117,8 +117,8 @@ namespace Scrun.App
 
         void OnSessionExpired() => GoToLogin("다시 로그인해 주세요.");
 
-        // 로그인이 끝났을 때(재발급 거절·가입용 토큰 만료): 지금 화면을 모두 정리하고 로그인부터
-        static void GoToLogin(string notice)
+        // 로그인이 끝났을 때(재발급 거절·가입용 토큰 만료·마이 설정의 로그아웃, 계획 0049): 지금 화면을 모두 정리하고 로그인부터
+        internal static void GoToLogin(string notice)
         {
             if (Nav == null) return;
             Feedback.HideError();

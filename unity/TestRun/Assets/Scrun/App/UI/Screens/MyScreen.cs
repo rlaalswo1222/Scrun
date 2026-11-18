@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using UnityEngine.UIElements;
 
 namespace Scrun.App
@@ -63,24 +64,37 @@ namespace Scrun.App
             Me gotMe = null;
             Progress gotProgress = null;
             CalibrationRecord gotCal = null;
-            Func<System.Threading.Tasks.Task> work = async () =>
+            Func<Task> work = async () =>
             {
-                gotMe = await Api.Users.MeAsync();
-                gotProgress = await Api.Users.ProgressAsync();
-                gotCal = await Api.Users.GetCalibrationAsync();
+                // 셋은 서로 기다릴 필요가 없어 같이 보냄
+                var meTask = Api.Users.MeAsync();
+                var progressTask = Api.Users.ProgressAsync();
+                var calTask = Api.Users.GetCalibrationAsync();
+                await Task.WhenAll(meTask, progressTask, calTask);
+                (gotMe, gotProgress, gotCal) = (meTask.Result, progressTask.Result, calTask.Result);
             };
-            bool ok;
-            if (me == null) ok = await Feedback.Run(work, Load);
-            else
+            bool ok = false;
+            try
             {
-                try { await work(); ok = true; }
-                catch (ApiException e)
+                if (me == null) ok = await Feedback.Run(work, Load);
+                else
                 {
-                    ok = false;
-                    if (e.Failure == ApiFailure.NotLoggedIn) Feedback.Handle(e);
+                    await work();
+                    ok = true;
                 }
             }
-            loading = false;
+            catch (ApiException e)
+            {
+                if (e.Failure == ApiFailure.NotLoggedIn) Feedback.Handle(e); // 조용히 다시 받기: 그 밖의 실패는 지난 값 그대로
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogException(e);
+            }
+            finally
+            {
+                loading = false; // 무슨 일이 있어도 다음에 보일 때 다시 받게
+            }
             if (!ok || Root.panel == null) return;
             me = gotMe;
             progress = gotProgress;
