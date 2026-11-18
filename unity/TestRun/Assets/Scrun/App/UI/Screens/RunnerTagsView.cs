@@ -22,6 +22,7 @@ namespace Scrun.App
         readonly List<Rect> placed = new List<Rect>();
         const float StackGap = 2f;
         string openId;
+        Label ghostTag; // "어제의 나"(계획 0050): 누를 수 없음(카드 없음)
 
         public RunnerTagsView(VisualElement hudRoot, IRunTogether together)
         {
@@ -76,6 +77,8 @@ namespace Scrun.App
                 Show(tag, true);
             }
 
+            TickGhost(panel);
+
             // 나간 사람의 이름표는 지움, 카드가 그 사람이면 닫음
             gone.Clear();
             foreach (var id in tags.Keys)
@@ -90,6 +93,34 @@ namespace Scrun.App
                 if (open == null) Close();
                 else FillCard(open);
             }
+        }
+
+        void TickGhost(IPanel panel)
+        {
+            if (panel == null || !RunLink.Heads.TryGetValue(RunLink.GhostKey, out var screen))
+            {
+                if (ghostTag != null) Show(ghostTag, false);
+                return;
+            }
+            if (ghostTag == null)
+            {
+                ghostTag = new Label(GhostText.Name) { pickingMode = PickingMode.Ignore };
+                ghostTag.AddToClassList("hud-tag");
+                ghostTag.AddToClassList("hud-tag--ghost");
+                layer.Add(ghostTag);
+            }
+            var at = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(screen.x, Screen.height - screen.y));
+            float w = ghostTag.resolvedStyle.width, h = ghostTag.resolvedStyle.height;
+            if (w > 0f && h > 0f)
+            {
+                var rect = new Rect(at.x - w / 2f, at.y - h, w, h);
+                for (int k = 0; k < 6 && Overlaps(rect); k++) rect.y -= h + StackGap;
+                placed.Add(rect);
+                at.y = rect.yMax;
+            }
+            ghostTag.style.left = at.x;
+            ghostTag.style.top = at.y;
+            Show(ghostTag, true);
         }
 
         bool Overlaps(Rect rect)

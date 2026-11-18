@@ -208,6 +208,28 @@ namespace Scrun.App
     }
 
     // 기록 요약(종료 응답 등). verification: PENDING(인증 대기)·VERIFIED·UNVERIFIED
+    // GET /v1/runs(최신순 20개씩, 계획 0043). 고스트 고르기(D-03, 계획 0050)에도 씀
+    public sealed class RunListPage
+    {
+        public List<RunSummary> Items { get; set; } = new List<RunSummary>();
+        public string NextCursor { get; set; }
+    }
+
+    // GET /v1/runs/{runId}/ghost(계획 0043·0050): 공식 거리·시간 + 1초 칸 속도
+    public sealed class GhostTrackBody
+    {
+        public string RunId { get; set; }
+        public int DistanceM { get; set; }
+        public int DurationS { get; set; }
+        public SpeedSeriesBody SpeedSeries { get; set; }
+    }
+
+    public sealed class SpeedSeriesBody
+    {
+        public double IntervalS { get; set; }
+        public List<float> SpeedsKmh { get; set; } = new List<float>();
+    }
+
     public sealed class RunSummary
     {
         public string RunId { get; set; }

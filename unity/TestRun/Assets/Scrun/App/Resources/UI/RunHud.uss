@@ -271,3 +271,18 @@
     color: rgba(255, 255, 255, 0.75);
     padding: 0;
 }
+
+/* 고스트(계획 0050): 위 가운데 비교 배너(D-13), 이름표는 하늘색 밑줄(섬 고스트 몸 색과 같은 계열) */
+.course .hud-ghost {
+    margin-bottom: var(--space-2);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-text);
+    padding: 6px var(--space-3);
+    border-radius: 16px;
+    background-color: rgba(255, 255, 255, 0.9);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.course .hud-tag--ghost {
+    border-bottom-color: rgb(102, 242, 255);
+}

@@ -325,6 +325,7 @@ namespace Scrun.App
         void OnSetupDone(RunSetup setup)
         {
             Setup = setup;
+            LoadGhost(setup.GhostRunId);
             if (readyView == null)
             {
                 var view = new RunReadyView(Root, course.Name, () => together, CalibrationNow, RetryCalibration);
@@ -345,10 +346,59 @@ namespace Scrun.App
             backdrop = null;
             mapTop.SetVisible(true);
             hud?.Dispose();
-            session = new RunSession(Setup.Goal);
+            // 고스트 시계열을 못 받았으면(실패) 서버 기록에도 고스트를 안 남김. 아직 받는 중이면 받는 대로 출발(내 달린 시간에 맞춰 따라잡음)
+            session = new RunSession(Setup.Goal) { GhostRunId = ghostFailed ? null : Setup.GhostRunId };
             hud = new RunHudView(Root, session, together);
             PlaceNearFriend();
             StartRunning();
+            ghostStartM = RunLink.PlayerDistanceM; // 친구 뒤로 옮긴 뒤 내 출발 자리 = 고스트 출발 자리
+            if (ghostFailed && Setup.GhostRunId != null) hud.Notice(GhostText.LoadFailed);
+            StartGhost();
+        }
+
+        // ---- 고스트(계획 0050) ----
+        GhostTrack ghostTrack;   // 고른 기록의 재생 거리(받기 전 null)
+        bool ghostFailed;        // 못 받음 → 혼자 달림
+        float ghostStartM;
+        int ghostRequest;        // 설정을 다시 하면 늦게 온 옛 응답을 버림
+
+        // 러닝 설정이 끝나면 미리 받음(센서 준비·3·2·1 동안). 로딩 덮개 없이: 못 받아도 달리기는 막지 않음
+        async void LoadGhost(string runId)
+        {
+            int request = ++ghostRequest;
+            ghostTrack = null;
+            ghostFailed = false;
+            if (runId == null) return;
+            try
+            {
+                var body = await Api.Runs.GhostAsync(runId);
+                if (request != ghostRequest || leaving) return;
+                ghostTrack = GhostTrack.From(body.DistanceM, body.DurationS, body.SpeedSeries?.IntervalS ?? 0, body.SpeedSeries?.SpeedsKmh);
+                ghostFailed = ghostTrack == null;
+            }
+            catch (ApiException e)
+            {
+                if (request != ghostRequest || leaving) return;
+                ghostFailed = true;
+                if (e.Failure == ApiFailure.NotLoggedIn && Nav.Current == this) Feedback.Handle(e);
+                else Debug.LogWarning("[고스트] 시계열을 못 받음(혼자 달림): " + e);
+            }
+            catch (Exception e)
+            {
+                if (request != ghostRequest) return;
+                ghostFailed = true;
+                Debug.LogException(e);
+            }
+            StartGhost(); // 이미 달리기 시작했으면 지금 출발(아직이면 3·2·1 끝에)
+        }
+
+        void StartGhost()
+        {
+            if (ghostTrack == null || session == null || !session.Started || hud == null || hud.Ghost != null) return;
+            var ghost = new GhostRun(ghostTrack, ghostStartM);
+            var s = session;
+            hud.Ghost = ghost;
+            RunLink.Ghost = () => ghost.PoseAt(s.ElapsedSec, s.Phase == RunPhase.Running);
         }
 
         // 같이 달리기면 친구 뒤로 입장, 친구가 그새 끝냈거나 친구가 아니게 됐으면 D-21 안내 뒤 그 코스로 일반 입장(계획 0047).

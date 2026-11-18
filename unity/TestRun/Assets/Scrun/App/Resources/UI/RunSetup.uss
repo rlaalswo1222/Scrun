@@ -100,6 +100,7 @@
 /* ---- D-01 목표 카드(고스트 카드가 S7에 들어오기 전까지 가운데) ---- */
 .setup-middle {
     flex-grow: 1;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
 }
@@ -387,4 +388,170 @@
     font-size: var(--font-size-caption);
     white-space: normal;
     -unity-text-align: middle-center;
+}
+
+/* ---- 고스트러너(계획 0050, Figma D-01·D-02 오른쪽 카드, D-03 고르기, D-04 기록 없음) ---- */
+.ghost-card {
+    width: 300px;
+    margin-left: var(--space-4);
+}
+
+.ghost-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.ghost-head:hover,
+.ghost-head:active {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.ghost-switch {
+    width: 44px;
+    height: 26px;
+    padding: 3px;
+    border-radius: 13px;
+    background-color: var(--color-line);
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+.ghost-switch--on {
+    background-color: var(--color-primary);
+    justify-content: flex-end;
+}
+
+.ghost-knob {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    background-color: var(--color-surface);
+}
+
+.course .ghost-lead {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+    white-space: normal;
+}
+
+.ghost-picked {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--space-4);
+    padding: var(--space-3);
+    border-radius: 14px;
+    background-color: var(--color-primary-tint);
+}
+
+.ghost-picked-text {
+    flex-grow: 1;
+}
+
+.course .ghost-date {
+    font-size: var(--font-size-caption);
+    color: var(--color-body);
+}
+
+.course .ghost-summary {
+    margin-top: 2px;
+    font-size: var(--font-size-body);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.ghost-change {
+    margin: 0;
+    padding: 4px 0 4px 8px;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-primary);
+}
+
+.ghost-change:hover,
+.ghost-change:active {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.course .ghost-note {
+    margin-top: var(--space-4);
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+    white-space: normal;
+}
+
+.ghost-pick-card {
+    width: 520px;
+    max-height: 90%;
+    align-items: stretch;
+}
+
+.ghost-list {
+    flex-shrink: 1;
+    margin: var(--space-3) 0;
+}
+
+.ghost-row {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 0 var(--space-2) 0;
+    padding: 10px 14px;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 14px;
+    background-color: var(--color-surface);
+    -unity-text-align: upper-left;
+}
+
+.ghost-row:hover,
+.ghost-row:active {
+    background-color: var(--color-surface);
+}
+
+.ghost-row--selected {
+    border-width: 2px;
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-tint);
+}
+
+.ghost-row-text {
+    flex-grow: 1;
+}
+
+.course .ghost-row-top {
+    font-size: var(--font-size-caption);
+    color: var(--color-body);
+}
+
+.course .ghost-row-km {
+    margin-top: 2px;
+    font-size: var(--font-size-body);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.course .ghost-row-sub {
+    margin-top: 2px;
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+}
+
+.course .ghost-row-chip {
+    margin-left: var(--space-2);
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: var(--font-size-caption);
+    background-color: var(--color-line);
+    color: var(--color-body);
+}
+
+.course .ghost-row-chip--ok {
+    background-color: var(--color-success-soft);
+    color: var(--color-success);
 }

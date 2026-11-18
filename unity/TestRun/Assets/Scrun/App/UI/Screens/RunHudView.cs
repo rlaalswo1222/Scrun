@@ -15,7 +15,7 @@ namespace Scrun.App
         readonly VisualElement root;
         readonly RunSession session;
         readonly IRunTogether together;
-        readonly Label distance, time, goal, aheadName, aheadGap, behindName, behindGap, toast, net, dev, unsteady;
+        readonly Label distance, time, goal, aheadName, aheadGap, behindName, behindGap, toast, net, dev, unsteady, ghostBanner;
         readonly VisualElement goalFill, gaps, ahead, behind;
         readonly IVisualElementScheduledItem tick, frameTick;
         readonly LoopMinimap minimap;  // 왼쪽 위 루프 미니맵(BL-12 ③, 계획 0041)
@@ -62,6 +62,8 @@ namespace Scrun.App
             unsteady = Q<Label>("hud-unsteady");
             unsteady.text = RunEndText.Unsteady;
             unsteady.SetVisible(false);
+            ghostBanner = Q<Label>("hud-ghost");
+            ghostBanner.SetVisible(false);
 
             goal.text = GoalText(session.Goal);
             moments = new RunMoments(session.Goal);
@@ -126,6 +128,9 @@ namespace Scrun.App
             }
         }
 
+        // 이번 달리기의 고스트(계획 0050). 맵 화면이 시계열을 받으면 넣음(받기 전·고르지 않았으면 null)
+        public GhostRun Ghost { get; set; }
+
         // 위 가운데 3초 알림(한 번에 하나). 에어팟 끊김 등(계획 0039)
         public void Notice(string text) => toasts.Enqueue(text);
 
@@ -151,6 +156,7 @@ namespace Scrun.App
             goalFill.style.width = Length.Percent(session.Progress(me) * 100f);
 
             RunLink.MyRunM = session.Started ? session.DistanceM(me) : (float?)null; // 다른 사람의 러너 카드 "누적 거리"
+            RefreshGhost(me);
             RefreshGaps();
             RefreshMinimap(me);
             if (session.Phase == RunPhase.Running)
@@ -171,6 +177,17 @@ namespace Scrun.App
             }
         }
 
+        // D-13 배너: 같은 출발선·같은 시계라 거리 차이 = 내 이번 거리 − 고스트 거리
+        void RefreshGhost(float me)
+        {
+            var g = Ghost;
+            bool on = g != null && session.Started;
+            ghostBanner.SetVisible(on);
+            if (!on) return;
+            double t = session.ElapsedSec;
+            ghostBanner.text = GhostText.Banner(session.DistanceM(me), g.Track.DistanceAt(t), g.Track.FinishedAt(t));
+        }
+
         void RefreshGaps()
         {
             float lap = RunLink.LapLengthM;
@@ -180,6 +197,8 @@ namespace Scrun.App
                 double now = RealtimeClock.Now();
                 foreach (var r in together.Runners) others.Add((r.DisplayName, r.PositionAt(now)));
             }
+            if (Ghost != null && session.Started && lap > 0f) // 앞뒤 간격 줄에 "어제의 나"(D-13)
+                others.Add((GhostText.Name, LoopMath.Wrap(Ghost.PoseAt(session.ElapsedSec, false).IslandDistanceM, lap)));
             var (a, b) = LoopMath.Nearest(RunLink.PlayerLapPositionM, others, lap);
             gaps.SetVisible(a != null || b != null);
             ahead.SetVisible(a != null);

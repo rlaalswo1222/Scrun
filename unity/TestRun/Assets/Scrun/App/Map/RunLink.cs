@@ -34,6 +34,11 @@ namespace Scrun.App
         // 부르면 바로 ReportPlayer까지 해서 PlayerDistanceM이 새 자리
         public static Action<float> TeleportPlayer { get; set; }
 
+        // 앱 → 섬: 고스트(계획 0050)의 지금 자리(내 누적 거리와 같은 기준)·걸음 속도. 없으면 null → 섬이 고스트 몸을 숨김.
+        // 섬이 매 프레임 불러 부드럽게(앱 HUD는 200ms마다). 실시간 방에는 안 보냄(나에게만)
+        public static Func<GhostPose?> Ghost { get; set; }
+        public const string GhostKey = "ghost"; // Heads에서 고스트 머리 위치(사람 ID는 ULID라 안 겹침)
+
         public static float PlayerLapPositionM => LoopMath.Wrap(PlayerDistanceM, LapLengthM);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -60,6 +65,7 @@ namespace Scrun.App
             Heads.Clear();
             MyRunM = null;
             TeleportPlayer = null;
+            Ghost = null;
         }
 
         public static void ReportPlayer(float distanceM, float speedKmh, float lapLengthM)
