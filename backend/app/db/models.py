@@ -242,6 +242,10 @@ class RunReward(_Created, Base):
     outfit_stage_after: Mapped[int] = mapped_column(SmallInteger)
     impacts_unlocked: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default=text("'{}'"))
     weekly_counted: Mapped[bool] = mapped_column(Boolean)
+    # 계획 0048: 반영할 때의 판정(마감으로 닫힌 미인증 줄 → 유예 안 인증 완료면 다시 반영)과 그때 주간 목표 칸(결과 화면을 다시 열어도 같게)
+    status: Mapped[str] = mapped_column(Text)  # VERIFIED, UNVERIFIED
+    weekly_done_count: Mapped[int] = mapped_column(SmallInteger, server_default="0")
+    weekly_target_count: Mapped[Optional[int]] = mapped_column(SmallInteger)
 
 
 # ---------- 보상 ----------

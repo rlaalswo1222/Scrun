@@ -193,7 +193,7 @@ erDiagram
 | weekly_counted | bool | 주간 목표 1회로 인정됐는지 |
 
 ### 보상
-**user_progress** — 캐시(1인 1줄). 인증 완료 기록에서 다시 계산 가능
+**user_progress** — 캐시(1인 1줄). 인증 완료 기록에서 다시 계산 가능(11/18 마이그레이션 `d5b8e3f2a6c1`이 그 전 기록을 시간순으로 다시 계산해 채움)
 | 칸 | 형식 | 설명 |
 |---|---|---|
 | **user_id** | → users (CASCADE) | |
@@ -260,7 +260,7 @@ R = 읽기, W = 쓰기. (노션 API 명세 42개)
 | GET /v1/runs/{runId} | R runs, run_samples, run_companions, run_ghosts |
 | PATCH /v1/runs/{runId} | W runs.shared |
 | GET /v1/runs/{runId}/ghost | R runs, run_samples |
-| POST /v1/runs/{runId}/verification/photo·skip | W verifications, runs · (BL-32, S8에서) run_rewards, user_progress, user_impacts, R weekly_goals |
+| POST /v1/runs/{runId}/verification/photo·skip | W verifications, runs · run_rewards, user_progress(잠금), user_impacts, R weekly_goals (성장 반영, 계획 0048. 마감으로 닫는 목록 조회도 같음) |
 | GET /v1/runs/{runId}/rewards | R run_rewards, impacts |
 | GET /v1/users/me/progress | R user_progress, impacts, user_impacts |
 | PUT /v1/users/me/impact | W user_progress · R user_impacts |

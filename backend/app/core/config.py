@@ -119,6 +119,31 @@ def load_friends(env: Mapping[str, str]) -> FriendPolicy:
     return FriendPolicy(**values)
 
 
+@dataclass(frozen=True)
+class GrowthPolicy:
+    """성장(계획 0048, BL-32·34·30). 값은 상준 백로그 확정값: 레벨 임계값 Lv.2 3km·Lv.3 10km·Lv.4 25km·Lv.5 50km·Lv.6 100km
+    (11/06), 러닝복 6세트(기본 → 엘리트), 주간 목표 1회 = 인증 완료 + 5분 이상, 한 주 = 설정한 날부터 7일.
+    Lv.6 뒤 임계값은 Q-25 열린 질문이라 없음(정할 것 1 가): 정해지면 GROWTH_LEVEL_M에 늘리기만 하면 됨."""
+
+    level_m: tuple[int, ...] = (3000, 10000, 25000, 50000, 100000)  # 이 경험치(누적 거리 m)를 넘을 때마다 레벨 +1
+    outfit_stages: int = 6
+    weekly_min_s: int = 300
+    cycle_days: int = 7
+
+
+def load_growth(env: Mapping[str, str]) -> GrowthPolicy:
+    raw = env.get("GROWTH_LEVEL_M", "").strip()
+    if not raw:
+        return GrowthPolicy()
+    parts = [p.strip() for p in raw.split(",")]
+    if not all(re.fullmatch(r"[0-9]+", p) for p in parts):
+        raise ConfigError(f"GROWTH_LEVEL_M은 쉼표로 나눈 정수(m)여야 합니다(지금: {raw!r}).")
+    values = tuple(int(p) for p in parts)
+    if values[0] <= 0 or any(b <= a for a, b in zip(values, values[1:])):
+        raise ConfigError(f"GROWTH_LEVEL_M은 0보다 크고 점점 커져야 합니다(지금: {raw!r}).")
+    return GrowthPolicy(level_m=values)
+
+
 BOT_MIN_KMH, BOT_MAX_KMH = 3.0, 20.0
 BOT_MAX_FILL = 20  # 맵 최대 인원(ADR-0010)
 
@@ -158,6 +183,7 @@ class Settings:
     verification: VerificationPolicy = VerificationPolicy()
     bots: BotPolicy = BotPolicy()
     friends: FriendPolicy = FriendPolicy()
+    growth: GrowthPolicy = GrowthPolicy()
 
 
 def load_settings(env: Mapping[str, str]) -> Settings:
@@ -195,6 +221,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         verification=load_verification(env),
         bots=load_bots(env),
         friends=load_friends(env),
+        growth=load_growth(env),
     )
 
 

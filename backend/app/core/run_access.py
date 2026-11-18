@@ -56,7 +56,7 @@ def is_expired(run: Run, at: datetime) -> bool:
 
 def close_expired(db: Session, at: Optional[datetime] = None, user_id: Optional[str] = None,
                   run_id: Optional[str] = None) -> int:
-    """마감이 지난 PENDING을 UNVERIFIED(TIMEOUT)로 닫는다(커밋은 부른 쪽). 닫은 개수.
+    """마감이 지난 PENDING을 UNVERIFIED(TIMEOUT)로 닫는다(커밋은 부른 쪽, 성장 반영 줄도 같이). 닫은 개수.
     is_expired와 같은 식을 SQL로: 마감 칸이 없으면 마지막 갱신 + 설정 시간."""
     at = at or now_utc()
     deadline = func.coalesce(Run.verification_deadline, Run.updated_at + _grace())
@@ -65,6 +65,9 @@ def close_expired(db: Session, at: Optional[datetime] = None, user_id: Optional[
         cond.append(Run.user_id == user_id)
     if run_id is not None:
         cond.append(Run.id == run_id)
-    res = db.execute(update(Run).where(and_(*cond)).values(status=UNVERIFIED, unverified_reason=TIMEOUT)
-                     .execution_options(synchronize_session="fetch"))
-    return res.rowcount or 0
+    ids = db.scalars(update(Run).where(and_(*cond)).values(status=UNVERIFIED, unverified_reason=TIMEOUT)
+                     .returning(Run.id).execution_options(synchronize_session="fetch")).all()
+    if ids:
+        from .growth import settle_ids  # 성장 반영(계획 0048): 미인증이라 더하는 건 없고 "반영함" 줄만(growth가 이 모듈을 씀)
+        settle_ids(db, ids)
+    return len(ids)

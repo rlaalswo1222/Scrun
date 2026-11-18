@@ -2328,7 +2328,7 @@
           "Progress"
         ],
         "summary": "이번 운동 반영 결과",
-        "description": "화면 E-11 · BL-32. 경험치 전후·레벨업·러닝복 단계·임팩트 해금·주간 목표. 결과 화면을 다시 열 때(인증 응답에도 같은 내용)\n\n스텁: runId `run_other` → FORBIDDEN(남의 기록), 예시에 없는 ID → RUN_NOT_FOUND",
+        "description": "화면 E-11 · BL-32, 계획 0048. 경험치 전후·레벨업·러닝복 단계·임팩트 해금·주간 목표(그 기록이 끝난 주기에서 그 기록까지 센 횟수). 인증 응답의 rewards와 같은 내용(결과 화면을 다시 열 때). 미인증이면 경험치·횟수 변화 없음. 정해지기 전(달리는 중·인증 대기)이면 RUN_NOT_FINISHED(마감이 지난 인증 대기는 이 요청에서 미인증으로 닫고 답함)",
         "operationId": "rewards_v1_runs__runId__rewards_get",
         "security": [
           {
@@ -2387,6 +2387,16 @@
               }
             }
           },
+          "409": {
+            "description": "RUN_NOT_FINISHED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2406,7 +2416,7 @@
           "Progress"
         ],
         "summary": "레벨·인증 마크",
-        "description": "화면 H-02, H-03, H-04, B-01 · BL-34, BL-33, BL-35. 레벨 임계값 3·10·25·50·100 km는 서버 설정",
+        "description": "화면 H-02, H-03, H-04, B-01 · BL-34, BL-33, BL-35, 계획 0048. 경험치 = 인증 완료 기록의 누적 거리(줄지 않음), 레벨 임계값 3·10·25·50·100 km(서버 설정 GROWTH_LEVEL_M), 러닝복 단계 = min(레벨, 6). 마지막 레벨이면 nextLevelAtM·nextLevelRemainingM은 null. 임팩트는 목록이 정해지기 전(11/24 이후)이라 빈 목록",
         "operationId": "progress_v1_users_me_progress_get",
         "responses": {
           "200": {
@@ -2453,7 +2463,7 @@
           "Progress"
         ],
         "summary": "임팩트 고르기",
-        "description": "화면 H-03 · BL-33, BL-35. 해금한 것만. null이면 끄기",
+        "description": "화면 H-03 · BL-33, BL-35. 해금한 것만(아니면 VALIDATION_ERROR). null이면 끄기",
         "operationId": "select_impact_v1_users_me_impact_put",
         "requestBody": {
           "content": {
