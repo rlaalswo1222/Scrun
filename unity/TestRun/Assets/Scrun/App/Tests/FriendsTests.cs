@@ -257,5 +257,64 @@ namespace Scrun.App.Tests
             FriendDirectory.Remove("u1");
             Assert.IsFalse(FriendDirectory.Contains("u1"));
         }
+
+        // ---- 같이 달리기(계획 0047) ----
+
+        [Test]
+        public void RunTogetherPostsCourseAndReadsNearFriend()
+        {
+            http.Handler = _ => new HttpResponse
+            {
+                Status = 201,
+                Body = "{\"resultType\":\"SUCCESS\",\"success\":{\"data\":{\"mapInstanceId\":\"map_crs_lake_loop\"," +
+                       "\"courseId\":\"crs_lake_loop\",\"entryPositionM\":982.1,\"realtime\":null," +
+                       "\"nearFriend\":{\"userId\":\"u2\",\"behindM\":17.9}}},\"error\":null,\"meta\":{}}"
+            };
+            var t = api.RunTogetherAsync("u2", "crs_lake_loop");
+            Assert.IsTrue(t.IsCompleted);
+            var e = t.GetAwaiter().GetResult();
+            Assert.AreEqual("POST", http.Sent[0].Method);
+            StringAssert.EndsWith("/v1/friends/u2/run-together", http.Sent[0].Url);
+            Assert.That(http.Sent[0].Body, Does.Contain("\"courseId\":\"crs_lake_loop\""));
+            Assert.AreEqual(982.1f, e.EntryPositionM, 0.01f);
+            Assert.AreEqual("u2", e.NearFriend.UserId);
+            Assert.AreEqual(17.9f, e.NearFriend.BehindM, 0.01f);
+        }
+
+        static RemoteRunner Runner(string id, float d, bool bot = false, float lap = 6670f)
+        {
+            var r = new RemoteRunner(id, id, lap, bot);
+            r.Sample(d, 0f, true, 0);
+            return r;
+        }
+
+        [Test]
+        public void StartsJustBehindTheFriendsCurrentPosition()
+        {
+            var runners = new[] { Runner("x", 300f), Runner("u2", 1000f) };
+            Assert.AreEqual(985f, NearFriendStart.Target(runners, "u2", 15f, 6670f, 0).Value, 0.01f);
+        }
+
+        [Test]
+        public void StartWrapsPastTheStartLine()
+        {
+            Assert.AreEqual(6665f, NearFriendStart.Target(new[] { Runner("u2", 5f) }, "u2", 10f, 6670f, 0).Value, 0.01f);
+        }
+
+        [Test]
+        public void NoTargetWhenTheFriendHasLeft()
+        {
+            Assert.IsNull(NearFriendStart.Target(new[] { Runner("x", 300f) }, "u2", 15f, 6670f, 0), "친구가 방에 없음 → 그 자리에서");
+            Assert.IsNull(NearFriendStart.Target(new[] { Runner("u2", 300f, bot: true) }, "u2", 15f, 6670f, 0), "봇은 친구가 아님");
+            Assert.IsNull(NearFriendStart.Target(null, "u2", 15f, 6670f, 0), "실시간 방 없음");
+            Assert.IsNull(NearFriendStart.Target(new[] { Runner("u2", 300f) }, "u2", 15f, 0f, 0), "섬 코스 길이를 아직 모름");
+        }
+
+        [Test]
+        public void RunTogetherNoticesNameTheFriend()
+        {
+            StringAssert.Contains("바닷바람", FriendText.StartBehindFriend("바닷바람"));
+            StringAssert.Contains("바닷바람", FriendText.FriendFinished("바닷바람"));
+        }
     }
 }

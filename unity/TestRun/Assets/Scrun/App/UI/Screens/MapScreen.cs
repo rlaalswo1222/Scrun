@@ -44,6 +44,9 @@ namespace Scrun.App
 
         readonly CourseDetail course;
         readonly Action<MapExit, ApiException> onExit;
+        RunningFriend friend;        // 같이 달리기(G-03, 계획 0047)로 왔으면 그 친구. 친구가 그새 끝냈으면 null로(일반 입장)
+        NearFriend nearFriend;       // 같이 달리기 입장 응답: 3·2·1이 끝날 때 친구 뒤로 다시 맞춤(한 번)
+        string startNotice;          // 달리기를 시작할 때 HUD에 띄울 안내(친구가 입장 전에 끝냄)
         VisualElement loadingView, progress, unavailable;
         Label unavailableTitle, unavailableBody;
         Button retry;
@@ -90,10 +93,11 @@ namespace Scrun.App
         // 이번 달리기(3·2·1이 끝나야 생김, 계획 0035)
         public RunSession Session => session;
 
-        public MapScreen(CourseDetail course, Action<MapExit, ApiException> onExit)
+        public MapScreen(CourseDetail course, Action<MapExit, ApiException> onExit, RunningFriend friend = null)
         {
             this.course = course ?? throw new ArgumentNullException(nameof(course));
             this.onExit = onExit;
+            this.friend = friend;
         }
 
         protected override string Uxml => "UI/Map";
@@ -222,7 +226,7 @@ namespace Scrun.App
             MapEntry entry;
             try
             {
-                entry = await Api.Courses.EnterAsync(course.CourseId);
+                entry = await EnterAsync();
             }
             catch (ApiException e)
             {
@@ -231,6 +235,7 @@ namespace Scrun.App
             }
             if (leaving) return;
             mapInstanceId = entry.MapInstanceId;
+            nearFriend = entry.NearFriend;
             FriendDirectory.RefreshQuietly(); // 러너 카드 "친구" 배지(계획 0044). 실패해도 배지만 빠짐
             calibrationLoad = LoadCalibrationAsync(); // 섬 불러오기와 같이. 센서 준비(D-07)가 끝나길 기다림
             headphones ??= new HeadphoneWatch();
@@ -339,7 +344,49 @@ namespace Scrun.App
             hud?.Dispose();
             session = new RunSession(Setup.Goal);
             hud = new RunHudView(Root, session, together);
+            PlaceNearFriend();
             StartRunning();
+        }
+
+        // 같이 달리기면 친구 뒤로 입장, 친구가 그새 끝냈거나 친구가 아니게 됐으면 D-21 안내 뒤 그 코스로 일반 입장(계획 0047).
+        // 그 밖의 실패(가득 참·보정 없음 등)는 일반 입장과 같이 OnEnterFailed가 맡음
+        async Task<MapEntry> EnterAsync()
+        {
+            if (friend != null)
+            {
+                try
+                {
+                    return await Api.Friends.RunTogetherAsync(friend.UserId, course.CourseId);
+                }
+                catch (ApiException e) when (e.Failure == ApiFailure.Server && (e.Code == "FRIEND_NOT_RUNNING" || e.Code == "USER_NOT_FOUND"))
+                {
+                    startNotice = FriendText.FriendFinished(friend.Nickname);
+                    friend = null; // "다시 입장하기"도 일반 입장으로
+                }
+            }
+            return await Api.Courses.EnterAsync(course.CourseId);
+        }
+
+        // 3·2·1 끝, 달리기 시작 직전: 실시간 방의 친구 지금 위치 뒤로 옮김(정할 것 2 가). 친구가 방에 없으면 그 자리에서(정할 것 3 가)
+        void PlaceNearFriend()
+        {
+            var near = nearFriend;
+            nearFriend = null;
+            string notice = startNotice;
+            startNotice = null;
+            if (near != null)
+            {
+                float? target = NearFriendStart.Target(together?.Runners, near.UserId, near.BehindM, RunLink.LapLengthM, RealtimeClock.Now());
+                string name = friend?.Nickname ?? "친구";
+                if (target == null) notice = FriendText.FriendFinished(name);
+                else if (RunLink.TeleportPlayer != null) // 섬이 없으면(섬 쪽 오류) 옮기지 않고 안내도 안 함
+                {
+                    Debug.Log($"[같이 달리기] {RunLink.PlayerLapPositionM:0}m → 친구 {near.BehindM:0.0}m 뒤 {target.Value:0}m");
+                    RunLink.TeleportPlayer(target.Value);
+                    notice = FriendText.StartBehindFriend(name);
+                }
+            }
+            if (notice != null) hud?.Notice(notice);
         }
 
         // ---- 달리는 동안: 멈춤·끝(계획 0037) ----

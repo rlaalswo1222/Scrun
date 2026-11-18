@@ -175,6 +175,10 @@ namespace Scrun.App
             }
         }
 
+        // 같이 달리기 달리기 시작 안내(HUD 3초, 계획 0047). Figma D-20·D-21 문구 확인 전 임시(상준 확인)
+        public static string StartBehindFriend(string nickname) => $"{nickname} 님 바로 뒤에서 시작해요";
+        public static string FriendFinished(string nickname) => $"{nickname} 님이 러닝을 마쳐서 혼자 시작해요";
+
         // G-03 같이 달리기 시트 둘째 줄 "노을 호수 한 바퀴 · 3.2km · 5'50"/km"
         public static string RunTogetherLine(RunningFriend f)
         {

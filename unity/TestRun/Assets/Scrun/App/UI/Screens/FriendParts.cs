@@ -167,18 +167,17 @@ namespace Scrun.App
             }
         }
 
-        // G-03 같이 달리기 확인. 확인하면 친구가 달리는 코스로 일반 입장(계획 0044 정할 것 4, 친구 근처 시작은 S8 BL-29)
+        // G-03 같이 달리기 확인. 확인하면 친구가 달리는 맵에 친구 뒤로 입장(계획 0047, 친구가 그새 끝냈으면 그 코스로 일반 입장)
         public static Sheet RunTogether(AppScreen screen, RunningFriend f)
         {
             var sheet = new Sheet(screen.Root);
             sheet.Head(f.Nickname, $"{f.Nickname} 님이 달리는 중", FriendText.RunTogetherLine(f), Chip("LIVE", ChipKind.Live));
-            // Figma 끝 문장 "친구 근처에서 시작해요."는 S8(입장 위치)에 켬
-            sheet.Info("입장하면 화면이 가로로 전환돼요. 러닝머신에 폰을 거치해 주세요.");
+            sheet.Info("입장하면 화면이 가로로 전환돼요. 러닝머신에 폰을 거치해 주세요. 친구 근처에서 시작해요.");
             string courseId = f.CourseId;
             sheet.Button("같이 달리기", "btn-primary", () =>
             {
                 sheet.Close();
-                if (screen.Nav.Current == screen) screen.Nav.Push(new CourseDetailScreen(courseId, enterOnLoad: true));
+                if (screen.Nav.Current == screen) screen.Nav.Push(new CourseDetailScreen(courseId, enterOnLoad: true, together: f));
             }, "run-together-go");
             sheet.Button("닫기", "btn-ghost", sheet.Close, "run-together-close");
             return sheet;

@@ -104,6 +104,14 @@ namespace Scrun.App
         public string CourseId { get; set; }
         public float EntryPositionM { get; set; }  // 코스 시작점부터 m
         public RealtimeAccess Realtime { get; set; } // 실시간 서버(BL-25) 전에는 null
+        public NearFriend NearFriend { get; set; }   // 같이 달리기로 들어왔을 때만(계획 0047), 일반 입장은 null
+    }
+
+    // 같이 달리기 입장 응답의 친구. 3·2·1이 끝날 때 친구의 그때 위치 BehindM 뒤로 다시 맞춤
+    public sealed class NearFriend
+    {
+        public string UserId { get; set; }
+        public float BehindM { get; set; }
     }
 
     public sealed class RealtimeAccess

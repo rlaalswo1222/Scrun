@@ -227,6 +227,14 @@ namespace Scrun.App
 
         public Task<List<RunningFriend>> RunningAsync() => c.GetAsync<List<RunningFriend>>("/v1/friends/running", AuthMode.User);
 
+        // 같이 달리기(G-03, 계획 0047): 친구가 courseId에서 달리는 중이면 그 맵에 입장(응답은 맵 입장과 같음 + NearFriend).
+        // 실패: 409 FRIEND_NOT_RUNNING(그새 끝냄·코스를 옮김)·404 USER_NOT_FOUND(친구 아님) → 앱은 그 코스로 일반 입장. 그 밖은 맵 입장과 같음
+        public async Task<MapEntry> RunTogetherAsync(string userId, string courseId)
+        {
+            var e = await c.PostAsync<MapEntry>("/v1/friends/" + Uri.EscapeDataString(userId) + "/run-together", new { courseId }, AuthMode.User);
+            return e ?? throw new ApiException(ApiFailure.BadResponse, "입장 응답이 비었습니다.");
+        }
+
         // 받은 코드로 추가 → 서로 바로 친구. 실패: SELF_FRIEND_CODE·FRIEND_CODE_NOT_FOUND·ALREADY_FRIEND·
         // FRIEND_LIMIT_EXCEEDED(details.who ME/FRIEND)·RATE_LIMITED(틀린 코드 10분에 10번)
         public async Task<Friend> AddAsync(string friendCode)
