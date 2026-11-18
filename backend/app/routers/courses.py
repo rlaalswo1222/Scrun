@@ -26,7 +26,7 @@ from ..schemas.course import Course, CourseDetail, MapEntry
 
 router = APIRouter(prefix="/v1", tags=["Course"])
 E = ErrorCode
-AUTH = error_responses(E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)
+AUTH = (E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)   # 코드 묶음, 문서는 error_responses 한 번에(dict 합치기는 같은 상태 코드를 덮어씀)
 
 _rng = random.Random()
 
@@ -56,7 +56,7 @@ def _active_course(db: Session, course_id: str, lock: bool = False) -> CourseRow
 @router.get("/courses", summary="코스 목록",
             description="화면 C-01 · BL-7, BL-43. 짧은 코스부터. runnersNow는 그 맵에 지금 있는 사람 수(나 빼고)"
             "(실시간 방에 붙어 있는 사람 + 입장 2분 안에 아직 안 붙은 사람). 실사 영상 코스는 최하위라 type만 열어 둠",
-            response_model=Envelope[list[Course]], responses=AUTH)
+            response_model=Envelope[list[Course]], responses=error_responses(*AUTH))
 def list_courses(request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     courses = db.scalars(select(CourseRow).where(CourseRow.active).order_by(CourseRow.length_m, CourseRow.id)).all()
     present = count_present(db, [c.id for c in courses], exclude_user_id=user.id)  # 보는 사람은 빼고(get_course 참고)
@@ -64,7 +64,7 @@ def list_courses(request: Request, user: User = Depends(current_user), db: Sessi
 
 
 @router.get("/courses/{courseId}", summary="코스 상세", description="화면 C-02 · BL-7. 숨긴 코스도 404",
-            response_model=Envelope[CourseDetail], responses={**AUTH, **error_responses(E.COURSE_NOT_FOUND)})
+            response_model=Envelope[CourseDetail], responses=error_responses(*AUTH, E.COURSE_NOT_FOUND))
 def get_course(courseId: str, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     course = _active_course(db, courseId)
     # 보는 사람은 빼고 센다: 목록·상세를 보는 동안엔 맵 밖이라 "같이 달릴 사람"이 아님. 맵에서 막 나왔을 때
@@ -84,7 +84,7 @@ def get_course(courseId: str, request: Request, user: User = Depends(current_use
     "realtime은 그 맵의 실시간 방 접속 주소·토큰(6시간, docs/api/realtime.md). "
     "입장 위치는 그 맵에 달리는 사람이 있으면 한 명의 20–40m 뒤, 없으면 코스 위 랜덤",
     response_model=Envelope[MapEntry],
-    responses={**AUTH, **error_responses(E.COURSE_NOT_FOUND, E.COURSE_FULL, E.CALIBRATION_REQUIRED)},
+    responses=error_responses(*AUTH, E.COURSE_NOT_FOUND, E.COURSE_FULL, E.CALIBRATION_REQUIRED),
 )
 def enter_map(courseId: str, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db),
               rng: random.Random = Depends(get_rng)):

@@ -33,7 +33,7 @@ from ..schemas.friend import FeedItem, Friend, FriendAddRequest, FriendProfile, 
 
 router = APIRouter(prefix="/v1", tags=["Friend"])
 E = ErrorCode
-AUTH = error_responses(E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)
+AUTH = (E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED)   # 코드 묶음, 문서는 error_responses 한 번에(dict 합치기는 같은 상태 코드를 덮어씀)
 FINISHED = (PENDING, VERIFIED, UNVERIFIED)
 FEED_PAGE = 20      # 피드 한 쪽
 RECENT_RUNS = 10    # 프로필 최근 러닝
@@ -111,8 +111,8 @@ def _run_row(run: Run, course_name: str, at: datetime) -> dict:
     f"없는 코드를 {settings.friends.add_fail_window_s // 60}분 안에 {settings.friends.add_fail_limit}번 넣으면 "
     "그 뒤로는 맞는 코드도 RATE_LIMITED(맞혀 보기 막기). 응답은 새 친구",
     response_model=Envelope[Friend],
-    responses={**AUTH, **error_responses(E.VALIDATION_ERROR, E.SELF_FRIEND_CODE, E.FRIEND_CODE_NOT_FOUND,
-                                         E.ALREADY_FRIEND, E.FRIEND_LIMIT_EXCEEDED, E.RATE_LIMITED)},
+    responses=error_responses(*AUTH, E.VALIDATION_ERROR, E.SELF_FRIEND_CODE, E.FRIEND_CODE_NOT_FOUND,
+                                         E.ALREADY_FRIEND, E.FRIEND_LIMIT_EXCEEDED, E.RATE_LIMITED),
 )
 def add_friend(body: FriendAddRequest, request: Request, user: User = Depends(current_user),
                db: Session = Depends(get_db)):
@@ -146,7 +146,7 @@ def add_friend(body: FriendAddRequest, request: Request, user: User = Depends(cu
 @router.get("/friends", summary="친구 목록",
             description="화면 G-04, G-10 · BL-27. 달리는 친구 먼저, 그다음 최근에 달린 순, 닉네임 순. 없으면 빈 배열(G-04 빈 상태). "
             "'친구 N/50명'의 50은 정해진 값(BL-27 ⑤)",
-            response_model=Envelope[list[Friend]], responses=AUTH)
+            response_model=Envelope[list[Friend]], responses=error_responses(*AUTH))
 def list_friends(request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     rows = _friends(db, _friend_ids(db, user.id))
     oldest = datetime.min.replace(tzinfo=timezone.utc)
@@ -158,7 +158,7 @@ def list_friends(request: Request, user: User = Depends(current_user), db: Sessi
 @router.get("/friends/running", summary="지금 달리는 친구",
             description="화면 G-01, G-02, B-01 · BL-28, BL-31. 지금 섬에서 달리는 친구(실시간 방 기준, 와이파이가 잠깐 끊긴 사람 30초 포함). "
             "이번 러닝 거리가 긴 순. 없으면 빈 배열(G-02)",
-            response_model=Envelope[list[RunningFriend]], responses=AUTH)
+            response_model=Envelope[list[RunningFriend]], responses=error_responses(*AUTH))
 def running_friends(request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     running = hub.running_now(_friend_ids(db, user.id))
     if not running:
@@ -175,7 +175,7 @@ def running_friends(request: Request, user: User = Depends(current_user), db: Se
 
 @router.get("/friends/{userId}", summary="친구 프로필",
             description=f"화면 G-09 · BL-27. 친구 줄 + 옷 단계 + 최근 공유 러닝 {RECENT_RUNS}개. 친구가 아니면 USER_NOT_FOUND",
-            response_model=Envelope[FriendProfile], responses={**AUTH, **error_responses(E.USER_NOT_FOUND)})
+            response_model=Envelope[FriendProfile], responses=error_responses(*AUTH, E.USER_NOT_FOUND))
 def friend_profile(userId: str, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     _require_friend(db, user, userId)
     rows = _friends(db, [userId])
@@ -192,7 +192,7 @@ def friend_profile(userId: str, request: Request, user: User = Depends(current_u
 @router.delete("/friends/{userId}", status_code=204, summary="친구 삭제",
                description="화면 G-09, G-10, G-11 · BL-27. 양쪽 모두에서 지워짐(상대에게 알리지 않음). 다시 맺으려면 코드가 필요. "
                "친구가 아니면 USER_NOT_FOUND",
-               responses={**AUTH, **error_responses(E.USER_NOT_FOUND)})
+               responses=error_responses(*AUTH, E.USER_NOT_FOUND))
 def delete_friend(userId: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     if userId == user.id:
         raise ApiError(E.USER_NOT_FOUND)
@@ -212,7 +212,7 @@ def delete_friend(userId: str, user: User = Depends(current_user), db: Session =
     "\n\n**아직 예시 응답**(S8에 DB 연결). S7 앱은 GET /friends/running의 courseId로 일반 입장(POST /courses/{courseId}/entries)"
     "\n\n스텁: 달리지 않는 친구(`usr_f2`) → FRIEND_NOT_RUNNING(앱은 일반 입장으로)",
     response_model=Envelope[MapEntry],
-    responses={**AUTH, **error_responses(E.USER_NOT_FOUND, E.FRIEND_NOT_RUNNING, E.COURSE_FULL, E.CALIBRATION_REQUIRED)},
+    responses=error_responses(*AUTH, E.USER_NOT_FOUND, E.FRIEND_NOT_RUNNING, E.COURSE_FULL, E.CALIBRATION_REQUIRED),
 )
 def run_together(userId: str, request: Request, _: Principal = Depends(stub_user)):
     friend = next((f for f in d.FRIENDS if f["userId"] == userId), None)
@@ -226,7 +226,7 @@ def run_together(userId: str, request: Request, _: Principal = Depends(stub_user
 @router.get("/feed", summary="친구 러닝 피드",
             description=f"화면 G-01 · BL-28. 친구들이 공유한 끝난 러닝, 끝난 시각 최신순, 커서 방식(한 쪽 {FEED_PAGE}개). "
             "미인증 기록도 보임(앱이 '미인증' 마크), 인증 대기는 마크 없음. 친구에게만 공개(내 기록은 안 나옴). 친구가 없으면 items=[]",
-            response_model=Envelope[CursorPage[FeedItem]], responses={**AUTH, **error_responses(E.VALIDATION_ERROR)})
+            response_model=Envelope[CursorPage[FeedItem]], responses=error_responses(*AUTH, E.VALIDATION_ERROR))
 def feed(request: Request, cursor: Optional[str] = Query(default=None, description="앞 쪽 응답의 nextCursor"),
          user: User = Depends(current_user), db: Session = Depends(get_db)):
     ids = _friend_ids(db, user.id)

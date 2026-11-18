@@ -45,8 +45,10 @@ log = logging.getLogger("scrun.verification")
 E = ErrorCode
 POLICY = settings.verification
 S, R = VerificationStatus, UnverifiedReason
-ERRS = {**error_responses(E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED, E.RUN_NOT_FOUND, E.FORBIDDEN),
-        **error_responses(E.VALIDATION_ERROR, E.RUN_NOT_FINISHED, E.VERIFICATION_CLOSED, E.SERVICE_UNAVAILABLE)}
+# 문서는 error_responses 한 번에(dict를 합치면 같은 상태 코드 409가 덮어써짐)
+ERR_CODES = (E.UNAUTHORIZED, E.TOKEN_EXPIRED, E.SIGNUP_REQUIRED, E.RUN_NOT_FOUND, E.FORBIDDEN,
+             E.VALIDATION_ERROR, E.RUN_NOT_FINISHED, E.VERIFICATION_CLOSED, E.SERVICE_UNAVAILABLE)
+ERRS = error_responses(*ERR_CODES)
 OUTCOME = ("\n\n값 확인(CONFIRM_REQUIRED)·못 읽음(RETAKE_REQUIRED)·미인증(UNVERIFIED)은 오류가 아니라 200 + status. "
            "이미 정해진 기록에 다시 보내면 처음 결과를 그대로 돌려준다(응답을 못 받은 앱의 재시도).")
 PHOTO, SKIP = "PHOTO", "SKIP"  # verifications.method(마감으로 닫힌 것은 시도가 아니라 줄 없음)
@@ -390,7 +392,7 @@ def verify_photo(runId: str, request: Request, user: User = Depends(current_user
         "같은 답을 다시 보내면 처음 결과(재시도). 마감이 지났으면 VERIFICATION_CLOSED(마감 전에 받은 사진은 확인에 "
         f"{int(CONFIRM_GRACE.total_seconds() // 60)}분 더, 확인 응답의 retakeDeadline이 그 시각)." + OUTCOME),
     response_model=Envelope[VerificationResult],
-    responses={**ERRS, **error_responses(E.CONFIRM_NOT_PENDING)},
+    responses=error_responses(*ERR_CODES, E.CONFIRM_NOT_PENDING),
 )
 def verify_confirm(runId: str, body: ConfirmRequest, request: Request, user: User = Depends(current_user),
                    db: Session = Depends(get_db)):

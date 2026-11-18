@@ -116,3 +116,26 @@ def test_notion_pages_match_api():
     from scripts.notion_pages import NOTION_PAGE_IDS
     ops = {(m.upper(), p) for p, item in app.openapi()["paths"].items() for m in item}
     assert set(NOTION_PAGE_IDS) - ops == set(), "노션 표에만 있는 API"
+
+
+def test_error_docs_are_not_merged_as_dicts():
+    """문서의 오류 응답은 error_responses 한 번에 모아 만든다. {**a, **error_responses(...)}처럼 dict를 합치면 같은 상태 코드가
+    덮어써져 코드가 문서에서 사라짐(11/18: confirm의 409 RUN_NOT_FINISHED·VERIFICATION_CLOSED, 기록 API의 403 SIGNUP_REQUIRED)."""
+    import ast
+    bad = []
+    for f in sorted((Path(__file__).resolve().parents[1] / "app" / "routers").glob("*.py")):
+        for node in ast.walk(ast.parse(f.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.keyword) and node.arg == "responses" and isinstance(node.value, ast.Dict) \
+                    and None in node.value.keys:
+                bad.append(f"{f.name}:{node.value.lineno}")
+    assert not bad, f"responses에 dict 합치기: {bad} → error_responses(*AUTH, ...) 한 번에"
+
+
+@pytest.mark.parametrize("method,path,status,codes", [
+    ("post", "/v1/runs/{runId}/verification/confirm", "409", ["RUN_NOT_FINISHED", "VERIFICATION_CLOSED", "CONFIRM_NOT_PENDING"]),
+    ("get", "/v1/runs/{runId}", "403", ["SIGNUP_REQUIRED", "FORBIDDEN"]),
+    ("get", "/v1/runs/{runId}/rewards", "403", ["SIGNUP_REQUIRED", "FORBIDDEN"]),
+])
+def test_same_status_error_codes_are_all_documented(method, path, status, codes):
+    desc = app.openapi()["paths"][path][method]["responses"][status]["description"]
+    assert all(c in desc for c in codes), desc
