@@ -151,9 +151,76 @@ namespace Scrun.App.Tests
         sealed class TabRoot : AppScreen
         {
             readonly string label;
+            public int Shows;
             public TabRoot(string label) => this.label = label;
             protected override string Uxml => "UI/Placeholder";
+            protected internal override void OnShow() => Shows++;
             public override string ToString() => label;
+        }
+
+        static Navigator Tabs()
+        {
+            var tabBar = new VisualElement();
+            foreach (var n in new[] { "home", "records", "friends", "me" }) tabBar.Add(new Button { name = "tab-" + n });
+            return new Navigator(new VisualElement(), tabBar, t => new TabRoot(t.ToString()));
+        }
+
+        static RunResultScreen OfflineResult()
+        {
+            var session = new RunSession(RunGoal.Default(GoalKind.Distance), () => 0);
+            session.Start(0f);
+            session.Finish(1200f, 9f);
+            return RunResultScreen.Offline(session); // 서버를 안 부르는 결과 화면(같은 GoHome·GoRecords)
+        }
+
+        // #94 리뷰: 기록 탭에서 시작한 고스트 달리기 → 홈으로 = 홈 탭 첫 화면(홈 탭에 열어 둔 화면이 있어도), 그 화면은 다시 보이지 않음
+        [Test]
+        public void HomeFromAGhostRunStartedInRecordsIsTheHomeRoot()
+        {
+            var nav = Tabs();
+            nav.ShowTabs(AppTab.Home);
+            var oldDetail = new TabRoot("홈 탭 코스 상세");
+            nav.Push(oldDetail);                     // 홈 탭에 코스 상세를 열어 둔 채
+            nav.SelectTab(AppTab.Records);
+            nav.Push(new TabRoot("기록 상세"));
+            nav.Push(new TabRoot("코스 목록(고스트)"));
+            var result = OfflineResult();
+            nav.Push(result);
+            int before = oldDetail.Shows;
+            result.GoHome();
+            Assert.AreEqual(AppTab.Home, nav.CurrentTab);
+            Assert.AreEqual("Home", nav.Current.ToString(), "옛 코스 상세가 아니라 홈 첫 화면");
+            Assert.IsFalse(nav.CanPop);
+            Assert.AreEqual(before, oldDetail.Shows, "정리될 옛 화면은 잠깐도 보이지 않음(요청을 보내지 않게)");
+            nav.SelectTab(AppTab.Records);
+            Assert.AreEqual("Records", nav.Current.ToString(), "결과까지 쌓였던 기록 탭도 목록으로");
+        }
+
+        // #94 리뷰: "더 보기"로 펼친 목록은 다시 보일 때 첫 쪽만 합침(있던 카드는 그 자리에서 바뀌고 새 기록은 맨 위)
+        [Test]
+        public void ReshowKeepsLoadedPagesAndMergesTheFirstPage()
+        {
+            var s = new RecordsScreen();
+            s.Create(null);
+            var start = DateTime.UtcNow.AddDays(-1);
+            var loaded = new List<RunSummary>
+            {
+                Run("a", Utc(2026, 11, 5), 3000, "PENDING"),
+                Run("b", Utc(2026, 11, 4), 3000, "VERIFIED"),
+                Run("c", Utc(2026, 11, 3), 3000, "VERIFIED"),
+            };
+            s.Show(loaded, new RunListPage { Items = loaded, NextCursor = "c3" }, start);
+            var firstPage = new List<RunSummary> { Run("n", Utc(2026, 11, 6), 2000, "PENDING"), Run("a", Utc(2026, 11, 5), 3000, "VERIFIED") };
+            s.Show(firstPage, new RunListPage { Items = firstPage, NextCursor = "c2" }, start, keepLoaded: true);
+            var list = s.Root.Q("list");
+            Assert.AreEqual(4, list.childCount, "받아 둔 쪽을 버리지 않음");
+            Assert.AreEqual("run-n", list[0].name, "새 기록은 맨 위");
+            Assert.AreEqual("run-a", list[1].name);
+            Assert.AreEqual(RunResultText.Chip("VERIFIED").text, list[1].Q<Label>(className: "fr-chip-text").text, "있던 카드는 새 상태로");
+            Assert.AreEqual("run-c", list[3].name);
+
+            s.Show(firstPage, new RunListPage { Items = firstPage, NextCursor = "c2" }, start); // 당겨 새로고침·칩 바꿈
+            Assert.AreEqual(2, s.Root.Q("list").childCount, "처음부터");
         }
 
         [Test]

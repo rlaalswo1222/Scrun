@@ -127,12 +127,11 @@ namespace Scrun.App
             return true;
         }
 
-        void GoHome()
+        internal void GoHome()
         {
             var nav = Nav;
             if (nav == null || nav.Current != this) return;
-            nav.PopToRoot();
-            if (nav.CurrentTab != AppTab.Home) nav.SelectTab(AppTab.Home);
+            nav.ShowTabRoot(AppTab.Home); // 기록 탭에서 시작한 고스트 달리기여도 홈 탭 첫 화면(홈 탭에 옛 화면이 쌓여 있어도, #94 리뷰)
         }
 
         // E-12 "기록 보기": 결과 화면들을 내리고 기록 탭 첫 화면(목록은 보일 때 새로 받아 방금 기록이 맨 위).
@@ -141,12 +140,7 @@ namespace Scrun.App
         {
             var nav = Nav;
             if (nav == null || nav.Current != this) return;
-            nav.PopToRoot();
-            if (nav.CurrentTab != AppTab.Records)
-            {
-                nav.SelectTab(AppTab.Records);
-                nav.PopToRoot();
-            }
+            nav.ShowTabRoot(AppTab.Records);
         }
 
         // F-03 "이 기록으로 고스트 달리기": 코스를 고르면 러닝 설정에 고스트가 켜진 채 이 기록(기록 탭 안에 쌓음)

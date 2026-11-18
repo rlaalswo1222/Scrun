@@ -80,11 +80,7 @@ namespace Scrun.App
         public static string WeekKm(int meters) => FriendText.KmShort(meters);
 
         // 카드 아래 줄 "33:02 · 평균 9'25"/km"(G-09 최근 러닝 줄과 같게)
-        public static string CardDetail(RunSummary r)
-        {
-            var pace = FriendText.Pace(r.AvgPaceSPerKm);
-            return pace == null ? FriendText.Duration(r.DurationS) : $"{FriendText.Duration(r.DurationS)} · 평균 {pace}";
-        }
+        public static string CardDetail(RunSummary r) => GhostText.Detail(r); // D-03 고스트 줄과 같은 글자(한 곳에서)
 
         static DateTime Local(DateTime utc, TimeZoneInfo zone) => TimeZoneInfo.ConvertTimeFromUtc(ToUtc(utc), zone ?? TimeZoneInfo.Local);
 

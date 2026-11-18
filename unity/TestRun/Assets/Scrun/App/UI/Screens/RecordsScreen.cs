@@ -78,8 +78,7 @@ namespace Scrun.App
         {
             if (Nav.Current != this) return;
             var nav = Nav;
-            nav.SelectTab(AppTab.Home);
-            nav.PopToRoot();
+            nav.ShowTabRoot(AppTab.Home);
             if (!(nav.Current is CourseListScreen)) nav.Push(new CourseListScreen());
         }
 
@@ -137,17 +136,24 @@ namespace Scrun.App
                 if (shown == null) ShowState(failed: true);
                 return;
             }
-            Show(week, gotMonth, weekStart);
+            Show(week, gotMonth, weekStart, keepLoaded: !fromPull && !chipChanged);
         }
 
-        // 받은 값으로 그림(테스트도 이걸로)
-        internal void Show(List<RunSummary> recentAll, RunListPage page, DateTime weekStartUtc)
+        // 받은 값으로 그림(테스트도 이걸로).
+        // keepLoaded: 다시 보일 때(탭·상세에서 돌아옴) "더 보기"로 받아 둔 쪽을 버리지 않고 첫 쪽만 합침(#94 리뷰). 당겨 새로고침·칩 바꿈은 처음부터
+        internal void Show(List<RunSummary> recentAll, RunListPage page, DateTime weekStartUtc, bool keepLoaded = false)
         {
             hasAny = recentAll != null && recentAll.Count > 0;
             var w = RecordsText.Summarize(recentAll, weekStartUtc);
             weekCount.text = RecordsText.Count(w.Count);
             weekKm.text = RecordsText.WeekKm(w.DistanceM);
             weekVerified.text = RecordsText.Count(w.Verified); // 주간 목표(BL-30)가 생기면 "N/목표"
+            if (keepLoaded && shown != null && shown.Count > (page?.Items?.Count ?? 0))
+            {
+                Merge(page);
+                ShowState(failed: false);
+                return;
+            }
             shown = new List<RunSummary>();
             list.Clear();
             cursor = null;
@@ -177,6 +183,30 @@ namespace Scrun.App
             cursor = page?.NextCursor;
             more.SetVisible(cursor != null);
             monthEmpty.text = RecordsText.EmptyMonth(chips[selected].label, chips[selected].month);
+            monthEmpty.SetVisible(shown.Count == 0);
+        }
+
+        // 펼쳐 둔 목록에 새로 받은 첫 쪽을 합침: 있던 기록은 그 자리 카드만 바꾸고(인증 대기 → 완료 등), 새 기록은 맨 위에(최신순).
+        // 커서는 받아 둔 마지막 쪽 그대로라 "더 보기"가 이어짐
+        void Merge(RunListPage page)
+        {
+            int top = 0;
+            foreach (var r in page?.Items ?? new List<RunSummary>())
+            {
+                int at = shown.FindIndex(x => x.RunId == r.RunId);
+                if (at >= 0)
+                {
+                    shown[at] = r;
+                    list.RemoveAt(at);
+                    list.Insert(at, Card(r));
+                }
+                else
+                {
+                    shown.Insert(top, r);
+                    list.Insert(top, Card(r));
+                    top++;
+                }
+            }
             monthEmpty.SetVisible(shown.Count == 0);
         }
 
