@@ -73,6 +73,31 @@ def test_only_verified_runs_of_five_minutes_count(db_client, me, db):
     assert (out["doneCount"], out["history"]) == (1, [])
 
 
+def test_runs_earlier_on_the_setting_day_count(db_client, me, db):
+    """11/19 민재 결정: 주기는 설정한 날 0시부터라 그날 목표를 정하기 전에 끝난 인증 기록도 첫 주기 1회("오늘부터 7일" 안내와 같게).
+    그 기록의 결과 화면 E-11은 그때 목표가 없어 주간 칸이 없음(반영 때 저장한 값)."""
+    uid = my_id(db_client, me)
+    ended_at(db, uid, datetime(2026, 11, 10, 9, tzinfo=KST))                              # 아침에 달림
+    set_anchor(db, uid, date(2026, 11, 10))                                                # 밤에 목표를 정함
+    out = growth.weekly_payload(db, db.get(User, uid), now=datetime(2026, 11, 10, 21, tzinfo=KST))
+    assert (out["cycleStart"], out["doneCount"]) == (date(2026, 11, 10), 1)
+
+
+def test_freezing_starts_after_the_last_frozen_cycle(db_client, me, db):
+    """바꿀 때 굳히는 주기 줄은 이미 굳힌 마지막 주기 다음부터만(#95 리뷰: 매번 설정일부터 다시 넣지 않음)."""
+    uid = my_id(db_client, me)
+    user = db.get(User, uid)
+    set_anchor(db, uid, date(2026, 9, 1), target=3)
+    growth.set_weekly_target(db, user, 4, now=datetime(2026, 9, 3, 12, tzinfo=KST))     # 첫 주기 굳힘(3)
+    db.commit()
+    growth.set_weekly_target(db, user, 5, now=datetime(2026, 9, 17, 12, tzinfo=KST))    # 셋째 주기: 둘째·셋째만 새로(4)
+    db.commit()
+    rows = {r.cycle_start: r.target_count for r in db.query(WeeklyGoalCycle).filter_by(user_id=uid)}
+    assert rows == {date(2026, 9, 1): 3, date(2026, 9, 8): 4, date(2026, 9, 15): 4}
+    out = growth.weekly_payload(db, user, now=datetime(2026, 9, 17, 12, tzinfo=KST))
+    assert (out["targetCount"], out["nextTargetCount"]) == (4, 5)
+
+
 def test_weekly_count_matches_the_result_screen(db_client, me, db):
     """결과 화면 E-11의 주간 칸(인증할 때 저장)과 GET이 같은 횟수. 설정일은 어제(자정 무렵에 돌려도 기록이 같은 주기에)."""
     uid = my_id(db_client, me)

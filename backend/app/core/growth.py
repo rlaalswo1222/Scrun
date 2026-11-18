@@ -139,13 +139,20 @@ def cycle_at(db: Session, user: User, day: date) -> Optional[Cycle]:
     return Cycle(start=start, target=row.target_count if row is not None else goal.target_count)
 
 
+def _midnight(day: date, user: User) -> datetime:
+    return datetime.combine(day, datetime.min.time(), _tz(user)).astimezone(timezone.utc)
+
+
+def _weekly_runs(user: User, first: date, end: date) -> list:
+    """주간 목표 1회로 인정되는 기록 조건(counts_for_week와 같은 규칙, 끝난 시각이 사용자 시간대 first 0시부터 end 0시 전).
+    결과 화면 E-11(counted_in)과 GET(weekly_payload)이 같이 써서 규칙이 한 곳(#95 리뷰)."""
+    return [Run.user_id == user.id, Run.status == VERIFIED, Run.official_duration_s >= POLICY.weekly_min_s,
+            Run.ended_at >= _midnight(first, user), Run.ended_at < _midnight(end, user)]
+
+
 def counted_in(db: Session, user: User, cycle: Cycle, until: Optional[datetime] = None) -> int:
     """그 주기에 주간 목표 1회로 인정된 기록 수(끝난 날짜가 사용자 시간대로 주기 안). until이 있으면 그때까지 끝난 것만."""
-    tz = _tz(user)
-    lo = datetime.combine(cycle.start, datetime.min.time(), tz).astimezone(timezone.utc)
-    hi = datetime.combine(cycle.end, datetime.min.time(), tz).astimezone(timezone.utc)
-    cond = [Run.user_id == user.id, Run.status == VERIFIED, Run.official_duration_s >= POLICY.weekly_min_s,
-            Run.ended_at >= lo, Run.ended_at < hi]
+    cond = _weekly_runs(user, cycle.start, cycle.end)
     if until is not None:
         cond.append(Run.ended_at <= until)
     return db.scalar(select(func.count()).select_from(Run).where(and_(*cond))) or 0
@@ -171,7 +178,7 @@ def weekly_payload(db: Session, user: User, now: Optional[datetime] = None) -> d
     주기 목표 줄과 인정 기록을 범위로 한 번씩만 읽어(주기마다 묻지 않음) 사용자 시간대 날짜로 나눈다. 셈 규칙은 counted_in과 같음"""
     goal = db.get(WeeklyGoal, user.id)
     if goal is None:
-        return dict(EMPTY_WEEKLY)
+        return {**EMPTY_WEEKLY, "history": []}   # 목록은 응답마다 새로(모듈 값을 같이 쓰지 않게)
     today = _today(user, now)
     cur = _current_cycle(db, user, goal, today)
     step = timedelta(days=POLICY.cycle_days)
@@ -181,12 +188,8 @@ def weekly_payload(db: Session, user: User, now: Optional[datetime] = None) -> d
         WeeklyGoalCycle.user_id == user.id, WeeklyGoalCycle.cycle_start >= first,
         WeeklyGoalCycle.cycle_start <= cur.start)).all())
     tz = _tz(user)
-    lo = datetime.combine(first, datetime.min.time(), tz).astimezone(timezone.utc)
-    hi = datetime.combine(cur.end, datetime.min.time(), tz).astimezone(timezone.utc)
     done = {s: 0 for s in starts}
-    for (ended,) in db.execute(select(Run.ended_at).where(
-            Run.user_id == user.id, Run.status == VERIFIED, Run.official_duration_s >= POLICY.weekly_min_s,
-            Run.ended_at >= lo, Run.ended_at < hi)).all():
+    for (ended,) in db.execute(select(Run.ended_at).where(*_weekly_runs(user, first, cur.end))).all():
         day = ended.astimezone(tz).date()
         start = first + step * ((day - first).days // POLICY.cycle_days)
         if start in done:
@@ -210,12 +213,15 @@ def set_weekly_target(db: Session, user: User, target: int, now: Optional[dateti
         return
     goal = db.get(WeeklyGoal, user.id, with_for_update=True, populate_existing=True)   # 동시에 바꾸기: 사용자마다 줄 세움
     cur = _current_cycle(db, user, goal, today)
-    rows, s = [], goal.anchor_date
+    # 이미 굳힌 마지막 주기 다음부터만(오래 쓴 사용자도 바꿀 때마다 설정일부터 다시 넣지 않게, #95 리뷰)
+    last = db.scalar(select(func.max(WeeklyGoalCycle.cycle_start)).where(WeeklyGoalCycle.user_id == user.id))
+    rows, s = [], goal.anchor_date if last is None else last + timedelta(days=POLICY.cycle_days)
     while s <= cur.start:
         rows.append({"user_id": user.id, "cycle_start": s, "target_count": goal.target_count})
         s += timedelta(days=POLICY.cycle_days)
-    db.execute(insert(WeeklyGoalCycle).values(rows).on_conflict_do_nothing(
-        index_elements=[WeeklyGoalCycle.user_id, WeeklyGoalCycle.cycle_start]))
+    if rows:
+        db.execute(insert(WeeklyGoalCycle).values(rows).on_conflict_do_nothing(
+            index_elements=[WeeklyGoalCycle.user_id, WeeklyGoalCycle.cycle_start]))
     db.flush()
     this_cycle = db.get(WeeklyGoalCycle, (user.id, cur.start), populate_existing=True).target_count
     goal.target_count = target
