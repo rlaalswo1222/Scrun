@@ -48,6 +48,9 @@ namespace Scrun.App
         public string ClientRunId { get; } = Guid.NewGuid().ToString("N");
         public DateTime? StartedAtUtc { get; private set; }
         public DateTime? EndedAtUtc { get; private set; }
+
+        // 고스트로 고른 내 기록(계획 0050). POST /runs의 ghostRunId(서버가 run_ghosts에 남김)
+        public string GhostRunId { get; set; }
         public string RunId { get; internal set; } // 서버가 준 ID. 못 받았으면 null(끝낼 때 StartBody로 다시 보냄)
 
         // 달린 시간 1초마다의 아바타 속도(km/h). 서버에 올리는 것(RunRecordUploader)
@@ -68,6 +71,7 @@ namespace Scrun.App
             ClientRunId = ClientRunId,
             MapInstanceId = mapInstanceId,
             Goal = Goal.ToRequest(),
+            GhostRunId = GhostRunId,
             StartedAt = StartedAtUtc.Value,
         };
 

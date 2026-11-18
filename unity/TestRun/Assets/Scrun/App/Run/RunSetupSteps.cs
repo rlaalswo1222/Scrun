@@ -41,12 +41,17 @@ namespace Scrun.App
         }
     }
 
-    // 러닝 설정에서 고른 것. S3 센서 준비·카운트다운이 받아 POST /runs에 쓴다(고스트는 S7 BL-24)
+    // 러닝 설정에서 고른 것. 센서 준비·카운트다운이 받아 POST /runs에 쓴다. 고스트는 고른 내 기록(계획 0050, 없으면 null)
     public sealed class RunSetup
     {
         public RunGoal Goal { get; }
+        public string GhostRunId { get; }
 
-        public RunSetup(RunGoal goal) => Goal = goal;
+        public RunSetup(RunGoal goal, string ghostRunId = null)
+        {
+            Goal = goal;
+            GhostRunId = ghostRunId;
+        }
     }
 
     public static class RunSetupText

@@ -47,6 +47,8 @@
 
         <!-- 위 가운데: 들어옴·나감 토스트(BL-21 ⑤), 연결 상태 -->
         <ui:VisualElement class="hud-top-center" picking-mode="Ignore">
+            <!-- 고스트 비교 배너(D-13, 계획 0050): 고스트를 골랐을 때만 -->
+            <ui:Label name="hud-ghost" class="hud-ghost" picking-mode="Ignore" />
             <ui:Label name="hud-toast" class="hud-toast" picking-mode="Ignore" />
             <ui:Label name="hud-unsteady" class="hud-net" picking-mode="Ignore" />
             <ui:Label name="hud-net" class="hud-net" picking-mode="Ignore" />

@@ -1,6 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <!-- 맵 입장 뒤 흐린 맵 위 안내(가로, 계획 0026): D-01 러닝 설정 → D-05 거치 안내 → D-06 달리는 매뉴얼.
-         Figma "SCRUN" 와이어프레임 602:601·602:775·602:803. 고스트러너 카드(D-01 오른쪽)는 S7 BL-24에 넣는다 -->
+         Figma "SCRUN" 와이어프레임 602:601·602:775·602:803. 고스트러너 카드(D-01·D-02 오른쪽)·기록 고르기(D-03)·기록 없음(D-04)은 계획 0050 -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
     <Style src="project://database/Assets/Scrun/App/Resources/UI/RunSetup.uss" />
     <ui:VisualElement name="run-setup" class="course run-setup">
@@ -43,6 +43,24 @@
                     </ui:VisualElement>
                     <!-- 퀵 칩(종류마다 다름)과 "직접 입력"은 코드가 채움 -->
                     <ui:VisualElement name="quick" class="chip-row quick-row" />
+                </ui:VisualElement>
+                <!-- D-01·D-02 고스트러너: 켜면 고른 기록 요약 + 변경(D-03) -->
+                <ui:VisualElement name="ghost-card" class="setup-card ghost-card">
+                    <ui:Button name="ghost-toggle" class="ghost-head">
+                        <ui:Label text="고스트러너" class="goal-label" picking-mode="Ignore" />
+                        <ui:VisualElement name="ghost-switch" class="ghost-switch" picking-mode="Ignore">
+                            <ui:VisualElement class="ghost-knob" picking-mode="Ignore" />
+                        </ui:VisualElement>
+                    </ui:Button>
+                    <ui:Label name="ghost-lead" class="ghost-lead" />
+                    <ui:VisualElement name="ghost-picked" class="ghost-picked">
+                        <ui:VisualElement class="ghost-picked-text">
+                            <ui:Label name="ghost-date" class="ghost-date" />
+                            <ui:Label name="ghost-summary" class="ghost-summary" />
+                        </ui:VisualElement>
+                        <ui:Button name="ghost-change" text="변경 ›" class="ghost-change" />
+                    </ui:VisualElement>
+                    <ui:Label name="ghost-note" class="ghost-note" />
                 </ui:VisualElement>
             </ui:VisualElement>
 
@@ -104,6 +122,30 @@
             <ui:VisualElement class="setup-foot">
                 <ui:Toggle name="skip-manual" text="다시 보지 않기" class="skip-toggle" />
                 <ui:Button name="manual-next" text="시작할게요" class="btn btn-primary setup-next" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- D-03 고스트 기록 고르기(줄은 코드가) -->
+        <ui:VisualElement name="ghost-pick" class="map-dim">
+            <ui:VisualElement class="map-card ghost-pick-card">
+                <ui:Label name="ghost-pick-title" class="map-card-title" />
+                <ui:ScrollView name="ghost-list" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ghost-list" />
+                <ui:VisualElement class="map-card-buttons">
+                    <ui:Button name="ghost-pick-cancel" text="취소" class="btn btn-ghost" />
+                    <ui:Button name="ghost-pick-ok" class="btn btn-primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- D-04 고스트로 쓸 기록 없음 -->
+        <ui:VisualElement name="ghost-empty" class="map-dim">
+            <ui:VisualElement class="map-card">
+                <ui:Label name="ghost-empty-title" class="map-card-title" />
+                <ui:Label name="ghost-empty-body" class="map-card-body" />
+                <ui:VisualElement class="map-card-buttons">
+                    <ui:Button name="ghost-empty-back" text="뒤로" class="btn btn-ghost" />
+                    <ui:Button name="ghost-empty-enter" class="btn btn-primary" />
+                </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
 

@@ -49,6 +49,19 @@ namespace Scrun.App
             return (ahead, behind);
         }
 
+        // 바퀴로 접지 않은 진짜 거리 차(delta, 앞 +)를 아는 러너를 앞·뒤 가장 가까운 자리에 넣음. 고스트(계획 0050)는 같은 출발선이라
+        // 반 바퀴 넘게 앞서도 앞(배너와 같은 방향·크기)
+        public static (Neighbor? ahead, Neighbor? behind) WithExact((Neighbor? ahead, Neighbor? behind) n, string name, float delta)
+        {
+            var (ahead, behind) = n;
+            if (delta >= 0f)
+            {
+                if (ahead == null || delta < ahead.Value.GapM) ahead = new Neighbor(name, delta);
+            }
+            else if (behind == null || -delta < behind.Value.GapM) behind = new Neighbor(name, -delta);
+            return (ahead, behind);
+        }
+
         // 간격 글자: "12m 앞", "1.2km 뒤"
         public static string GapText(float gapM, bool ahead)
         {

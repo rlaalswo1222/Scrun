@@ -101,9 +101,10 @@ namespace Scrun
                 if (template == null && !t.crowd) template = t.gameObject;
                 t.gameObject.SetActive(false);
             }
-            // 섬의 고스트는 이 기기에 남은 섬 단독 기록을 씬이 열리자마자 재생하는 시험용(달리기 시작·서버 기록과 상관없음).
-            // 진짜 고스트(서버의 내 지난 기록, 지환)가 들어오면 그쪽이 다시 켠다
+            // 섬의 고스트는 이 기기에 남은 섬 단독 기록을 씬이 열리자마자 재생하는 시험용(달리기 시작·서버 기록과 상관없음) → 끄고,
+            // 그 몸(반투명 Runner_Ghost 재질)을 앱 고스트(서버의 내 지난 기록, 계획 0050)가 RunLink.Ghost로 다시 씀
             foreach (var t in ghosts) t.gameObject.SetActive(false);
+            if (ghosts.Count > 0) ghostTag = ghosts[0];
             // 녹화기도 끈다: 켜 두면 앱에서 1분 넘게 달린 기록이 섬 단독용 고스트 파일에 저장돼 다음 섬 Play에서 재생됨
             var recorder = player.runner.GetComponent<GhostRecorder>();
             if (recorder != null) recorder.enabled = false;
@@ -143,6 +144,11 @@ namespace Scrun
                 if (sp.z <= 0f || sp.z > LabelMaxM) continue;
                 RunLink.Heads[kv.Key] = new Vector2(sp.x, sp.y);
             }
+            if (ghostTag != null && ghostTag.gameObject.activeInHierarchy)
+            {
+                var sp = cam.WorldToScreenPoint(ghostTag.runner.transform.position + Vector3.up * HeadHeightM);
+                if (sp.z > 0f && sp.z <= LabelMaxM) RunLink.Heads[RunLink.GhostKey] = new Vector2(sp.x, sp.y);
+            }
         }
 
         void Update()
@@ -153,6 +159,36 @@ namespace Scrun
             if (!MapLaunch.Applied.IsCompleted) return;
             RunLink.ReportPlayer(me.Distance, me.SpeedKmh, lap);
             SyncRemotes(me.Distance, lap);
+            SyncGhost();
+        }
+
+        RunnerTag ghostTag;   // 섬의 고스트 몸(꺼 둠)
+        FixedSpeed ghostSpeed; // 앱 고스트용으로 바꿨으면 그 속도 칸
+
+        // 앱 고스트(계획 0050): 자리·걸음은 앱이 정함(내 달린 시간에 맞춘 지난 기록). 없으면 숨김
+        void SyncGhost()
+        {
+            var pose = RunLink.Ghost?.Invoke();
+            if (ghostTag == null) return;
+            var go = ghostTag.gameObject;
+            if (pose == null)
+            {
+                if (go.activeSelf) go.SetActive(false);
+                return;
+            }
+            if (ghostSpeed == null)
+            {
+                // 섬 단독 재생기(이 기기 기록을 읽어 스스로 옮김)를 떼고 받은 자리로만 움직이게. 꺼져 있을 때 바꿔 첫 프레임부터
+                foreach (var own in go.GetComponents<GhostSpeed>()) DestroyImmediate(own);
+                ghostSpeed = go.AddComponent<FixedSpeed>();
+                ghostTag.runner.SetSpeedSource(ghostSpeed);
+                ghostTag.runner.Driven = true;
+                ghostTag.displayName = GhostText.Name;
+                foreach (var r in go.GetComponentsInChildren<Renderer>(true)) r.enabled = true;
+            }
+            if (!go.activeSelf) go.SetActive(true);
+            ghostSpeed.kmh = pose.Value.SpeedKmh;
+            ghostTag.runner.Teleport(pose.Value.IslandDistanceM);
         }
 
         void SyncRemotes(float myDistance, float lap)
