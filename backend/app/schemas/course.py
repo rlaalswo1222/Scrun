@@ -41,6 +41,6 @@ class NearFriend(CamelModel):
 class MapEntry(CamelModel):
     map_instance_id: str
     course_id: str
-    entry_position_m: float = Field(description="입장 위치(코스 시작점부터 m). 그 맵에 달리는 사람이 있으면 한 명의 20–40m 뒤, 없으면 랜덤")
+    entry_position_m: float = Field(description="입장 위치(코스 시작점부터 m, [0, 코스 길이)). 일반 입장은 그 맵에 달리는 사람이 있으면 한 명의 20–40m 뒤, 없으면 랜덤. 같이 달리기는 친구 뒤 nearFriend.behindM")
     realtime: Optional[RealtimeAccess] = Field(None, description="실시간 방 접속 정보. 진짜 서버는 늘 줌(스텁 예시에도 있음)")
     near_friend: Optional[NearFriend] = Field(None, description="같이 달리기(POST /friends/{userId}/run-together)로 들어왔을 때만. 일반 입장은 null")
