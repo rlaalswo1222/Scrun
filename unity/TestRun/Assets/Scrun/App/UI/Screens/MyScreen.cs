@@ -73,28 +73,9 @@ namespace Scrun.App
                 await Task.WhenAll(meTask, progressTask, calTask);
                 (gotMe, gotProgress, gotCal) = (meTask.Result, progressTask.Result, calTask.Result);
             };
-            bool ok = false;
-            try
-            {
-                if (me == null) ok = await Feedback.Run(work, Load);
-                else
-                {
-                    await work();
-                    ok = true;
-                }
-            }
-            catch (ApiException e)
-            {
-                if (e.Failure == ApiFailure.NotLoggedIn) Feedback.Handle(e); // 조용히 다시 받기: 그 밖의 실패는 지난 값 그대로
-            }
-            catch (Exception e)
-            {
-                UnityEngine.Debug.LogException(e);
-            }
-            finally
-            {
-                loading = false; // 무슨 일이 있어도 다음에 보일 때 다시 받게
-            }
+            // 처음만 덮개, 다시 보일 때는 조용히(실패하면 지난 값 그대로)
+            bool ok = await Feedback.Load(me != null, work, Load);
+            loading = false;
             if (!ok || Root.panel == null) return;
             me = gotMe;
             progress = gotProgress;

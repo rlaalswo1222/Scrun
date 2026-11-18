@@ -43,7 +43,8 @@ namespace Scrun.App
             if (loading) return;
             loading = true;
             List<Course> got = null;
-            bool ok = await Feedback.Run(async () => got = await Api.Courses.ListAsync(), Load);
+            // 처음만 덮개, 다시 보일 때(달리는 사람 수 새로)는 지금 목록을 둔 채 조용히
+            bool ok = await Feedback.Load(courses != null, async () => got = await Api.Courses.ListAsync(), Load);
             loading = false;
             if (Root.panel == null) return; // 기다리는 사이 화면을 떠남
             loadFailed.SetVisible(!ok && courses == null);

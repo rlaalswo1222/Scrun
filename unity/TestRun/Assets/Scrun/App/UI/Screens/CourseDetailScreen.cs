@@ -66,7 +66,8 @@ namespace Scrun.App
             if (loading) return;
             loading = true;
             CourseDetail got = null;
-            bool ok = await Feedback.Run(async () => got = await Api.Courses.GetAsync(courseId), Load, OnLoadFailure);
+            // 처음만 덮개, 인증·맵에서 돌아오면 지금 상세를 둔 채 조용히(그새 없어진 코스면 그대로 알림)
+            bool ok = await Feedback.Load(course != null, async () => got = await Api.Courses.GetAsync(courseId), Load, OnLoadFailure);
             loading = false;
             // 바로 입장은 첫 불러오기 한 번만: 실패했거나 그 사이 다른 화면이 덮였으면 그냥 상세(나중에 다시 불러올 때 몰래 맵으로 가지 않게)
             bool autoEnter = enterOnLoad && ok && got != null && Nav.Current == this;

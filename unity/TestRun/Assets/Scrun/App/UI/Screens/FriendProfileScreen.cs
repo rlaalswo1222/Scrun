@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine.UIElements;
@@ -64,14 +65,16 @@ namespace Scrun.App
             loading = true;
             FriendProfile p = null;
             RunningFriend r = null;
-            bool ok = await Feedback.Run(async () =>
+            Func<Task> work = async () =>
             {
                 var pt = Api.Friends.ProfileAsync(userId);
                 var rt = Api.Friends.RunningAsync();
                 await Task.WhenAll(pt, rt);
                 p = pt.Result;
                 r = rt.Result?.FirstOrDefault(f => f.UserId == userId);
-            }, Load, OnLoadFailure);
+            };
+            // 처음만 덮개, 다시 보일 때는 조용히(그새 친구가 아니게 됐으면 그대로 알림)
+            bool ok = await Feedback.Load(profile != null, work, Load, OnLoadFailure);
             loading = false;
             if (Root.panel == null) return;
             if (gone)
@@ -118,6 +121,7 @@ namespace Scrun.App
 
         void ShowGone()
         {
+            sheet?.Close(); // 조용히 다시 받는 동안 연 삭제·같이 달리기 시트는 이제 소용없음
             FriendDirectory.Remove(userId);
             content.SetVisible(false);
             more.SetEnabled(false);

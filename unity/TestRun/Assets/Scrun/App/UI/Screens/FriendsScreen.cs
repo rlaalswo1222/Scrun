@@ -22,6 +22,7 @@ namespace Scrun.App
         List<RunningFriend> running = new List<RunningFriend>();
         string feedCursor;
         bool loading, loadingMore, polling;
+        int loadSeq; // 끌어서 새로고침이 조용히 받는 중인 것을 이어받으면 늦게 온 옛 응답을 버림
 
         protected override string Uxml => "UI/Friends";
 
@@ -64,13 +65,14 @@ namespace Scrun.App
 
         async void Load(bool fromPull = false)
         {
-            if (loading) return;
+            if (loading && !fromPull) return; // 끌어서 새로고침은 조용히 받는 중이어도 새로 받음(손으로 당겼는데 아무 표시 없이 무시되지 않게)
             loading = true;
+            int seq = ++loadSeq;
             if (fromPull) pull.Busy(true);
             List<Friend> gotFriends = null;
             List<RunningFriend> gotRunning = null;
             FeedPage gotFeed = null;
-            bool ok = await Feedback.Run(async () =>
+            Func<Task> work = async () =>
             {
                 var f = Api.Friends.ListAsync();
                 var r = Api.Friends.RunningAsync();
@@ -79,7 +81,13 @@ namespace Scrun.App
                 gotFriends = f.Result;
                 gotRunning = r.Result;
                 gotFeed = p.Result;
-            }, () => Load());
+            };
+            // 처음(아직 보여 줄 게 없음)만 덮개, 탭에 다시 들어오면 지금 목록을 둔 채 조용히.
+            // 끌어서 새로고침은 위 표시만 두고 실패는 안내하되, 그새 다른 화면으로 갔으면 그 화면 위에 띄우지 않음
+            bool ok = fromPull && friends != null
+                ? await Feedback.Run(work, () => Load(fromPull: true), e => e.Failure != ApiFailure.NotLoggedIn && Nav.Current != this, overlay: false)
+                : await Feedback.Load(friends != null, work, () => Load());
+            if (seq != loadSeq) return; // 더 새로 받는 중
             loading = false;
             pull.Busy(false);
             if (Root.panel == null) return; // 기다리는 사이 화면을 떠남
