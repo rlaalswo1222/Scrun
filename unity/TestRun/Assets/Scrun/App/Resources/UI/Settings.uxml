@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- H-10 설정(계획 0049, Figma 610:2647): 알림·공개·연결·데이터 줄은 SettingsScreen이 코드로, 아래 로그아웃·계정 삭제 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/My.uss" />
+    <ui:VisualElement class="onb fr my">
+        <ui:VisualElement class="nav-bar">
+            <ui:VisualElement class="nav-side">
+                <ui:Button name="back" class="nav-back" />
+            </ui:VisualElement>
+            <ui:Label text="설정" class="nav-title" />
+            <ui:VisualElement class="nav-side nav-side--right" />
+        </ui:VisualElement>
+        <ui:ScrollView name="scroll" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+            <ui:VisualElement name="content" />
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

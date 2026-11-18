@@ -1,0 +1,284 @@
+/* 마이 탭(H-01·H-04·H-09·H-10·H-11, 계획 0049) 모양. Figma "SCRUN" > 스크런 와이어 프레임 H 섹션(11/18 글자만 읽음) 기준,
+   크기·간격은 친구 탭(Friends.uss)과 같은 단위로 맞추고 상준이 다듬음. 큰 제목·시트·머리는 Friends.uss(.fr …)를 같이 씀 */
+
+.my .unity-label {
+    margin: 0;
+    padding: 0;
+}
+
+/* ---- H-01 프로필 카드: 머리 64 + 닉네임·Lv·인증 마크 + 다음 레벨까지 ---- */
+.my-profile {
+    flex-direction: row;
+    align-items: center;
+    margin: var(--space-4) 0 0 0;
+    padding: 16px;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+    -unity-text-align: upper-left;
+}
+
+.my-profile:hover,
+.my-profile:active {
+    border-color: var(--color-line);
+    background-color: var(--color-surface);
+}
+
+.my-profile-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-left: 14px;
+}
+
+.my .my-name {
+    font-size: var(--font-size-sub);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.my-badges {
+    flex-direction: row;
+    margin-top: 6px;
+}
+
+.my .my-chip {
+    margin-right: 6px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    background-color: var(--color-primary-soft);
+    font-size: var(--font-size-caption);
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.my .my-next {
+    margin-top: 6px;
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+}
+
+/* ---- H-01 누적 거리·인증·레벨 세 칸 ---- */
+.my-stats {
+    flex-direction: row;
+    margin-top: var(--space-3);
+    padding: 14px 0;
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+}
+
+.my-stat {
+    flex-grow: 1;
+    flex-basis: 0;
+    align-items: center;
+}
+
+.my .my-stat-value {
+    font-size: var(--font-size-sub);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.my .my-stat-label {
+    margin-top: 2px;
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+}
+
+/* ---- 메뉴·설정 줄: 제목 + 설명, 오른쪽 값 또는 스위치 ---- */
+.my-group {
+    margin-top: var(--space-3);
+    border-width: 1px;
+    border-color: var(--color-line);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+    overflow: hidden;
+}
+
+.my-row {
+    flex-direction: row;
+    align-items: center;
+    min-height: 60px;
+    margin: 0;
+    padding: 10px 16px;
+    border-width: 0 0 1px 0;
+    border-color: var(--color-line);
+    border-radius: 0;
+    background-color: rgba(0, 0, 0, 0);
+    -unity-text-align: upper-left;
+}
+
+.my-row:hover,
+.my-row:active {
+    background-color: var(--color-primary-tint);
+}
+
+.my-row--last {
+    border-bottom-width: 0;
+}
+
+.my-row-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.my .my-row-title {
+    font-size: var(--font-size-body);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.my .my-row-sub {
+    margin-top: 2px;
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+    white-space: normal;
+}
+
+.my .my-row-value {
+    flex-shrink: 1;
+    max-width: 55%;
+    white-space: normal;
+    -unity-text-align: middle-right;
+    margin-left: 10px;
+    font-size: var(--font-size-body-sm);
+    color: var(--color-muted);
+}
+
+.my .my-row-chevron {
+    margin-left: 6px;
+    font-size: var(--font-size-body);
+    color: var(--color-muted);
+}
+
+.my .my-section {
+    margin-top: var(--space-5);
+    margin-left: 4px;
+    font-size: var(--font-size-body-sm);
+    color: var(--color-muted);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+/* 스위치(켜짐 = 파랑, 동그라미 오른쪽). 준비 중이면 흐리게 */
+.my-switch {
+    width: 44px;
+    height: 26px;
+    margin-left: 10px;
+    padding: 3px;
+    border-radius: 13px;
+    background-color: var(--color-line);
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+.my-switch--on {
+    background-color: var(--color-primary);
+    justify-content: flex-end;
+}
+
+.my-switch--locked {
+    opacity: 0.45;
+}
+
+.my-knob {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    background-color: var(--color-surface);
+}
+
+/* ---- H-04 레벨 표 ---- */
+.my-hero {
+    align-items: center;
+    margin-top: var(--space-4);
+    padding: 20px 16px;
+    border-radius: 20px;
+    background-color: var(--color-primary-soft);
+}
+
+.my .my-hero-level {
+    font-size: var(--font-size-title);
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.my .my-hero-name {
+    margin-top: 4px;
+    font-size: var(--font-size-sub);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.my .my-hero-lead {
+    margin-top: 6px;
+    font-size: var(--font-size-body-sm);
+    color: var(--color-body);
+}
+
+.my-row--current {
+    background-color: var(--color-primary-tint);
+}
+
+.my-row--locked .my-row-title {
+    color: var(--color-muted);
+}
+
+/* H-11 재보정 안내 상자 */
+.my-notice {
+    margin-top: var(--space-4);
+    padding: 14px 16px;
+    border-radius: 16px;
+    background-color: var(--color-primary-tint);
+}
+
+.my .my-notice-title {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-text);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.my .my-notice-body {
+    margin-top: 4px;
+    font-size: var(--font-size-caption);
+    color: var(--color-body);
+    white-space: normal;
+}
+
+.my-link {
+    align-self: flex-start;
+    margin: 8px 0 0 0;
+    padding: 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.my-link:hover,
+.my-link:active {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/* H-10 아래 로그아웃 · 계정 삭제 */
+.my-foot {
+    flex-direction: row;
+    justify-content: center;
+    margin: var(--space-5) 0 var(--space-4) 0;
+}
+
+.my-foot-btn {
+    margin: 0 10px;
+    padding: 6px 4px;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-muted);
+}
+
+.my-foot-btn:hover,
+.my-foot-btn:active {
+    background-color: rgba(0, 0, 0, 0);
+}

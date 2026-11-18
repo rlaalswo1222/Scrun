@@ -138,7 +138,7 @@ namespace Scrun.App
             AppTab.Home => new HomeScreen(),
             AppTab.Records => new PlaceholderScreen("기록", "달린 기록 목록이 들어갈 자리"),
             AppTab.Friends => new FriendsScreen(), // G-01(계획 0044)
-            _ => new PlaceholderScreen("마이", "인증 마크·연속 일수·설정이 들어갈 자리", devTools: true),
+            _ => new MyScreen(), // H-01(계획 0049)
         };
 
         void OnScreenChanged(AppScreen screen)

@@ -70,6 +70,33 @@ namespace Scrun.App
         public string UserId { get; set; }
         public string Nickname { get; set; }
         public string FriendCode { get; set; } // 친구 코드 8글자(G-05, 계획 0044)
+        public int HeightCm { get; set; }     // 마이 프로필 편집(H-11, 계획 0049)
+        public int WeightKg { get; set; }
+    }
+
+    // PATCH /v1/users/me: 보낸 칸만 바뀜(null 칸은 안 보냄, ApiClient가 null을 빼고 보냄)
+    public sealed class MeUpdate
+    {
+        public string Nickname { get; set; }
+        public int? HeightCm { get; set; }
+        public int? WeightKg { get; set; }
+    }
+
+    // GET·PATCH /v1/users/me/settings(H-10, 계획 0049)
+    public sealed class UserSettings
+    {
+        public bool FeedShareDefault { get; set; } // 새 기록을 친구 피드에 공유할지 기본값
+    }
+
+    // GET /v1/users/me/progress(H-01·H-04, 계획 0048·0049). 레벨·러닝복은 서버가 경험치(인증 완료 누적 거리)로 계산
+    public sealed class Progress
+    {
+        public int Level { get; set; }
+        public int XpM { get; set; }
+        public int? NextLevelAtM { get; set; }        // 마지막 레벨이면 null
+        public int? NextLevelRemainingM { get; set; }
+        public int OutfitStage { get; set; }
+        public int VerifiedCount { get; set; }
     }
 
     public sealed class NicknameCheck
