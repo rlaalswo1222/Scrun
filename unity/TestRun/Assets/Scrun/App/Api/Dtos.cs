@@ -186,12 +186,23 @@ namespace Scrun.App
         public int TargetCount { get; set; }
     }
 
+    // GET·PUT /v1/users/me/weekly-goal(계획 0054). 주기 = 설정한 날부터 7일(사용자 시간대), 1회 = 인증 완료 + 5분 이상
     public sealed class WeeklyGoal
     {
-        public int? TargetCount { get; set; }     // 목표를 안 정했으면 null
+        public int? TargetCount { get; set; }     // 목표를 안 정했으면 null. 이번 주기 목표
+        public DateTime? CycleStart { get; set; } // 이번 주기 첫날(날짜만)
+        public DateTime? CycleEnd { get; set; }   // 마지막 날(포함)
         public int DoneCount { get; set; }
-        public int? DaysLeft { get; set; }
+        public int? DaysLeft { get; set; }        // 오늘 포함
         public int? NextTargetCount { get; set; } // 변경 예약값(다음 주기부터)
+        public List<WeeklyGoalCycle> History { get; set; } = new List<WeeklyGoalCycle>(); // 이번 주기 앞 최대 7개, 옛 것부터
+    }
+
+    public sealed class WeeklyGoalCycle
+    {
+        public DateTime CycleStart { get; set; }
+        public int TargetCount { get; set; }
+        public int DoneCount { get; set; }
     }
 
     // 러닝 목표(POST /v1/runs의 goal). RunGoal.ToRequest()로 만든다

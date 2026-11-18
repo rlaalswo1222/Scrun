@@ -1,4 +1,4 @@
-from datetime import timezone
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request, Response
@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .. import stub_data as d
+from ..core import growth
 from ..core import nickname as nick
 from ..core import timezones as tz
 from ..core.auth import Principal, stub_user
@@ -166,26 +167,39 @@ def _calibration_out(row: CalibrationRow) -> dict:
             "createdAt": row.created_at.astimezone(timezone.utc)}  # API 시각은 UTC(Z), DB 연결 시간대와 상관없이
 
 
+def get_now() -> datetime:
+    """주간 목표의 "오늘". 예시 만들기(scripts/real_examples.py)는 예시 날짜로 바꿔 끼운다(courses.get_rng와 같은 방식)."""
+    return datetime.now(timezone.utc)
+
+
 @router.get(
     "/users/me/weekly-goal",
     summary="주간 목표 진행",
-    description="화면 B-01, B-02, B-03, H-07 · BL-30. 주기는 설정일부터 7일, 1회 = 인증 완료 + 5분 이상(서버 집계). 목표를 안 정했으면 targetCount=null",
+    description="화면 B-01, B-02, B-03, H-07 · BL-30. 주기는 설정일부터 7일(사용자 시간대), 1회 = 인증 완료 + 5분 이상(서버 집계). "
+    "목표를 안 정했으면 targetCount=null. cycleEnd는 주기 마지막 날(포함), daysLeft는 오늘 포함, "
+    "nextTargetCount는 다음 주기부터 적용될 바꾼 목표(없으면 null), history는 이번 주기 앞 최대 7주기(옛 것부터). "
+    "설정한 뒤 시간대를 서쪽으로 바꿔 오늘이 설정일 전이면 첫 주기로 봄(daysLeft는 최대 7)",
     response_model=Envelope[WeeklyGoal],
     responses=error_responses(*AUTH),
 )
-def get_weekly_goal(request: Request, _: Principal = Depends(stub_user)):
-    return ok(request, d.WEEKLY_GOAL)
+def get_weekly_goal(request: Request, user: User = Depends(current_user), db: Session = Depends(get_db),
+                    now: datetime = Depends(get_now)):
+    return ok(request, growth.weekly_payload(db, user, now))
 
 
 @router.put(
     "/users/me/weekly-goal",
     summary="주간 목표 설정·변경",
-    description="화면 A-16, H-08 · BL-30. 1에서 7회. 처음 설정은 바로, 변경은 현재 주기가 끝난 뒤 적용(nextTargetCount)",
+    description="화면 A-16, H-08 · BL-30. 1에서 7회. 처음 설정은 오늘부터 바로, 변경은 현재 주기가 끝난 뒤 적용(nextTargetCount). "
+    "같은 주기에 여러 번 바꾸면 마지막 값, 이번 주기 목표로 되돌리면 예약 없음. 응답은 GET과 같음",
     response_model=Envelope[WeeklyGoal],
     responses=error_responses(*AUTH, E.VALIDATION_ERROR),
 )
-def put_weekly_goal(body: WeeklyGoalUpdate, request: Request, _: Principal = Depends(stub_user)):
-    return ok(request, {**d.WEEKLY_GOAL, "nextTargetCount": body.target_count})
+def put_weekly_goal(body: WeeklyGoalUpdate, request: Request, user: User = Depends(current_user),
+                    db: Session = Depends(get_db), now: datetime = Depends(get_now)):
+    growth.set_weekly_target(db, user, body.target_count, now)
+    db.commit()
+    return ok(request, growth.weekly_payload(db, user, now))
 
 
 @router.get("/home", summary="홈 한 번에", description="화면 B-01에서 B-04 · BL-31. 각 항목 API도 따로 있음",

@@ -2,7 +2,7 @@
 
 흐름: 카카오 로그인(처음) → 약관 → 닉네임 확인 → 가입 → 내 정보·설정 조회·수정 → 코스 목록·상세 → 보정 저장·조회 → 맵 입장 →
 러닝 시작 → 시계열 올리기 → 끝나지 않은 러닝 → 종료 → 계기판 사진 인증(가짜 OCR) → (다른 러닝 시작 → 버리기) →
-(또 다른 러닝 → 종료 → 인증 없이 마무리) → 기록 목록·상세·공유 끄기·고스트 →
+(또 다른 러닝 → 종료 → 인증 없이 마무리) → 기록 목록·상세·공유 끄기·고스트 → 성장 → 주간 목표 정하기·바꾸기 →
 친구(두 번째 사람이 내 코드로 추가 → 목록·달리는 친구·프로필·피드 → 삭제) → 토큰 재발급 → 로그아웃.
 토큰 값·저장 시각·사용자 ID·친구 코드는 매번 바뀌므로 고정 값으로 바꿔 넣는다. 입장 위치(랜덤)는 시드를 고정한 난수로 바꿔 끼워 매번 같게.
 """
@@ -24,6 +24,7 @@ from app.db.testing import TestDatabase
 from app.main import app
 from app.realtime.hub import hub
 from app.routers.courses import get_rng
+from app.routers.users import get_now
 from app.stub_requests import REAL
 
 FIXED_META = {"timestamp": "2026-11-06T00:00:00Z", "requestId": "req_example"}
@@ -183,6 +184,16 @@ def collect() -> dict:
         rec("GET", "/v1/users/me/progress", None, "Bearer {accessToken}", c.get("/v1/users/me/progress", headers=auth))
         body = {"impactId": None}
         rec("PUT", "/v1/users/me/impact", body, "Bearer {accessToken}", c.put("/v1/users/me/impact", json=body, headers=auth))
+        # 주간 목표(계획 0054): 11/6에 주 3회로 정함(사진 인증한 첫 러닝이 1회) → 4회로 바꿈(다음 주기부터). "오늘"을 예시 날로 고정
+        app.dependency_overrides[get_now] = lambda: datetime(2026, 11, 6, 12, 0, tzinfo=timezone.utc)
+        try:
+            c.put("/v1/users/me/weekly-goal", json={"targetCount": 3}, headers=auth)
+            body = {"targetCount": 4}
+            rec("PUT", "/v1/users/me/weekly-goal", body, "Bearer {accessToken}",
+                c.put("/v1/users/me/weekly-goal", json=body, headers=auth))
+            rec("GET", "/v1/users/me/weekly-goal", None, "Bearer {accessToken}", c.get("/v1/users/me/weekly-goal", headers=auth))
+        finally:
+            app.dependency_overrides.pop(get_now, None)
         # 친구(계획 0044): 두 번째 사람이 내 코드로 추가 → 둘 다 친구. 피드에 보이게 세 번째 러닝은 공유를 켬(설정에서 기본값을 껐음)
         c.patch(f"/v1/runs/{third_id}", json={"shared": True}, headers=auth)
         my = c.get("/v1/users/me", headers=auth).json()["success"]["data"]

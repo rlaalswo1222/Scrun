@@ -139,16 +139,93 @@ def cycle_at(db: Session, user: User, day: date) -> Optional[Cycle]:
     return Cycle(start=start, target=row.target_count if row is not None else goal.target_count)
 
 
+def _midnight(day: date, user: User) -> datetime:
+    return datetime.combine(day, datetime.min.time(), _tz(user)).astimezone(timezone.utc)
+
+
+def _weekly_runs(user: User, first: date, end: date) -> list:
+    """주간 목표 1회로 인정되는 기록 조건(counts_for_week와 같은 규칙, 끝난 시각이 사용자 시간대 first 0시부터 end 0시 전).
+    결과 화면 E-11(counted_in)과 GET(weekly_payload)이 같이 써서 규칙이 한 곳(#95 리뷰)."""
+    return [Run.user_id == user.id, Run.status == VERIFIED, Run.official_duration_s >= POLICY.weekly_min_s,
+            Run.ended_at >= _midnight(first, user), Run.ended_at < _midnight(end, user)]
+
+
 def counted_in(db: Session, user: User, cycle: Cycle, until: Optional[datetime] = None) -> int:
     """그 주기에 주간 목표 1회로 인정된 기록 수(끝난 날짜가 사용자 시간대로 주기 안). until이 있으면 그때까지 끝난 것만."""
-    tz = _tz(user)
-    lo = datetime.combine(cycle.start, datetime.min.time(), tz).astimezone(timezone.utc)
-    hi = datetime.combine(cycle.end, datetime.min.time(), tz).astimezone(timezone.utc)
-    cond = [Run.user_id == user.id, Run.status == VERIFIED, Run.official_duration_s >= POLICY.weekly_min_s,
-            Run.ended_at >= lo, Run.ended_at < hi]
+    cond = _weekly_runs(user, cycle.start, cycle.end)
     if until is not None:
         cond.append(Run.ended_at <= until)
     return db.scalar(select(func.count()).select_from(Run).where(and_(*cond))) or 0
+
+
+HISTORY_CYCLES = 7   # 이번 주기 앞의 이력 수(H-07 "최근 8주" = 7 + 이번, 계획 0054)
+EMPTY_WEEKLY = {"targetCount": None, "cycleStart": None, "cycleEnd": None, "doneCount": 0, "daysLeft": None,
+                "nextTargetCount": None, "history": []}
+
+
+def _today(user: User, now: Optional[datetime]) -> date:
+    return local_date(now or datetime.now(timezone.utc), user)
+
+
+def _current_cycle(db: Session, user: User, goal: WeeklyGoal, today: date) -> Cycle:
+    # 오늘이 설정일보다 앞(설정한 뒤 시간대를 서쪽으로 바꿈)이면 첫 주기로 본다
+    return cycle_at(db, user, max(today, goal.anchor_date))
+
+
+def weekly_payload(db: Session, user: User, now: Optional[datetime] = None) -> dict:
+    """GET /users/me/weekly-goal(계획 0054). 목표가 없으면 빈 응답. 끝 날짜는 주기 마지막 날(포함), 남은 날은 오늘 포함(최대 7).
+    변경 예약 = 이번 주기 목표와 지금 목표가 다를 때 지금 목표(다음 주기부터). 이력은 이번 주기 앞 최대 7개, 옛 것부터.
+    주기 목표 줄과 인정 기록을 범위로 한 번씩만 읽어(주기마다 묻지 않음) 사용자 시간대 날짜로 나눈다. 셈 규칙은 counted_in과 같음"""
+    goal = db.get(WeeklyGoal, user.id)
+    if goal is None:
+        return {**EMPTY_WEEKLY, "history": []}   # 목록은 응답마다 새로(모듈 값을 같이 쓰지 않게)
+    today = _today(user, now)
+    cur = _current_cycle(db, user, goal, today)
+    step = timedelta(days=POLICY.cycle_days)
+    first = max(goal.anchor_date, cur.start - step * HISTORY_CYCLES)
+    starts = [first + step * i for i in range((cur.start - first).days // POLICY.cycle_days + 1)]
+    targets = dict(db.execute(select(WeeklyGoalCycle.cycle_start, WeeklyGoalCycle.target_count).where(
+        WeeklyGoalCycle.user_id == user.id, WeeklyGoalCycle.cycle_start >= first,
+        WeeklyGoalCycle.cycle_start <= cur.start)).all())
+    tz = _tz(user)
+    done = {s: 0 for s in starts}
+    for (ended,) in db.execute(select(Run.ended_at).where(*_weekly_runs(user, first, cur.end))).all():
+        day = ended.astimezone(tz).date()
+        start = first + step * ((day - first).days // POLICY.cycle_days)
+        if start in done:
+            done[start] += 1
+    history = [{"cycleStart": s, "targetCount": targets.get(s, goal.target_count), "doneCount": done[s]}
+               for s in starts[:-1]]
+    return {"targetCount": cur.target, "cycleStart": cur.start, "cycleEnd": cur.end - timedelta(days=1),
+            "doneCount": done[cur.start], "daysLeft": min(POLICY.cycle_days, (cur.end - today).days),
+            "nextTargetCount": goal.target_count if goal.target_count != cur.target else None, "history": history}
+
+
+def set_weekly_target(db: Session, user: User, target: int, now: Optional[datetime] = None) -> None:
+    """PUT /users/me/weekly-goal(계획 0054, BL-30 ⑥). 처음이면 오늘을 설정일로 바로 적용.
+    이미 있으면 다음 주기부터: 설정일부터 이번 주기까지 주기 줄이 없는 주기에 지금 목표를 적어 굳히고(지난 이력·결과 화면 횟수가
+    바뀌지 않게) 목표를 새 값으로. 같은 주기에 여러 번 바꾸면 마지막 값, 이번 주기 목표로 되돌리면 예약이 없어짐. 커밋은 부르는 쪽"""
+    today = _today(user, now)
+    created = db.execute(insert(WeeklyGoal).values(user_id=user.id, target_count=target, anchor_date=today)
+                         .on_conflict_do_nothing(index_elements=[WeeklyGoal.user_id])
+                         .returning(WeeklyGoal.user_id)).scalar_one_or_none()
+    if created is not None:
+        return
+    goal = db.get(WeeklyGoal, user.id, with_for_update=True, populate_existing=True)   # 동시에 바꾸기: 사용자마다 줄 세움
+    cur = _current_cycle(db, user, goal, today)
+    # 이미 굳힌 마지막 주기 다음부터만(오래 쓴 사용자도 바꿀 때마다 설정일부터 다시 넣지 않게, #95 리뷰)
+    last = db.scalar(select(func.max(WeeklyGoalCycle.cycle_start)).where(WeeklyGoalCycle.user_id == user.id))
+    rows, s = [], goal.anchor_date if last is None else last + timedelta(days=POLICY.cycle_days)
+    while s <= cur.start:
+        rows.append({"user_id": user.id, "cycle_start": s, "target_count": goal.target_count})
+        s += timedelta(days=POLICY.cycle_days)
+    if rows:
+        db.execute(insert(WeeklyGoalCycle).values(rows).on_conflict_do_nothing(
+            index_elements=[WeeklyGoalCycle.user_id, WeeklyGoalCycle.cycle_start]))
+    db.flush()
+    this_cycle = db.get(WeeklyGoalCycle, (user.id, cur.start), populate_existing=True).target_count
+    goal.target_count = target
+    goal.next_target_count = target if target != this_cycle else None
 
 
 # ---------- 응답 ----------

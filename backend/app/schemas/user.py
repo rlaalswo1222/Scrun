@@ -96,7 +96,7 @@ class WeeklyGoal(CamelModel):
     done_count: int = Field(description="이번 주기 인정 횟수(인증 완료 + 5분 이상)")
     days_left: Optional[int] = None
     next_target_count: Optional[int] = Field(default=None, description="변경 예약값. 다음 주기부터 적용")
-    history: list[WeeklyGoalCycle] = Field(description="최근 8주기")
+    history: list[WeeklyGoalCycle] = Field(description="이번 주기 앞의 주기 최대 7개(설정일 전은 없음), 옛 것부터. 이번 주기와 합쳐 H-07 최근 8주")
 
 
 class WeeklyGoalUpdate(CamelModel):

@@ -1,15 +1,16 @@
-# jhwn223 인수인계 (2026-11-18, S5 기록 탭 · S4 계기판 인증·OCR 머지됨)
+# jhwn223 인수인계 (2026-11-18, S4 계기판 인증·OCR·읽은 값 확인)
 
 jhwn223(git `jhwn223`, 지환)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`와 이 파일을 먼저 읽는다. 팀원은 읽기만.
 
-## 지금 (11/18 밤): 계획 0053 기록 탭 F-01–F-04(BL-20, `feat/run-records`, 커밋·PR 전)
-- S4 #61·#68·#73 모두 머지·오라클 배포(민재). 11/18 민재 결정: 결과 화면 BL-19·인증 후 반영 BL-32는 민재 #90, **나머지 기록 목록·상세 BL-20, 주간 목표 BL-30, 홈 BL-31은 내 몫**. 새 계획 번호: 0052는 민재(세션 복구)
-- 0053: `RecordsScreen`(달 칩·이번 주 요약·카드·F-02), 상세는 민재 `RunResultScreen.Detail`, "이 기록으로 고스트 달리기" → 코스 목록 → 러닝 설정에 고스트 켜 둠, E-12 "기록 보기" → 기록 탭. 서버 변경 없음(`Api.Runs.ListAsync`에 `month`만). EditMode 467 통과. 자세히 계획 0053 "진행"
-- 로컬 DB: develop head(`d5b8e3f2a6c1`)로 올림, F-02 확인용 빈 계정 `k_7781`(빈기록) 만듦. 8001번 서버는 S4 워크트리 `backend`
-- 다음: 0053 에디터 확인 → `/code-review` → PR → BL-30 주간 목표(서버 `weekly-goal` 스텁 → DB, `growth.cycle_at`, 기록 탭 셋째 칸 "N/목표", 마이 탭 메뉴 연결) → BL-31 홈 → 실사진 OCR 채점. 에셋 구매 판단 11/20 17시 전
-- 민재에게: 노션 API 명세 "시작 전" 6줄(users/me·settings·calibration GET·PATCH·PUT)은 #47·#30으로 진짜 → 완료로
+## 지금 (11/18 밤): 계획 0054 주간 목표(BL-30, `feat/weekly-goal`) · 계획 0053 기록 탭 PR #94(리뷰 대기)
+- S4 #61·#68·#73 모두 머지·오라클 배포(민재). 11/18 민재 결정: 기록 BL-20·주간 목표 BL-30·홈 BL-31은 내 몫. 새 계획 번호: 0052는 민재(세션 복구), 0053 기록 탭(#94), 0054 주간 목표
+- 0054: 서버 `GET·PUT /users/me/weekly-goal` DB 연결(`growth.weekly_payload`·`set_weekly_target`, 처음은 오늘부터, 변경은 다음 주기부터·지난 주기 목표 굳힘, 시각은 `routers/users.get_now`), 앱 H-07 `WeeklyGoalStatusScreen`·H-08 시트(마이 탭 "주간 목표"). pytest 405·EditMode 467, 에디터 캡처 확인. 자세히 계획 0054 "진행"
+- **#94가 머지되면 이 브랜치에 develop을 합치고 기록 탭 셋째 칸을 "인증 N/목표"로**(계획 0054 정할 것 3). 이 파일도 #94 쪽 "지금" 절과 합칠 것
+- 로컬 개발 DB(develop head `d5b8e3f2a6c1`): `k_7781`(빈기록)에 주간 목표(설정일 9/30)·주기별 인증 기록을 넣음(H-07 막대 확인용, F-02 빈 기록 확인엔 이제 못 씀), `k_777`의 빈 보정 줄(`cal_test_777`)을 예시 값으로 채움
+- 다음: 0054 PR → 홈 BL-31(B-01–B-04, `GET /home`을 진짜로: 주간 목표는 `growth.weekly_payload`, 레벨은 `growth.progress_payload`, 목표 미설정 B-02는 H-08 시트) → 실사진 OCR. 에셋 구매 판단 11/20 17시 전
+- 민재에게: 노션 API 명세 "시작 전" 6줄(users/me·settings·calibration)은 #47·#30으로 진짜 → 완료로
 
-## 그전 (11/18 낮): 계획 0045 읽은 값 확인(#73 머지) · OCR #61·#68(머지)
+## 지금 (11/18): 계획 0045 읽은 값 확인 구현(`feat/verify-confirm`, 커밋·PR 전) · OCR #61(리뷰 반영)·#68(서버 엔진, 계획 0046)
 - 0045: 서버 `CONFIRM_REQUIRED`·`POST …/verification/confirm`·`verifications.confirmed`(마이그레이션 c4a9d2e7f1b3, 로컬 DB에 올림), 확인 2분 유예(내가 정함, 형에게 알릴 것), 앱 E-05b 연결. pytest 344, EditMode 407, 에디터 캡처 확인. 자세한 건 계획 0038 끝 절
 - #61: 형 리뷰 9건 반영(애매하면 못 읽음 등, 합성 78.0%), develop은 merge로 합침(강제 푸시가 막혀서)
 - #68: #61 위, 계획 번호 0043 → 0046(0043은 형 기록 API와 겹침). 형이 디스크 보고 배포 → 오라클 시간·메모리

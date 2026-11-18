@@ -131,12 +131,15 @@ namespace Scrun.App
                 grab.AddToClassList("fr-grabber");
                 Body.Add(grab);
                 Body.RegisterCallback<ClickEvent>(e => e.StopPropagation());
-                Dim.RegisterCallback<ClickEvent>(_ => Close());
+                Dim.RegisterCallback<ClickEvent>(_ => { if (!Locked) Close(); });
                 Dim.Add(Body);
                 screenRoot.Add(Dim);
             }
 
             public bool Open => Dim.parent != null;
+
+            // 저장 중처럼 바깥을 눌러 닫히면 안 될 때(닫힌 뒤 실패하면 "다시 시도"가 갈 곳이 없음, #95 리뷰). Close()는 그대로 닫음
+            public bool Locked { get; set; }
 
             public void Close() => Dim.RemoveFromHierarchy();
 

@@ -2,6 +2,7 @@
   "request": {
     "method": "GET",
     "path": "/v1/users/me/weekly-goal",
+    "auth": "Bearer {accessToken}",
     "body": null
   },
   "status": 200,
@@ -10,18 +11,12 @@
     "success": {
       "data": {
         "targetCount": 3,
-        "cycleStart": "2026-11-03",
-        "cycleEnd": "2026-11-09",
-        "doneCount": 2,
-        "daysLeft": 3,
-        "nextTargetCount": null,
-        "history": [
-          {
-            "cycleStart": "2026-10-27",
-            "targetCount": 3,
-            "doneCount": 3
-          }
-        ]
+        "cycleStart": "2026-11-06",
+        "cycleEnd": "2026-11-12",
+        "doneCount": 1,
+        "daysLeft": 7,
+        "nextTargetCount": 4,
+        "history": []
       }
     },
     "error": null,

@@ -5,10 +5,10 @@ namespace Scrun.App
 {
     // A-16 주간 목표 설정(Figma 599:351, 계획 0031). 새로 가입한 사람만 이어폰(A-09·A-10) 다음에 본다(Onboarding.Finish).
     // 주 1–7회(기본 3, 확정 11/06), "목표 정하기" = PUT /v1/users/me/weekly-goal → 온보딩 완료(A-17). "건너뛰기"도 A-17(홈에서 다시 유도).
-    // 서버 저장(DB)은 지환 BL-30 — 그 전엔 서버가 예시 응답만 준다.
+    // 서버가 오늘을 설정일로 저장(계획 0054). 나중에 바꾸기는 마이 탭 주간 목표(H-07·H-08), 다음 주기부터 적용.
     public sealed class WeeklyGoalScreen : AppScreen
     {
-        public const int Min = 1, Max = 7, Default = 3;
+        public const int Min = WeeklyGoalText.Min, Max = WeeklyGoalText.Max, Default = WeeklyGoalText.Default; // H-08 시트와 같은 범위
 
         readonly List<Button> chips = new List<Button>();
         Label count;

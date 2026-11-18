@@ -809,7 +809,7 @@
           "User"
         ],
         "summary": "주간 목표 진행",
-        "description": "화면 B-01, B-02, B-03, H-07 · BL-30. 주기는 설정일부터 7일, 1회 = 인증 완료 + 5분 이상(서버 집계). 목표를 안 정했으면 targetCount=null",
+        "description": "화면 B-01, B-02, B-03, H-07 · BL-30. 주기는 설정일부터 7일(사용자 시간대), 1회 = 인증 완료 + 5분 이상(서버 집계). 목표를 안 정했으면 targetCount=null. cycleEnd는 주기 마지막 날(포함), daysLeft는 오늘 포함, nextTargetCount는 다음 주기부터 적용될 바꾼 목표(없으면 null), history는 이번 주기 앞 최대 7주기(옛 것부터). 설정한 뒤 시간대를 서쪽으로 바꿔 오늘이 설정일 전이면 첫 주기로 봄(daysLeft는 최대 7)",
         "operationId": "get_weekly_goal_v1_users_me_weekly_goal_get",
         "responses": {
           "200": {
@@ -854,7 +854,7 @@
           "User"
         ],
         "summary": "주간 목표 설정·변경",
-        "description": "화면 A-16, H-08 · BL-30. 1에서 7회. 처음 설정은 바로, 변경은 현재 주기가 끝난 뒤 적용(nextTargetCount)",
+        "description": "화면 A-16, H-08 · BL-30. 1에서 7회. 처음 설정은 오늘부터 바로, 변경은 현재 주기가 끝난 뒤 적용(nextTargetCount). 같은 주기에 여러 번 바꾸면 마지막 값, 이번 주기 목표로 되돌리면 예약 없음. 응답은 GET과 같음",
         "operationId": "put_weekly_goal_v1_users_me_weekly_goal_put",
         "requestBody": {
           "content": {
@@ -6546,7 +6546,7 @@
             },
             "type": "array",
             "title": "History",
-            "description": "최근 8주기"
+            "description": "이번 주기 앞의 주기 최대 7개(설정일 전은 없음), 옛 것부터. 이번 주기와 합쳐 H-07 최근 8주"
           }
         },
         "type": "object",
