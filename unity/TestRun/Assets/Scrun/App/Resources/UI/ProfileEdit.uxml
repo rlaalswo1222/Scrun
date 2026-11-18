@@ -1,0 +1,47 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- H-11 프로필 편집(계획 0049, Figma 700:2476): 닉네임·키·몸무게 → PATCH /users/me. 닉네임 확인은 가입(A-06)과 같은 규칙 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/My.uss" />
+    <ui:VisualElement class="onb my">
+        <ui:VisualElement class="nav-bar">
+            <ui:VisualElement class="nav-side">
+                <ui:Button name="back" class="nav-back" />
+            </ui:VisualElement>
+            <ui:Label text="프로필 편집" class="nav-title" />
+            <ui:VisualElement class="nav-side nav-side--right" />
+        </ui:VisualElement>
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+            <ui:VisualElement class="head">
+                <ui:Label text="프로필 편집" class="onb-title" />
+                <ui:Label name="lead" class="onb-lead" />
+            </ui:VisualElement>
+
+            <ui:Label text="닉네임 (친구에게 보여요)" class="fig-label" />
+            <ui:VisualElement name="nickname-box" class="fig-field">
+                <ui:TextField name="nickname" />
+            </ui:VisualElement>
+            <ui:Label name="nickname-status" class="fig-status" />
+
+            <ui:Label text="키" class="fig-label" />
+            <ui:VisualElement name="height-box" class="fig-field">
+                <ui:TextField name="height" />
+                <ui:Label text="cm" class="fig-unit" />
+            </ui:VisualElement>
+
+            <ui:Label text="몸무게" class="fig-label" />
+            <ui:VisualElement name="weight-box" class="fig-field">
+                <ui:TextField name="weight" />
+                <ui:Label text="kg" class="fig-unit" />
+            </ui:VisualElement>
+            <ui:Label name="body-status" class="fig-status error-text" />
+
+            <ui:VisualElement class="my-notice">
+                <ui:Label name="recal-title" class="my-notice-title" />
+                <ui:Label name="recal-body" class="my-notice-body" />
+                <ui:Button name="recalibrate" text="재보정하기 →" class="my-link" />
+            </ui:VisualElement>
+        </ui:ScrollView>
+        <ui:Button name="submit" text="저장" class="btn btn-primary btn-fig" />
+    </ui:VisualElement>
+</ui:UXML>

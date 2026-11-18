@@ -9,16 +9,11 @@ namespace Scrun.App
     // 셋 다 맞게 채워야 "다음"이 켜진다(Figma 노트).
     public sealed class ProfileScreen : AppScreen
     {
-        const long CheckDelayMs = 400;   // 입력을 멈추고 이만큼 지나면 확인
-        const long RetryDelayMs = 3000;  // 연결 문제로 확인을 못 했으면 이만큼 뒤 다시(입력이 그대로일 때)
-
         readonly List<string> agreedIds;
-        TextField nickname, height, weight;
-        Label nicknameStatus, bodyStatus;
+        TextField height, weight;
+        Label bodyStatus;
         Button submit;
-        IVisualElementScheduledItem pendingCheck;
-        int checkSeq;          // 늦게 온 옛 확인 결과를 버리려고
-        NicknameCheck checkedNick; // 지금 입력에 대한 확인 결과(입력이 바뀌면 null)
+        NicknameField nick; // 확인·정규화·다시 확인은 H-11 프로필 편집과 같이 씀(계획 0049)
         bool submitting;
         bool showBodyError; // 키·몸무게 칸을 벗어난 뒤에만 오류를 보여 줌(적는 중 "1"에 빨간 글씨가 뜨지 않게)
 
@@ -31,30 +26,21 @@ namespace Scrun.App
         {
             Q<Button>("back").clicked += () => { if (Nav.Current == this) Nav.Pop(); };
             Q<Label>("lead").text = ProfileForm.Lead;
-            nickname = Q<TextField>("nickname");
-            nicknameStatus = Q<Label>("nickname-status");
-            SetNickStatus("", false);
+            var nickname = Q<TextField>("nickname");
             height = Q<TextField>("height");
             weight = Q<TextField>("weight");
             bodyStatus = Q<Label>("body-status");
             submit = Q<Button>("submit");
+            nick = new NicknameField(Root, nickname, Q<Label>("nickname-status"), Refresh);
 
-            nickname.maxLength = ProfileForm.NicknameInputMax;
             height.keyboardType = TouchScreenKeyboardType.NumberPad;
             weight.keyboardType = TouchScreenKeyboardType.NumberPad;
             height.maxLength = weight.maxLength = 3;
             nickname.textEdition.placeholder = "예: 러너123";
             height.textEdition.placeholder = "예: 170";
             weight.textEdition.placeholder = "예: 65";
-            // 고른 칸은 테두리 2 파랑(Figma 닉네임 칸)
-            foreach (var (field, box) in new[] { (nickname, "nickname-box"), (height, "height-box"), (weight, "weight-box") })
-            {
-                var b = Q<VisualElement>(box);
-                field.RegisterCallback<FocusInEvent>(_ => b.AddToClassList("fig-field--focus"));
-                field.RegisterCallback<FocusOutEvent>(_ => b.RemoveFromClassList("fig-field--focus"));
-            }
+            ProfileForm.WireFocus(Root, (nickname, "nickname-box"), (height, "height-box"), (weight, "weight-box"));
 
-            nickname.RegisterValueChangedCallback(_ => OnNicknameChanged());
             height.RegisterValueChangedCallback(_ => Refresh());
             weight.RegisterValueChangedCallback(_ => Refresh());
             height.RegisterCallback<FocusOutEvent>(_ => { showBodyError = true; Refresh(); });
@@ -63,67 +49,20 @@ namespace Scrun.App
             Refresh();
         }
 
-        protected internal override void OnDestroy() => pendingCheck?.Pause();
-
-        void OnNicknameChanged()
-        {
-            checkedNick = null;
-            checkSeq++;
-            pendingCheck?.Pause();
-            var text = nickname.value?.Trim() ?? "";
-            if (text.Length == 0) SetNickStatus("", false);
-            else
-            {
-                SetNickStatus("확인 중", false);
-                pendingCheck = Root.schedule.Execute(CheckNickname).StartingIn(CheckDelayMs);
-            }
-            Refresh();
-        }
-
-        async void CheckNickname()
-        {
-            int seq = checkSeq;
-            var text = nickname.value;
-            NicknameCheck result;
-            try
-            {
-                result = await Api.Users.CheckNicknameAsync(text);
-            }
-            catch (ApiException e)
-            {
-                if (seq != checkSeq || Root.panel == null) return;
-                if (e.Failure == ApiFailure.NotLoggedIn) { Feedback.Handle(e); return; } // 가입용 토큰 만료(30분)
-                bool transient = e.Failure != ApiFailure.Server || e.Status >= 500 || e.Status == 429;
-                SetNickStatus(transient ? "확인하지 못했어요. 잠시 뒤 다시 확인해요" : e.Message, true);
-                // 연결·서버 문제면 입력이 그대로인 동안 다시 확인(사용자가 글자를 지웠다 다시 쓰지 않아도 되게)
-                if (transient) pendingCheck = Root.schedule.Execute(CheckNickname).StartingIn(RetryDelayMs);
-                return;
-            }
-            if (seq != checkSeq || Root.panel == null) return; // 그사이 입력이 바뀜
-            checkedNick = result;
-            SetNickStatus(ProfileForm.DescribeNickname(text, result), !result.Available);
-            Refresh();
-        }
-
-        void SetNickStatus(string text, bool isError)
-        {
-            nicknameStatus.text = text;
-            nicknameStatus.style.display = string.IsNullOrEmpty(text) ? DisplayStyle.None : DisplayStyle.Flex;
-            nicknameStatus.EnableInClassList("error-text", isError);
-        }
+        protected internal override void OnDestroy() => nick.Stop();
 
         void Refresh()
         {
-            var bodyProblem = ProfileForm.CheckBody(height.value, weight.value, out _, out _);
-            if (bodyProblem == null) showBodyError = false; // 고치면 바로 지움
-            bodyStatus.text = showBodyError ? bodyProblem ?? "" : "";
+            var bodyProblem = ProfileForm.BodyMessage(height.value, weight.value, showBodyError);
+            if (ProfileForm.BodyFilled(height.value, weight.value)) showBodyError = false; // 고치면 바로 지움
+            bodyStatus.text = bodyProblem ?? "";
             bodyStatus.style.display = string.IsNullOrEmpty(bodyStatus.text) ? DisplayStyle.None : DisplayStyle.Flex;
-            submit.SetEnabled(!submitting && checkedNick != null && checkedNick.Available && bodyProblem == null
-                              && !string.IsNullOrEmpty(height.value) && !string.IsNullOrEmpty(weight.value));
+            submit.SetEnabled(!submitting && nick.Checked != null && nick.Checked.Available && ProfileForm.BodyFilled(height.value, weight.value));
         }
 
         async void Submit()
         {
+            var checkedNick = nick.Checked;
             if (submitting || checkedNick == null || !checkedNick.Available) return;
             if (ProfileForm.CheckBody(height.value, weight.value, out int h, out int w) != null) return;
             submitting = true;
@@ -132,10 +71,9 @@ namespace Scrun.App
             // 로딩 덮개가 가입이 끝날 때까지 화면(뒤로 버튼 포함)을 막는다
             bool ok = await Feedback.Run(() => Api.Auth.SignupAsync(req), retry: Submit, onError: e =>
             {
-                if (e.Code != "NICKNAME_DUPLICATED" && e.Code != "NICKNAME_NOT_ALLOWED") return false;
+                if (!NicknameField.IsRejection(e)) return false;
                 // 확인과 가입 사이에 다른 사람이 가져감 등 → 안내창 대신 닉네임 칸 아래에
-                checkedNick = null;
-                if (Root.panel != null) SetNickStatus(e.Message, true);
+                if (Root.panel != null) nick.Reject(e.Message);
                 return true;
             });
             submitting = false;
@@ -167,6 +105,29 @@ namespace Scrun.App
                 (!int.TryParse(weightText, out weightKg) || weightKg < WeightMin || weightKg > WeightMax))
                 return $"몸무게는 {WeightMin}–{WeightMax} kg으로 적어 주세요";
             return null;
+        }
+
+        // 키·몸무게가 둘 다 맞게 적혔는지(가입·저장 버튼)
+        public static bool BodyFilled(string heightText, string weightText) =>
+            !string.IsNullOrEmpty(heightText) && !string.IsNullOrEmpty(weightText) && CheckBody(heightText, weightText, out _, out _) == null;
+
+        // 칸 아래 문구. 칸을 벗어난 뒤에만(show): 범위 밖이면 그 이유, 비어 있으면 적어 달라고(버튼이 왜 꺼졌는지 알게, 계획 0049 리뷰)
+        public static string BodyMessage(string heightText, string weightText, bool show)
+        {
+            if (!show) return null;
+            return CheckBody(heightText, weightText, out _, out _)
+                   ?? (string.IsNullOrEmpty(heightText) || string.IsNullOrEmpty(weightText) ? "키와 몸무게를 모두 적어 주세요" : null);
+        }
+
+        // 고른 칸은 테두리 2 파랑(Figma 닉네임 칸)
+        public static void WireFocus(VisualElement root, params (TextField field, string box)[] pairs)
+        {
+            foreach (var (field, box) in pairs)
+            {
+                var b = root.Q<VisualElement>(box);
+                field.RegisterCallback<FocusInEvent>(_ => b.AddToClassList("fig-field--focus"));
+                field.RegisterCallback<FocusOutEvent>(_ => b.RemoveFromClassList("fig-field--focus"));
+            }
         }
 
         // 닉네임 확인 결과 → 안내 문구(임시). 서버가 바꾼 값이면 무엇으로 저장되는지 알려 줌

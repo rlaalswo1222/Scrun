@@ -1,0 +1,39 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- H-01 마이 메인(계획 0049, Figma 610:1894). 프로필 카드(누르면 H-11)·누적 거리·인증·레벨, 메뉴는 MyScreen이 코드로 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/My.uss" />
+    <ui:VisualElement class="fr fr-page my">
+        <ui:VisualElement class="fr-header">
+            <ui:Label text="마이" class="fr-title" />
+        </ui:VisualElement>
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="fr-scroll">
+            <ui:Button name="profile" class="my-profile">
+                <ui:VisualElement name="head" picking-mode="Ignore" />
+                <ui:VisualElement class="my-profile-text" picking-mode="Ignore">
+                    <ui:Label name="name" class="my-name" picking-mode="Ignore" />
+                    <ui:VisualElement class="my-badges" picking-mode="Ignore">
+                        <ui:Label name="level-chip" class="my-chip" picking-mode="Ignore" />
+                        <ui:Label name="marks-chip" class="my-chip" picking-mode="Ignore" />
+                    </ui:VisualElement>
+                    <ui:Label name="next" class="my-next" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:Label text="›" class="my-row-chevron" picking-mode="Ignore" />
+            </ui:Button>
+            <ui:VisualElement class="my-stats">
+                <ui:VisualElement class="my-stat">
+                    <ui:Label name="stat-distance" class="my-stat-value" />
+                    <ui:Label text="누적 거리" class="my-stat-label" />
+                </ui:VisualElement>
+                <ui:VisualElement class="my-stat">
+                    <ui:Label name="stat-verified" class="my-stat-value" />
+                    <ui:Label text="인증" class="my-stat-label" />
+                </ui:VisualElement>
+                <ui:VisualElement class="my-stat">
+                    <ui:Label name="stat-level" class="my-stat-value" />
+                    <ui:Label text="레벨" class="my-stat-label" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="menu" class="my-group" />
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

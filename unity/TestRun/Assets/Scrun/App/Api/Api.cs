@@ -123,6 +123,21 @@ namespace Scrun.App
         public async Task<Me> MeAsync() =>
             await c.GetAsync<Me>("/v1/users/me", AuthMode.User) ?? throw new ApiException(ApiFailure.BadResponse, "내 정보 응답이 비었습니다.");
 
+        // 내 정보 고치기(H-11, 계획 0049). 실패: 400 VALIDATION_ERROR·NICKNAME_NOT_ALLOWED / 409 NICKNAME_DUPLICATED
+        public async Task<Me> UpdateMeAsync(MeUpdate body) =>
+            await c.SendAsync<Me>("PATCH", "/v1/users/me", body, AuthMode.User) ?? throw new ApiException(ApiFailure.BadResponse, "내 정보 응답이 비었습니다.");
+
+        public async Task<UserSettings> SettingsAsync() =>
+            await c.GetAsync<UserSettings>("/v1/users/me/settings", AuthMode.User) ?? throw new ApiException(ApiFailure.BadResponse, "설정 응답이 비었습니다.");
+
+        public async Task<UserSettings> UpdateSettingsAsync(bool feedShareDefault) =>
+            await c.SendAsync<UserSettings>("PATCH", "/v1/users/me/settings", new { feedShareDefault }, AuthMode.User)
+            ?? throw new ApiException(ApiFailure.BadResponse, "설정 응답이 비었습니다.");
+
+        // 레벨·인증 횟수(H-01·H-04, 계획 0048)
+        public async Task<Progress> ProgressAsync() =>
+            await c.GetAsync<Progress>("/v1/users/me/progress", AuthMode.User) ?? throw new ApiException(ApiFailure.BadResponse, "레벨 응답이 비었습니다.");
+
         // 내 보정(계획 0023). 없으면 null. 저장은 덮어쓰기(서버는 이력으로 쌓고 가장 최근 것이 지금 보정)
         public Task<CalibrationRecord> GetCalibrationAsync() =>
             c.GetAsync<CalibrationRecord>("/v1/users/me/calibration", AuthMode.User);
