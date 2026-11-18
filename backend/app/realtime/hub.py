@@ -154,6 +154,7 @@ class RunningNow:
     course_id: str
     run_m: Optional[float]  # 이번 달리기 거리. 옛 앱·첫 state 전이면 None
     kmh: float
+    d: float = 0.0  # 지금 위치(코스 시작점부터 m, 한 바퀴 안). 같이 달리기 입장 위치(계획 0047)
 
 
 def bot_id(index: int) -> str:
@@ -330,7 +331,7 @@ class Hub:
                 room = self._rooms.get(self._where[uid])
                 r = room.runners.get(uid) if room else None
                 if r is not None and r.placed and r.running:
-                    out[uid] = RunningNow(course_id=room.course_id, run_m=r.run, kmh=r.v)
+                    out[uid] = RunningNow(course_id=room.course_id, run_m=r.run, kmh=r.v, d=r.d)
         return out
 
     def reset(self) -> None:

@@ -1,8 +1,11 @@
 {
   "request": {
     "method": "POST",
-    "path": "/v1/friends/usr_f1/run-together",
-    "body": null
+    "path": "/v1/friends/01JC0Z8H3K6Q2W9EXAMPLE0000/run-together",
+    "auth": "Bearer {accessToken}",
+    "body": {
+      "courseId": "crs_lake_loop"
+    }
   },
   "status": 201,
   "response": {
@@ -11,17 +14,21 @@
       "data": {
         "mapInstanceId": "map_crs_lake_loop",
         "courseId": "crs_lake_loop",
-        "entryPositionM": 1795.0,
+        "entryPositionM": 1228.4,
         "realtime": {
-          "url": "wss://example.com/rt",
-          "token": "stub-rt-token"
+          "url": "ws://testserver/v1/realtime",
+          "token": "eyJhbGciOi...(realtime)"
+        },
+        "nearFriend": {
+          "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000",
+          "behindM": 11.6
         }
       }
     },
     "error": null,
     "meta": {
       "timestamp": "2026-11-06T00:00:00Z",
-      "path": "/v1/friends/usr_f1/run-together",
+      "path": "/v1/friends/01JC0Z8H3K6Q2W9EXAMPLE0000/run-together",
       "requestId": "req_example"
     }
   }

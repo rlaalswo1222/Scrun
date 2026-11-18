@@ -46,7 +46,7 @@ CALLS = [
     ("GET", "/v1/friends/running", None, 200),
     ("GET", "/v1/friends/usr_f1", None, 200),
     ("DELETE", "/v1/friends/usr_f1", None, 204),
-    ("POST", "/v1/friends/usr_f1/run-together", None, 201),
+    ("POST", "/v1/friends/usr_f1/run-together", {"courseId": "crs_lake_loop"}, 201),
     ("GET", "/v1/feed", None, 200),
     ("POST", "/v1/events", {"events": [{"name": "APP_OPEN", "occurredAt": "2026-11-06T09:00:00Z"}]}, 204),
 ]
@@ -83,6 +83,7 @@ REAL = {
     ("POST", "/v1/friends"),
     ("GET", "/v1/friends"),
     ("GET", "/v1/friends/running"),
+    ("POST", "/v1/friends/{userId}/run-together"),
     ("GET", "/v1/friends/{userId}"),
     ("DELETE", "/v1/friends/{userId}"),
     ("GET", "/v1/feed"),

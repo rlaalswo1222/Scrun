@@ -70,13 +70,6 @@ COURSES = [
     },
 ]
 
-MAP_ENTRY = {
-    "mapInstanceId": "map_crs_lake_loop",
-    "courseId": "crs_lake_loop",
-    "entryPositionM": 1240.0,
-    "realtime": {"url": "wss://example.com/rt", "token": "stub-rt-token"},
-}
-
 RUNS = [
     {
         "runId": "run_01HZX",
@@ -140,11 +133,6 @@ REWARDS = {
     "impactsUnlocked": [IMPACTS[1]],
     "weeklyGoal": {"counted": True, "doneCount": 2, "targetCount": 3},
 }
-
-FRIENDS = [
-    {"userId": "usr_f1", "nickname": "바닷바람", "level": 3, "verifiedCount": 6, "runningNow": True},
-    {"userId": "usr_f2", "nickname": "주말러너", "level": 1, "verifiedCount": 1, "runningNow": False},
-]
 
 RUNNING_FRIENDS = [
     {

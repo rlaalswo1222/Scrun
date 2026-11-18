@@ -1,11 +1,12 @@
 """친구(계획 0044, BL-27·28, S7 민재). 코드 추가·목록·달리는 친구·프로필·삭제·피드는 DB와 실시간 허브로.
-같이 달리기(run-together)는 BL-29(S8)라 아직 예시 응답: S7 앱은 친구가 달리는 코스로 일반 입장한다(정할 것 4).
+같이 달리기(run-together, BL-29 S8, 계획 0047)는 친구가 달리는 맵에 일반 입장과 같은 판정으로 들어가 친구 뒤에 선다.
 
 - 친구 맺기는 코드를 넣으면 요청·수락 없이 서로 바로(정할 것 2). friendships는 (작은 ID, 큰 ID) 한 줄
 - 친구가 아닌 사람의 ID로 부르면 USER_NOT_FOUND(남의 계정이 있는지 알려 주지 않음)
 - 친구에게 보이는 기록 = 친구가 공유(shared)한 끝난 기록(PENDING·VERIFIED·UNVERIFIED). 마감 지난 PENDING은 UNVERIFIED로 보임
 - 레벨은 BL-32(S8 지환) 전까지 null
 """
+import random
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -14,10 +15,8 @@ from sqlalchemy import and_, delete, func, or_, select, tuple_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from .. import stub_data as d
 from ..core import cursor as cursors
 from ..core.attempts import friend_code_failures
-from ..core.auth import Principal, stub_user
 from ..core.config import settings
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
@@ -29,7 +28,8 @@ from ..db.session import get_db
 from ..realtime.hub import RunningNow, hub
 from ..schemas.common import CursorPage
 from ..schemas.course import MapEntry
-from ..schemas.friend import FeedItem, Friend, FriendAddRequest, FriendProfile, RunningFriend
+from ..schemas.friend import FeedItem, Friend, FriendAddRequest, FriendProfile, RunningFriend, RunTogetherRequest
+from .courses import FRIEND_BEHIND_M, enter_course, get_rng
 
 router = APIRouter(prefix="/v1", tags=["Friend"])
 E = ErrorCode
@@ -208,19 +208,23 @@ def delete_friend(userId: str, user: User = Depends(current_user), db: Session =
     "/friends/{userId}/run-together",
     status_code=201,
     summary="같이 달리기",
-    description="화면 G-03, D-20 · BL-29(S8). 친구가 있는 맵 인스턴스로 입장, 친구 근처 위치(Q-22). 응답은 맵 입장과 같은 모양."
-    "\n\n**아직 예시 응답**(S8에 DB 연결). S7 앱은 GET /friends/running의 courseId로 일반 입장(POST /courses/{courseId}/entries)"
-    "\n\n스텁: 달리지 않는 친구(`usr_f2`) → FRIEND_NOT_RUNNING(앱은 일반 입장으로)",
+    description="화면 G-03, D-20, D-21 · BL-29, 계획 0047. 친구가 courseId에서 달리는 중이면 그 맵에 입장하고 친구 뒤 "
+    f"{FRIEND_BEHIND_M[0]:.0f}–{FRIEND_BEHIND_M[1]:.0f}m에 선다(entryPositionM, nearFriend). 응답은 맵 입장과 같은 모양이고 판정도 같다"
+    "(보정 없음 CALIBRATION_REQUIRED, 가득 참 COURSE_FULL, 다른 코스에 있던 자리는 옮겨짐). 친구가 아니면 USER_NOT_FOUND, "
+    "달리는 중이 아니거나 그 코스를 떠났으면 FRIEND_NOT_RUNNING(앱은 D-21 안내 뒤 그 코스로 일반 입장). "
+    "섬을 불러오고 3·2·1을 하는 동안 친구가 앞서가므로 앱은 달리기를 시작할 때 실시간 방의 친구 위치로 다시 맞춘다",
     response_model=Envelope[MapEntry],
-    responses=error_responses(*AUTH, E.USER_NOT_FOUND, E.FRIEND_NOT_RUNNING, E.COURSE_FULL, E.CALIBRATION_REQUIRED),
+    responses=error_responses(*AUTH, E.VALIDATION_ERROR, E.USER_NOT_FOUND, E.FRIEND_NOT_RUNNING, E.COURSE_FULL,
+                              E.CALIBRATION_REQUIRED),
 )
-def run_together(userId: str, request: Request, _: Principal = Depends(stub_user)):
-    friend = next((f for f in d.FRIENDS if f["userId"] == userId), None)
-    if friend is None:
-        raise ApiError(E.USER_NOT_FOUND)
-    if not friend["runningNow"]:
+def run_together(userId: str, body: RunTogetherRequest, request: Request, user: User = Depends(current_user),
+                 db: Session = Depends(get_db), rng: random.Random = Depends(get_rng)):
+    _require_friend(db, user, userId)
+    friend = hub.running_now([userId]).get(userId)
+    if friend is None or friend.course_id != body.course_id:
         raise ApiError(E.FRIEND_NOT_RUNNING)
-    return ok(request, {**d.MAP_ENTRY, "entryPositionM": 1795.0})
+    behind = round(rng.uniform(*FRIEND_BEHIND_M), 1)
+    return ok(request, enter_course(db, request, user, friend.course_id, rng, near_friend=(userId, friend.d, behind)))
 
 
 @router.get("/feed", summary="친구 러닝 피드",

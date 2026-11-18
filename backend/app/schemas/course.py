@@ -33,8 +33,14 @@ class RealtimeAccess(CamelModel):
     token: str = Field(description="이 맵에만 붙는 토큰(6시간). 만료되면 다시 입장")
 
 
+class NearFriend(CamelModel):
+    user_id: str = Field(description="같이 달리는 친구")
+    behind_m: float = Field(description="친구 뒤 이만큼에 선다(m). 앱은 3·2·1이 끝날 때 친구의 그때 위치로 다시 맞춤(계획 0047)")
+
+
 class MapEntry(CamelModel):
     map_instance_id: str
     course_id: str
     entry_position_m: float = Field(description="입장 위치(코스 시작점부터 m). 그 맵에 달리는 사람이 있으면 한 명의 20–40m 뒤, 없으면 랜덤")
     realtime: Optional[RealtimeAccess] = Field(None, description="실시간 방 접속 정보. 진짜 서버는 늘 줌(스텁 예시에도 있음)")
+    near_friend: Optional[NearFriend] = Field(None, description="같이 달리기(POST /friends/{userId}/run-together)로 들어왔을 때만. 일반 입장은 null")

@@ -55,3 +55,8 @@ class RunningFriend(CamelModel):
     course_name: str
     distance_m: int = Field(description="이번 러닝에서 지금까지 달린 거리(m). 옛 앱이면 0")
     pace_s_per_km: Optional[int] = Field(default=None, description="지금 속도의 1 km 페이스(초). 1 km/h 아래면 null")
+
+
+class RunTogetherRequest(CamelModel):
+    course_id: str = Field(min_length=1, max_length=64,
+                           description="G-03 시트에 보인 친구의 코스(GET /friends/running의 courseId). 친구가 그새 다른 코스로 옮겼으면 FRIEND_NOT_RUNNING")

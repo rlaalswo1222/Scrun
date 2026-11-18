@@ -16,7 +16,8 @@
         "realtime": {
           "url": "ws://testserver/v1/realtime",
           "token": "eyJhbGciOi...(realtime)"
-        }
+        },
+        "nearFriend": null
       }
     },
     "error": null,
