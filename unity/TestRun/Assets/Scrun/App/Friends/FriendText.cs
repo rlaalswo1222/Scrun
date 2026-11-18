@@ -100,9 +100,9 @@ namespace Scrun.App
         public static string KmShort(int meters) =>
             (Math.Floor(Math.Max(0, meters) / 100.0) / 10.0).ToString("0.0", CultureInfo.InvariantCulture) + "km";
 
-        // 3.51km(끝난 러닝, G-01 피드·G-09). 소수 두 자리, 버림
-        public static string Km(int meters) =>
-            (Math.Floor(Math.Max(0, meters) / 10.0) / 100.0).ToString("0.00", CultureInfo.InvariantCulture) + "km";
+        // 3.51km(끝난 러닝, G-01 피드·G-09·결과 E-12). 소수 두 자리, 버림. unit: false면 숫자만(결과 화면 큰 숫자)
+        public static string Km(int meters, bool unit = true) =>
+            (Math.Floor(Math.Max(0, meters) / 10.0) / 100.0).ToString("0.00", CultureInfo.InvariantCulture) + (unit ? "km" : "");
 
         // 33:02, 한 시간이 넘으면 1:05:09
         public static string Duration(int seconds)
@@ -112,9 +112,9 @@ namespace Scrun.App
             return h > 0 ? $"{h}:{m:00}:{s:00}" : $"{m:00}:{s:00}";
         }
 
-        // 9'25"/km. 모르면 null
-        public static string Pace(int? secPerKm) =>
-            secPerKm is int p && p > 0 ? $"{p / 60}'{p % 60:00}\"/km" : null;
+        // 9'25"/km. 모르면 null. unit: false면 9'25"(결과 화면 칸)
+        public static string Pace(int? secPerKm, bool unit = true) =>
+            secPerKm is int p && p > 0 ? $"{p / 60}'{p % 60:00}\"" + (unit ? "/km" : "") : null;
 
         // ---- 시각 ----
 

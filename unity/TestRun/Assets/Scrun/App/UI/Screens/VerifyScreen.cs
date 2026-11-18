@@ -9,12 +9,12 @@ namespace Scrun.App
 {
     // 계기판 인증(계획 0038, Figma E-02·E-04–E-10·I-06). D-22 "계기판 촬영하기"에서 끝낸 기록 ID로 연다.
     // 흐름 판단은 VerifyFlow, 이 화면은 그리기·카메라(Native.Camera, E-03은 Swift)·서버 호출만.
-    // 끝나면(인증 완료 "다음", 미인증으로 저장) onDone → 코스 상세가 이 화면을 내리고 다시 불러옴
+    // 끝나면(인증 완료 "다음", 미인증으로 저장) onDone(인증 완료인지) → 코스 상세가 결과 화면으로(E-11·E-12·E-14, 계획 0051)
     public sealed class VerifyScreen : AppScreen
     {
         readonly string runId;
         readonly RunStatsBody sensor;
-        readonly Action onDone;
+        readonly Action<bool> onDone;
         readonly VerifyFlow flow = new VerifyFlow();
 
         CameraShot shot;           // 지금 들고 있는 사진(보내거나 버리면 null)
@@ -28,7 +28,7 @@ namespace Scrun.App
         Image photo;               // 사진 미리보기. E-04 칸과 E-05b 칸 사이를 옮겨 다님(Add가 옮김)
         VisualElement confirmPhotoBox, readPhotoBox;
 
-        public VerifyScreen(string runId, RunStatsBody sensor, Action onDone)
+        public VerifyScreen(string runId, RunStatsBody sensor, Action<bool> onDone)
         {
             this.runId = runId;
             this.sensor = sensor;
@@ -296,7 +296,7 @@ namespace Scrun.App
             if (finished || Nav.Current != this) return;
             finished = true;
             DropPhoto();
-            onDone?.Invoke();
+            onDone?.Invoke(flow.Result?.Status == VerifyStatus.Verified);
         }
 
         // 결과 화면 버튼(위 = primary, 아래 = secondary). 단계마다 뜻이 다름(Figma)

@@ -87,6 +87,9 @@ namespace Scrun.App
         // 이 맵에서 끝낸 달리기의 서버 기록 ID(D-22 "계기판 촬영하기" → 상세 화면이 인증 화면에 넘김, 지환 E-02). 서버에 못 보냈으면 null
         public string FinishedRunId { get; private set; }
 
+        // D-22 "촬영 없이 마무리"를 서버에 알리는 중(결과 화면 E-14가 끝난 뒤 불러와 "인증 대기"로 보이지 않게, 계획 0051)
+        public Task SkipTask { get; private set; }
+
         // 러닝 설정에서 고른 것(안내를 끝내기 전에는 null). S3 센서 준비·카운트다운이 쓴다
         public RunSetup Setup { get; private set; }
 
@@ -658,16 +661,17 @@ namespace Scrun.App
 
         // D-22 "촬영 없이 마무리 (미인증)": 미인증으로 저장, 나중에 인증 못 함(Figma D-22 노트, 11/06 확정). 인증 API는 지환 BL-18.
         // 기록을 폰에 남겼으면(오프라인) 그 기록에 "미인증으로 마무리"를 적어 두고 나중에 같이 보냄
-        async void SkipVerify()
+        void SkipVerify()
         {
             string runId = FinishedRunId;
             string clientRunId = session?.ClientRunId;
+            if (runId != null) SkipTask = SkipAsync(runId); // 나가기 전에: 코스 상세가 나가는 순간 이 작업을 결과 화면에 넘김
+            else if (clientRunId != null) PendingRunStore.Default.MarkSkipVerification(clientRunId);
             onExit?.Invoke(MapExit.Finished, null);
-            if (runId == null)
-            {
-                if (clientRunId != null) PendingRunStore.Default.MarkSkipVerification(clientRunId);
-                return;
-            }
+        }
+
+        static async Task SkipAsync(string runId)
+        {
             try { await Api.Runs.SkipVerificationAsync(runId); }
             catch (ApiException e) { Debug.LogWarning("[기록] 미인증 마무리를 서버에 못 알림(인증 대기로 남음): " + e); }
         }

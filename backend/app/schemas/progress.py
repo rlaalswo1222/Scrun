@@ -21,6 +21,8 @@ class Progress(CamelModel):
     verified_count: int = Field(description="인증 완료 횟수(인증 마크)")
     impacts: list[Impact]
     selected_impact_id: Optional[str] = None
+    level_starts_m: list[int] = Field(default_factory=list,
+                                      description="레벨별 시작 경험치(m, Lv.1 = 0부터). 결과 화면 경험치 바·레벨 표가 서버 임계값을 그대로 쓰게")
 
 
 class ImpactSelect(CamelModel):

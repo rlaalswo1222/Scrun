@@ -124,7 +124,8 @@ def test_impact_select_only_unlocked(db_client, me):
 def test_new_user_starts_at_level_one(db_client):
     p = progress(db_client, signup(db_client, "k_5"))
     assert p == {"level": 1, "xpM": 0, "nextLevelAtM": 3000, "nextLevelRemainingM": 3000, "outfitStage": 1,
-                 "verifiedCount": 0, "impacts": [], "selectedImpactId": None}
+                 "verifiedCount": 0, "impacts": [], "selectedImpactId": None,
+                 "levelStartsM": [0, 3000, 10000, 25000, 50000, 100000]}, "레벨 경계는 서버 설정(결과 화면 경험치 바)"
 
 
 def test_verified_reward_is_never_redone(db_client, me, db):

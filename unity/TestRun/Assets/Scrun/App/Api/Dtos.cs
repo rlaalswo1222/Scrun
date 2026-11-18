@@ -97,6 +97,38 @@ namespace Scrun.App
         public int? NextLevelRemainingM { get; set; }
         public int OutfitStage { get; set; }
         public int VerifiedCount { get; set; }
+        public List<Impact> Impacts { get; set; } = new List<Impact>();
+        public List<int> LevelStartsM { get; set; } = new List<int>(); // 레벨별 시작 경험치(m, 서버 설정). 결과 화면 경험치 바
+    }
+
+    // 임팩트(인증 횟수로 자동 해금, BL-33·35)
+    public sealed class Impact
+    {
+        public string ImpactId { get; set; }
+        public string Name { get; set; }
+        public int UnlockAtCount { get; set; }
+        public bool Unlocked { get; set; }
+    }
+
+    // GET /v1/runs/{runId}/rewards(계획 0048·0051, E-11): 이번 운동이 레벨·주간 목표에 반영된 결과. 미인증이면 변화 없음
+    public sealed class RunRewards
+    {
+        public int XpBeforeM { get; set; }
+        public int XpAfterM { get; set; }
+        public int LevelBefore { get; set; }
+        public int LevelAfter { get; set; }
+        public bool LeveledUp { get; set; }
+        public int OutfitStageAfter { get; set; }
+        public int? NextLevelRemainingM { get; set; }
+        public List<Impact> ImpactsUnlocked { get; set; } = new List<Impact>();
+        public WeeklyGoalReflect WeeklyGoal { get; set; }
+    }
+
+    public sealed class WeeklyGoalReflect
+    {
+        public bool Counted { get; set; }      // 이번 운동이 1회로 인정됐는지(인증 완료 + 5분 이상)
+        public int DoneCount { get; set; }
+        public int? TargetCount { get; set; }  // 주간 목표가 없으면 null
     }
 
     public sealed class NicknameCheck
@@ -230,7 +262,7 @@ namespace Scrun.App
     }
 
     // 기록 요약(종료 응답 등). verification: PENDING(인증 대기)·VERIFIED·UNVERIFIED
-    public sealed class RunSummary
+    public class RunSummary
     {
         public string RunId { get; set; }
         public DateTime StartedAt { get; set; }
@@ -241,6 +273,25 @@ namespace Scrun.App
         public int? AvgPaceSPerKm { get; set; }
         public string Verification { get; set; }
         public bool Shared { get; set; }
+    }
+
+    // GET /v1/runs/{runId}(계획 0043·0051, E-12·F-03): 요약 + 목표·공식 값 출처·센서·계기판 값·그래프·함께 달린 러너
+    public sealed class RunDetail : RunSummary
+    {
+        public RunGoalBody Goal { get; set; }
+        public string OfficialSource { get; set; } // CONSOLE(계기판) / SENSOR
+        public RunStatsBody Sensor { get; set; }
+        public RunStatsBody Console { get; set; }  // 계기판에서 읽은 값(읽었을 때만)
+        public SpeedSeriesBody SpeedSeries { get; set; }
+        public List<Companion> Companions { get; set; } = new List<Companion>();
+        public string GhostRunId { get; set; }
+    }
+
+    // 함께 달린 러너. kind: RUNNER·FRIEND·BOT
+    public sealed class Companion
+    {
+        public string Nickname { get; set; }
+        public string Kind { get; set; }
     }
 
     // ---- 계기판 인증(계획 0038, BL-16–18) ----

@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -168,9 +169,16 @@ namespace Scrun.App
             RunningFriend friendBack = map?.Friend; // 보정 안내를 거쳐 다시 들어가면 같이 달리기를 이어 감
             RunStatsBody sensor = map?.Session?.FinishBody?.Sensor; // 인증 결과 표의 센서 값(서버 답에도 있음, 에디터 가짜 OCR용)
             string clientRunId = map?.Session?.ClientRunId;
+            RunSession finishedSession = map?.Session;
+            Task skip = map?.SkipTask;
             map = null;
             if (exit == MapExit.NeedsCalibration) together = friendBack;
-            skipReload = exit != MapExit.Finished; // 끝내고 나오면 인원이 바뀌어 다시 불러옴. 인증 안내 때는 안내창이 로딩에 덮이지 않게
+            // 끝낸 기록을 서버에 못 올렸지만 이 폰에 남겼으면 간이 결과(정할 것 1 가). 저장도 못 했으면(Failed) 결과 없이 D-22 안내로 끝
+            bool keptLocal = finishedRunId == null && clientRunId != null && PendingRunStore.Default.Has(clientRunId);
+            bool toResult = exit == MapExit.Finished && (finishedRunId != null || keptLocal);
+            // 결과·인증 화면을 바로 올리면 다시 불러오지 않음(아무도 안 봄, 결과를 닫으면 홈으로). 결과 없이 끝내고 나오면 인원이 바뀌어 다시 불러옴.
+            // 인증 안내 때는 안내창이 로딩에 덮이지 않게
+            skipReload = exit != MapExit.Finished || toResult;
             try { Nav.Pop(); }
             finally { skipReload = false; }
             if (Nav.Current != this) return;
@@ -190,11 +198,17 @@ namespace Scrun.App
                     fromCalibration = true;
                     Nav.Push(new CalibrationIntroScreen(onDone: AfterCalibration));
                     break;
+                case MapExit.Finished:
+                    // D-22 "촬영 없이 마무리" → E-14 결과(계획 0051). 서버에 못 올렸으면 이 폰의 값으로(정할 것 1 가)
+                    if (finishedRunId != null) Nav.Push(new RunResultScreen(finishedRunId, skip));
+                    else if (keptLocal && finishedSession?.FinishBody != null) Nav.Push(RunResultScreen.Offline(finishedSession));
+                    break;
                 case MapExit.VerifyConsole:
                     // D-22 "계기판 촬영하기" → E-02(계획 0038). 끝나면 이 화면을 다시 불러옴(인원이 바뀜)
                     if (finishedRunId != null)
                     {
-                        Nav.Push(new VerifyScreen(finishedRunId, sensor, AfterVerify));
+                        string id = finishedRunId;
+                        Nav.Push(new VerifyScreen(id, sensor, verified => AfterVerify(id, verified)));
                         break;
                     }
                     // 기록을 서버에 아직 못 올림(이 폰에 남음, 나중에 올림) → 인증은 종료 직후에만이라 미인증으로 표시
@@ -204,10 +218,15 @@ namespace Scrun.App
             }
         }
 
-        // 인증 화면이 끝남(인증 완료 "다음"·미인증 저장) → 인증 화면을 내리고 다시 불러옴(Pop하면 OnShow가 불러옴)
-        void AfterVerify()
+        // 인증 화면이 끝남 → 인증 화면을 결과로 바꿈(계획 0051): 인증 완료면 E-11 반영 → E-12, 미인증 저장이면 E-14.
+        // 이 화면(코스 상세)은 결과 아래에 남고, 결과를 닫으면 홈으로
+        void AfterVerify(string runId, bool verified)
         {
-            if (Nav.Current is VerifyScreen) Nav.Pop();
+            if (!(Nav.Current is VerifyScreen)) return;
+            skipReload = true; // 이 화면은 결과 아래에 깔리기만 함
+            try { Nav.Pop(); }
+            finally { skipReload = false; }
+            Nav.Push(verified ? (AppScreen)new RunRewardsScreen(runId) : new RunResultScreen(runId));
         }
 
         // 보정이 끝남. 서버 저장이 실패했으면(이 폰에 남음) 입장해도 또 409라, 한 번 더 올려 보고 들어간다

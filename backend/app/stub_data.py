@@ -56,6 +56,7 @@ PROGRESS = {
     "verifiedCount": 3,
     "impacts": IMPACTS,
     "selectedImpactId": "imp_wind",
+    "levelStartsM": [0, 3000, 10000, 25000, 50000, 100000],
 }
 
 # 홈(GET /v1/home) 스텁이 쓰는 코스 요약. ID·이름·길이는 진짜 코스(마이그레이션 seed_courses)와 같게
