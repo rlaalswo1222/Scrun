@@ -67,7 +67,8 @@ def _clean(j):
             data["createdAt"] = FIXED_META["timestamp"]
         if data.get("retakeDeadline"):  # 인증 마감(다시 찍기·값 확인)도
             data["retakeDeadline"] = "2026-11-06T00:10:00Z"
-        for item in (data.get("items") or []) + (data.get("recentRuns") or []):  # 기록 목록·피드·프로필: 줄마다 ID
+        for item in (data.get("items") or []) + (data.get("recentRuns") or []) + (data.get("runningFriends") or []):
+            # 기록 목록·피드·프로필·홈: 줄마다 ID
             if isinstance(item, dict):
                 for k in ("runId", "feedId"):
                     if item.get(k):
@@ -219,6 +220,16 @@ def collect() -> dict:
         finally:
             app.dependency_overrides.pop(get_rng, None)
             hub.leave(conn, intentional=True)
+        # 홈(계획 0057): 친구(두 번째 사람)가 섬에서 달리는 중일 때 첫 사람의 홈. "오늘"은 주간 목표와 같은 예시 날
+        me2 = c.get("/v1/users/me", headers=auth2).json()["success"]["data"]
+        conn2, _ = hub.join("map_crs_lake_loop", "crs_lake_loop", 6670.0, me2["userId"], me2["nickname"])
+        hub.update(conn2, 900.0, 9.5, True, run=1800.0)
+        app.dependency_overrides[get_now] = lambda: datetime(2026, 11, 6, 12, 0, tzinfo=timezone.utc)
+        try:
+            rec("GET", "/v1/home", None, "Bearer {accessToken}", c.get("/v1/home", headers=auth))
+        finally:
+            app.dependency_overrides.pop(get_now, None)
+            hub.leave(conn2, intentional=True)
         rec("GET", "/v1/friends/{userId}", None, "Bearer {accessToken}", c.get(f"/v1/friends/{my['userId']}", headers=auth2))
         rec("GET", "/v1/feed", None, "Bearer {accessToken}", c.get("/v1/feed", headers=auth2))
         rec("DELETE", "/v1/friends/{userId}", None, "Bearer {accessToken}",

@@ -6,7 +6,6 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .. import stub_data as d
 from ..core import growth
 from ..core import nickname as nick
 from ..core import timezones as tz
@@ -18,7 +17,6 @@ from ..db.models import User
 from ..db.session import get_db
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
-from ..schemas.home import Home
 from ..schemas.user import (
     Calibration,
     CalibrationUpload,
@@ -201,8 +199,3 @@ def put_weekly_goal(body: WeeklyGoalUpdate, request: Request, user: User = Depen
     db.commit()
     return ok(request, growth.weekly_payload(db, user, now))
 
-
-@router.get("/home", summary="홈 한 번에", description="화면 B-01에서 B-04 · BL-31. 각 항목 API도 따로 있음",
-            response_model=Envelope[Home], responses=error_responses(*AUTH))
-def home(request: Request, _: Principal = Depends(stub_user)):
-    return ok(request, d.HOME)
