@@ -13,8 +13,8 @@ namespace Scrun.App
 
         public CourseListScreen(RunSummary ghost = null) => this.ghost = ghost;
 
-        VisualElement list, loadFailed;
-        Label empty;
+        VisualElement list;
+        StateView state;
         Button filterAll, filterLive;
         List<Course> courses;
         bool liveOnly, loading;
@@ -24,19 +24,15 @@ namespace Scrun.App
         protected override void OnCreate()
         {
             list = Q<VisualElement>("list");
-            empty = Q<Label>("list-empty");
-            loadFailed = Q<VisualElement>("load-failed");
+            state = new StateView(Q<VisualElement>("state"), SkeletonKind.Cards, "코스를 불러오지 못했어요");
             filterAll = Q<Button>("filter-all");
             filterLive = Q<Button>("filter-live");
             filterAll.clicked += () => SetFilter(false);
             filterLive.clicked += () => SetFilter(true);
-            Q<Button>("reload").clicked += Load;
             if (ghost != null) Q<Label>("lead").text = CourseText.GhostLead;
             var back = Q<Button>("back");
             back.SetVisible(ghost != null); // 홈 탭에선 Figma대로 없음, 기록 탭에 쌓였을 땐 상세로 돌아갈 길
             back.clicked += () => { if (Nav.Current == this) Nav.Pop(); };
-            loadFailed.SetVisible(false);
-            empty.SetVisible(false);
         }
 
         protected internal override void OnShow() => Load();
@@ -52,12 +48,10 @@ namespace Scrun.App
             if (loading) return;
             loading = true;
             List<Course> got = null;
-            // 처음만 덮개, 다시 보일 때(달리는 사람 수 새로)는 지금 목록을 둔 채 조용히
-            bool ok = await Feedback.Load(courses != null, async () => got = await Api.Courses.ListAsync(), Load);
+            // 처음만 스켈레톤(실패하면 그 자리에 실패 안내), 다시 보일 때(달리는 사람 수 새로)는 지금 목록을 둔 채 조용히
+            bool ok = await Feedback.Load(state, courses != null, async () => got = await Api.Courses.ListAsync(), Load);
             loading = false;
-            if (Root.panel == null) return; // 기다리는 사이 화면을 떠남
-            loadFailed.SetVisible(!ok && courses == null);
-            if (!ok) return;
+            if (Root.panel == null || !ok) return; // 기다리는 사이 화면을 떠남
             courses = got ?? new List<Course>();
             Build();
         }
@@ -76,8 +70,8 @@ namespace Scrun.App
             if (courses == null) return;
             var shown = Filter(courses, liveOnly);
             foreach (var c in shown) list.Add(Card(c));
-            empty.text = CourseText.Empty(liveOnly);
-            empty.SetVisible(shown.Count == 0);
+            if (shown.Count == 0) state.Empty(CourseText.Empty(liveOnly));
+            else state.Clear();
         }
 
         // Course Card: 그림 150 + 이름 + "한 바퀴 6.7km" + 지금 달리는 사람 칩

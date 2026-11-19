@@ -10,6 +10,7 @@ namespace Scrun.App
     {
         Label last, speeds;
         bool loading, loaded;
+        StateView state;
 
         protected override string Uxml => "UI/Recalibrate";
         public override bool HidesTabBar => true;
@@ -24,6 +25,8 @@ namespace Scrun.App
             head.Add(UiExtensions.Text(MyText.RecalibrateBody, "onb-lead"));
             content.Add(head);
 
+            var stateHost = new VisualElement { name = "state" };
+            content.Add(stateHost);
             var group = MyParts.Group(content);
             var lastRow = MyParts.Row("마지막 보정", null, "", null, chevron: false);
             last = lastRow.Q<Label>(className: "my-row-value");
@@ -34,6 +37,8 @@ namespace Scrun.App
             speeds.name = "speeds";
             group.Add(speedRow);
             MyParts.MarkLast(group);
+            // 공통 상태(계획 0056): 처음 받는 동안 값 칸 대신 스켈레톤, 실패하면 그 자리에. "다시 보정하기"는 그대로 씀
+            state = new StateView(stateHost, SkeletonKind.Rows, "보정 기록을 불러오지 못했어요", group);
 
             var start = new Button(() => { if (Nav.Current == this) Nav.Push(new CalibrationIntroScreen()); }) { text = "다시 보정하기", name = "start" };
             start.AddToClassList("btn");
@@ -50,8 +55,8 @@ namespace Scrun.App
             if (loading) return;
             loading = true;
             CalibrationRecord got = null;
-            // 처음만 덮개, 보정을 마치고 돌아오면 지금 값을 둔 채 조용히
-            bool ok = await Feedback.Load(loaded, async () => got = await Api.Users.GetCalibrationAsync(), Load);
+            // 처음만 스켈레톤(실패하면 그 자리에), 보정을 마치고 돌아오면 지금 값을 둔 채 조용히
+            bool ok = await Feedback.Load(state, loaded, async () => got = await Api.Users.GetCalibrationAsync(), Load);
             loading = false;
             if (!ok || Root.panel == null) return;
             loaded = true;

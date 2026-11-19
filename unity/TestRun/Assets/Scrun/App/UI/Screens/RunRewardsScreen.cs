@@ -16,7 +16,8 @@ namespace Scrun.App
         readonly string runId;
         RunRewards rewards;
         Progress progress;
-        VisualElement content, loadFailed, weekly, weeklyDots, outfitBefore, outfitArrow, fill, levelUp;
+        StateView state;
+        VisualElement content, weekly, weeklyDots, outfitBefore, outfitArrow, fill, levelUp;
         Label weeklyText, levelLine, outfitBeforeName, outfitAfterName, xpGain, xpNext, marks, impactUnlocked, impactNext;
         IVisualElementScheduledItem anim, levelUpTimer;
         bool loading, levelUpShown;
@@ -29,7 +30,6 @@ namespace Scrun.App
         protected override void OnCreate()
         {
             content = Q<VisualElement>("content");
-            loadFailed = Q<VisualElement>("load-failed");
             weekly = Q<VisualElement>("weekly");
             weeklyText = Q<Label>("weekly-text");
             weeklyDots = Q<VisualElement>("weekly-dots");
@@ -47,12 +47,11 @@ namespace Scrun.App
             levelUp = Q<VisualElement>("levelup");
 
             Q<Button>("next").clicked += ShowResult;
-            Q<Button>("skip").clicked += ShowResult;
-            Q<Button>("reload").clicked += Load;
+            state = new StateView(Q<VisualElement>("state"), SkeletonKind.Cards, "반영 결과를 불러오지 못했어요").Padded()
+                .WithAlt("운동 결과 보기", ShowResult);
             Q<Button>("levelup-continue").clicked += ShowResult;
 
             content.SetVisible(false);
-            loadFailed.SetVisible(false);
             levelUp.SetVisible(false);
         }
 
@@ -90,17 +89,20 @@ namespace Scrun.App
             loading = true;
             RunRewards r = null;
             Progress p = null;
-            // 레벨(progress)은 인증 마크 수·다음 임팩트·바 경계만이라 못 받아도 반영 결과는 보여 줌(조용히, 경계는 기본 표)
-            var progressTask = Api.Users.ProgressAsync();
-            bool ok = await Feedback.Run(async () => r = await Api.Runs.RewardsAsync(runId), Load);
-            await Feedback.RunQuiet(async () => p = await progressTask);
-            loading = false;
-            if (Root.panel == null) return;
-            if (!ok)
+            // 레벨(progress)은 인증 마크 수·다음 임팩트·바 경계만이라 못 받아도 반영 결과는 보여 줌(조용히, 경계는 기본 표).
+            // 둘 다 받을 때까지 스켈레톤(반영 결과만 먼저 오면 빈 화면이 되지 않게, 리뷰)
+            bool ok = await Feedback.Load(state, rewards != null, async () =>
             {
-                loadFailed.SetVisible(true);
-                return;
-            }
+                var progressTask = Api.Users.ProgressAsync();
+                r = await Api.Runs.RewardsAsync(runId);
+                try { p = await progressTask; }
+                catch (ApiException e) when (e.Failure != ApiFailure.NotLoggedIn)
+                {
+                    UnityEngine.Debug.LogWarning("[반영] 레벨을 못 받음(기본 경계로): " + e);
+                }
+            }, Load);
+            loading = false;
+            if (Root.panel == null || !ok) return;
             Show(r, p);
             Animate();
         }
@@ -116,7 +118,7 @@ namespace Scrun.App
         {
             var r = rewards;
             content.SetVisible(true);
-            loadFailed.SetVisible(false);
+            state.Clear();
 
             string w = RunResultText.Weekly(r.WeeklyGoal);
             weekly.SetVisible(w != null);

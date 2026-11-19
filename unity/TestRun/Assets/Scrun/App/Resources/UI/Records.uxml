@@ -43,9 +43,7 @@
             <ui:Button name="start" class="btn btn-primary" />
         </ui:VisualElement>
 
-        <ui:VisualElement name="load-failed" class="empty-state">
-            <ui:Label text="기록을 불러오지 못했어요" class="hint-text" />
-            <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
-        </ui:VisualElement>
+        <!-- 공통 상태(계획 0056): 처음 받는 동안 스켈레톤, 실패하면 여기에 -->
+        <ui:VisualElement name="state" />
     </ui:VisualElement>
 </ui:UXML>

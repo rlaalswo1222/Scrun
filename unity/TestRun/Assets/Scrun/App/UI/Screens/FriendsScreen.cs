@@ -12,7 +12,8 @@ namespace Scrun.App
     {
         const long RunningRefreshMs = 15000;
 
-        VisualElement runningList, runningEmpty, feedList, noFriends, loadFailed;
+        VisualElement runningList, runningEmpty, feedList, noFriends;
+        StateView state;
         ScrollView scroll;
         Label runningTitle, feedEmpty;
         Button feedMore, manage;
@@ -36,15 +37,14 @@ namespace Scrun.App
             feedEmpty = Q<Label>("feed-empty");
             feedMore = Q<Button>("feed-more");
             noFriends = Q<VisualElement>("no-friends");
-            loadFailed = Q<VisualElement>("load-failed");
+            state = new StateView(Q<VisualElement>("state"), SkeletonKind.List, "친구 목록을 불러오지 못했어요").Padded();
             manage = Q<Button>("manage");
             manage.clicked += () => { if (Nav.Current == this) Nav.Push(new FriendManageScreen()); };
             Q<Button>("add").clicked += OpenAdd;
             Q<Button>("add-first").clicked += OpenAdd;
-            Q<Button>("reload").clicked += () => Load();
             feedMore.clicked += LoadMoreFeed;
             pull = new PullToRefresh(scroll, Q<Label>("pull"), () => Load(fromPull: true));
-            ShowState(null);
+            ShowState(loaded: false);
         }
 
         protected internal override void OnShow()
@@ -82,24 +82,20 @@ namespace Scrun.App
                 gotRunning = r.Result;
                 gotFeed = p.Result;
             };
-            // 처음(아직 보여 줄 게 없음)만 덮개, 탭에 다시 들어오면 지금 목록을 둔 채 조용히.
+            // 처음(아직 보여 줄 게 없음)만 스켈레톤(실패하면 그 자리에), 탭에 다시 들어오면 지금 목록을 둔 채 조용히.
             // 끌어서 새로고침은 위 표시만 두고 실패는 안내하되, 그새 다른 화면으로 갔으면 그 화면 위에 띄우지 않음
             bool ok = fromPull && friends != null
                 ? await Feedback.Run(work, () => Load(fromPull: true), e => e.Failure != ApiFailure.NotLoggedIn && Nav.Current != this, overlay: false)
-                : await Feedback.Load(friends != null, work, () => Load());
+                : await Feedback.Load(state, friends != null, work, () => Load(), null, () => seq == loadSeq);
             if (seq != loadSeq) return; // 더 새로 받는 중
             loading = false;
             pull.Busy(false);
             if (Root.panel == null) return; // 기다리는 사이 화면을 떠남
-            if (!ok)
-            {
-                if (friends == null) ShowState(failed: true);
-                return;
-            }
+            if (!ok) return; // 처음이면 공통 칸이 실패를 보임, 아니면 지난 목록 그대로
             friends = gotFriends ?? new List<Friend>();
             FriendDirectory.Set(friends);
             running = gotRunning ?? new List<RunningFriend>();
-            ShowState(failed: false);
+            ShowState(loaded: true);
             BuildRunning();
             feedList.Clear();
             feedCursor = null;
@@ -135,14 +131,13 @@ namespace Scrun.App
             if (ok && Root.panel != null && cursor == feedCursor) AddFeed(got);
         }
 
-        // failed: null이면 아직 모름(처음 불러오는 중)
-        void ShowState(bool? failed)
+        // loaded: 받은 값이 있음(없으면 받는 중·실패 — 그때 보이는 건 공통 칸 state)
+        void ShowState(bool loaded)
         {
-            bool none = failed == false && friends.Count == 0;
-            scroll.SetVisible(failed == false && !none);
+            bool none = loaded && friends.Count == 0;
+            scroll.SetVisible(loaded && !none);
             noFriends.SetVisible(none);
-            manage.SetVisible(failed == false && !none); // G-04엔 "관리" 없음
-            loadFailed.SetVisible(failed == true);
+            manage.SetVisible(loaded && !none); // G-04엔 "관리" 없음
         }
 
         void BuildRunning()

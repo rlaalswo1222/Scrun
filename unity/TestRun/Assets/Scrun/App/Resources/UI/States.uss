@@ -1,0 +1,109 @@
+/* 공통 상태(계획 0056, BL-38): 스켈레톤·불러오기 실패·네트워크 없음·빈 상태. 전 화면이 이 파일 하나를 쓴다.
+   모양은 임시(UI Kit 색·간격) — 상준이 Figma I-07–I-09에 맞춰 여기만 고치면 된다(정할 것 4 가). */
+
+.state {
+    width: 100%;
+    padding: var(--space-2) 0;
+}
+.state--padded .state {
+    padding-left: var(--space-5);
+    padding-right: var(--space-5);
+}
+
+/* ---- 스켈레톤: 회색 막대. 깜빡임은 StateView가 불투명도로(보일 때만) ---- */
+.skeleton {
+    width: 100%;
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: 0.8s;
+    transition-timing-function: ease-in-out;
+}
+.skeleton--dim {
+    opacity: 0.45;
+}
+.skeleton-row {
+    flex-direction: row;
+    align-items: center;
+    padding: var(--space-3) 0;
+}
+.skeleton-card {
+    background-color: var(--color-surface);
+    border-radius: 16px;
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
+}
+.skeleton-col {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+.skeleton-bar {
+    height: 14px;
+    border-radius: 7px;
+    background-color: var(--color-surface-2);
+    margin: 4px 0;
+}
+.skeleton-bar--title {
+    height: 20px;
+    border-radius: 10px;
+}
+.skeleton-bar--short {
+    width: 45%;
+}
+.skeleton-bar--mid {
+    width: 70%;
+}
+.skeleton-dot {
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+    background-color: var(--color-surface-2);
+    margin-right: var(--space-3);
+}
+.skeleton-dot--big {
+    width: 64px;
+    height: 64px;
+    border-radius: 32px;
+}
+.skeleton-hero {
+    height: 180px;
+    border-radius: 16px;
+    background-color: var(--color-surface-2);
+    margin-bottom: var(--space-4);
+}
+
+/* ---- 실패·안내·빈 상태: 가운데 정렬 아이콘 + 제목 + 설명 + 버튼 ---- */
+.state-message {
+    align-items: center;
+    padding: var(--space-6) var(--space-4);
+}
+.state-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background-color: var(--color-primary-soft);
+    margin-bottom: var(--space-3);
+}
+.state-icon--network {
+    background-color: rgba(255, 176, 32, 0.2); /* --color-warn 옅게 */
+}
+.state-icon--empty {
+    background-color: var(--color-surface-2);
+}
+.state-title {
+    font-size: var(--font-size-sub);
+    -unity-font-style: bold;
+    color: var(--color-text);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+.state-body {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-body-sm);
+    color: var(--color-muted);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+.state-action {
+    margin-top: var(--space-4);
+    min-width: 160px;
+}
