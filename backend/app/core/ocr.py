@@ -49,8 +49,16 @@ class BadPhoto(Exception):
     엔진이 고장 났을 때 모두 다시 찍기를 다 써서 미인증으로 굳는다."""
 
 
+OCR_TIMEOUT = "OCR_TIMEOUT"   # 503 details.reason: 읽기가 시간 제한을 넘김(앱은 "바빠요" 대신 다시 찍기 안내, 계획 0055)
+
+
 class EngineUnavailable(Exception):
-    """엔진이 지금 못 읽음(일꾼이 다 바쁨·아직 뜨는 중·시간 초과로 죽임). 라우터는 503(다시 찍기 횟수 안 셈)."""
+    """엔진이 지금 못 읽음(일꾼이 다 바쁨·아직 뜨는 중·시간 초과로 죽임). 라우터는 503(다시 찍기 횟수 안 셈).
+    reason이 있으면 503 details.reason으로(시간 초과는 OCR_TIMEOUT)."""
+
+    def __init__(self, message: str, reason: Optional[str] = None):
+        super().__init__(message)
+        self.reason = reason
 
 
 class OcrEngine(Protocol):
@@ -109,7 +117,7 @@ class OnnxOcr:
         except PoolBusy:
             raise EngineUnavailable("계기판 읽기가 밀려 있습니다. 잠시 뒤 다시 보내세요.") from None
         except ReadTimeout:
-            raise EngineUnavailable("계기판 읽기가 시간 안에 끝나지 않았습니다.") from None
+            raise EngineUnavailable("계기판 읽기가 시간 안에 끝나지 않았습니다.", OCR_TIMEOUT) from None
 
     def close(self) -> None:
         self.pool.close()

@@ -221,6 +221,18 @@ namespace Scrun.App.Tests
             Assert.IsFalse(f.HasPhoto);
         }
 
+        // 계획 0055 리뷰: 서버가 이 사진을 읽다 시간을 넘김 → 같은 사진을 다시 보내면 또 넘김 → 사진을 버리고 E-02(다시 찍기, 횟수 안 씀)
+        [Test]
+        public void Ocr_timeout_drops_photo_and_goes_to_guide()
+        {
+            var f = AtConfirm();
+            f.Send();
+            f.Failed(VerifyError.Timeout);
+            Assert.AreEqual(VerifyStep.Guide, f.Step);
+            Assert.IsFalse(f.HasPhoto);
+            Assert.AreEqual(VerifyError.Timeout, f.Error);
+        }
+
         [TestCase(VerifyError.Network)]
         [TestCase(VerifyError.Busy)]
         [TestCase(VerifyError.Other)]

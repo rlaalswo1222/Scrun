@@ -6,7 +6,7 @@ import UIKit
 // Unity 위에 이 화면을 통째로 띄운다: 미리보기 + 겹친 UI(X·남은 시간·점선 가이드·안내·셔터) + 노출 제어.
 // 셔터 한 번에 노출만 다른 사진을 연달아 찍고(브래킷, 기본 0·−1.5·−3 EV) 앱 임시 폴더에 JPEG로 쓴 뒤
 // 화면을 닫고 경로만 C#에 돌려준다(사진 바이트는 통로에 안 태움). 서버 OCR이 가장 잘 읽힌 장을 고른다.
-// 사진은 픽셀을 세우고 긴 변 maxSide(기본 2048, 서버 한 장 4 MB 상한)로 줄여 쓴다(upright).
+// 사진은 픽셀을 세우고 가이드 안 + 여유 15%만 잘라(계획 0055) 긴 변 maxSide(기본 2048, 서버 한 장 4 MB 상한)로 줄여 쓴다(upright).
 //   답: {"outcome": "taken"|"cancelled"|"timedOut"|"noPermission"|"unavailable", "photos": [{"path", "bias"}]}
 // 노출 규칙(가설, 첫 실기기 시험에서 값 정함, console_ocr.md):
 //   - 초점·노출 기준점 = 가이드 프레임 가운데(계기판)
@@ -24,10 +24,12 @@ enum ScrunCamera {
         var hint = "숫자가 선명하게 보이도록 맞춰 주세요"
         var biases: [Float] = [0, -1.5, -3]
         var maxSide = 2048 // 저장할 사진의 긴 변(px). 0이면 원본 크기(그래도 세워서 씀)
+        var cropToGuide = true // 가이드 안 + 여유만 남김(계획 0055). false면 화면 전체
 
         init(_ a: [String: Any]) {
             if let v = a["timeLimitSec"] as? Int { timeLimitSec = max(0, v) }
             if let v = a["maxSide"] as? Int { maxSide = max(0, v) }
+            if let v = a["cropToGuide"] as? Bool { cropToGuide = v }
             if let v = a["guideLabel"] as? String { guideLabel = v }
             if let v = a["hint"] as? String { hint = v }
             if let v = a["biases"] as? [NSNumber], !v.isEmpty { biases = v.map { $0.floatValue } }
@@ -73,25 +75,66 @@ enum ScrunCamera {
     // 세로로 찍어도 카메라는 센서 방향(가로) 픽셀에 EXIF 방향 태그만 붙인다. C#(Texture2D.LoadImage)·서버 OCR이
     // 태그를 보지 않으면 90° 누운 사진이 되므로 여기서 픽셀을 돌린다. 메타데이터(EXIF·위치)는 새 파일에 넣지 않음.
     // 사진 콜백 스레드에서 부른다(메인 스레드를 막지 않게). 실패하면 nil → 원본을 그대로 씀
-    static func upright(_ data: Data, maxSide: Int, quality: Double = 0.85) -> Data? {
+    // crop: 세운 사진 크기 → 남길 칸(0–1, 위 왼쪽 기준, 비율만 봄). 있으면 그 칸의 긴 변이 maxSide쯤 되는 크기로만 풀어서 자름
+    // (원본 24·48 MP를 통째로 풀지 않게, 계획 0055 리뷰). 마지막 크기 제한은 ImageIO가(색 공간 그대로)
+    static func upright(_ data: Data, maxSide: Int, crop: ((CGSize) -> CGRect)? = nil, quality: Double = 0.85) -> Data? {
         guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         var opts: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true, // EXIF 방향대로 픽셀을 돌림
             kCGImageSourceShouldCacheImmediately: true,
         ]
-        if maxSide > 0 {
-            opts[kCGImageSourceThumbnailMaxPixelSize] = maxSide
-        } else if let p = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
-                  let w = p[kCGImagePropertyPixelWidth] as? Int, let h = p[kCGImagePropertyPixelHeight] as? Int {
-            opts[kCGImageSourceThumbnailMaxPixelSize] = max(w, h) // 원본 크기 그대로(지정하지 않으면 작은 미리보기가 나옴)
+        var keep: CGRect? = nil
+        let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any]
+        if let p = props, let w = p[kCGImagePropertyPixelWidth] as? Int, let h = p[kCGImagePropertyPixelHeight] as? Int {
+            let longSide = max(w, h)
+            var limit = maxSide > 0 ? min(maxSide, longSide) : longSide // 지정하지 않으면 작은 미리보기가 나옴
+            if let crop = crop {
+                let turned = ((p[kCGImagePropertyOrientation] as? Int) ?? 1) >= 5 // 5–8: 90° 돌아간 방향 → 세우면 가로·세로가 바뀜
+                let size = turned ? CGSize(width: h, height: w) : CGSize(width: w, height: h)
+                let n = crop(size)
+                let cutLong = max(n.width * size.width, n.height * size.height)
+                if maxSide > 0, cutLong > 0 {
+                    limit = min(longSide, Int((CGFloat(maxSide) * CGFloat(longSide) / cutLong).rounded(.up)))
+                } else {
+                    limit = longSide
+                }
+                keep = n
+            }
+            opts[kCGImageSourceThumbnailMaxPixelSize] = limit
+        } else if maxSide > 0 {
+            opts[kCGImageSourceThumbnailMaxPixelSize] = maxSide // 크기를 모르면 자르지 않고 예전처럼
         }
-        guard let image = CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary) else { return nil }
+        guard var image = CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary) else { return nil }
+        if let n = keep {
+            let px = CGRect(x: n.minX * CGFloat(image.width), y: n.minY * CGFloat(image.height),
+                            width: n.width * CGFloat(image.width), height: n.height * CGFloat(image.height)).integral
+            if px.width >= 64, px.height >= 64, let cut = image.cropping(to: px) {
+                image = cut
+            } else {
+                NSLog("[ScrunCamera] 가이드로 자르지 못해 전체를 씀: \(n)")
+            }
+        }
         let out = NSMutableData()
         guard let dst = CGImageDestinationCreateWithData(out, "public.jpeg" as CFString, 1, nil) else { return nil }
-        CGImageDestinationAddImage(dst, image, [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary)
+        var put: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: quality]
+        if maxSide > 0 { put[kCGImageDestinationImageMaxPixelSize] = maxSide } // 반올림으로 조금 넘은 것만 줄임
+        CGImageDestinationAddImage(dst, image, put as CFDictionary)
         guard CGImageDestinationFinalize(dst) else { return nil }
         return out as Data
+    }
+
+    // 미리보기(aspect fill, 세로)에서 본 layerRect가 세운 사진의 어디인지(0–1, 위 왼쪽 기준).
+    // 미리보기와 사진이 같은 화각(세션 프리셋 .photo, 4:3)이라고 봄. 조금 어긋나도 되게 가이드에 여유를 두고 부름
+    static func normalizedCrop(_ r: CGRect, layer: CGSize, image: CGSize) -> CGRect {
+        let whole = CGRect(x: 0, y: 0, width: 1, height: 1)
+        guard layer.width > 0, layer.height > 0, image.width > 0, image.height > 0 else { return whole }
+        let s = max(layer.width / image.width, layer.height / image.height)   // aspect fill 배율
+        let dw = image.width * s, dh = image.height * s
+        let ox = (layer.width - dw) / 2, oy = (layer.height - dh) / 2
+        let n = CGRect(x: (r.minX - ox) / dw, y: (r.minY - oy) / dh, width: r.width / dw, height: r.height / dh)
+        let cut = n.intersection(whole)
+        return cut.isNull || cut.isEmpty ? whole : cut
     }
 
     // 앱이 중간에 꺼져 남은 사진(1시간 지난 것)을 치운다
@@ -113,17 +156,20 @@ private final class ScrunPhotoCollector: NSObject, AVCapturePhotoCaptureDelegate
     private let done: ([(seq: Int, bias: Float, data: Data)], Error?) -> Void
     private let fallbackBias: Float
     private let maxSide: Int
+    private let crop: ((CGSize) -> CGRect)?
 
-    init(fallbackBias: Float, maxSide: Int, done: @escaping ([(seq: Int, bias: Float, data: Data)], Error?) -> Void) {
+    init(fallbackBias: Float, maxSide: Int, crop: ((CGSize) -> CGRect)?,
+         done: @escaping ([(seq: Int, bias: Float, data: Data)], Error?) -> Void) {
         self.fallbackBias = fallbackBias
         self.maxSide = maxSide
+        self.crop = crop
         self.done = done
     }
 
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         guard error == nil, let raw = photo.fileDataRepresentation() else { return }
         let data: Data
-        if let up = ScrunCamera.upright(raw, maxSide: maxSide) {
+        if let up = ScrunCamera.upright(raw, maxSide: maxSide, crop: crop) {
             data = up
         } else {
             NSLog("[ScrunCamera] 사진을 세우지 못해 원본을 씀(누워 보일 수 있음)")
@@ -445,7 +491,14 @@ final class ScrunCameraController: UIViewController {
         }
         Self.portrait(out.connection(with: .video))
 
-        let c = ScrunPhotoCollector(fallbackBias: 0, maxSide: opts.maxSide) { [weak self] photos, error in
+        // 가이드 안 + 여유 15%만 보냄(계획 0055): 계기판 밖 글자를 안 읽어 서버가 빠르고 엉뚱한 칸을 덜 고름.
+        // 미리보기 밖은 버림. 좌표는 지금(셔터 누른 때) 화면 기준으로 잡아 사진 콜백 스레드로 넘김
+        let margin: CGFloat = 0.15
+        let keep = guideRect.insetBy(dx: -guideRect.width * margin, dy: -guideRect.height * margin).intersection(previewBox.bounds)
+        let layerSize = previewBox.bounds.size
+        let crop: ((CGSize) -> CGRect)? = opts.cropToGuide && !keep.isEmpty
+            ? { ScrunCamera.normalizedCrop(keep, layer: layerSize, image: $0) } : nil
+        let c = ScrunPhotoCollector(fallbackBias: 0, maxSide: opts.maxSide, crop: crop) { [weak self] photos, error in
             self?.collector = nil
             self?.saved(photos, error)
         }

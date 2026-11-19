@@ -20,6 +20,8 @@ namespace Scrun.App
         CameraShot shot;           // 지금 들고 있는 사진(보내거나 버리면 null)
         Texture2D preview;          // E-04 미리보기
         IVisualElementScheduledItem ticker;
+        IVisualElementScheduledItem spin;   // E-05 고리 돌리기(전엔 정지 그림이라 멈춘 것처럼 보임, 계획 0055)
+        VisualElement spinner;
         bool busy, finished;
         VisualElement guide, leave, confirm, sending, read, result;
         Label navTitle, chip, resultTitle, resultLead, confirmError, guideError, resultError, readError, readDistance, readTime;
@@ -47,6 +49,7 @@ namespace Scrun.App
             leave = Q<VisualElement>("leave");
             confirm = Q<VisualElement>("confirm");
             sending = Q<VisualElement>("sending");
+            spinner = sending.Q(className: "verify-spinner");
             read = Q<VisualElement>("read");
             result = Q<VisualElement>("result");
             photo = new Image { scaleMode = ScaleMode.ScaleAndCrop };
@@ -83,12 +86,14 @@ namespace Scrun.App
         {
             ticker ??= Root.schedule.Execute(Tick).Every(500);
             ticker.Resume();
+            SetSpinning(flow.Step == VerifyStep.Sending && !flow.Confirming);
             Native.Permissions.Changed += OnPermissionChanged;
         }
 
         protected internal override void OnHide()
         {
             ticker?.Pause();
+            SetSpinning(false);
             Native.Permissions.Changed -= OnPermissionChanged;
         }
 
@@ -209,7 +214,7 @@ namespace Scrun.App
             catch (ApiException e)
             {
                 flow.Failed(ErrorOf(e));
-                if (flow.Step == VerifyStep.TimeOver) DropPhoto();
+                if (flow.Step == VerifyStep.TimeOver || flow.Step == VerifyStep.Guide) DropPhoto();
                 if (e.Failure == ApiFailure.NotLoggedIn) Feedback.Handle(e);
             }
             catch (Exception e) // 사진 파일을 못 읽음 등
@@ -284,12 +289,36 @@ namespace Scrun.App
             switch (e.Code)
             {
                 case "VERIFICATION_CLOSED": return VerifyError.Closed;
-                case "SERVICE_UNAVAILABLE": return VerifyError.Busy;
+                case "SERVICE_UNAVAILABLE": return IsOcrTimeout(e) ? VerifyError.Timeout : VerifyError.Busy;
                 case "CONFIRM_NOT_PENDING": return VerifyError.Stale;
                 case "RUN_NOT_FOUND": return VerifyError.NotFound;
                 default: return VerifyError.Other;
             }
         }
+
+        internal const string TimeoutText = "숫자를 읽는 데 시간이 너무 걸렸어요. 계기판이 가이드 안에 크게 들어오게 다시 찍어 주세요.";
+
+        // E-05가 보일 때만 돌림(다른 단계에선 멈춰 배터리를 안 씀, 리뷰). 한 바퀴 0.9초, 화면 시계 기준이라 프레임이 늦어도 속도는 같음
+        void SetSpinning(bool on)
+        {
+            if (on)
+            {
+                spin ??= Root.schedule.Execute(Spin).Every(16);
+                spin.Resume();
+            }
+            else spin?.Pause();
+        }
+
+        void Spin()
+        {
+            if (spinner == null) return;
+            float deg = (Time.realtimeSinceStartup * 400f) % 360f;
+            spinner.style.rotate = new Rotate(new Angle(deg, AngleUnit.Degree));
+        }
+
+        // 서버가 읽기 시간을 넘김(계획 0055): "바빠요"가 아니라 사진(가이드 밖 글자가 많음 등)을 바꿔 다시 찍게 안내
+        internal static bool IsOcrTimeout(ApiException e) =>
+            e.Code == "SERVICE_UNAVAILABLE" && e.DetailsJson != null && e.DetailsJson.Contains("\"OCR_TIMEOUT\"");
 
         void Finish()
         {
@@ -340,6 +369,7 @@ namespace Scrun.App
             // 확인을 보내는 동안은 E-05 대신 E-05b를 잠근 채로(버튼만 잠김)
             bool showRead = s == VerifyStep.ReadConfirm || s == VerifyStep.Sending && flow.Confirming;
             sending.SetVisible(s == VerifyStep.Sending && !flow.Confirming);
+            SetSpinning(s == VerifyStep.Sending && !flow.Confirming && Nav?.Current == this);
             read.SetVisible(showRead);
             var photoBox = showRead ? readPhotoBox : confirmPhotoBox;
             if (photo.parent != photoBox) photoBox.Add(photo);
@@ -368,8 +398,14 @@ namespace Scrun.App
             };
             // 카메라를 못 엶: 안내(E-02)나 다시 찍기 화면(E-07·08·09)으로 돌아와 문구를 보여 줌
             const string cameraFailed = "카메라를 열지 못했어요. 다시 눌러 주세요.";
-            guideError.SetVisible(s == VerifyStep.Guide && (flow.Error == VerifyError.Camera || flow.Error == VerifyError.Stale));
-            guideError.text = flow.Error == VerifyError.Stale ? "이미 확인한 사진이에요. 계기판을 다시 찍어 주세요." : cameraFailed;
+            guideError.SetVisible(s == VerifyStep.Guide && (flow.Error == VerifyError.Camera || flow.Error == VerifyError.Stale
+                                                            || flow.Error == VerifyError.Timeout));
+            guideError.text = flow.Error switch
+            {
+                VerifyError.Stale => "이미 확인한 사진이에요. 계기판을 다시 찍어 주세요.",
+                VerifyError.Timeout => TimeoutText,
+                _ => cameraFailed,
+            };
             readError.SetVisible(s == VerifyStep.ReadConfirm && flow.Error != VerifyError.None);
             readError.text = flow.Error switch
             {
