@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from app.console_ocr.pool import EngineDown, PoolBusy, ReaderPool, ReadTimeout, WorkerFailed
+from app.console_ocr.pool import EngineDown, PoolBusy, ReaderPool, ReadTimeout, WorkerFailed, read_job
 from app.core.ocr import UNREADABLE, BadPhoto, ConsoleRead, OnnxOcr, Photo, combine, get_ocr
 from app.main import app
 from tests.helpers import data, fail
@@ -64,7 +64,7 @@ def test_request_that_waited_does_not_kill_a_healthy_process():
         busy = threading.Thread(target=pool.read, args=([b"x"], 5.0))
         busy.start()
         time.sleep(0.1)
-        with pytest.raises(ReadTimeout):
+        with pytest.raises(PoolBusy):              # 사진 탓이 아니라 밀린 것(앱은 "바빠요", 계획 0055 리뷰)
             pool.read([b"y"], timeout_s=1.0)       # 약 0.5초 기다리고 0.5초 남음 → 0.6초 읽기를 못 기다림
         busy.join()
         wait_idle(pool, seconds=5)
@@ -131,6 +131,71 @@ class BusyPool:
 class AgreeingPool:
     def read(self, photos, timeout_s):
         return [("READ", 3000, 1040)] * len(photos)
+
+
+class TimeoutPool:
+    def read(self, photos, timeout_s):
+        raise ReadTimeout()
+
+
+def test_read_timeout_is_503_with_reason_and_not_counted(db_client, me, fresh_ocr):  # noqa: F811
+    """시간 초과는 503 + details.reason OCR_TIMEOUT(앱이 "바빠요" 대신 다시 찍기 안내, 계획 0055). 일꾼이 다 찬 503엔 reason 없음."""
+    run_id = finished(db_client, me)
+    app.dependency_overrides[get_ocr] = lambda: OnnxOcr(TimeoutPool())
+    r = photo(db_client, me, run_id, "a.jpg")
+    fail(r, 503, "SERVICE_UNAVAILABLE")
+    assert r.json()["error"]["details"] == {"reason": "OCR_TIMEOUT"}
+    app.dependency_overrides[get_ocr] = lambda: OnnxOcr(BusyPool())
+    r = photo(db_client, me, run_id, "a.jpg")
+    fail(r, 503, "SERVICE_UNAVAILABLE")
+    assert not r.json()["error"].get("details")
+    app.dependency_overrides[get_ocr] = lambda: OnnxOcr(AgreeingPool())
+    assert data(photo(db_client, me, run_id, "a.jpg"))["status"] == "CONFIRM_REQUIRED"   # 횟수 안 깎임
+
+
+# ---------- 묶음 읽기: 같은 값 두 장이면 멈춤(계획 0055) ----------
+class _Img:
+    shape = (20, 10, 3)
+
+
+class _ScriptReader:
+    """사진 바이트(b"A" 등)마다 정해 둔 결과를 내고, 읽은 순서를 남김."""
+    def __init__(self, script):
+        self.script, self.seen = script, []
+
+    def read(self, img):
+        self.seen.append(img.key)
+        status, d, t = self.script[img.key]
+        return type("R", (), {"status": status, "distance_m": d, "duration_s": t})()
+
+
+def _decode(data):
+    if data == b"broken":
+        return None
+    img = _Img()
+    img.key = data
+    return img
+
+
+SCRIPT = {b"A": ("READ", 3000, 1040), b"A2": ("READ", 3000, 1040), b"B": ("READ", 3100, 1040), b"U": ("UNREADABLE", None, None)}
+
+
+@pytest.mark.parametrize("job, read, result", [
+    ([b"A", b"A2", b"U"], [b"A", b"A2"], "READ"),                    # 두 장이 같으면 셋째는 안 읽음
+    ([b"A", b"U", b"A2"], [b"A", b"U", b"A2"], "READ"),              # 못 읽은 게 끼면 끝까지
+    ([b"A", b"B", b"A2"], [b"A", b"B"], "UNREADABLE"),               # 값이 갈리면 이미 다시 찍기 → 셋째는 안 읽음
+    ([b"A", b"U", b"B", b"A2"], [b"A", b"U", b"B"], "UNREADABLE"),
+    ([b"U", b"A", b"A2", b"B"], [b"U", b"A", b"A2"], "READ"),        # 넷째가 달랐어도 두 장 일치에서 멈춤(값 확인 E-05b가 받침)
+    ([b"U", b"U", b"U"], [b"U", b"U", b"U"], "UNREADABLE"),
+    ([b"broken", b"A", b"A2"], [b"A", b"A2"], "READ"),
+])
+def test_read_job_stops_when_two_photos_agree(job, read, result):
+    reader = _ScriptReader(SCRIPT)
+    lines = []
+    out = read_job(job, _decode, reader, lines.append)
+    assert reader.seen == read
+    assert combine(out).status.value == result
+    assert all("3000" not in ln and "1040" not in ln for ln in lines)   # 로그에 읽은 값 안 남김(BL-17 ③)
 
 
 def test_engine_unavailable_is_503_and_not_counted(db_client, me, fresh_ocr):  # noqa: F811

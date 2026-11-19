@@ -8,6 +8,7 @@
 import logging
 import multiprocessing as mp
 import queue
+import sys
 import threading
 import time
 from pathlib import Path
@@ -30,7 +31,7 @@ class EngineDown(PoolBusy):
 
 
 class ReadTimeout(Exception):
-    """읽기가 시간 제한을 넘김 → 그 프로세스를 죽이고 새로 띄움."""
+    """읽기 자체가 시간 제한을 넘김 → 그 프로세스를 죽이고 새로 띄움(기다리느라 늦은 요청은 PoolBusy)."""
 
 
 class WorkerFailed(Exception):
@@ -43,7 +44,6 @@ MAX_PIXELS = 50_000_000   # 사진 한 장 픽셀 상한(앱은 긴 변 2048로 
 def serve(conn, model_path: str, threads: int) -> None:
     """자식 프로세스 본체: 모델을 올리고 "ready"를 보낸 뒤, 사진 묶음(bytes 목록)을 받아 사진마다 결과를 돌려준다."""
     import os
-    import sys
     # 압축 폭탄 막기: 4 MB 안에 10억 픽셀이라고 적은 JPEG(검은 2000×2000 = 63 KB)를 풀면 몇 GB를 잡음(#68 리뷰).
     # OpenCV가 첫 디코드 때 읽는 값이라 cv2보다 먼저. 넘으면 cv2.error → 못 엶
     os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = str(MAX_PIXELS)
@@ -55,6 +55,12 @@ def serve(conn, model_path: str, threads: int) -> None:
     cv2.setNumThreads(1)   # 프로세스 2개 × OpenCV 스레드가 2코어를 넘겨 쓰지 않게(onnxruntime도 threads개)
     reader = ConsoleReader(model_path, threads)
     reader.warm_up()   # 인식 모델까지 지금 올림: 없으면 ready 전에 죽어 시작 실패로 잡히고, 첫 요청이 올리는 시간을 안 냄
+
+    def decode(data: bytes):
+        try:
+            return cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+        except cv2.error:
+            return None   # 너무 큰 사진(MAX_PIXELS) 등
     conn.send(("ready", None))
     while True:
         try:
@@ -64,28 +70,49 @@ def serve(conn, model_path: str, threads: int) -> None:
         if job is None:
             return
         try:
-            out = []
-            started = time.perf_counter()
-            for i, data in enumerate(job):
-                try:
-                    img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
-                except cv2.error:
-                    img = None   # 너무 큰 사진(MAX_PIXELS) 등
-                if img is None:
-                    out.append(None)
-                    continue
-                t0 = time.perf_counter()
-                r = reader.read(img)
-                out.append((r.status, r.distance_m, r.duration_s))
-                st = reader.stats
-                # 실사진이 오라클에서 14초를 넘김(11/19) → 어디서 걸리는지 사진마다 남김. 사진·숫자 값은 안 남김(BL-17 ③)
-                print(f"[계기판 OCR] 사진 {i + 1}/{len(job)} {img.shape[1]}x{img.shape[0]} {len(data) // 1024} KB: "
-                      f"{time.perf_counter() - t0:.2f}초(글자 영역 {st.get('boxes', 0)}개 찾기·인식 {st.get('ocr_s', 0):.2f}초, "
-                      f"7세그먼트 {st.get('segs', 0)}개 {st.get('seg_s', 0):.2f}초) → {r.status}", file=sys.stderr, flush=True)
-            print(f"[계기판 OCR] 묶음 {len(job)}장 {time.perf_counter() - started:.2f}초", file=sys.stderr, flush=True)
-            conn.send(("ok", out))
+            conn.send(("ok", read_job(job, decode, reader)))
         except Exception as e:  # 엔진 고장: 이 묶음만 실패로 알리고 계속
             conn.send(("error", f"{type(e).__name__}: {e}"))
+
+
+AGREE_STOP = 2   # 같은 값으로 읽힌 사진이 이만큼이면 나머지는 안 읽음(계획 0055)
+
+
+def read_job(job: list, decode: Callable, reader, log_line: Callable = None) -> list:
+    """사진 묶음(앱이 0 EV를 먼저 보냄)을 차례로 읽어 사진마다 결과. 실사진은 한 장 4–6초라(11/19 오라클) 같은 값으로 읽힌
+    사진이 AGREE_STOP장이 되면 멈춘다: 합치기 규칙(읽힌 사진 값이 모두 같아야 READ, 11/17 지환)의 대조는 두 장으로 남기고
+    나머지 장 시간을 아낌(그 장이 다른 값이었으면 다시 찍기였을 것을 놓침 — 두 장 일치 + 사용자 값 확인 E-05b로 받아들임).
+    읽힌 값이 갈리면 결과가 이미 다시 찍기라 거기서 멈춤. 그 밖엔(못 읽은 사진뿐 등) 끝까지.
+    읽지 않은 사진은 결과 목록에서 빠짐(합치기는 받은 것만 봄)."""
+    if log_line is None:
+        def log_line(msg: str) -> None:
+            print(msg, file=sys.stderr, flush=True)   # 자식 프로세스 → docker 로그
+    out, agree = [], {}
+    started = time.perf_counter()
+    for i, data in enumerate(job):
+        img = decode(data)
+        if img is None:
+            out.append(None)
+            continue
+        t0 = time.perf_counter()
+        r = reader.read(img)
+        out.append((r.status, r.distance_m, r.duration_s))
+        st = getattr(reader, "stats", {}) or {}
+        # 어디서 걸리는지 사진마다 남김(11/19 14초 초과). 사진·숫자 값은 안 남김(BL-17 ③)
+        log_line(f"[계기판 OCR] 사진 {i + 1}/{len(job)} {img.shape[1]}x{img.shape[0]} {len(data) // 1024} KB: "
+                 f"{time.perf_counter() - t0:.2f}초(글자 영역 {st.get('boxes', 0)}개 찾기·인식 {st.get('ocr_s', 0):.2f}초, "
+                 f"7세그먼트 {st.get('segs', 0)}개 {st.get('seg_s', 0):.2f}초) → {r.status}")
+        if r.status == "READ" and i + 1 < len(job):
+            key = (r.distance_m, r.duration_s)
+            agree[key] = agree.get(key, 0) + 1
+            if len(agree) > 1:   # 값이 갈림 → 나머지가 뭐든 합치기는 다시 찍기(리뷰: 남은 장에 4–6초를 쓰지 않게)
+                log_line(f"[계기판 OCR] 읽은 값이 갈림 → 남은 {len(job) - i - 1}장 건너뜀")
+                break
+            if agree[key] >= AGREE_STOP:
+                log_line(f"[계기판 OCR] 같은 값 {AGREE_STOP}장 → 남은 {len(job) - i - 1}장 건너뜀")
+                break
+    log_line(f"[계기판 OCR] 묶음 {len(out)}/{len(job)}장 {time.perf_counter() - started:.2f}초")
+    return out
 
 
 class _Worker:
@@ -194,10 +221,12 @@ class ReaderPool:
                 if left <= self.LATE_MIN_S:   # 기다림 없이 받은 요청(남은 시간이 거의 없음) → 읽기가 넘긴 것
                     log.error("계기판 OCR이 %.1f초를 넘김 — 프로세스를 죽이고 새로 띄움", timeout_s)
                     self._replace(w)
-                else:   # 기다리느라 늦은 요청: 이 요청은 끝내고, 읽기는 남은 시간만큼 더 지켜봄
-                    threading.Thread(target=self._finish_late, args=(w, left, timeout_s), daemon=True,
-                                     name="console-ocr-late").start()
-                raise ReadTimeout()
+                    raise ReadTimeout()
+                # 기다리느라 늦은 요청: 이 요청은 끝내고, 읽기는 남은 시간만큼 더 지켜봄. 사진 탓이 아니라 밀린 것이라
+                # 시간 초과(앱: 다시 찍기 안내)가 아니라 바쁨(앱: 잠시 뒤 다시 보내기)으로(계획 0055 리뷰)
+                threading.Thread(target=self._finish_late, args=(w, left, timeout_s), daemon=True,
+                                 name="console-ocr-late").start()
+                raise PoolBusy()
             kind, out = w.conn.recv()
         except (EOFError, OSError, BrokenPipeError):
             log.error("계기판 OCR 프로세스가 죽음 — 새로 띄움")

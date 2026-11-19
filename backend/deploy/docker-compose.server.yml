@@ -29,6 +29,8 @@ services:
       KAKAO_APP_ID: ${KAKAO_APP_ID:?KAKAO_APP_ID를 .env에}
       OCR_ENGINE: onnx # 계기판 OCR 진짜 엔진(계획 0046): 읽기 프로세스 2개, 사진 3장 15초 제한
       VERIFY_OCR_TIMEOUT_S: ${VERIFY_OCR_TIMEOUT_S:-15} # 읽기 시간 제한(초). 실사진이 15초를 넘겨 .env로 잠시 늘려 잼(11/19, 계획 0055)
+    logging: # 배포(update.sh)가 컨테이너를 새로 만들어도 로그가 남게(11/19 첫 OCR 실패 로그를 잃음, 계획 0055).
+      driver: journald # 보기: docker logs scrun-api-1(이번 컨테이너) / journalctl CONTAINER_NAME=scrun-api-1 --since "1 hour ago"(지난 것까지)
     depends_on:
       db:
         condition: service_healthy

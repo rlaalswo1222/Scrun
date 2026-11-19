@@ -162,14 +162,14 @@ class _OcrRunner:
                         state["abandoned"] = True
                         self.running -= 1
                         self.abandoned += 1
-                if not late:
+                if not late:   # 엔진 바깥 고장(진짜 엔진은 1초 먼저 스스로 끊음) → 사진 탓이 아니라 reason 없음(리뷰)
                     raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기가 시간 안에 끝나지 않았습니다.") from None
                 return future.result()
         except BadPhoto:
             return UNREADABLE  # 사진을 못 엶 → 다시 찍기(횟수 셈)
         except EngineUnavailable as e:
             log.warning("계기판 OCR 503: %s", e)
-            raise ApiError(E.SERVICE_UNAVAILABLE, str(e)) from None
+            raise ApiError(E.SERVICE_UNAVAILABLE, str(e), {"reason": e.reason} if e.reason else None) from None
         except ApiError:
             raise
         except Exception:
@@ -334,7 +334,8 @@ def _given_up(db: Session, run: Run) -> Outcome:
         "값은 서버 설정. 사진은 메모리에서 읽고 버림(해시만 남김). "
         "다른 기록에 쓴 사진이 섞이면 못 읽은 것으로 봄. "
         f"마감(종료를 받은 뒤 {POLICY.deadline_s // 60}분, 요청이 도착한 때 기준)이 지나면 VERIFICATION_CLOSED"
-        "(기록은 UNVERIFIED·TIMEOUT으로 닫힘). OCR 엔진이 없거나 밀렸거나 오류·시간 초과면 503(다시 찍기 횟수에 안 셈)." + OUTCOME),
+        "(기록은 UNVERIFIED·TIMEOUT으로 닫힘). OCR 엔진이 없거나 밀렸거나 오류·시간 초과면 503(다시 찍기 횟수에 안 셈), 시간 초과는 details.reason=OCR_TIMEOUT. "
+        "같은 값으로 읽힌 사진이 두 장이면 나머지는 안 읽음(앱은 0 EV를 먼저 보냄)." + OUTCOME),
     response_model=Envelope[VerificationResult],
     responses=ERRS,
     openapi_extra={"requestBody": {"required": True, "content": {"multipart/form-data": {"schema": {
