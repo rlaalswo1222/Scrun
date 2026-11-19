@@ -96,12 +96,16 @@ class Runner:
     v: float = 0.0          # km/h
     running: bool = False
     run: Optional[float] = None  # 이번 달리기 거리(m, 러너 카드 D-12, 계획 0041). 달리기 전·옛 앱은 없음
+    level: Optional[int] = None  # 입장 때 레벨(이름표·카드 Lv 배지, 계획 0059). 인증은 맵 밖이라 입장 동안 안 바뀜
     placed: bool = False    # 첫 state를 받음(그 전엔 다른 사람에게 안 보임)
     conn: Optional[Conn] = None
     disconnected_at: Optional[float] = None  # hub clock 기준
 
     def public(self) -> dict:
-        return {"userId": self.user_id, "nickname": self.nickname, **self.motion()}
+        p = {"userId": self.user_id, "nickname": self.nickname, **self.motion()}
+        if self.level is not None:
+            p["level"] = self.level
+        return p
 
     def motion(self) -> dict:
         m = {"userId": self.user_id, "d": round(self.d, 2), "v": round(self.v, 2), "running": self.running}
@@ -195,7 +199,7 @@ class Hub:
 
     # ---------- 연결 ----------
     def join(self, map_id: str, course_id: str, length_m: float, user_id: str, nickname: str,
-             wake: Optional[Callable[[], None]] = None) -> tuple[Conn, dict]:
+             wake: Optional[Callable[[], None]] = None, level: Optional[int] = None) -> tuple[Conn, dict]:
         """방에 붙는다. (새 연결, welcome 메시지). 같은 사람의 앞 연결은 닫게 표시(닫는 건 그 연결 루프가)."""
         conn = Conn(user_id=user_id, map_id=map_id, wake=wake)
         with self._lock:
@@ -212,11 +216,12 @@ class Hub:
                 room = self._rooms[map_id] = Room(map_id=map_id, course_id=course_id, length_m=float(length_m))
             runner = room.runners.get(user_id)
             if runner is None:
-                runner = room.runners[user_id] = Runner(user_id=user_id, nickname=nickname)
+                runner = room.runners[user_id] = Runner(user_id=user_id, nickname=nickname, level=level)
             else:  # 다시 붙음(끊긴 뒤 30초 안, 또는 앞 연결이 아직 안 닫힘): 알림 없이 이어짐
                 if runner.conn is not None:
                     runner.conn.retire()
                 runner.nickname = nickname
+                runner.level = level
             runner.conn = conn
             runner.disconnected_at = None
             self._where[user_id] = map_id
