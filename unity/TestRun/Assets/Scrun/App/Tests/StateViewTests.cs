@@ -25,6 +25,7 @@ namespace Scrun.App.Tests
         public void Detach()
         {
             StateView.HasNetwork = savedNet;
+            StateView.GoHome = null;
             Feedback.Detach();
             Feedback.OnNotLoggedIn = null;
         }
@@ -72,7 +73,7 @@ namespace Scrun.App.Tests
         public void Every_skeleton_kind_has_bars(SkeletonKind kind)
         {
             var (s, _) = Make(kind);
-            Assert.Greater(s.Root.Query(className: "skeleton-bar").ToList().Count, 0);
+            Assert.Greater(s.Root.Q("state-skeleton").childCount, 0);
         }
 
         [Test]
@@ -86,7 +87,9 @@ namespace Scrun.App.Tests
             Assert.AreEqual(StateView.Mode.Failed, s.Current);
             Assert.IsFalse(Feedback.IsBlocking, "안내창은 안 띄움(정할 것 2 가)");
             Assert.IsFalse(Shown(content));
-            Assert.AreEqual("코스를 불러오지 못했어요", s.Root.Q<Label>("state-title").text);
+            Assert.AreEqual(StateView.ErrorTitle, s.Root.Q<Label>("state-title").text, "Figma I-09");
+            Assert.AreEqual(StateView.ErrorBody, s.Root.Q<Label>("state-body").text);
+            Assert.IsTrue(s.Root.Q("state-icon").ClassListContains("state-icon--error"));
             var retry = s.Root.Q<Button>("state-action");
             Assert.IsTrue(Shown(retry));
             Assert.IsFalse(Shown(s.Root.Q<Button>("state-alt")), "두 번째 버튼은 준 화면만");
@@ -102,6 +105,7 @@ namespace Scrun.App.Tests
             Feedback.Load(s, false, () => Fail(ApiFailure.Server, 409, "RUN_NOT_FINISHED"), () => { });
             Assert.AreEqual(StateView.Mode.Failed, s.Current);
             Assert.IsFalse(Shown(s.Root.Q<Button>("state-action")), "다시 보내도 같은 실패엔 다시 시도 없음");
+            Assert.AreEqual("코스를 불러오지 못했어요", s.Root.Q<Label>("state-title").text, "그 화면 말");
         }
 
         [Test]
@@ -233,6 +237,26 @@ namespace Scrun.App.Tests
             Assert.AreEqual("운동 결과 보기", b.text);
             s.PressAlt();
             Assert.AreEqual(1, alt);
+        }
+
+        // Figma I-09: 실패엔 "홈으로"(화면이 다른 두 번째 버튼을 주면 그것), I-07 네트워크 없음엔 없음
+        [Test]
+        public void Failure_offers_home_but_offline_does_not()
+        {
+            int home = 0;
+            StateView.GoHome = () => home++;
+            StateView.HasNetwork = () => true;
+            var (s, _) = Make();
+            s.Failed(new ApiException(ApiFailure.Server, "x", 500), () => { });
+            var b = s.Root.Q<Button>("state-alt");
+            Assert.IsTrue(Shown(b));
+            Assert.AreEqual(StateView.HomeText, b.text);
+            s.PressAlt();
+            Assert.AreEqual(1, home);
+            StateView.HasNetwork = () => false;
+            s.Failed(new ApiException(ApiFailure.Network, "x"), () => { });
+            Assert.IsFalse(Shown(s.Root.Q<Button>("state-alt")), "I-07엔 다시 시도만");
+            Assert.IsTrue(s.Root.Q("state-icon").ClassListContains("state-icon--network"));
         }
 
         // 옮긴 화면들이 UXML에 공통 칸을 갖고 예전 칸이 남지 않았는지(이름이 바뀌면 Q가 null을 줘 생성에서 예외)

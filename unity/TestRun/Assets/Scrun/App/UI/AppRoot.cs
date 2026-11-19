@@ -68,6 +68,7 @@ namespace Scrun.App
             lastPanelSize = default;
             Feedback.Attach(root);
             Feedback.OnNotLoggedIn = GoToLogin;
+            StateView.GoHome = () => Nav?.ShowTabRoot(AppTab.Home); // 공통 칸 I-09 "홈으로"
 
             try
             {
@@ -110,6 +111,7 @@ namespace Scrun.App
             if (subscribed) Api.Session.Expired -= OnSessionExpired;
             subscribed = false;
             Feedback.OnNotLoggedIn = null;
+            StateView.GoHome = null;
             Feedback.Detach();
             Nav?.Dispose(); // 화면마다 OnHide·OnDestroy(구독 해제)가 불리게
             Nav = null;
