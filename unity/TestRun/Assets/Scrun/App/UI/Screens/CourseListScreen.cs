@@ -20,6 +20,7 @@ namespace Scrun.App
         bool liveOnly, loading;
 
         protected override string Uxml => "UI/CourseList";
+        public override string RootClass => SpaceArt.HomeRootClass; // 우주 시안 C-01(계획 0062)
 
         protected override void OnCreate()
         {
@@ -59,8 +60,8 @@ namespace Scrun.App
         void SetFilter(bool live)
         {
             liveOnly = live;
-            filterAll.EnableInClassList("chip--active", !live);
-            filterLive.EnableInClassList("chip--active", live);
+            filterAll.EnableInClassList("cl-chip--active", !live);
+            filterLive.EnableInClassList("cl-chip--active", live);
             Build();
         }
 
@@ -74,24 +75,24 @@ namespace Scrun.App
             else state.Clear();
         }
 
-        // Course Card: 그림 150 + 이름 + "한 바퀴 6.7km" + 지금 달리는 사람 칩
+        // 우주 시안 Course Card(353×236): 그림 136(LIVE·지금 N명) + 이름·"한 바퀴 6.7km · 3D 루프 · 5구간"·달리는 사람 얼굴·구간 행성 5개
         Button Card(Course c)
         {
             var id = c.CourseId;
             // 두 번 눌러 상세가 둘 쌓이지 않게(맨 위일 때만)
             var card = new Button(() => { if (Nav.Current == this) Nav.Push(new CourseDetailScreen(id, ghost: ghost)); }) { name = "course-" + id };
-            card.AddToClassList("course-card");
-            var thumb = CourseParts.Thumb(c);
-            thumb.pickingMode = PickingMode.Ignore;
-            card.Add(thumb);
-            var info = new VisualElement { pickingMode = PickingMode.Ignore };
-            info.AddToClassList("course-card-info");
-            info.Add(UiExtensions.Text(c.Name, "course-name"));
-            var row = new VisualElement { pickingMode = PickingMode.Ignore };
-            row.AddToClassList("course-meta-row");
-            row.Add(UiExtensions.Text(CourseText.Lap(c.LengthM), "course-meta"));
-            row.Add(CourseParts.LiveChip(c.RunnersNow));
-            info.Add(row);
+            card.AddToClassList("bc-card");
+            card.AddToClassList("cl-card");
+            card.Add(CourseParts.SpaceThumb(c.RunnersNow));
+            var info = CourseParts.Part("cl-info");
+            var nameRow = CourseParts.Part("cl-name-row");
+            var text = CourseParts.Part("cl-name-text");
+            text.Add(UiExtensions.Text(c.Name, "cl-name"));
+            text.Add(UiExtensions.Text(CourseText.CardMeta(c.LengthM), "cl-meta"));
+            nameRow.Add(text);
+            nameRow.Add(CourseParts.Runners(c.RunnersNow));
+            info.Add(nameRow);
+            info.Add(CourseParts.Zones("cl-zones", "cl-zone"));
             card.Add(info);
             return card;
         }

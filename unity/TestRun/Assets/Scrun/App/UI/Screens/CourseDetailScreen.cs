@@ -12,9 +12,11 @@ namespace Scrun.App
     {
         readonly string courseId;
         CourseDetail course;
-        Label title, description, runners, length;
+        Label title, description, runners, length, friends, friendsUnit, liveTag, liveText;
+        int friendsAsk;  // 친구 수 요청 번호(늦게 온 옛 답은 버림)
+        bool friendsKnown;
         Button enter;
-        VisualElement hero, content;
+        VisualElement content;
         StateView state;
         bool loading, skipReload, notFound, gating, fromCalibration;
         MapScreen map; // 띄운 맵(돌아올 때 끝낸 기록 ID를 받음)
@@ -32,6 +34,7 @@ namespace Scrun.App
 
         protected override string Uxml => "UI/CourseDetail";
         public override bool HidesTabBar => true;
+        public override string RootClass => SpaceArt.CourseDetailRootClass; // 우주 시안 C-02(계획 0062)
 
         protected override void OnCreate()
         {
@@ -40,8 +43,14 @@ namespace Scrun.App
             description = Q<Label>("description");
             runners = Q<Label>("runners");
             length = Q<Label>("length");
-            hero = Q<VisualElement>("hero");
+            friends = Q<Label>("friends");
+            friendsUnit = Q<Label>("friends-unit");
+            SetFriends(null);
+            liveTag = Q<Label>("live-tag");
+            liveText = Q<Label>("live-text");
             content = Q<VisualElement>("content");
+            var zones = Q<VisualElement>("zones");
+            zones.Add(CourseParts.Zones("cd-zones", "cd-zone-icon", labels: true));
             state = new StateView(Q<VisualElement>("state"), SkeletonKind.Detail, "코스를 불러오지 못했어요");
             enter = Q<Button>("enter");
             enter.clicked += Enter;
@@ -65,6 +74,7 @@ namespace Scrun.App
         {
             if (loading) return;
             loading = true;
+            LoadFriends(); // 코스와 같이(따로 기다리지 않음)
             CourseDetail got = null;
             // 처음만 스켈레톤(실패하면 그 자리에), 인증·맵에서 돌아오면 지금 상세를 둔 채 조용히(그새 없어진 코스면 그대로 알림)
             bool ok = await Feedback.Load(state, course != null, async () => got = await Api.Courses.GetAsync(courseId), Load, OnLoadFailure);
@@ -95,12 +105,34 @@ namespace Scrun.App
             state.Clear();
             title.text = course.Name;
             description.text = course.Description ?? "";
-            runners.text = CourseText.PeopleCount(course.RunnersNow);
-            length.text = CourseText.Km(course.LengthM);
-            hero.Clear();
-            hero.Add(CourseParts.Thumb(course));
-            hero.Add(CourseParts.LiveChip(course.RunnersNow));
+            liveTag.SetVisible(course.RunnersNow > 0);
+            liveText.EnableInClassList("cd-live-text--alone", course.RunnersNow <= 0); // LIVE가 없으면 왼쪽 여백 없이
+            liveText.text = CourseText.RunningNow(course.RunnersNow);
+            runners.text = System.Math.Max(0, course.RunnersNow).ToString();
+            length.text = CourseText.KmNumber(course.LengthM);
             enter.SetEnabled(true);
+        }
+
+        // 친구 칸: 지금 달리는 친구 중 이 코스(GET /v1/friends/running). 다시 불러오는 동안·실패하면 지난 값 그대로(처음이면 "–")
+        async void LoadFriends()
+        {
+            int ask = ++friendsAsk;
+            try
+            {
+                var list = await Api.Friends.RunningAsync();
+                if (Root.panel == null || ask != friendsAsk) return;
+                SetFriends(CourseText.FriendsOn(list, courseId));
+            }
+            catch (ApiException) { /* 친구 수만 못 보여 줌 */ }
+        }
+
+        // null이면 "–"(단위 "명"은 숨김), 한 번 받은 뒤엔 실패해도 그 값 유지
+        void SetFriends(int? n)
+        {
+            if (n == null && friendsKnown) return;
+            friendsKnown = n != null;
+            friends.text = n?.ToString() ?? "–";
+            friendsUnit.SetVisible(n != null);
         }
 
         void ShowNotFound()

@@ -1,36 +1,51 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- C-02 코스 상세(Figma). 값은 GET /v1/courses/{courseId}. "맵 입장"을 누르면 가로 맵 화면이 입장(POST /entries)·로딩(I-10)을 맡는다.
-         Figma의 "친구" 칸은 친구 API가 생기면, [모션] 3D 코스 프리뷰는 S3 이후 -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
-    <ui:VisualElement class="course detail">
-        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="detail-scroll">
-            <ui:VisualElement name="content">
-                <!-- 코스 그림 + 지금 달리는 사람 칩(코드가 채움) -->
-                <ui:VisualElement name="hero" class="detail-hero" />
-                <ui:VisualElement class="detail-body">
-                    <ui:Label name="title" class="detail-title" />
-                    <ui:Label name="description" class="detail-desc" />
-                    <ui:VisualElement class="stat-row">
-                        <ui:VisualElement class="stat">
-                            <ui:Label text="달리는 러너" class="stat-label" />
-                            <ui:Label name="runners" class="stat-value" />
+    <!-- C-02 코스 상세(모양은 우주 시안 825:749 계획 0062). 값은 GET /v1/courses/{courseId}, 친구 칸은 지금 달리는 친구 중 이 코스(GET /v1/friends/running).
+         "맵 입장"을 누르면 가로 맵 화면이 입장(POST /entries)·로딩(I-10)을 맡는다. 맨 위 그림·구간 행성 5개는 시안 그대로(모든 코스 같음, 계획 0062 정할 것 2) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/HomeSpace.uss" />
+    <ui:VisualElement class="bc">
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="bc-scroll">
+            <ui:VisualElement name="content" class="cd-content">
+                <ui:VisualElement class="cd-hero" picking-mode="Ignore" />
+                <ui:VisualElement class="cd-body">
+                    <ui:VisualElement class="cd-live-row">
+                        <ui:Label name="live-tag" text="LIVE" class="bc-live" />
+                        <ui:Label name="live-text" class="cd-live-text" />
+                    </ui:VisualElement>
+                    <ui:Label name="title" class="bc-title cd-title" />
+                    <ui:Label name="description" class="cd-desc" />
+                    <ui:VisualElement name="zones" />
+                    <ui:VisualElement class="cd-stats">
+                        <ui:VisualElement class="bc-card cd-stat">
+                            <ui:Label text="달리는 러너" class="cd-stat-label" />
+                            <ui:VisualElement class="cd-stat-value-row">
+                                <ui:Label name="runners" class="cd-stat-value" />
+                                <ui:Label text="명" class="cd-stat-unit" />
+                            </ui:VisualElement>
                         </ui:VisualElement>
-                        <ui:VisualElement class="stat stat--next">
-                            <ui:Label text="코스 길이" class="stat-label" />
-                            <ui:Label name="length" class="stat-value" />
+                        <ui:VisualElement class="bc-card cd-stat cd-stat--next">
+                            <ui:Label text="친구" class="cd-stat-label" />
+                            <ui:VisualElement class="cd-stat-value-row">
+                                <ui:Label name="friends" class="cd-stat-value" />
+                                <ui:Label name="friends-unit" text="명" class="cd-stat-unit" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="bc-card cd-stat cd-stat--next">
+                            <ui:Label text="코스 길이" class="cd-stat-label" />
+                            <ui:VisualElement class="cd-stat-value-row">
+                                <ui:Label name="length" class="cd-stat-value" />
+                                <ui:Label text="km" class="cd-stat-unit" />
+                            </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
-                    <ui:Label text="입장하면 화면이 가로로 전환돼요. 러닝머신에 폰을 거치해 주세요." class="info-note" />
                 </ui:VisualElement>
             </ui:VisualElement>
             <!-- 공통 상태(계획 0056): 첫 로딩 스켈레톤·불러오기 실패·없는 코스(다른 코스 보기) -->
-            <ui:VisualElement name="state" />
+            <ui:VisualElement name="state" class="bc-page" />
         </ui:ScrollView>
-        <ui:VisualElement class="detail-footer">
-            <ui:Button name="enter" text="맵 입장" class="btn btn-primary" />
+        <ui:VisualElement class="cd-footer">
+            <ui:Label text="맵에 들어가면 화면이 가로로 바뀌어요" class="cd-note" />
+            <ui:Button name="enter" text="맵 입장" class="bc-cta" />
         </ui:VisualElement>
-        <ui:Button name="back" class="round-back">
-            <ui:VisualElement class="round-back-icon" picking-mode="Ignore" />
-        </ui:Button>
+        <ui:Button name="back" text="‹" class="bc-back cd-back" />
     </ui:VisualElement>
 </ui:UXML>

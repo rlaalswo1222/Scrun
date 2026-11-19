@@ -31,6 +31,22 @@ namespace Scrun.App
         // 맵 윗줄(D-10 자리): "한 바퀴 6.7km · 호수 한 바퀴"
         public static string MapLabel(int meters, string name) => $"{Lap(meters)} · {name}";
 
+        // 상세 "코스 길이" 칸 숫자(단위 km는 옆 글자): "6.7"
+        public static string KmNumber(int meters) => Km(meters).Replace("km", "");
+
+        // 지금 달리는 친구 중 이 코스에 있는 사람 수
+        public static int FriendsOn(System.Collections.Generic.IEnumerable<RunningFriend> running, string courseId)
+        {
+            int n = 0;
+            if (running != null) foreach (var f in running) if (f != null && f.CourseId == courseId) n++;
+            return n;
+        }
+
+        // 우주 시안 C-01·C-02(계획 0062): 카드 줄 "한 바퀴 6.7km · 3D 루프 · 5구간", 그림 위 "지금 12명", 구간 행성 이름(시안 그대로)
+        public static string CardMeta(int meters) => $"{Lap(meters)} · 3D 루프 · {Zones.Length}구간";
+        public static string LiveCount(int count) => $"지금 {System.Math.Max(0, count)}명";
+        public static readonly string[] Zones = { "구름 위", "화성", "숲 호수", "얼음", "달 기지" };
+
         // 지금 달리는 사람 칩: "지금 3명 달리는 중"
         public static string RunningNow(int count) =>
             count <= 0 ? "지금 달리는 사람 없음" : $"지금 {count}명 달리는 중";

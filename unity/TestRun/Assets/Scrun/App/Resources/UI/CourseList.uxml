@@ -1,20 +1,22 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- C-01 코스 선택(Figma). 홈 탭에서 쌓이는 화면이라 뒤로 가기 대신 아래 탭 "홈"을 다시 누르면 홈으로.
-         카드는 서버 코스(GET /v1/courses)로 채움. "친구가 있는 코스" 칩은 친구 API가 생기면 -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
-    <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="course course-list">
-        <ui:VisualElement class="course-list-page">
-            <!-- 기록 상세 "이 기록으로 고스트 달리기"로 기록 탭에 쌓였을 때만 보임(계획 0053) -->
-            <ui:Button name="back" class="course-back" />
-            <ui:Label text="어디서 달릴까요?" class="page-title" />
-            <ui:Label name="lead" text="코스를 고르면 같은 코스의 러너들과 함께 달려요" class="page-lead" />
-            <ui:VisualElement class="chip-row">
-                <ui:Button name="filter-all" text="전체" class="chip chip--active" />
-                <ui:Button name="filter-live" text="지금 달리는 중" class="chip" />
+    <!-- C-01 코스 선택(모양은 우주 시안 825:731 계획 0062). 홈 탭에서 쌓이는 화면이라 뒤로 가기 대신 아래 탭 "홈"을 다시 누르면 홈으로.
+         카드는 서버 코스(GET /v1/courses)로 채움(CourseListScreen). 카드 그림·구간 행성 5개는 시안 그대로(모든 코스 같음, 계획 0062 정할 것 2) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/HomeSpace.uss" />
+    <ui:VisualElement class="bc">
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="bc-scroll">
+            <ui:VisualElement class="bc-page">
+                <!-- 기록 상세 "이 기록으로 고스트 달리기"로 기록 탭에 쌓였을 때만 보임(계획 0053) -->
+                <ui:Button name="back" text="‹" class="bc-back" />
+                <ui:Label text="어디서 달릴까요?" class="bc-title cl-title" />
+                <ui:Label name="lead" text="코스를 고르면 같은 코스의 러너들과 함께 달려요" class="cl-sub" />
+                <ui:VisualElement class="cl-chips">
+                    <ui:Button name="filter-all" text="전체" class="cl-chip cl-chip--active" />
+                    <ui:Button name="filter-live" text="지금 달리는 중" class="cl-chip" />
+                </ui:VisualElement>
+                <ui:VisualElement name="list" />
+                <!-- 공통 상태(계획 0056): 첫 로딩 스켈레톤·불러오기 실패(C-05)·빈 목록 -->
+                <ui:VisualElement name="state" />
             </ui:VisualElement>
-            <ui:VisualElement name="list" />
-            <!-- 공통 상태(계획 0056): 첫 로딩 스켈레톤·불러오기 실패·빈 목록 -->
-            <ui:VisualElement name="state" />
-        </ui:VisualElement>
-    </ui:ScrollView>
+        </ui:ScrollView>
+    </ui:VisualElement>
 </ui:UXML>

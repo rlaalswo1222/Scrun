@@ -5,22 +5,25 @@ using UnityEngine.UIElements;
 
 namespace Scrun.App
 {
-    // 홈 탭 첫 화면 B-01–B-04(계획 0057, BL-31). 보일 때마다 GET /v1/home 한 번(처음만 스켈레톤, 다시 보일 땐 지금 화면을 둔 채 조용히).
-    // 상태(첫 이용·목표 없음·진행 중·달성)는 HomeText.Pick. 이동: 큰 버튼·전체 보기 → C-01, 코스 카드 → C-02, 목표 정하기 → H-08 시트,
-    // 위 카드(목표 있음) → H-07, 레벨 줄 → H-04, 친구 줄 → 친구 탭, 같이 달리기 → G-03 시트, 친구 없음 → G-05.
+    // 홈 탭 첫 화면 B-01–B-04(계획 0057, BL-31, 모양은 우주 시안 계획 0062). 보일 때마다 GET /v1/home 한 번(처음만 스켈레톤, 다시 보일 땐 지금 화면을 둔 채 조용히).
+    // 상태(첫 이용·목표 없음·진행 중·달성)는 HomeText.Pick. 이동: 달리기 시작 → C-01, 목표 정하기 → H-08 시트,
+    // 위 카드(목표 있음) → H-07, 프로필 카드 → H-04, 친구 줄 → 한 명이면 G-03 시트·여럿이면 친구 탭, 친구 없음 → G-05.
     // 홈을 못 받아도 큰 버튼은 동작(코스 고르기). 앱을 켠 뒤 처음이면 끝나지 않은 러닝을 묻는다(I-04, RecoveryPrompt)
     public sealed class HomeScreen : AppScreen
     {
         StateView state;
-        VisualElement topPart, bottomPart, topCard, countRow, dots, character, levelFill, courses, friends, friendsEmpty;
-        Label greeting, kicker, title, done, of, sub, levelChip, levelLine;
-        Button setGoal, level, start;
+        VisualElement topPart, bottomPart, topCard, countRow, levelFill, levelTrack;
+        Label name, title, sub, done, levelChip, levelLine, friendsTitle, friendsNames, friendsCount;
+        Button setGoal, level, start, friends, friendsEmpty;
+        MiniRing ring;
         HomeData home;
+        List<RunningFriend> running = new List<RunningFriend>();
         bool loading, reloadAfter;
         WeeklyGoalSheet sheet;
         FriendParts.Sheet runTogether;
 
         protected override string Uxml => "UI/Home";
+        public override string RootClass => SpaceArt.HomeRootClass;
 
         // 테스트
         internal HomeText.State? Shown { get; private set; }
@@ -34,39 +37,36 @@ namespace Scrun.App
             bottomPart = Q<VisualElement>("bottom-part");
             topCard = Q<VisualElement>("top-card");
             countRow = Q<VisualElement>("count-row");
-            dots = Q<VisualElement>("dots");
-            dots.AddToClassList("wg"); // 동그라미 모양은 H-07과 같음(WeeklyStatus.uss .wg …)
-            dots.AddToClassList("wg-dots");
-            character = Q<VisualElement>("character");
             levelFill = Q<VisualElement>("level-fill");
-            courses = Q<VisualElement>("courses");
-            friends = Q<VisualElement>("friends");
-            friendsEmpty = Q<VisualElement>("friends-empty");
-            greeting = Q<Label>("greeting");
-            kicker = Q<Label>("kicker");
+            levelTrack = Q<VisualElement>("level-track");
+            name = Q<Label>("name");
             title = Q<Label>("title");
-            done = Q<Label>("done");
-            of = Q<Label>("of");
             sub = Q<Label>("sub");
+            done = Q<Label>("done");
             levelChip = Q<Label>("level-chip");
             levelLine = Q<Label>("level-line");
+            friendsTitle = Q<Label>("friends-title");
+            friendsNames = Q<Label>("friends-names");
+            friendsCount = Q<Label>("friends-count");
             setGoal = Q<Button>("set-goal");
             level = Q<Button>("level");
             start = Q<Button>("start");
+            friends = Q<Button>("friends");
+            friendsEmpty = Q<Button>("friends-empty");
+            ring = new MiniRing();
+            Q<VisualElement>("ring-slot").Add(ring);
 
             setGoal.text = HomeText.SetGoal;
+            start.text = HomeText.Start;
             Q<Label>("friends-empty-title").text = HomeText.NoFriendsTitle;
             Q<Label>("friends-empty-body").text = HomeText.NoFriendsBody;
-            var addFriend = Q<Button>("add-friend");
-            addFriend.text = HomeText.AddFriend;
 
-            start.text = HomeText.StartPlain;
             start.clicked += OpenCourses;
-            Q<Button>("see-all").clicked += OpenCourses;
             setGoal.clicked += OpenGoalSheet;
             topCard.RegisterCallback<ClickEvent>(_ => OpenGoalStatus());
             level.clicked += () => { if (CanPush && home?.Progress != null) Nav.Push(new LevelScreen(home.Progress)); };
-            addFriend.clicked += () => { if (CanPush) Nav.Push(new FriendAddScreen()); };
+            friends.clicked += OpenRunningFriends;
+            friendsEmpty.clicked += () => { if (CanPush) Nav.Push(new FriendAddScreen()); };
 
             topPart.SetVisible(false);
             bottomPart.SetVisible(false);
@@ -134,106 +134,59 @@ namespace Scrun.App
             state.Clear();
             topPart.SetVisible(true);
             bottomPart.SetVisible(true);
-            greeting.text = HomeText.Greeting(home.Nickname);
-
-            var s = HomeText.Pick(home);
-            Shown = s;
-            var g = home.WeeklyGoal;
-            bool counting = s == HomeText.State.Progress || s == HomeText.State.Done;
-            kicker.text = s == HomeText.State.First ? HomeText.FirstKicker : HomeText.WeeklyKicker;
-            title.SetVisible(!counting);
-            title.text = s == HomeText.State.First ? HomeText.FirstTitle : s == HomeText.State.NoGoal ? HomeText.NoGoalTitle : "";
-            countRow.SetVisible(counting);
-            dots.SetVisible(counting);
-            setGoal.SetVisible(s == HomeText.State.NoGoal);
-            sub.text = s switch
-            {
-                HomeText.State.First => HomeText.FirstSub,
-                HomeText.State.NoGoal => HomeText.NoGoalSub,
-                HomeText.State.Progress => HomeText.RemainingLine(g),
-                _ => HomeText.DoneLine,
-            };
-            if (counting)
-            {
-                done.text = WeeklyGoalText.Done(g);
-                of.text = WeeklyGoalText.Of(g);
-                BuildDots(g);
-            }
-            character.EnableInClassList("hm-character--run", s == HomeText.State.First);
-            character.EnableInClassList("hm-character--stretch", s == HomeText.State.Done);
 
             var p = home.Progress;
-            level.SetVisible(p != null);
+            name.text = home.Nickname ?? "";
+            levelChip.SetVisible(p != null);
+            levelLine.SetVisible(p != null);
+            levelTrack.SetVisible(p != null);
             if (p != null)
             {
                 levelChip.text = MyText.Level(p.Level);
                 levelLine.text = HomeText.LevelLine(p);
                 levelFill.style.width = Length.Percent(HomeText.LevelFill(p) * 100f);
             }
-            start.text = HomeText.Button(s);
 
-            BuildCourses(HomeText.Courses(home));
+            var s = HomeText.Pick(home);
+            Shown = s;
+            var g = home.WeeklyGoal;
+            title.text = HomeText.Title(s, g);
+            sub.text = HomeText.Sub(s);
+            sub.SetVisible(sub.text.Length > 0);
+            // 목표가 있으면 왼쪽 위에 이번 주 진행(첫 이용도 목표가 있으면 0/3, 시안 B-04). 목표 없음은 짧은 카드 + 목표 정하기
+            bool hasGoal = WeeklyGoalText.HasGoal(g);
+            countRow.SetVisible(hasGoal);
+            if (hasGoal)
+            {
+                done.text = HomeText.Count(g);
+                ring.Progress = HomeText.Ring(g);
+            }
+            topCard.EnableInClassList("hs-hero--short", s == HomeText.State.NoGoal);
+            setGoal.SetVisible(s == HomeText.State.NoGoal);
+
             BuildFriends(home.RunningFriends ?? new List<RunningFriend>());
         }
 
-        void BuildDots(WeeklyGoal g)
-        {
-            dots.Clear();
-            int filled = WeeklyGoalText.Filled(g);
-            for (int i = 0; i < WeeklyGoalText.Dots(g); i++)
-            {
-                var dot = new VisualElement { pickingMode = PickingMode.Ignore };
-                dot.AddToClassList("wg-dot");
-                bool on = i < filled;
-                dot.EnableInClassList("wg-dot--done", on);
-                if (on) dot.Add(UiExtensions.Text("✓", "wg-dot-mark"));
-                dots.Add(dot);
-            }
-        }
-
-        void BuildCourses(List<Course> list)
-        {
-            courses.Clear();
-            for (int i = 0; i < list.Count; i++)
-            {
-                var c = list[i];
-                string id = c.CourseId;
-                var card = new Button(() => { if (CanPush) Nav.Push(new CourseDetailScreen(id)); }) { name = "home-course-" + id };
-                card.AddToClassList("hm-course");
-                if (i == HomeText.CourseCards - 1) card.AddToClassList("hm-course--last");
-                var thumb = CourseParts.Thumb(c);
-                thumb.pickingMode = PickingMode.Ignore;
-                card.Add(thumb);
-                var info = new VisualElement { pickingMode = PickingMode.Ignore };
-                info.AddToClassList("hm-course-info");
-                info.Add(UiExtensions.Text(c.Name, "hm-course-name"));
-                info.Add(UiExtensions.Text(HomeText.CourseMeta(c), "hm-course-meta"));
-                card.Add(info);
-                courses.Add(card);
-            }
-            if (list.Count == 1) // 하나뿐이면 반 칸(Figma 두 칸 자리의 왼쪽)
-            {
-                var spacer = new VisualElement { pickingMode = PickingMode.Ignore };
-                spacer.AddToClassList("hm-course-spacer");
-                courses.Add(spacer);
-            }
-            courses.SetVisible(list.Count > 0);
-        }
-
+        // 지금 달리는 친구를 한 줄로(시안 B-01): 얼굴 둘·"지민 · 하준"·"2명 달리는 중"·LIVE. 없으면 "친구" + 친구 추가(B-04)
         void BuildFriends(List<RunningFriend> list)
         {
-            friends.Clear();
-            foreach (var f in list)
-            {
-                var friend = f;
-                friends.Add(FriendParts.Row(f.Nickname, FriendText.RunningLine(f), live: true,
-                    onTap: () => { if (CanPush) Nav.SelectTab(AppTab.Friends); },
-                    action: FriendParts.Action(HomeText.RunTogether, () =>
-                    {
-                        if (CanPush) runTogether = FriendParts.RunTogether(this, friend);
-                    })));
-            }
-            friendsEmpty.SetVisible(list.Count == 0);
+            running = list;
+            bool any = list.Count > 0;
+            friendsTitle.text = any ? HomeText.FriendsTitle : HomeText.NoFriendsSection;
+            friends.SetVisible(any);
+            friendsEmpty.SetVisible(!any);
+            if (!any) return;
+            friendsNames.text = HomeText.FriendNames(list);
+            friendsCount.text = HomeText.FriendCount(list.Count);
+            Q<VisualElement>("avatar-2").SetVisible(list.Count > 1);
+        }
+
+        // 한 명이면 바로 같이 달리기(G-03), 여럿이면 친구 탭(달리는 친구마다 같이 달리기가 있음)
+        void OpenRunningFriends()
+        {
+            if (!CanPush || running.Count == 0) return;
+            if (running.Count == 1) runTogether = FriendParts.RunTogether(this, running[0]);
+            else Nav.SelectTab(AppTab.Friends);
         }
 
         // B-02 "목표 정하기" → H-08 시트(저장하면 홈을 다시 받아 B-01로)
@@ -243,11 +196,10 @@ namespace Scrun.App
             sheet = new WeeklyGoalSheet(Root, home.WeeklyGoal ?? new WeeklyGoal(), _ => { if (Root.panel != null) Load(); });
         }
 
-        // 위 카드(목표가 있을 때) → H-07 현황
+        // 위 카드(목표가 있을 때, 첫 이용 0/3 포함) → H-07 현황
         void OpenGoalStatus()
         {
-            if (Shown == HomeText.State.Progress || Shown == HomeText.State.Done)
-                if (CanPush) Nav.Push(new WeeklyGoalStatusScreen());
+            if (WeeklyGoalText.HasGoal(home?.WeeklyGoal) && CanPush) Nav.Push(new WeeklyGoalStatusScreen());
         }
     }
 }
