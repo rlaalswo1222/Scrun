@@ -15,7 +15,7 @@ from app.db.models import Run, Verification
 from app.main import app
 from app.routers import verification as vr
 from tests.helpers import data, fail, run_together, signup
-from tests.test_runs import ago, db, enter, finish, me, start, started_id  # noqa: F401  (db·me는 fixture)
+from tests.test_runs import ago, db, enter, finish, iso, me, start, started_id  # noqa: F401  (db·me는 fixture)
 
 P = VerificationPolicy()
 
@@ -342,11 +342,44 @@ def test_skip_saves_unverified(db_client, me, db, reason):
 
 # ---------- 마감 ----------
 def test_finish_sets_deadline_from_server_time(db_client, me, db):
-    run_id = started_id(db_client, me, started=ago(minutes=50))
-    r = finish(db_client, me, run_id, ended=ago(minutes=40), duration=600)  # 앱이 꺼졌다 복구해 늦게 끝냄
+    """마감은 받은 때부터 10분(계획 0052). 앱이 sentAt을 안 보내면(옛 앱) 방금 끝난 것으로 봄."""
+    run_id = started_id(db_client, me, started=ago(minutes=20))
+    r = finish(db_client, me, run_id, ended=ago(minutes=4), duration=600)
     assert r.status_code == 200, r.text
+    assert data(r)["verification"] == "PENDING"
     left = run_row(db, run_id).verification_deadline - datetime.now(timezone.utc)
     assert timedelta(minutes=9) < left <= timedelta(minutes=10)
+
+
+def finish_sent(client, headers, run_id, ended, sent, duration=600):
+    return client.post(f"/v1/runs/{run_id}/finish", headers=headers,
+                       json={"endedAt": iso(ended), "sentAt": iso(sent), "sensor": {"distanceM": 1500, "durationS": duration}})
+
+
+def test_finish_of_a_run_that_stopped_long_ago_is_closed(db_client, me, db):
+    """앱 시계로 멈춘 뒤 10분이 넘게 지나 보낸 종료(꺼졌다 늦게 복구) → 그때 계기판 숫자는 그 러닝 값이 아니라 바로 미인증(정할 것 2 가)."""
+    run_id = started_id(db_client, me, started=ago(minutes=50))
+    ended = ago(minutes=40)
+    r = finish_sent(db_client, me, run_id, ended, sent=ago(seconds=0))
+    assert r.status_code == 200, r.text
+    assert data(r)["verification"] == "UNVERIFIED"
+    assert data(finish_sent(db_client, me, run_id, ended, sent=ago(seconds=0)))["verification"] == "UNVERIFIED", "다시 보내도 처음 결과"
+
+
+def test_slow_phone_clock_does_not_close_a_fresh_finish(db_client, me, db):
+    """폰 시계가 25분 늦어도(endedAt·sentAt이 둘 다 25분 앞) 방금 끝낸 러닝은 받은 때부터 10분(#0052 리뷰)."""
+    run_id = started_id(db_client, me, started=ago(minutes=45))
+    r = finish_sent(db_client, me, run_id, ended=ago(minutes=25, seconds=5), sent=ago(minutes=25))
+    assert r.status_code == 200, r.text
+    assert data(r)["verification"] == "PENDING"
+    left = run_row(db, run_id).verification_deadline - datetime.now(timezone.utc)
+    assert timedelta(minutes=9) < left <= timedelta(minutes=10)
+
+
+def test_recovered_within_ten_minutes_can_still_verify(db_client, me, db):
+    run_id = started_id(db_client, me, started=ago(minutes=20))
+    r = finish_sent(db_client, me, run_id, ended=ago(minutes=9), sent=ago(seconds=0))
+    assert data(r)["verification"] == "PENDING", "꺼진 지 9분: 아직 계기판에 그 숫자가 있음"
 
 
 def test_photo_after_deadline_closes_run(db_client, me, db):

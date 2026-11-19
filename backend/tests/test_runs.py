@@ -187,7 +187,7 @@ def test_someone_elses_run_is_forbidden_and_unknown_is_not_found(db_client, me):
 
 # ---------- 끝나지 않은 러닝 ----------
 def test_active_is_null_without_runs(db_client, me):
-    assert data(db_client.get("/v1/runs/active", headers=me)) == {"run": None, "recoverableUntil": None}
+    assert data(db_client.get("/v1/runs/active", headers=me)) == {"run": None, "recoverableUntil": None, "lastActiveAt": None}
 
 
 def test_active_shows_latest_unfinished_run_with_samples_so_far(db_client, me):
@@ -201,6 +201,8 @@ def test_active_shows_latest_unfinished_run_with_samples_so_far(db_client, me):
     assert (run["distanceM"], run["durationS"]) == (330, 120)  # 9 km/h 60초 150m + 10.8 km/h 60초 180m
     until = datetime.fromisoformat(out["recoverableUntil"].replace("Z", "+00:00"))
     assert timedelta(hours=23, minutes=59) < until - datetime.now(timezone.utc) <= timedelta(hours=24)
+    last = datetime.fromisoformat(out["lastActiveAt"].replace("Z", "+00:00"))
+    assert until - last == timedelta(hours=24), "마지막 갱신 시각(앱이 폰 기록 없이 끝낼 때 종료 시각, 계획 0052)"
 
 
 def test_active_forgets_runs_untouched_for_24_hours(db_client, me, db):

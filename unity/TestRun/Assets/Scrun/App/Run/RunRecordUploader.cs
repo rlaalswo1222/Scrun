@@ -144,7 +144,11 @@ namespace Scrun.App
                 await Retry(async () => { await remote.PutSamplesAsync(p.RunId, c); return true; }, delay, ct, retries);
                 p.Chunks.RemoveAt(0);
             }
-            var summary = await Retry(() => remote.FinishAsync(p.RunId, p.Finish), delay, ct, retries);
+            var summary = await Retry(() =>
+            {
+                p.Finish.SentAt = DateTime.UtcNow; // 멈춘 뒤 얼마나 지나 보냈는지(앱이 꺼졌다 늦게 복구·폰에 남겼다 나중에 보냄 → 인증 불가)
+                return remote.FinishAsync(p.RunId, p.Finish);
+            }, delay, ct, retries);
             if (p.SkipVerification)
             {
                 // 오프라인에서 "촬영 없이 마무리"를 골랐던 기록. 인증 API(지환 BL-18) 쪽 실패는 기록 저장을 막지 않음
@@ -177,8 +181,8 @@ namespace Scrun.App
             return new RunSamplesBody { OffsetS = from * RunSession.SampleIntervalSec, IntervalS = RunSession.SampleIntervalSec, SpeedsKmh = speeds };
         }
 
-        // from부터 끝까지 1분씩(마지막은 짧을 수 있음)
-        static List<RunSamplesBody> Chunks(IReadOnlyList<float> s, int from)
+        // from부터 끝까지 1분씩(마지막은 짧을 수 있음). 복구(RecoveredRun)도 씀
+        internal static List<RunSamplesBody> Chunks(IReadOnlyList<float> s, int from)
         {
             var list = new List<RunSamplesBody>();
             for (int i = from; i < s.Count; i += ChunkSamples) list.Add(Chunk(s, i, Math.Min(ChunkSamples, s.Count - i)));

@@ -119,7 +119,7 @@ ACTIVE_RUN = {
     "recoverableUntil": "2026-11-07T10:09:00Z",
 }
 
-ACTIVE_RUN_NONE = {"run": None, "recoverableUntil": None}
+ACTIVE_RUN_NONE = {"run": None, "recoverableUntil": None, "lastActiveAt": None}
 
 GHOST = {"runId": "run_01HZX", "distanceM": 3120, "durationS": 1080, "speedSeries": SPEED_SERIES}
 

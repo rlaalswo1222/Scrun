@@ -59,6 +59,9 @@ class SamplesUpload(SpeedSeries):  # 받을 때만 칸 수·속도 범위를 좁
 class RunFinishRequest(CamelModel):
     ended_at: datetime
     sensor: RunStats = Field(description="센서로 잰 거리·시간")
+    sent_at: Optional[datetime] = Field(
+        default=None, description="앱이 이 요청을 보낸 시각(앱 시계). sentAt − endedAt이 멈춘 뒤 지난 시간: 10분을 넘으면 인증 없이 바로 "
+        "미인증(앱이 꺼졌다 늦게 복구, 계획 0052). 둘 다 앱 시계라 폰 시계가 틀려도 차이는 맞음. 없으면 방금 끝난 것으로 봄")
 
 
 class RunSummary(CamelModel):
@@ -106,6 +109,8 @@ class RunUpdate(CamelModel):
 class ActiveRun(CamelModel):
     run: Optional[RunSummary] = Field(default=None, description="끝나지 않은 러닝. 없으면 null")
     recoverable_until: Optional[datetime] = Field(default=None, description="앱 종료 후 24시간")
+    last_active_at: Optional[datetime] = Field(
+        default=None, description="마지막 갱신(시작·시계열 올리기) 시각. 폰에 진행 기록이 없을 때 앱이 종료 시각으로 씀(계획 0052)")
 
 
 class GhostTrack(CamelModel):

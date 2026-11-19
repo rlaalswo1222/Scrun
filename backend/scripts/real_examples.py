@@ -78,6 +78,7 @@ def _clean(j):
         if isinstance(run, dict):
             run["runId"] = PLACEHOLDER["runId"]
             data["recoverableUntil"] = "2026-11-07T10:01:00Z"
+            data["lastActiveAt"] = "2026-11-06T10:01:00Z"
     return j
 
 

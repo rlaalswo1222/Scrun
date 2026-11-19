@@ -61,6 +61,16 @@ PAGE_SIZE = 20                          # 기록 목록 한 쪽
 GRAPH_POINTS = 120                      # 상세 그래프 시계열 최대 칸 수
 
 
+def deadline_on_finish(ended_at: datetime, received_at: datetime, sent_at: Optional[datetime]) -> datetime:
+    """인증 마감(계획 0052 정할 것 2 가). 창 = VERIFY_DEADLINE_S(10분).
+    멈춘 뒤 지난 시간 = sentAt − endedAt(둘 다 앱 시계라 폰 시계가 틀려도 맞음, 서버 시각과 섞으면 시계가 늦은 폰은 정상 종료도 닫힘).
+    창 안이면 받은 때부터 창(응답이 늦어도 줄지 않음), 넘으면 받은 때 바로 닫힘: 앱이 꺼졌다 오래 뒤 복구했거나 폰에 남겼다 나중에 보낸
+    기록이라 그때 찍은 계기판 숫자는 그 러닝 값이 아님(러닝머신을 끄거나 다음 사람이 씀). sentAt이 없으면(옛 앱) 방금 끝난 것으로."""
+    window = timedelta(seconds=settings.verification.deadline_s)
+    stopped = sent_at - ended_at if sent_at is not None and sent_at.tzinfo is not None else timedelta(0)
+    return received_at + window if stopped <= window else received_at
+
+
 def _expired(run: Run) -> bool:
     """끝나지 않았지만 복구 기한(마지막 갱신 + 24시간)이 지난 러닝."""
     return run.status == ACTIVE and run.updated_at < datetime.now(timezone.utc) - RECOVERABLE
@@ -203,7 +213,8 @@ def _started(run: Run) -> dict:
     "/runs/active",
     summary="끝나지 않은 러닝 찾기",
     description="화면 I-04 · BL-37. 앱 재실행 때. 가장 최근에 시작한 러닝이 끝나지 않았고 마지막 갱신(시작·시계열 올리기)부터 "
-    "24시간 안이면 그것. 그보다 옛 러닝은 다시 묻지 않음. 거리·시간은 지금까지 올라온 시계열로 셈. 없으면 run=null",
+    "24시간 안이면 그것. 그보다 옛 러닝은 다시 묻지 않음. 거리·시간은 지금까지 올라온 시계열로 셈, lastActiveAt은 마지막 갱신 시각"
+    "(폰에 진행 기록이 없을 때 종료 시각, 계획 0052). 없으면 run=null",
     response_model=Envelope[ActiveRun],
     responses=error_responses(*AUTH),
 )
@@ -213,7 +224,7 @@ def active_run(request: Request, user: User = Depends(current_user), db: Session
         return ok(request, d.ACTIVE_RUN_NONE)
     distance_m, duration_s = _samples_so_far(db, run.id)
     return ok(request, {"run": _summary(run, _course_name(db, run.course_id), distance_m, duration_s, PENDING),
-                        "recoverableUntil": run.updated_at + RECOVERABLE})
+                        "recoverableUntil": run.updated_at + RECOVERABLE, "lastActiveAt": run.updated_at})
 
 
 def _month_range(month: str, tz_name: str) -> tuple[datetime, datetime]:
@@ -360,7 +371,8 @@ def put_samples(runId: str, body: SamplesUpload, user: User = Depends(current_us
     summary="러닝 종료",
     description="화면 D-18, D-19 · BL-14 ②. 센서로 잰 거리·시간(일시정지 뺀 달린 시간)·종료 시각 → 인증 대기(PENDING). "
     "공식 값은 인증 전까지 센서 값. 응답이 안 와서 같은 endedAt으로 다시 보내면 처음 결과를 돌려줌. "
-    "다른 값으로 다시 끝내거나 버렸거나 복구 기한(24시간)이 지났으면 RUN_ALREADY_FINISHED. 평균 속도가 30 km/h를 넘으면 400",
+    "다른 값으로 다시 끝내거나 버렸거나 복구 기한(24시간)이 지났으면 RUN_ALREADY_FINISHED. 평균 속도가 30 km/h를 넘으면 400. "
+    "인증 마감은 받은 때부터 10분. 단 sentAt − endedAt(앱 시계로 멈춘 뒤 지난 시간)이 10분을 넘으면 바로 미인증(앱이 꺼졌다 늦게 복구, 계획 0052)",
     response_model=Envelope[RunSummary],
     responses=error_responses(*AUTH, *RUN_ERRORS, E.VALIDATION_ERROR, E.RUN_ALREADY_FINISHED),
 )
@@ -395,11 +407,14 @@ def finish_run(runId: str, body: RunFinishRequest, request: Request, user: User 
     run.official_source = "SENSOR"
     run.official_distance_m = body.sensor.distance_m
     run.official_duration_s = body.sensor.duration_s
-    # 인증 마감은 앱의 endedAt이 아니라 서버가 종료를 받은 때부터(앱이 꺼졌다 복구해 늦게 끝내도 바로 찍을 수 있게, 계획 0038)
-    run.verification_deadline = datetime.now(timezone.utc) + timedelta(seconds=settings.verification.deadline_s)
+    run.verification_deadline = deadline_on_finish(body.ended_at, datetime.now(timezone.utc), body.sent_at)
     _save_companions(db, run)
     db.commit()
     hub.stop_tracking(user.id, run.id)  # 커밋 뒤에 지움(커밋이 실패해 앱이 다시 보내면 다시 넣게)
+    # 오래전에 꺼진 러닝을 복구해 끝냄 → 마감이 이미 지남: 바로 미인증으로 닫아 응답이 PENDING으로 보이지 않게(앱이 촬영으로 가지 않음)
+    if close_expired(db, run_id=run.id):
+        db.commit()
+        db.refresh(run)
     return ok(request, _finished_summary(db, run))
 
 

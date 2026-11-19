@@ -1,0 +1,5 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- I-04 복구 안내 시트를 홈 위에 띄우는 빈 틀(계획 0052). 홈 UXML(지환 BL-31)을 바꾸지 않고 시트 모양(Friends.uss)을 쓰려고 따로 둠.
+         RecoveryPrompt가 불러 홈 화면 위에 꽉 차게 붙이고, 그 안에 FriendParts.Sheet를 만든다 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
+</ui:UXML>

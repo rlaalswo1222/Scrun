@@ -1372,7 +1372,7 @@
           "Run"
         ],
         "summary": "끝나지 않은 러닝 찾기",
-        "description": "화면 I-04 · BL-37. 앱 재실행 때. 가장 최근에 시작한 러닝이 끝나지 않았고 마지막 갱신(시작·시계열 올리기)부터 24시간 안이면 그것. 그보다 옛 러닝은 다시 묻지 않음. 거리·시간은 지금까지 올라온 시계열로 셈. 없으면 run=null",
+        "description": "화면 I-04 · BL-37. 앱 재실행 때. 가장 최근에 시작한 러닝이 끝나지 않았고 마지막 갱신(시작·시계열 올리기)부터 24시간 안이면 그것. 그보다 옛 러닝은 다시 묻지 않음. 거리·시간은 지금까지 올라온 시계열로 셈, lastActiveAt은 마지막 갱신 시각(폰에 진행 기록이 없을 때 종료 시각, 계획 0052). 없으면 run=null",
         "operationId": "active_run_v1_runs_active_get",
         "responses": {
           "200": {
@@ -1694,7 +1694,7 @@
           "Run"
         ],
         "summary": "러닝 종료",
-        "description": "화면 D-18, D-19 · BL-14 ②. 센서로 잰 거리·시간(일시정지 뺀 달린 시간)·종료 시각 → 인증 대기(PENDING). 공식 값은 인증 전까지 센서 값. 응답이 안 와서 같은 endedAt으로 다시 보내면 처음 결과를 돌려줌. 다른 값으로 다시 끝내거나 버렸거나 복구 기한(24시간)이 지났으면 RUN_ALREADY_FINISHED. 평균 속도가 30 km/h를 넘으면 400",
+        "description": "화면 D-18, D-19 · BL-14 ②. 센서로 잰 거리·시간(일시정지 뺀 달린 시간)·종료 시각 → 인증 대기(PENDING). 공식 값은 인증 전까지 센서 값. 응답이 안 와서 같은 endedAt으로 다시 보내면 처음 결과를 돌려줌. 다른 값으로 다시 끝내거나 버렸거나 복구 기한(24시간)이 지났으면 RUN_ALREADY_FINISHED. 평균 속도가 30 km/h를 넘으면 400. 인증 마감은 받은 때부터 10분. 단 sentAt − endedAt(앱 시계로 멈춘 뒤 지난 시간)이 10분을 넘으면 바로 미인증(앱이 꺼졌다 늦게 복구, 계획 0052)",
         "operationId": "finish_run_v1_runs__runId__finish_post",
         "security": [
           {
@@ -3163,6 +3163,19 @@
             ],
             "title": "Recoverableuntil",
             "description": "앱 종료 후 24시간"
+          },
+          "lastActiveAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastactiveat",
+            "description": "마지막 갱신(시작·시계열 올리기) 시각. 폰에 진행 기록이 없을 때 앱이 종료 시각으로 씀(계획 0052)"
           }
         },
         "type": "object",
@@ -5525,6 +5538,19 @@
           "sensor": {
             "$ref": "#/components/schemas/RunStats",
             "description": "센서로 잰 거리·시간"
+          },
+          "sentAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentat",
+            "description": "앱이 이 요청을 보낸 시각(앱 시계). sentAt − endedAt이 멈춘 뒤 지난 시간: 10분을 넘으면 인증 없이 바로 미인증(앱이 꺼졌다 늦게 복구, 계획 0052). 둘 다 앱 시계라 폰 시계가 틀려도 차이는 맞음. 없으면 방금 끝난 것으로 봄"
           }
         },
         "type": "object",

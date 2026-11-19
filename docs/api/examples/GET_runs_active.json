@@ -21,7 +21,8 @@
           "verification": "PENDING",
           "shared": false
         },
-        "recoverableUntil": "2026-11-07T10:01:00Z"
+        "recoverableUntil": "2026-11-07T10:01:00Z",
+        "lastActiveAt": "2026-11-06T10:01:00Z"
       }
     },
     "error": null,
