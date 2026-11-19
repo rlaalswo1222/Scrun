@@ -3,16 +3,9 @@
 - 상태: **구현 중 · 맥 빌드·아이폰 기능 확인 끝(11/13), 실제 계기판 노출·OCR 시험 남음** (2026-11-12 민재 승인: 정할 것 1 (가), 2 브래킷 3장 → ADR-0011. 3은 옵션 값으로 두고 지환·상준이 정함)
 - **맥 할 일**(Windows가 적고 맥이 읽음. 맥은 `git pull --rebase` 뒤 위에서부터, 끝낸 줄은 지우고 결과는 아래 "진행"의 맥 줄에. 사용자는 맥에 "0033 맥 할 일 해 줘"만 침)
   (11/13 맥: 컴파일·아이폰 확인·사진 받기 끝, 결과는 "진행"의 11/13 맥 줄)
-  - **11/16 `/code-review` Swift 8건**(PR 전 리뷰, C#·줄바꿈은 Windows에서 고쳐 PR, 이건 맥에서 고치고 컴파일·아이폰 확인 → 새 브랜치 `fix/camera-swift` PR). `ScrunCamera.swift`:
-    1. 띄우는 중에 닫기: `engine.start` 실패·`RuntimeError`가 present 애니메이션(약 0.3초) 중이면 `dismiss`가 무시돼 `finish`가 안 불림 → `current`가 안 지워져 C# `ShootAsync`가 영원히 기다리고 다음 촬영은 "이미 떠 있습니다". present 완료 뒤에 닫거나, 닫기 실패해도 `finish`는 꼭
-    2. present 실패: `current = vc`를 present 전에 두고 성공을 확인 안 함(위 창이 사라지는 중이거나 이미 무언가 띄우는 중) → 같은 영원히 기다림. present 완료 콜백에서 확인, 안 떴으면 `unavailable`로 끝내고 `current` 비우기
-    3. 권한 묻는 동안 두 번 부름: 둘 다 `current == nil`을 통과 → 두 번째가 `unavailable`("카메라 없음"). ICamera 약속대로 두 번째는 오류(NativeException)로
-    4. 중단: `AVCaptureSessionWasInterrupted`·`InterruptionEnded`를 안 봄 → 전화·다른 앱이 카메라를 쓰면 검은 미리보기로 시간 초과(TimedOut). 중단이면 셔터 막고 안내, 길면 `unavailable`
-    5. 노출 하나만 주면(`ExposureBiases = {-2}`) 아이폰은 자동 노출 한 장·`fallbackBias: 0` — 에디터 가짜는 -2를 씀. 한 장도 요청한 노출로(`AVCapturePhotoBracketSettings` 1장 또는 `setExposureTargetBias` 뒤 찍기)
-    6. 정렬: 같은 브래킷 사진은 `sequenceCount`가 같음 → 브래킷 안 순서는 `photo.photoCount`로 정렬(파일 -0·-1·-2와 `photos`가 요청한 노출 순서 0·−1.5·−3을 지키게)
-    7. 6.6–8.0 MB JPEG 쓰기(`.atomic`)를 메인 스레드에서 → 셔터 직후 끊김. 쓰기는 캡처·백그라운드 큐에서, `close`만 메인
-    8. 셔터 상한 1/60초(`activeMaxExposureDuration`)를 `startRunning` 전에 한 번만 → 세션·프리셋이 형식을 다시 적용하면 풀림. `startRunning` 뒤(그리고 `AVCaptureSessionDidStartRunning` 알림에서) 다시 설정, 어두운 곳에서 1/60초 넘지 않는지 확인(11/13 노트북 화면은 밝아 1/120초라 못 잡았음)
-    9. **(11/17 Windows가 고침, 맥은 확인만, `fix/verify-review`)** 사진 세우기: 카메라는 세로 사진도 가로 픽셀 + EXIF 방향 태그로 써서, C#(`Texture2D.LoadImage`)·서버가 90° 누운 사진을 받았음(#62 리뷰). `ScrunCamera.upright`가 사진 콜백 스레드에서 ImageIO로 픽셀을 돌리고 긴 변 2048(`CameraShootOptions.MaxSide`)로 줄여 씀(메타데이터는 버림, 7번의 쓰기 크기도 줄어듦). 맥에서: Swift 컴파일 → 아이폰에서 계기판 인증 E-02 → 찍기 → E-04 미리보기가 **세로로 바로** 보이는지, 받은 파일(`scrun-camera/`)이 1536×2048 정도·장당 1 MB 안팎인지, `[ScrunCamera] 사진을 세우지 못해` 로그가 없는지
+  (11/17 맥: Swift 8건 고침·리뷰 반영·아이폰 확인 → `fix/camera-swift` PR. 결과는 "진행"의 11/17 맥 줄. **8번 셔터 상한은 어두운 곳에서 안 지켜짐, 원인 미확인 → 남음**)
+    - **11/18 맥 할 일 — `fix/camera-swift`(#66) 빌드 확인**: Windows가 develop을 합침(충돌: #64 사진 세우기 `upright`·`maxSide`, #69가 `topViewController`를 `ScrunBridge`로 옮김 → #66의 "사라지는 중인 창 건너뛰기"를 `ScrunBridge.topViewController`로 옮기고 카메라·공유 시트가 같이 씀). `git checkout fix/camera-swift && git pull` → Xcode 빌드(경고 0) → 아이폰에서 찍기 한 번·친구 코드 공유 시트 한 번 → 되면 #66 머지는 Windows가
+  - **남은 맥 할 일 — 사진 세우기 확인(11/17 Windows가 고침, #64. 11/18 `fix/camera-swift`에 develop을 합쳐 같이 들어감)** 사진 세우기: 카메라는 세로 사진도 가로 픽셀 + EXIF 방향 태그로 써서, C#(`Texture2D.LoadImage`)·서버가 90° 누운 사진을 받았음(#62 리뷰). `ScrunCamera.upright`가 사진 콜백 스레드에서 ImageIO로 픽셀을 돌리고 긴 변 2048(`CameraShootOptions.MaxSide`)로 줄여 씀(메타데이터는 버림, 7번의 쓰기 크기도 줄어듦). 맥에서: Swift 컴파일 → 아이폰에서 계기판 인증 E-02 → 찍기 → E-04 미리보기가 **세로로 바로** 보이는지, 받은 파일(`scrun-camera/`)이 1536×2048 정도·장당 1 MB 안팎인지, `[ScrunCamera] 사진을 세우지 못해` 로그가 없는지
 - 담당: 민재(11/12 지환 S3 줄 "카메라 노출 제어 Swift"를 가져옴 → 지환에게 알림, 0017 표 고치기). 촬영 화면 E-02·E-04와 OCR·인증(BL-16 화면·17·18)은 지환 S4 그대로, 모양은 상준
 - 기준: 공개 백로그 BL-16 ①–⑥, `docs/product/console_ocr.md`(10/29 첫 시험: **병목은 인식기보다 노출**, LED가 하얗게 타고 꺼진 획이 비침), Figma E-02(607:1115)·E-03(607:1174)·E-04(607:1216) 노트, ADR-0009(네이티브 통로), OCR은 서버에서(BL-17 ①, 11/06 확정)
 
@@ -60,3 +53,14 @@
   - **노출이 맞는지는 아직 모름**: 이번엔 헬스장이 아니라 인터넷 계기판 사진을 띄운 노트북 화면을 찍음(스스로 빛나는 화면이라 LED와 다름) → OCR 비교에 쓰지 않음. 실제 계기판(또는 LED 시계) 브래킷 → `console_ocr.md` 방식 OCR은 남음
   - Windows에 넘길 것(추가): 브래킷 한 번이 6.6–8.0 MB라 서버 OCR로 올리기 전에 가이드 영역 자르기·줄이기를 정해야 함(BL-17과 맞추기)
 - 11/16 민재 Windows: develop(#48–#52) 합침, EditMode 312 통과. `/code-review` 10건 → C# 1건(`FakeCamera.Discard`가 옆 폴더 `scrun-camera-old/`도 안으로 봄 → 끝에 구분자, 테스트 추가)·줄바꿈 1건(`ScrunBridge.swift`·`ScrunCamera.swift`가 CRLF로 커밋돼 6줄 바꾼 게 332줄로 보임 → LF) 고쳐 PR. Swift 8건은 위 "맥 할 일"(지환 E-02–E-04는 에디터 가짜 카메라 위에서 시작하므로 막지 않음)
+- 11/17 민재 맥: Swift 8건(`ScrunCamera.swift`) → `fix/camera-swift`(develop c9dd84c에서)
+  - 1·2 띄우기·닫기: present 완료 전에 끝나면 결과를 들고 있다가 다 뜬 뒤 닫음. 다른 화면이 뜨거나 닫히는 중이면 0.1초씩 최대 3초 기다렸다 띄우고, 그래도 안 뜨면 바로 `unavailable`. 닫기가 무시되면 0.5초마다 다시 닫고 사라진 뒤 답(10초 지나면 답부터)
+  - 3 권한 묻는 중 두 번째 호출 → `starting` 표시로 바로 오류(NativeException). 4 중단: 셔터 막고 안내 문구, 남은 시간 멈춤. 다른 앱·전화가 가져가면 10초 뒤 `unavailable`(가설 값), 뒤로 감·화면 나누기·발열은 풀리면 돌아옴. 안내 문구 3개는 임시 → 상준
+  - 5 노출 하나만 줘도 1장짜리 브래킷으로 그 노출. 브래킷을 못 하는 기기(지금 아이폰엔 없음)는 자동 노출 한 장·bias 0으로 알림. 6 정렬 (sequenceCount, photoCount). 7 JPEG 쓰기는 백그라운드 큐, 닫힌 뒤 도착한 사진은 지움. 촬영 완료가 15초 안 오면 다시 찍게 풀어 줌
+  - 8 셔터 상한을 세션이 (다시) 돌 때마다 다시 걺(`AVCaptureSessionDidStartRunning`) + 셔터 직전 미리보기 노출·상한 로그
+  - `/code-review`(medium) 7건 모두 반영(닫기 무시 때 화면이 남는 것, 화면이 없어진 뒤 사진이 남는 것, 전환 중 띄우기, 노출 보정 완료가 안 와 멈추는 것·틀린 bias(→ 위 5의 단순화), 중단 이유별 처리, 상한 중복 호출)
+  - 빌드: Unity MCP가 꺼져 있어 11/17 헬스장 빌드(`fix/dev-recalibrate`) Xcode 프로젝트에 이 파일만 바꿔 넣고 xcodebuild(develop과 iOS 쪽 Swift·IosNative.cs는 이 파일 말고 같음). Debug **BUILD SUCCEEDED**, `ScrunCamera.swift` 경고 0
+  - 아이폰(iPhone 13 mini, iOS 27.2.1, 마이 탭 → 네이티브 점검 → 카메라): 보통 촬영 3장 두 번(0 → −1.5 → −3 EV 순서, EXIF bias −1.50·−3.00 그대로), 홈으로 나갔다 돌아옴 → `카메라 중단: 1`(뒤로 감) → `중단 끝` → 다시 찍힘, 열자마자 X 4번 → 모두 `Cancelled`, 다음 열기에 "이미 떠 있습니다" 없음
+  - **셔터 상한 안 지켜짐**: 불 끈 방 0 EV 1/15초·ISO 2000, −1.5 EV 1/24초·ISO 1000, −3 EV 1/40초·ISO 640(밝은 곳은 1/120–1/1404초라 상한과 무관). 미리보기부터 넘는지 사진만 넘는지는 새 로그로 다시 찍어 봐야 함(민재: 지금은 넘어감). 가설: 사진 파이프라인이 `activeMaxExposureDuration`을 안 따름 → 그렇다면 브래킷을 수동 노출(`AVCaptureManualExposureBracketedStillImageSettings`, 셔터 1/60초 + ISO 맞춤)로 바꿔야 함. Windows에서 정할 것
+- 11/19 맥: develop(0055 가이드 안 + 여유 15% 자르기, 5e76bdb)과 `ScrunCamera.swift` 충돌 해결 → 둘 다 살림(사진 모음에 `crop` + 이 PR의 `reportedBias`·닫힌 뒤 사진 지우기·촬영 감시). develop + 이 PR로 Unity → Xcode 빌드 **BUILD SUCCEEDED**, 우리 Swift 경고 0, 아이폰 설치·실행 확인(촬영 확인은 아직)
+- 11/19 맥 아이폰 확인(develop + 이 PR, iPhone 13 mini): 네이티브 점검 카메라 3장 2048×1342(가이드 + 15%로 잘림, 세로로 바로 섬, 0 → −1.5 → −3 EV 순서, 994·795·497 KB, 셔터 직전 1/120초 ISO 60), `세우지 못해`·`자르지 못해` 로그 없음. 계기판 인증 찍기 1번(18:05, 모니터에 띄운 인터넷 계기판) → "못 읽음". 친구 탭 코드 공유 시트 정상 → **#66 머지해도 됨**
