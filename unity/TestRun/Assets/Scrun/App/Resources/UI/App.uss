@@ -33,7 +33,6 @@
     --space-5: 20px;
     --space-6: 24px;
 
-    --tab-bar-height: 49px; /* 아이폰 기본 탭 바 높이(49pt). 홈 바 여백은 그 아래에 따로 더해짐 */
 }
 
 .app-root {
@@ -52,6 +51,19 @@
     background-color: var(--color-primary); /* 그림을 못 불러와도 위쪽 색. 아이폰 실행 화면 색(AppSceneBuilder.LaunchColor)도 이 값 */
     background-image: url("project://database/Assets/Scrun/App/UI/Images/SplashGradient.png");
     -unity-background-scale-mode: stretch-to-fill;
+}
+
+/* 우주 시안 홈·코스(계획 0062): 파란 그라데이션 + 성운 빛 + 별. 코스 상세는 위 420이 #10164a(맨 위 코스 그림이 그 색으로 흐려짐) */
+.app-root--home {
+    background-color: #1E2D7A;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/HomeBg.png");
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.app-root--course-detail {
+    background-color: #10164A;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/CourseDetailBg.png");
+    -unity-background-scale-mode: scale-and-crop;
 }
 
 /* 우주 시안 온보딩(계획 0061): 남색 그라데이션 + 흐린 빛 + 별(Figma 880:49를 그림으로). 노치·홈 바까지 */
@@ -104,84 +116,87 @@
 
 /* 아래 탭(UI Kit Tab Bar): 아이콘 24 + 글자 12, 고른 탭은 파란 아이콘·굵은 글자.
    높이는 탭 버튼이 정하고, 홈 바 여백은 SafeArea가 탭 바 아래 padding으로 더한다(배경이 화면 끝까지, 11/10 아이폰) */
+/* ---- 아래 탭: 우주 시안 Game/Dock(계획 0062, Figma B·C 825:571). 위 24는 고른 탭 받침이 솟는 자리, 막대는 그 아래 72 ---- */
 .tab-bar {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.dock {
     flex-direction: row;
-    background-color: var(--color-surface);
-    border-top-width: 1px;
-    border-top-color: var(--color-line);
+    height: 96px;
+    margin: 0 16px 4px 16px;
+}
+
+.dock-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 24px;
+    bottom: 0;
+    border-width: 1px;
+    border-radius: 28px;
+    border-color: #56668F;
+    background-color: #101A33;
 }
 
 .tab {
     flex-grow: 1;
     flex-basis: 0;
-    height: var(--tab-bar-height);
+    height: 96px;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     margin: 0;
-    padding: var(--space-2) 0 0 0;
+    padding: 34px 0 0 0;
     border-width: 0;
     border-radius: 0;
     background-color: rgba(0, 0, 0, 0);
 }
 
-/* :hover는 터치 화면에서 마지막으로 누른 탭에 남으므로 색을 안 바꾸고, 누르는 동안만 살짝(11/10 아이폰) */
-.tab:hover {
+/* :hover는 터치 화면에서 마지막으로 누른 탭에 남으므로 색을 안 바꿈(11/10 아이폰) */
+.tab:hover,
+.tab:active {
     background-color: rgba(0, 0, 0, 0);
 }
 
-.tab:active {
-    background-color: rgba(0, 0, 0, 0.03);
-}
-
 .tab-icon {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
+    -unity-background-scale-mode: scale-to-fit;
 }
 
-.tab-icon--home {
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-home-off.svg");
+/* 고른 탭: 받침(60, #223259) 위로 솟고 아이콘 44 */
+.tab--selected {
+    padding-top: 0;
 }
 
-.tab--selected .tab-icon--home {
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-home-on.svg");
+.tab--selected .tab-icon {
+    width: 60px;
+    height: 60px;
+    border-width: 1px;
+    border-radius: 30px;
+    border-color: #56668F;
+    background-color: #223259;
+    background-size: 44px 44px;
 }
 
-.tab-icon--friends {
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-friends-off.svg");
-}
-
-.tab--selected .tab-icon--friends {
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-friends-on.svg");
-}
-
-.tab-icon--records {
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-records-off.svg");
-}
-
-.tab--selected .tab-icon--records {
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-records-on.svg");
-}
-
-.tab-icon--me {
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-me-off.svg");
-}
-
-.tab--selected .tab-icon--me {
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/tab-me-on.svg");
-}
+.tab-icon--home { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/DockHome.png"); }
+.tab-icon--friends { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/DockFriends.png"); }
+.tab-icon--records { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/DockRecords.png"); }
+.tab-icon--me { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/DockMe.png"); }
 
 .tab-label {
-    margin: 3px 0 0 0;
+    margin: 4px 0 0 0;
     padding: 0;
-    font-size: var(--font-size-tab);
-    color: var(--color-muted);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+    font-size: 11px;
+    color: #CDD5EA;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 
 .tab--selected .tab-label {
-    color: var(--color-primary);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+    margin-top: 6px;
+    font-size: 14px;
+    color: #F4F6FB;
 }
 
 /* ---- 공통 부품(UI Kit Button: 높이 54, 모서리 16, App/Button 17 SemiBold) ---- */
