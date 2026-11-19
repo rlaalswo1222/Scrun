@@ -11,7 +11,8 @@ namespace Scrun.App
         const float SwipeOpen = 60f; // 왼쪽으로 이만큼(패널 px) 밀면 삭제 확인
 
         VisualElement list;
-        Label navTitle, empty;
+        Label navTitle;
+        StateView state;
         List<Friend> friends;
         FriendParts.Sheet sheet;
         bool loading;
@@ -26,8 +27,7 @@ namespace Scrun.App
             Q<Button>("add").clicked += () => { if (Nav.Current == this) Nav.Push(new FriendAddScreen()); };
             list = Q<VisualElement>("list");
             navTitle = Q<Label>("nav-title");
-            empty = Q<Label>("empty");
-            empty.SetVisible(false);
+            state = new StateView(Q<VisualElement>("state"), SkeletonKind.List, "친구 목록을 불러오지 못했어요");
         }
 
         protected internal override void OnShow() => Load();
@@ -45,8 +45,8 @@ namespace Scrun.App
             loading = true;
             List<Friend> got = null;
             int editsAtStart = edits;
-            // 처음만 덮개, 프로필에서 돌아오면 지금 목록을 둔 채 조용히(그동안 밀어서 지울 수 있음)
-            bool ok = await Feedback.Load(friends != null, async () => got = await Api.Friends.ListAsync(), Load);
+            // 처음만 스켈레톤(실패하면 그 자리에), 프로필에서 돌아오면 지금 목록을 둔 채 조용히(그동안 밀어서 지울 수 있음)
+            bool ok = await Feedback.Load(state, friends != null, async () => got = await Api.Friends.ListAsync(), Load);
             loading = false;
             if (!ok || Root.panel == null) return;
             if (edits != editsAtStart)
@@ -77,7 +77,8 @@ namespace Scrun.App
                 AddSwipe(row, friend);
                 list.Add(row);
             }
-            empty.SetVisible(friends.Count == 0);
+            if (friends.Count == 0) state.Empty("아직 친구가 없어요");
+            else state.Clear();
         }
 
         void AskDelete(Friend f)

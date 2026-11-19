@@ -102,7 +102,7 @@ namespace Scrun.App.Tests
             s.Create(null);
             Assert.AreEqual(3, s.Root.Q("months").childCount);
             Assert.IsTrue(s.Root.Q("months")[0].ClassListContains("rc-month--on"), "처음은 이번 달(Figma F-01)");
-            Assert.IsFalse(Shown(s, "scroll") || Shown(s, "empty") || Shown(s, "load-failed"), "받기 전엔 아무것도");
+            Assert.IsFalse(Shown(s, "scroll") || Shown(s, "empty") || Shown(s, "state"), "받기 전엔 아무것도");
 
             var start = DateTime.UtcNow.AddDays(-1);
             var recent = new List<RunSummary>

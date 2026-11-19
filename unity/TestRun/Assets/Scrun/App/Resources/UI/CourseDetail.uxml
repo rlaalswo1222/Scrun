@@ -23,11 +23,8 @@
                     <ui:Label text="입장하면 화면이 가로로 전환돼요. 러닝머신에 폰을 거치해 주세요." class="info-note" />
                 </ui:VisualElement>
             </ui:VisualElement>
-            <!-- 불러오기 실패(다시 불러오기) 또는 없는 코스(다른 코스 보기) -->
-            <ui:VisualElement name="load-failed" class="empty-state">
-                <ui:Label name="load-failed-text" text="코스를 불러오지 못했어요" class="hint-text" />
-                <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
-            </ui:VisualElement>
+            <!-- 공통 상태(계획 0056): 첫 로딩 스켈레톤·불러오기 실패·없는 코스(다른 코스 보기) -->
+            <ui:VisualElement name="state" />
         </ui:ScrollView>
         <ui:VisualElement class="detail-footer">
             <ui:Button name="enter" text="맵 입장" class="btn btn-primary" />

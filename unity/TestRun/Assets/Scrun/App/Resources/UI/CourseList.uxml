@@ -13,12 +13,8 @@
                 <ui:Button name="filter-live" text="지금 달리는 중" class="chip" />
             </ui:VisualElement>
             <ui:VisualElement name="list" />
-            <ui:Label name="list-empty" text="지금 달리는 사람이 있는 코스가 없어요" class="list-empty" />
-            <!-- 불러오기에 실패하고 안내창을 닫았을 때 -->
-            <ui:VisualElement name="load-failed" class="empty-state">
-                <ui:Label text="코스를 불러오지 못했어요" class="hint-text" />
-                <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
-            </ui:VisualElement>
+            <!-- 공통 상태(계획 0056): 첫 로딩 스켈레톤·불러오기 실패·빈 목록 -->
+            <ui:VisualElement name="state" />
         </ui:VisualElement>
     </ui:ScrollView>
 </ui:UXML>

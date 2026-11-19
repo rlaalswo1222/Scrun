@@ -13,8 +13,9 @@
             <ui:VisualElement class="nav-side nav-side--right" />
         </ui:VisualElement>
         <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+            <!-- 공통 상태(계획 0056): 첫 로딩 스켈레톤·불러오기 실패·빈 목록 -->
+            <ui:VisualElement name="state" />
             <ui:VisualElement name="list" />
-            <ui:Label name="empty" text="아직 친구가 없어요" class="fr-hint" />
         </ui:ScrollView>
         <ui:Button name="add" text="친구 추가" class="btn btn-soft btn-fig" />
     </ui:VisualElement>

@@ -7,7 +7,8 @@ namespace Scrun.App
     // 목표가 없으면 빈 카드 + "목표 정하기"(정할 것 1 가) → 같은 시트, 저장하면 오늘부터 시작. 시트 저장 = PUT(응답이 GET과 같아 그대로 다시 그림)
     public sealed class WeeklyGoalStatusScreen : AppScreen
     {
-        VisualElement content, weekCard, empty, barsCard, dots, bars, loadFailed;
+        VisualElement content, weekCard, empty, barsCard, dots, bars;
+        StateView state;
         Label done, of, next;
         Button action;
         WeeklyGoal goal;
@@ -33,17 +34,15 @@ namespace Scrun.App
             barsCard = Q<VisualElement>("bars-card");
             dots = Q<VisualElement>("dots");
             bars = Q<VisualElement>("bars");
-            loadFailed = Q<VisualElement>("load-failed");
+            state = new StateView(Q<VisualElement>("state"), SkeletonKind.Cards, "주간 목표를 불러오지 못했어요").Padded();
             done = Q<Label>("done");
             of = Q<Label>("of");
             next = Q<Label>("next");
             action = Q<Button>("action");
             Q<Button>("back").clicked += () => { if (Nav.Current == this && !SheetOpen) Nav.Pop(); };
-            Q<Button>("reload").clicked += Load;
             action.clicked += OpenSheet;
             content.SetVisible(false);
             action.SetVisible(false);
-            loadFailed.SetVisible(false);
         }
 
         protected internal override void OnShow() => Load();
@@ -60,12 +59,12 @@ namespace Scrun.App
             if (loading) return;
             loading = true;
             WeeklyGoal got = null;
-            bool ok = await Feedback.Load(goal != null, async () => got = await Api.Users.GetWeeklyGoalAsync(), Load);
+            bool ok = await Feedback.Load(state, goal != null, async () => got = await Api.Users.GetWeeklyGoalAsync(), Load);
             loading = false;
-            if (Root.panel == null) return;
-            if (!ok || got == null) // 빈 응답을 "목표 없음"으로 보이면 저장이 변경으로 처리돼 시트 안내와 어긋남
+            if (Root.panel == null || !ok) return;
+            if (got == null) // 빈 응답을 "목표 없음"으로 보이면 저장이 변경으로 처리돼 시트 안내와 어긋남
             {
-                if (goal == null) loadFailed.SetVisible(true);
+                if (goal == null) state.Failed(null, Load);
                 return;
             }
             Show(got);
@@ -74,7 +73,7 @@ namespace Scrun.App
         internal void Show(WeeklyGoal g)
         {
             goal = g ?? new WeeklyGoal();
-            loadFailed.SetVisible(false);
+            state.Clear();
             content.SetVisible(true);
             action.SetVisible(true);
             bool has = WeeklyGoalText.HasGoal(goal);

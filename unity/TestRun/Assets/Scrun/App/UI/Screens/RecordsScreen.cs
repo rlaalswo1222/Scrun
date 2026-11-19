@@ -12,7 +12,8 @@ namespace Scrun.App
     public sealed class RecordsScreen : AppScreen
     {
         ScrollView scroll;
-        VisualElement months, list, empty, loadFailed;
+        VisualElement months, list, empty;
+        StateView state;
         Label weekCount, weekKm, weekVerified, monthEmpty;
         Button more;
         PullToRefresh pull;
@@ -32,7 +33,8 @@ namespace Scrun.App
             months = Q<VisualElement>("months");
             list = Q<VisualElement>("list");
             empty = Q<VisualElement>("empty");
-            loadFailed = Q<VisualElement>("load-failed");
+            // 처음·다른 달을 받는 동안·실패하면 목록과 빈 화면(F-02)을 숨기고 공통 칸만(옛 달 카드가 새 칩 아래 남지 않게, 리뷰)
+            state = new StateView(Q<VisualElement>("state"), SkeletonKind.List, "기록을 불러오지 못했어요", scroll, empty).Padded();
             weekCount = Q<Label>("week-count");
             weekKm = Q<Label>("week-km");
             weekVerified = Q<Label>("week-verified");
@@ -44,7 +46,6 @@ namespace Scrun.App
             var start = Q<Button>("start");
             start.text = RecordsText.EmptyAction;
             start.clicked += StartRunning;
-            Q<Button>("reload").clicked += () => Load();
             pull = new PullToRefresh(scroll, Q<Label>("pull"), () => Load(fromPull: true));
 
             chips = RecordsText.MonthChips(DateTime.UtcNow);
@@ -56,7 +57,7 @@ namespace Scrun.App
                 months.Add(b);
             }
             MarkChip();
-            ShowState(null);
+            ShowState(loaded: false);
         }
 
         protected internal override void OnShow()
@@ -131,16 +132,12 @@ namespace Scrun.App
             bool ok = fromPull && shown != null
                 ? await Feedback.Run(work, () => Load(fromPull: true),
                                      e => seq != loadSeq || (e.Failure != ApiFailure.NotLoggedIn && Nav.Current != this), overlay: false)
-                : await Feedback.Load(shown != null, work, () => Load(), e => seq != loadSeq);
+                : await Feedback.Load(state, shown != null, work, () => Load(), null, () => seq == loadSeq);
             if (seq != loadSeq) return; // 더 새로 받는 중
             loading = false;
             pull.Busy(false);
             if (Root.panel == null) return; // 기다리는 사이 화면을 떠남
-            if (!ok)
-            {
-                if (shown == null) ShowState(failed: true);
-                return;
-            }
+            if (!ok) return; // 처음이면 공통 칸이 실패를 보임, 아니면 지난 목록 그대로
             Show(week, gotMonth, weekStart, keepLoaded: !fromPull && !chipChanged, goal: goal);
         }
 
@@ -168,14 +165,14 @@ namespace Scrun.App
             if (keepLoaded && shown != null && shown.Count > (page?.Items?.Count ?? 0))
             {
                 Merge(page);
-                ShowState(failed: false);
+                ShowState(loaded: true);
                 return;
             }
             shown = new List<RunSummary>();
             list.Clear();
             cursor = null;
             Add(page);
-            ShowState(failed: false);
+            ShowState(loaded: true);
         }
 
         async void LoadMore()
@@ -253,13 +250,12 @@ namespace Scrun.App
             if (Nav.Current == this) Nav.Push(RunResultScreen.Detail(r.RunId));
         }
 
-        // failed: null이면 아직 모름(처음 불러오는 중)
-        void ShowState(bool? failed)
+        // loaded: 받은 값이 있음(없으면 받는 중·실패 — 그때 보이는 건 공통 칸 state)
+        void ShowState(bool loaded)
         {
-            bool none = failed == false && hasAny == false;
-            scroll.SetVisible(failed == false && !none);
+            bool none = loaded && hasAny == false;
+            scroll.SetVisible(loaded && !none);
             empty.SetVisible(none);
-            loadFailed.SetVisible(failed == true);
         }
     }
 }
