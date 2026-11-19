@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -82,6 +83,9 @@ namespace Scrun.App
         IVisualElementScheduledItem runTick;
         Button topButton;
         CancellationTokenSource runUpload; // 맵을 나가면 달리는 동안의 묶음 올리기를 그만둠(끝낸 기록 보내기는 끝까지)
+        string runUserId;            // 이 달리기를 시작한 계정(남긴 기록이 다른 계정으로 가지 않게)
+        double journalAt = double.NegativeInfinity; // 진행 기록을 마지막으로 남긴 때(RealtimeClock)
+        const double JournalSec = 5;  // 앱이 꺼져도 복구할 수 있게 이만큼마다 폰에 남김(계획 0052 정할 것 1 가)
 
         const long RunTickMs = 200;
 
@@ -547,6 +551,36 @@ namespace Scrun.App
             }
             WatchMeasure(shown);
             if (uploader != null && runUpload != null) uploader.StartUploadDue(runUpload.Token);
+            if (RealtimeClock.Now() - journalAt >= JournalSec) SaveJournal();
+        }
+
+        // 앱이 꺼져도 다음에 켤 때 마무리할 수 있게 지금까지를 폰에 남김(계획 0052). 일시정지 중에도(마지막 시각 = 꺼진 때)
+        void SaveJournal()
+        {
+            journalAt = RealtimeClock.Now();
+            var s = session;
+            if (s == null || !s.Started) return;
+            var start = s.StartBody(mapInstanceId);
+            var finish = s.FinishBody;
+            ActiveRunStore.Default.Save(new ActiveRunRecord
+            {
+                UserId = runUserId,
+                Start = start,
+                RunId = s.RunId,
+                CourseName = course.Name,
+                DistanceM = finish?.Sensor?.DistanceM ?? (int)Math.Round(s.DistanceM(RunLink.PlayerDistanceM)),
+                DurationS = finish?.Sensor?.DurationS ?? (int)Math.Floor(s.ElapsedSec),
+                Samples = new List<float>(s.Samples),
+                LastAtUtc = finish?.EndedAt ?? DateTime.UtcNow,
+                Finish = finish,
+            });
+        }
+
+        // 백그라운드로 감(홈 버튼·전화·잠금): iOS는 그 뒤 예고 없이 앱을 끌 수 있어 바로 남김
+        void OnFocusChanged(bool focused)
+        {
+            // 끝낸 뒤(D-22)엔 남기지 않음: FinishRun이 이미 지웠는데 다시 쓰면 다음에 끝난 러닝을 또 물음(리뷰)
+            if (!focused && session != null && session.Started && !session.Finished && !leaving) SaveJournal();
         }
 
         // 측정 끊김(D-15)·에어팟만 끊김(알림)·측정값 이상(I-03 띠)·배터리·발열(I-12). 패널이 떠 있으면 새로 띄우지 않음
@@ -639,6 +673,7 @@ namespace Scrun.App
             if (!RunInProgress) return;
             var body = session.Finish(RunLink.PlayerDistanceM, RunLink.PlayerSpeedKmh);
             if (body == null) return;
+            SaveJournal(); // 종료 본문까지 남김: 보내는 중에 꺼지면 다음에 같은 값으로 다시 보냄(서버는 처음 결과)
             RunLink.Moving = false;
             runTick?.Pause();
             CancelRunStart(); // 아직 runId가 없으면 올리는 쪽이 같은 clientRunId로 다시 시작함
@@ -658,6 +693,8 @@ namespace Scrun.App
                 Debug.LogException(e);
                 state = RunSaveState.Failed;
             }
+            // 서버가 받았거나(Saved) 폰에 남김(KeptLocal, PendingRunStore가 보냄)·서버가 받지 않음 → 진행 기록은 끝
+            ActiveRunStore.Default.Clear(s.ClientRunId);
             if (!leaving && endView != null && session == s) endView.SetSaving(state);
         }
 
@@ -743,7 +780,8 @@ namespace Scrun.App
             runUpload?.Cancel();
             runUpload?.Dispose();
             runUpload = new CancellationTokenSource();
-            uploader = new RunRecordUploader(session, mapInstanceId, userId: RunRecordUploader.TokenSubject(Api.Session.AccessToken));
+            runUserId = RunRecordUploader.TokenSubject(Api.Session.AccessToken);
+            uploader = new RunRecordUploader(session, mapInstanceId, userId: runUserId);
             measure = new RunMeasureWatch();
             goalPending = false;
             lastUnsteady = false;
@@ -753,6 +791,9 @@ namespace Scrun.App
             SetTopButtonPause(true);
             runTick ??= Root.schedule.Execute(RunTick).Every(RunTickMs);
             runTick.Resume();
+            Application.focusChanged -= OnFocusChanged;
+            Application.focusChanged += OnFocusChanged;
+            SaveJournal();
         }
 
         async void SendRunStart(RunSession s)
@@ -770,7 +811,11 @@ namespace Scrun.App
                     if (ghostTrack == null) s.GhostRunId = null;
                 }
                 var r = await new RunStartSender().SendAsync(s.StartBody(mapInstanceId), ct);
-                if (r != null && session == s) s.RunId = r.RunId;
+                if (r != null && session == s)
+                {
+                    s.RunId = r.RunId;
+                    if (!s.Finished) SaveJournal(); // 끝낸 뒤면 FinishRun이 남기고 지움
+                }
             }
             catch (OperationCanceledException) { } // 맵을 나감
             catch (Exception e)
@@ -801,6 +846,7 @@ namespace Scrun.App
 
         void EndRun()
         {
+            Application.focusChanged -= OnFocusChanged;
             runTick?.Pause();
             endView?.Hide();
             if (topButton != null) SetTopButtonPause(false);

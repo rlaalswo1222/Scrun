@@ -221,6 +221,14 @@ namespace Scrun.App
         public Task PutSamplesAsync(string runId, RunSamplesBody body) =>
             c.SendAsync<object>("PUT", $"/v1/runs/{Uri.EscapeDataString(runId)}/samples", body, AuthMode.User);
 
+        // 앱이 꺼졌다 켜졌을 때 끝나지 않은 러닝(I-04, 계획 0052). 마지막 갱신 24시간 안의 가장 최근 하나, 없으면 Run = null
+        public async Task<ActiveRun> GetActiveAsync() =>
+            await c.GetAsync<ActiveRun>("/v1/runs/active", AuthMode.User) ?? new ActiveRun();
+
+        // I-04 "버리기": 끝나지 않은 러닝만(두 번 해도 됨). 끝난 기록이면 RUN_ALREADY_FINISHED
+        public Task DiscardAsync(string runId) =>
+            c.PostAsync<object>($"/v1/runs/{Uri.EscapeDataString(runId)}/discard", null, AuthMode.User);
+
         // 끝(D-18·D-19 → D-22). 같은 endedAt·값으로 다시 보내면 처음 결과
         public async Task<RunSummary> FinishAsync(string runId, RunFinishBody body)
         {

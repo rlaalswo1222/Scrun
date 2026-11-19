@@ -1,0 +1,22 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- E-01 종료 요약·인증 전(계획 0052): 앱이 꺼졌다 켜져 마무리한 러닝. Figma E-01을 아직 못 읽어 D-22·G-07 완료 화면 모양을 따름(임시, 상준 확인).
+         뒤로 가기 없음: 버튼으로만(D-22와 같음) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
+    <ui:VisualElement class="onb fr">
+        <ui:VisualElement class="nav-bar">
+            <ui:VisualElement class="nav-side" />
+            <ui:Label text="러닝 마무리" class="nav-title" />
+            <ui:VisualElement class="nav-side nav-side--right" />
+        </ui:VisualElement>
+        <ui:VisualElement class="onb-scroll fr-done">
+            <ui:Label name="title" class="onb-title fr-center" />
+            <ui:Label name="info" class="onb-lead fr-center" />
+            <ui:Label name="stats" class="onb-title fr-center" />
+            <ui:Label name="body" class="onb-lead fr-center" />
+        </ui:VisualElement>
+        <ui:Button name="verify" class="btn btn-primary btn-fig" />
+        <ui:Button name="skip" class="btn btn-fig" />
+    </ui:VisualElement>
+</ui:UXML>

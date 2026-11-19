@@ -46,17 +46,21 @@ namespace Scrun.App
         public static RunResultScreen Offline(RunSession s)
         {
             var body = s?.FinishBody;
-            int m = body?.Sensor?.DistanceM ?? 0, sec = body?.Sensor?.DurationS ?? 0;
-            return new RunResultScreen(new RunDetail
+            return Offline(s?.StartedAtUtc ?? System.DateTime.UtcNow, body?.Sensor?.DistanceM ?? 0, body?.Sensor?.DurationS ?? 0,
+                           s?.Goal.ToRequest());
+        }
+
+        // 앱이 꺼졌다 켜져 마무리했는데 연결이 안 돼 폰에 남긴 러닝(계획 0052)도 같은 간이 결과
+        public static RunResultScreen Offline(System.DateTime startedAtUtc, int m, int sec, RunGoalBody goal) =>
+            new RunResultScreen(new RunDetail
             {
-                StartedAt = s?.StartedAtUtc ?? System.DateTime.UtcNow,
+                StartedAt = startedAtUtc,
                 DistanceM = m,
                 DurationS = sec,
                 AvgPaceSPerKm = m > 0 ? (int?)(sec * 1000L / m) : null,
                 Verification = "UNVERIFIED",
-                Goal = s?.Goal.ToRequest(),
+                Goal = goal,
             });
-        }
 
         protected override string Uxml => "UI/RunResult";
         public override bool HidesTabBar => true;

@@ -235,7 +235,8 @@ namespace Scrun.App
     // 서버 값 이름(문자열을 곳곳에 쓰지 않게)
     public static class VerifyStatus
     {
-        public const string Verified = "VERIFIED", Unverified = "UNVERIFIED", Retake = "RETAKE_REQUIRED", Confirm = "CONFIRM_REQUIRED";
+        public const string Verified = "VERIFIED", Unverified = "UNVERIFIED", Retake = "RETAKE_REQUIRED", Confirm = "CONFIRM_REQUIRED",
+                            Pending = "PENDING"; // 기록 상태: 인증 대기(종료 뒤 마감 전)
     }
 
     public static class VerifyReason

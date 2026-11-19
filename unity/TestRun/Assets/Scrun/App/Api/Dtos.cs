@@ -243,11 +243,21 @@ namespace Scrun.App
         public int DurationS { get; set; } // 일시정지를 뺀 달린 시간
     }
 
+    // GET /v1/runs/active(I-04, 계획 0052). Run의 거리·시간은 서버에 올라온 시계열로 셈(마지막 1분 안쪽은 없음)
+    public sealed class ActiveRun
+    {
+        public RunSummary Run { get; set; }
+        public DateTime? RecoverableUntil { get; set; } // 마지막 갱신 + 24시간
+        public DateTime? LastActiveAt { get; set; }     // 마지막 갱신(시작·시계열 올리기). 폰 기록이 없을 때 종료 시각
+    }
+
     // POST /v1/runs/{runId}/finish
     public sealed class RunFinishBody
     {
         public DateTime EndedAt { get; set; } // UTC
         public RunStatsBody Sensor { get; set; }
+        // 이 요청을 보낸 시각(앱 시계, 보낼 때마다 새로). 서버는 SentAt − EndedAt이 10분을 넘으면 인증 없이 바로 미인증(계획 0052)
+        public DateTime? SentAt { get; set; }
     }
 
     // GET /v1/runs(최신순 20개씩, 계획 0043). 고스트 고르기(D-03, 계획 0050)에도 씀
