@@ -97,9 +97,16 @@ namespace Scrun.App.Editor
         {
             SetImage($"{ImageDir}/SplashGradient.png", uncompressed: true);
             SetImage($"{ImageDir}/CharacterRun.png", uncompressed: false);
-            // 온보딩 그림(계획 0031): 소개 3장(그림 칸 전체)·서 있는·스트레칭 캐릭터
-            foreach (var name in new[] { "IntroRun", "IntroTogether", "IntroRecord", "CharacterStand", "CharacterStretch" })
+            // 온보딩 그림(계획 0031): 서 있는·스트레칭 캐릭터(로그인 실패·홈·결과에서 씀)
+            foreach (var name in new[] { "CharacterStand", "CharacterStretch" })
                 SetImage($"{ImageDir}/{name}.png", uncompressed: false);
+            // 우주 시안 온보딩(계획 0061, unity/tools/space_onboarding_assets.py): 바탕은 그라데이션이라 무압축(2배 크기로 줄여 둠),
+            // 장면·아이콘은 투명 배경 렌더라 고품질 압축
+            SetImage($"{ImageDir}/Space/SpaceBg.png", uncompressed: true);
+            foreach (var name in new[] { "IntroRun", "IntroTogether", "IntroRecordStage", "GoalFlag", "LoginLogo", "LoginPlanet",
+                                         "CalibHero", "DoneScene", "PermMotion", "PermHeadphones", "PermCamera", "PermBell",
+                                         "KakaoSymbol", "PlanetSky" })
+                SetImage($"{ImageDir}/Space/{name}.png", uncompressed: false);
         }
 
         static void SetImage(string path, bool uncompressed)
