@@ -97,4 +97,4 @@ tests/               test_contract(스텁 API 계약), test_auth(로그인·닉�
 - 지금은 개발용이라 데이터가 지워질 수 있음(테이블을 바꾸는 PR이 합쳐지면 마이그레이션이 그대로 돎)
 
 ## 운영 서버에서 꼭 바꿀 것
-`.env`의 `JWT_SECRET`(새로 만든 무작위 값, 개발용과 다르게), `DATABASE_URL`(운영 DB), `KAKAO_MODE=real` + `KAKAO_APP_ID`(`fake`는 절대 안 됨). 하루 한 번 `python -m scripts.purge_refresh_tokens`. 배포는 BL-51
+`.env`의 `JWT_SECRET`(새로 만든 무작위 값, 개발용과 다르게), `DATABASE_URL`(운영 DB), `KAKAO_MODE=real` + `KAKAO_APP_ID`(`fake`는 절대 안 됨) + `KAKAO_ADMIN_KEY`(계정 삭제·연결 끊기 웹훅, 계획 0058. 카카오 개발자 > 앱 > 웹훅 > 연결 해제 웹훅에 `https://<서버>/v1/auth/kakao/unlink` POST 등록, 11/19 등록함). 하루 한 번 `python -m scripts.purge_refresh_tokens`. 배포는 BL-51

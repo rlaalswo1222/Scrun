@@ -234,6 +234,12 @@ def collect() -> dict:
         rec("GET", "/v1/feed", None, "Bearer {accessToken}", c.get("/v1/feed", headers=auth2))
         rec("DELETE", "/v1/friends/{userId}", None, "Bearer {accessToken}",
             c.delete(f"/v1/friends/{my['userId']}", headers=auth2))
+        # 계정 삭제(계획 0058): 세 번째 사람이 가입 뒤 지움(가짜 카카오는 연결 끊기를 하지 않음)
+        k3 = c.post("/v1/auth/kakao", json={"kakaoAccessToken": "k_3"}).json()["success"]["data"]
+        r3 = c.post("/v1/auth/signup", headers={"Authorization": f"Bearer {k3['signupToken']}"},
+                    json={"agreedIds": ["terms", "privacy", "age14"], "nickname": "지울러너", "heightCm": 170, "weightKg": 65})
+        rec("DELETE", "/v1/users/me", None, "Bearer {accessToken}",
+            c.delete("/v1/users/me", headers={"Authorization": f"Bearer {r3.json()['success']['data']['accessToken']}"}))
         body = {"refreshToken": tok["refreshToken"]}
         tok2 = rec("POST", "/v1/auth/refresh", {"refreshToken": PLACEHOLDER["refreshToken"]}, None,
                    c.post("/v1/auth/refresh", json=body))["success"]["data"]
