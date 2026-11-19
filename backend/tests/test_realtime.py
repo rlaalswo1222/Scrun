@@ -6,7 +6,7 @@ from datetime import timedelta
 import pytest
 from starlette.websockets import WebSocketDisconnect
 
-from app.db.models import CourseEntry
+from app.db.models import CourseEntry, UserProgress
 from app.realtime import router as rt
 from app.core.config import BotPolicy
 from app.realtime.hub import Hub, hub, lap_position, pace_name
@@ -366,6 +366,33 @@ def test_two_runners_see_each_other(db_client, runner):
         with connect(db_client, eb) as wb:
             assert [r["nickname"] for r in recv(wb, "welcome")["runners"]] == ["러너1"]
         assert data(db_client.get("/v1/courses/crs_lake_loop", headers=signup(db_client, "k_9")))["runnersNow"] == 2
+
+
+def test_runners_carry_level(db_client, db, runner):
+    """이름표·카드 Lv 배지(계획 0059): 입장 때 경험치로 계산한 레벨이 welcome·joined에 실린다."""
+    ha, ea = runner("k_1")
+    _, eb = runner("k_2")
+    db.query(UserProgress).filter(UserProgress.user_id == user_id_of(ha)).update({UserProgress.xp_m: 4400})  # Lv.2
+    db.commit()
+    with connect(db_client, ea) as wa:
+        recv(wa, "welcome")
+        state(wa, 50.0)
+        with connect(db_client, eb) as wb:
+            assert [(r["nickname"], r["level"]) for r in recv(wb, "welcome")["runners"]] == [("러너1", 2)]
+            state(wb, 30.0)
+            joined = recv(wa, "joined")["runner"]
+            assert (joined["nickname"], joined["level"]) == ("러너2", 1), "기록 없는 새 사람은 Lv.1"
+
+
+def test_bots_have_no_level():
+    h = Hub(bots=BotPolicy(fill_to=3, paces_kmh=(8.0, 9.0, 10.0)))
+    conn, _ = h.join("map_x", "crs_x", 1000.0, "ua", "A", level=3)
+    h.update(conn, 10.0, 9.0, True)   # 봇은 누가 달릴 때 들어옴
+    _, w2 = h.join("map_x", "crs_x", 1000.0, "ub", "B", level=1)
+    bots = [r for r in w2["runners"] if r.get("bot")]
+    people = [r for r in w2["runners"] if not r.get("bot")]
+    assert bots and all("level" not in r for r in bots), "봇은 레벨 없음"
+    assert [(r["userId"], r["level"]) for r in people] == [("ua", 3)]
 
 
 def test_leave_message_is_immediate(db_client, runner):

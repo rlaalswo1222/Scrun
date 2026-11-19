@@ -15,9 +15,9 @@ from sqlalchemy import delete
 from sqlalchemy.orm import sessionmaker
 from starlette.concurrency import run_in_threadpool
 
-from ..core import tokens
+from ..core import growth, tokens
 from ..core.errors import ApiError
-from ..db.models import Course, CourseEntry, User
+from ..db.models import Course, CourseEntry, User, UserProgress
 from ..db.session import get_sessionmaker
 from .hub import Conn, hub, server_time_ms
 
@@ -43,7 +43,7 @@ def map_id_of(course_id: str) -> str:
 
 
 def _seat(make_session: sessionmaker, user_id: str, map_id: str):
-    """(닉네임, 코스 ID, 코스 길이, 입장 시각) 또는 None(사용자 없음·이 맵에 자리 없음)."""
+    """(닉네임, 코스 ID, 코스 길이, 입장 시각, 레벨) 또는 None(사용자 없음·이 맵에 자리 없음)."""
     with make_session() as db:
         user = db.get(User, user_id)
         entry = db.get(CourseEntry, user_id)
@@ -52,7 +52,9 @@ def _seat(make_session: sessionmaker, user_id: str, map_id: str):
         course = db.get(Course, entry.course_id)
         if course is None or not course.active:
             return None
-        return user.nickname, course.id, course.length_m, entry.entered_at
+        progress = db.get(UserProgress, user_id)
+        level = growth.level_of(progress.xp_m if progress else 0)   # 이름표·카드 Lv(계획 0059)
+        return user.nickname, course.id, course.length_m, entry.entered_at, level
 
 
 def _free_seat(make_session: sessionmaker, user_id: str, course_id: str, entered_at) -> None:
@@ -82,12 +84,12 @@ async def realtime(ws: WebSocket, make_session: sessionmaker = Depends(get_sessi
     if seat is None:
         await ws.close(CLOSE_NOT_IN_MAP)
         return
-    nickname, course_id, length_m, entered_at = seat
+    nickname, course_id, length_m, entered_at, level = seat
 
     loop = asyncio.get_running_loop()
     wake = asyncio.Event()
     conn, welcome = hub.join(map_id, course_id, length_m, user_id, nickname,
-                             wake=lambda: loop.call_soon_threadsafe(wake.set))
+                             wake=lambda: loop.call_soon_threadsafe(wake.set), level=level)
     left = False
     try:
         await ws.send_json(welcome)
