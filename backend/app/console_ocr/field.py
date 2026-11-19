@@ -9,6 +9,7 @@
 센서 값은 쓰지 않는다(독립성, 계획 0038): 센서와 가까운 칸을 고르면 다른 칸이 우연히 맞아도 통과된다.
 """
 import re
+import time
 from collections import Counter
 from dataclasses import dataclass, field as dfield
 from typing import Optional
@@ -112,6 +113,7 @@ class PhotoRead:
 
 class ConsoleReader:
     def __init__(self, seg_onnx: str, threads: int = 2, prefer: str = "seg"):
+        self.stats: dict = {}   # 마지막 regions()의 단계별 시간·영역 수(서버 로그용, 계획 0055)
         # 무거운 엔진은 여기서만(칸 찾기 규칙·테스트는 onnxruntime·rapidocr 없이 돌게)
         from rapidocr import LangDet, LangRec, ModelType, OCRVersion, RapidOCR
 
@@ -136,7 +138,9 @@ class ConsoleReader:
             raise RuntimeError(f"OCR 예열 실패: 글자를 그린 그림을 못 읽음({r.txts})")
 
     def regions(self, img: np.ndarray) -> list:
+        t0 = time.perf_counter()
         r = self.ocr(img)
+        self.stats = {"ocr_s": time.perf_counter() - t0, "boxes": 0 if r.boxes is None else len(r.boxes), "seg_s": 0.0, "segs": 0}
         if r.boxes is None:
             return []
         out = [Region(np.asarray(b, np.float32), str(t), float(c)) for b, t, c in zip(r.boxes, r.txts, r.scores)]
@@ -146,7 +150,10 @@ class ConsoleReader:
         for reg in out:
             num_rec = self._number(reg.rec)
             if reg.kind is None or num_rec:      # 숫자가 보이는 영역만 7세그먼트로 다시 읽음("3.12 km"처럼 붙은 것 포함)
+                t0 = time.perf_counter()
                 reg.seg = self.seg.read(self._crop(img, reg))
+                self.stats["seg_s"] += time.perf_counter() - t0
+                self.stats["segs"] += 1
                 num_seg = reg.seg if NUM.match(reg.seg) else None
                 order = (num_seg, num_rec) if self.prefer == "seg" else (num_rec, num_seg)
                 reg.cands = list(dict.fromkeys(c for c in order if c))

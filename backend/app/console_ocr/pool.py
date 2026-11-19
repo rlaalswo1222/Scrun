@@ -43,6 +43,7 @@ MAX_PIXELS = 50_000_000   # 사진 한 장 픽셀 상한(앱은 긴 변 2048로 
 def serve(conn, model_path: str, threads: int) -> None:
     """자식 프로세스 본체: 모델을 올리고 "ready"를 보낸 뒤, 사진 묶음(bytes 목록)을 받아 사진마다 결과를 돌려준다."""
     import os
+    import sys
     # 압축 폭탄 막기: 4 MB 안에 10억 픽셀이라고 적은 JPEG(검은 2000×2000 = 63 KB)를 풀면 몇 GB를 잡음(#68 리뷰).
     # OpenCV가 첫 디코드 때 읽는 값이라 cv2보다 먼저. 넘으면 cv2.error → 못 엶
     os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = str(MAX_PIXELS)
@@ -64,7 +65,8 @@ def serve(conn, model_path: str, threads: int) -> None:
             return
         try:
             out = []
-            for data in job:
+            started = time.perf_counter()
+            for i, data in enumerate(job):
                 try:
                     img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
                 except cv2.error:
@@ -72,8 +74,15 @@ def serve(conn, model_path: str, threads: int) -> None:
                 if img is None:
                     out.append(None)
                     continue
+                t0 = time.perf_counter()
                 r = reader.read(img)
                 out.append((r.status, r.distance_m, r.duration_s))
+                st = reader.stats
+                # 실사진이 오라클에서 14초를 넘김(11/19) → 어디서 걸리는지 사진마다 남김. 사진·숫자 값은 안 남김(BL-17 ③)
+                print(f"[계기판 OCR] 사진 {i + 1}/{len(job)} {img.shape[1]}x{img.shape[0]} {len(data) // 1024} KB: "
+                      f"{time.perf_counter() - t0:.2f}초(글자 영역 {st.get('boxes', 0)}개 찾기·인식 {st.get('ocr_s', 0):.2f}초, "
+                      f"7세그먼트 {st.get('segs', 0)}개 {st.get('seg_s', 0):.2f}초) → {r.status}", file=sys.stderr, flush=True)
+            print(f"[계기판 OCR] 묶음 {len(job)}장 {time.perf_counter() - started:.2f}초", file=sys.stderr, flush=True)
             conn.send(("ok", out))
         except Exception as e:  # 엔진 고장: 이 묶음만 실패로 알리고 계속
             conn.send(("error", f"{type(e).__name__}: {e}"))

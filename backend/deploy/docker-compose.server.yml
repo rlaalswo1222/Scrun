@@ -28,6 +28,7 @@ services:
       KAKAO_MODE: real # 공개 서버라 고정. fake면 아무나 아무 계정으로 로그인됨
       KAKAO_APP_ID: ${KAKAO_APP_ID:?KAKAO_APP_ID를 .env에}
       OCR_ENGINE: onnx # 계기판 OCR 진짜 엔진(계획 0046): 읽기 프로세스 2개, 사진 3장 15초 제한
+      VERIFY_OCR_TIMEOUT_S: ${VERIFY_OCR_TIMEOUT_S:-15} # 읽기 시간 제한(초). 실사진이 15초를 넘겨 .env로 잠시 늘려 잼(11/19, 계획 0055)
     depends_on:
       db:
         condition: service_healthy
