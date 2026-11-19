@@ -56,6 +56,10 @@ namespace Scrun.App
                 : (Math.Round(v / 100.0) / 10.0).ToString("0.0", CultureInfo.InvariantCulture) + "km";
         }
 
+        // 평균 페이스(초/km). 서버 runs._pace와 같은 반올림(서버 값과 앱이 센 값이 1초 어긋나지 않게). 거리 0이면 null
+        public static int? AvgPace(int meters, int seconds) =>
+            meters > 0 ? (int?)(int)Math.Round(seconds * 1000.0 / meters, MidpointRounding.ToEven) : null;
+
         // 평균 페이스 칸 "9'30\"", 모르면 "-"
         public static string Pace(int? secPerKm) => FriendText.Pace(secPerKm, unit: false) ?? "-";
 

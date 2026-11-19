@@ -5,18 +5,17 @@ using UnityEngine.UIElements;
 
 namespace Scrun.App
 {
-    // I-04 "끝나지 않은 러닝이 있어요"(계획 0052, BL-37). 앱을 켠 뒤 홈에 처음 왔을 때 한 번 묻는다(계정마다).
-    // 폰 진행 기록(ActiveRunStore)과 서버 GET /runs/active 중 RunRecovery.Pick이 고른 러닝을 홈 위 시트로 보여 주고
-    // "마무리하기" → 남은 시계열 + 종료 → E-01(RecoveredRunScreen) / "버리기" → 확인 → discard.
-    // 홈 화면(지환 BL-31)과 떨어져 있게 따로 둠: 홈은 OnShow에서 CheckOnShow(this)만 부른다
+    // I-04 운동 중 앱 종료 → 세션 복구(계획 0052·0057, BL-37, Figma 611:2252). 앱을 켠 뒤 홈에 처음 왔을 때 한 번 묻는다(계정마다).
+    // 폰 진행 기록(ActiveRunStore)과 서버 GET /runs/active 중 RunRecovery.Pick이 고른 러닝을 홈을 어둡게 덮은 가운데 안내창으로 보여 주고
+    // "복구하고 인증하기" → 남은 시계열 + 종료 → E-01(RecoveredRunScreen) / "기록 버리기" → 한 번 더 확인(Figma엔 없음, 정할 것 3 가) → discard.
+    // 안내창은 바깥을 눌러도 닫히지 않음(둘 중 하나를 골라야 함). 모양은 Home.uss(.hm-dim·.hm-dialog). 홈은 OnShow에서 CheckOnShow(this)만 부른다
     public static class RecoveryPrompt
     {
         static string checkedFor;      // 이번 실행에서 물어본 계정(못 물었으면 null로 되돌려 다음에 다시)
         static RecoveredRun waiting;   // 확인이 끝났을 때 홈이 안 보였으면 다음에 홈에 올 때 띄움
         static string waitingFor;      // waiting을 찾은 계정(다른 계정으로 바뀌면 버림, 리뷰)
         static bool working;
-        static FriendParts.Sheet sheet;
-        static VisualElement host; // 시트를 담는 틀(스타일)
+        static VisualElement dim; // 안내창 덮개(홈 Root에 붙음)
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
@@ -25,8 +24,10 @@ namespace Scrun.App
             waiting = null;
             waitingFor = null;
             working = false;
-            sheet = null;
-            host = null;
+            dim = null;
+            confirmFor = null;
+            confirmHome = null;
+            confirmUid = null;
         }
 
         // 홈 OnShow. 물어볼 게 없으면 지금처럼 남긴 기록 보내기만
@@ -98,51 +99,88 @@ namespace Scrun.App
             Show(home, c.Run, uid);
         }
 
-        static void Show(AppScreen home, RecoveredRun run, string uid)
+        static bool Open => dim?.panel != null;
+
+        // 홈 뒤로 가기: 안내창이 떠 있으면 막음(둘 중 하나를 골라야 함), 버리기 확인이면 첫 안내로
+        public static bool OnBack()
         {
-            if (sheet?.Open == true) return;
-            OpenSheet(home);
-            sheet.Body.Add(UiExtensions.Text(RecoveryText.Title, "fr-sheet-title"));
-            sheet.Body.Add(UiExtensions.Text(RecoveryText.Info(run), "fr-sub"));
-            var stats = UiExtensions.Text(RecoveryText.Stats(run.DistanceM, run.DurationS), "fr-sheet-title");
-            stats.name = "recover-stats";
-            sheet.Body.Add(stats);
-            sheet.Info(RecoveryText.Body);
-            sheet.Button(RecoveryText.Finish, "btn-primary", () => Finish(home, run, uid), "recover-finish");
-            sheet.Button(RecoveryText.Discard, "btn-ghost", () => ConfirmDiscard(home, run, uid), "recover-discard");
+            if (!Open) return false;
+            if (!working && confirmFor != null) Show(confirmHome, confirmFor, confirmUid);
+            return true;
         }
 
-        // 홈 UXML엔 친구 스타일이 없음(시트 모양은 Friends.uss). 홈을 바꾸지 않게 스타일을 담은 빈 틀(RecoverySheet.uxml)을
-        // 홈 위에 꽉 차게 붙이고 그 안에 시트를 만든다(코드로 USS를 불러 붙이면 빈 스타일이 와서 안 됨, 11/19 에디터 확인)
-        static void OpenSheet(AppScreen home)
+        static RecoveredRun confirmFor;   // 버리기 확인 중인 러닝(뒤로 가면 첫 안내로)
+        static AppScreen confirmHome;
+        static string confirmUid;
+
+        static void Show(AppScreen home, RecoveredRun run, string uid)
         {
-            sheet?.Close();
-            host?.RemoveFromHierarchy();
-            host = Resources.Load<VisualTreeAsset>("UI/RecoverySheet").Instantiate();
-            host.pickingMode = PickingMode.Ignore;
-            host.style.position = Position.Absolute;
-            host.style.left = host.style.top = host.style.right = host.style.bottom = 0;
-            home.Root.Add(host);
-            sheet = new FriendParts.Sheet(host);
+            if (working) return;
+            confirmFor = null;
+            var box = OpenDialog(home);
+            box.Add(Text(RecoveryText.Title, "hm-dialog-title"));
+            box.Add(Text(RecoveryText.Body(run.DistanceM, run.DurationS), "hm-dialog-body", "recover-stats"));
+            Add(box, RecoveryText.Finish, "btn-primary hm-dialog-first", () => Finish(home, run, uid), "recover-finish");
+            Add(box, RecoveryText.Discard, "btn-ghost", () => ConfirmDiscard(home, run, uid), "recover-discard");
         }
 
         static void ConfirmDiscard(AppScreen home, RecoveredRun run, string uid)
         {
             if (working) return;
-            OpenSheet(home);
-            sheet.Body.Add(UiExtensions.Text(RecoveryText.DiscardTitle, "fr-sheet-title"));
-            sheet.Info(RecoveryText.DiscardBody);
-            sheet.Button(RecoveryText.Discard, "btn-danger", () => Discard(home, run), "recover-discard-confirm");
-            sheet.Button(RecoveryText.Cancel, "btn-ghost", () => Show(home, run, uid), "recover-discard-cancel");
+            var box = OpenDialog(home);
+            confirmFor = run;
+            confirmHome = home;
+            confirmUid = uid;
+            box.Add(Text(RecoveryText.DiscardTitle, "hm-dialog-title"));
+            box.Add(Text(RecoveryText.DiscardBody, "hm-dialog-body"));
+            Add(box, RecoveryText.DiscardConfirm, "btn-danger hm-dialog-first", () => Discard(home, run), "recover-discard-confirm");
+            Add(box, RecoveryText.Cancel, "btn-ghost", () => Show(home, run, uid), "recover-discard-cancel");
         }
 
-        // "마무리하기": 저장 중엔 시트를 잠금(바깥을 눌러 닫히지 않게). 실패 안내의 "다시 시도"는 같은 시트에서
+        // 홈 Root 위에 어두운 덮개 + 가운데 흰 창. 바깥을 눌러도 안 닫힘
+        static VisualElement OpenDialog(AppScreen home)
+        {
+            Close();
+            dim = new VisualElement { name = "recover-dim" };
+            dim.AddToClassList("hm");     // 화면 Root에 바로 붙어 .hm 아래가 아니므로 글자 규칙(.hm .x)이 닿게
+            dim.AddToClassList("hm-dim");
+            var box = new VisualElement { name = "recover-dialog" };
+            box.AddToClassList("hm-dialog");
+            dim.Add(box);
+            home.Root.Add(dim);
+            return box;
+        }
+
+        static void Close()
+        {
+            dim?.RemoveFromHierarchy();
+            dim = null;
+            confirmFor = null;
+            confirmHome = null;
+            confirmUid = null;
+        }
+
+        static Label Text(string text, string cls, string name = null)
+        {
+            var l = UiExtensions.Text(text, cls);
+            if (name != null) l.name = name;
+            return l;
+        }
+
+        static void Add(VisualElement box, string text, string classes, Action onClick, string name)
+        {
+            var b = new Button(() => onClick?.Invoke()) { text = text, name = name };
+            b.AddToClassList("btn");
+            foreach (var c in classes.Split(' ')) b.AddToClassList(c);
+            box.Add(b);
+        }
+
+        // "복구하고 인증하기": 실패 안내의 "다시 시도"는 같은 안내창에서(안내창은 그대로 떠 있음)
         static async void Finish(AppScreen home, RecoveredRun run, string uid)
         {
-            if (working || sheet == null) return;
+            if (working || !Open) return;
             working = true;
-            var mine = sheet;
-            mine.Locked = true;
+            var mine = dim;
             RunRecovery.FinishResult r = default;
             bool ok;
             try
@@ -152,10 +190,9 @@ namespace Scrun.App
             finally
             {
                 working = false;
-                mine.Locked = false;
             }
             if (!ok) return;
-            mine.Close();
+            if (dim == mine) Close();
             var nav = home.Nav;
             if (nav == null || home.Root.panel == null) return;
             switch (r.Outcome)
@@ -181,10 +218,9 @@ namespace Scrun.App
         // 버림(서버가 받았는데 응답만 못 받은 러닝이 서버에 남아 다음에 또 묻지 않게, 리뷰). 서버가 시작을 받지 않으면(4xx) 폰 기록만
         static async void Discard(AppScreen home, RecoveredRun run)
         {
-            if (working || sheet == null) return;
+            if (working || !Open) return;
             working = true;
-            var mine = sheet;
-            mine.Locked = true;
+            var mine = dim;
             bool finishedAlready = false;
             bool ok;
             try
@@ -208,11 +244,10 @@ namespace Scrun.App
             finally
             {
                 working = false;
-                mine.Locked = false;
             }
             if (!ok && !finishedAlready) return;
             if (run.ClientRunId != null) ActiveRunStore.Default.Clear(run.ClientRunId);
-            mine.Close();
+            if (dim == mine) Close();
             if (finishedAlready) Feedback.ShowError(RecoveryText.DiscardFailedTitle, "이미 끝난 기록이라 버릴 수 없어요. 기록 탭에서 볼 수 있어요.");
         }
     }

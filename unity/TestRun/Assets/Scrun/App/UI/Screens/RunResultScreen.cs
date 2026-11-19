@@ -58,7 +58,7 @@ namespace Scrun.App
                 StartedAt = startedAtUtc,
                 DistanceM = m,
                 DurationS = sec,
-                AvgPaceSPerKm = m > 0 ? (int?)(sec * 1000L / m) : null,
+                AvgPaceSPerKm = RunResultText.AvgPace(m, sec),
                 Verification = "UNVERIFIED",
                 Goal = goal,
             });

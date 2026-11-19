@@ -931,7 +931,7 @@
           "User"
         ],
         "summary": "홈 한 번에",
-        "description": "화면 B-01에서 B-04 · BL-31. 각 항목 API도 따로 있음",
+        "description": "화면 B-01에서 B-04 · BL-31. 주간 목표·레벨·달리는 친구는 각 API와 같은 값. courses는 지금 달리는 사람이 많은 순(같으면 짧은 코스부터), recentRuns는 끝낸 러닝 최근 3개(비었으면 첫 이용 B-04). 목표가 없으면 weeklyGoal.targetCount가 null(B-02)",
         "operationId": "home_v1_home_get",
         "responses": {
           "200": {
@@ -4805,6 +4805,11 @@
       },
       "Home": {
         "properties": {
+          "nickname": {
+            "type": "string",
+            "title": "Nickname",
+            "description": "머리줄 \"닉네임 님\"(GET /users/me와 같은 값)"
+          },
           "weeklyGoal": {
             "$ref": "#/components/schemas/WeeklyGoal"
           },
@@ -4835,6 +4840,7 @@
         },
         "type": "object",
         "required": [
+          "nickname",
           "weeklyGoal",
           "progress",
           "runningFriends",

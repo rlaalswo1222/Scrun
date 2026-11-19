@@ -17,18 +17,6 @@ ME = {
 }
 
 
-WEEKLY_GOAL = {
-    "targetCount": 3,
-    "cycleStart": "2026-11-03",
-    "cycleEnd": "2026-11-09",
-    "doneCount": 2,
-    "daysLeft": 3,
-    "nextTargetCount": None,
-    "history": [
-        {"cycleStart": "2026-10-27", "targetCount": 3, "doneCount": 3},
-    ],
-}
-
 WEEKLY_GOAL_EMPTY = {
     "targetCount": None,
     "cycleStart": None,
@@ -45,30 +33,6 @@ IMPACTS = [
     {"impactId": "imp_wave", "name": "물결", "unlockAtCount": 4, "unlocked": False},
     {"impactId": "imp_star", "name": "별 가루", "unlockAtCount": 7, "unlocked": False},
     {"impactId": "imp_aurora", "name": "오로라", "unlockAtCount": 12, "unlocked": False},
-]
-
-PROGRESS = {
-    "level": 2,
-    "xpM": 4120,
-    "nextLevelAtM": 10000,
-    "nextLevelRemainingM": 5880,
-    "outfitStage": 2,
-    "verifiedCount": 3,
-    "impacts": IMPACTS,
-    "selectedImpactId": "imp_wind",
-    "levelStartsM": [0, 3000, 10000, 25000, 50000, 100000],
-}
-
-# 홈(GET /v1/home) 스텁이 쓰는 코스 요약. ID·이름·길이는 진짜 코스(마이그레이션 seed_courses)와 같게
-COURSES = [
-    {
-        "courseId": "crs_lake_loop",
-        "name": "노을 호수 한 바퀴",
-        "type": "LOOP_3D",
-        "lengthM": 6671,
-        "runnersNow": 7,
-        "thumbnailUrl": None,
-    },
 ]
 
 RUNS = [
@@ -133,23 +97,4 @@ REWARDS = {
     "nextLevelRemainingM": 5880,
     "impactsUnlocked": [IMPACTS[1]],
     "weeklyGoal": {"counted": True, "doneCount": 2, "targetCount": 3},
-}
-
-RUNNING_FRIENDS = [
-    {
-        "userId": "usr_f1",
-        "nickname": "바닷바람",
-        "courseId": "crs_lake_loop",
-        "courseName": "노을 호수 한 바퀴",
-        "distanceM": 1800,
-        "paceSPerKm": 330,
-    },
-]
-
-HOME = {
-    "weeklyGoal": WEEKLY_GOAL,
-    "progress": PROGRESS,
-    "runningFriends": RUNNING_FRIENDS,
-    "recentRuns": RUNS,
-    "courses": COURSES,
 }

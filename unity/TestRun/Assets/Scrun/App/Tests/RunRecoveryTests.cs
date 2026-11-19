@@ -147,13 +147,25 @@ namespace Scrun.App.Tests
             can.Create(null);
             Assert.IsTrue(can.Root.Q("verify").IsVisible());
             Assert.AreEqual(RecoveryText.Skip, can.Root.Q<Button>("skip").text);
-            Assert.AreEqual("0.32km · 02:10", can.Root.Q<Label>("stats").text);
+            Assert.AreEqual("0.32", can.Root.Q<Label>("km").text);
+            Assert.AreEqual("02:10", can.Root.Q<Label>("time").text);
+            Assert.AreEqual("3.0km", can.Root.Q<Label>("goal").text);
+            Assert.AreEqual(RecoveryText.EndLead, can.Root.Q<Label>("lead").text);
+            Assert.IsTrue(can.Root.Q("warning").IsVisible(), "Figma E-01 미인증 경고");
 
             var late = new RecoveredRunScreen(r, new RunSummary { RunId = "run_1", Verification = VerifyStatus.Unverified });
             late.Create(null);
             Assert.IsFalse(late.Root.Q("verify").IsVisible());
             Assert.AreEqual(RecoveryText.SeeResult, late.Root.Q<Button>("skip").text);
-            StringAssert.Contains("10분이 지나", late.Root.Q<Label>("body").text);
+            StringAssert.Contains("10분이 지나", late.Root.Q<Label>("lead").text);
+            Assert.IsFalse(late.Root.Q("warning").IsVisible(), "찍을 수 없으면 경고 대신 이유");
+        }
+
+        [Test]
+        public void PromptBodyIsFigmaSentence()
+        {
+            // Figma I-04 "1.8km · 10:12 기록이 저장되어 있어요. 이어서 인증할까요?"
+            Assert.AreEqual("1.8km · 10:12 기록이 저장되어 있어요. 이어서 인증할까요?", RecoveryText.Body(1850, 612));
         }
 
         // ---------- 마무리 ----------

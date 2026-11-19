@@ -160,9 +160,14 @@ def list_friends(request: Request, user: User = Depends(current_user), db: Sessi
             "이번 러닝 거리가 긴 순. 없으면 빈 배열(G-02)",
             response_model=Envelope[list[RunningFriend]], responses=error_responses(*AUTH))
 def running_friends(request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    return ok(request, running_rows(db, user))
+
+
+def running_rows(db: Session, user: User) -> list[dict]:
+    """지금 달리는 친구(G-01·B-01). 홈(GET /home)도 같이 쓴다."""
     running = hub.running_now(_friend_ids(db, user.id))
     if not running:
-        return ok(request, [])
+        return []
     names = dict(db.execute(select(User.id, User.nickname).where(User.id.in_(running))).all())
     courses = dict(db.execute(select(Course.id, Course.name)
                               .where(Course.id.in_({r.course_id for r in running.values()}))).all())
@@ -170,7 +175,7 @@ def running_friends(request: Request, user: User = Depends(current_user), db: Se
             "distanceM": round(r.run_m or 0), "paceSPerKm": round(3600 / r.kmh) if r.kmh >= 1 else None}
            for uid, r in running.items() if uid in names]
     out.sort(key=lambda f: (-f["distanceM"], f["nickname"]))
-    return ok(request, out)
+    return out
 
 
 @router.get("/friends/{userId}", summary="친구 프로필",

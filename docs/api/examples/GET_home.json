@@ -2,6 +2,7 @@
   "request": {
     "method": "GET",
     "path": "/v1/home",
+    "auth": "Bearer {accessToken}",
     "body": null
   },
   "status": 200,
@@ -9,61 +10,25 @@
     "resultType": "SUCCESS",
     "success": {
       "data": {
+        "nickname": "아침러너",
         "weeklyGoal": {
           "targetCount": 3,
-          "cycleStart": "2026-11-03",
-          "cycleEnd": "2026-11-09",
-          "doneCount": 2,
-          "daysLeft": 3,
-          "nextTargetCount": null,
-          "history": [
-            {
-              "cycleStart": "2026-10-27",
-              "targetCount": 3,
-              "doneCount": 3
-            }
-          ]
+          "cycleStart": "2026-11-06",
+          "cycleEnd": "2026-11-12",
+          "doneCount": 1,
+          "daysLeft": 7,
+          "nextTargetCount": 4,
+          "history": []
         },
         "progress": {
           "level": 2,
-          "xpM": 4120,
+          "xpM": 3150,
           "nextLevelAtM": 10000,
-          "nextLevelRemainingM": 5880,
+          "nextLevelRemainingM": 6850,
           "outfitStage": 2,
-          "verifiedCount": 3,
-          "impacts": [
-            {
-              "impactId": "imp_spark",
-              "name": "발자국 불꽃",
-              "unlockAtCount": 1,
-              "unlocked": true
-            },
-            {
-              "impactId": "imp_wind",
-              "name": "바람 꼬리",
-              "unlockAtCount": 2,
-              "unlocked": true
-            },
-            {
-              "impactId": "imp_wave",
-              "name": "물결",
-              "unlockAtCount": 4,
-              "unlocked": false
-            },
-            {
-              "impactId": "imp_star",
-              "name": "별 가루",
-              "unlockAtCount": 7,
-              "unlocked": false
-            },
-            {
-              "impactId": "imp_aurora",
-              "name": "오로라",
-              "unlockAtCount": 12,
-              "unlocked": false
-            }
-          ],
-          "selectedImpactId": "imp_wind",
+          "verifiedCount": 1,
+          "impacts": [],
+          "selectedImpactId": null,
           "levelStartsM": [
             0,
             3000,
@@ -75,36 +40,36 @@
         },
         "runningFriends": [
           {
-            "userId": "usr_f1",
-            "nickname": "바닷바람",
+            "userId": "01JC0Z8H3K6Q2W9EXAMPLE0000",
+            "nickname": "주말러너",
             "courseId": "crs_lake_loop",
             "courseName": "노을 호수 한 바퀴",
             "distanceM": 1800,
-            "paceSPerKm": 330
+            "paceSPerKm": 379
           }
         ],
         "recentRuns": [
           {
-            "runId": "run_01HZX",
-            "startedAt": "2026-11-05T11:02:00Z",
+            "runId": "01JC0ZA4R7N2X5EXAMPLERUN00",
+            "startedAt": "2026-11-06T12:00:00Z",
             "courseId": "crs_lake_loop",
             "courseName": "노을 호수 한 바퀴",
-            "distanceM": 3120,
-            "durationS": 1080,
-            "avgPaceSPerKm": 346,
-            "verification": "VERIFIED",
+            "distanceM": 2400,
+            "durationS": 900,
+            "avgPaceSPerKm": 375,
+            "verification": "UNVERIFIED",
             "shared": true
           },
           {
-            "runId": "run_01HZW",
-            "startedAt": "2026-11-03T10:40:00Z",
+            "runId": "01JC0ZA4R7N2X5EXAMPLERUN00",
+            "startedAt": "2026-11-06T10:00:00Z",
             "courseId": "crs_lake_loop",
             "courseName": "노을 호수 한 바퀴",
-            "distanceM": 2450,
-            "durationS": 900,
-            "avgPaceSPerKm": 367,
-            "verification": "UNVERIFIED",
-            "shared": true
+            "distanceM": 3150,
+            "durationS": 1140,
+            "avgPaceSPerKm": 362,
+            "verification": "VERIFIED",
+            "shared": false
           }
         ],
         "courses": [
@@ -113,7 +78,31 @@
             "name": "노을 호수 한 바퀴",
             "type": "LOOP_3D",
             "lengthM": 6671,
-            "runnersNow": 7,
+            "runnersNow": 1,
+            "thumbnailUrl": null
+          },
+          {
+            "courseId": "crs_coast_run",
+            "name": "해안 절벽 순환",
+            "type": "LOOP_3D",
+            "lengthM": 8776,
+            "runnersNow": 0,
+            "thumbnailUrl": null
+          },
+          {
+            "courseId": "crs_forest_run",
+            "name": "거목 협곡 순환",
+            "type": "LOOP_3D",
+            "lengthM": 9695,
+            "runnersNow": 0,
+            "thumbnailUrl": null
+          },
+          {
+            "courseId": "crs_island_tour",
+            "name": "섬 일주",
+            "type": "LOOP_3D",
+            "lengthM": 10884,
+            "runnersNow": 0,
             "thumbnailUrl": null
           }
         ]

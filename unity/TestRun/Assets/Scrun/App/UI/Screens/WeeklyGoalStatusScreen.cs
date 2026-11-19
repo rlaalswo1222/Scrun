@@ -12,19 +12,16 @@ namespace Scrun.App
         Label done, of, next;
         Button action;
         WeeklyGoal goal;
-        bool loading, saving;
-        FriendParts.Sheet sheet;
-        Label sheetNumber;
-        Button minus, plus, saveButton, cancelButton;
-        VisualElement chips;
-        int picked;
+        bool loading;
+        WeeklyGoalSheet sheet;
 
         protected override string Uxml => "UI/WeeklyStatus";
         public override bool HidesTabBar => true;
 
         // 테스트: 시트에서 고른 값
-        internal int Picked => picked;
+        internal int Picked => sheet?.Picked ?? 0;
         internal bool SheetOpen => sheet?.Open == true;
+        internal void Pick(int n) => sheet?.Pick(n);
 
         protected override void OnCreate()
         {
@@ -50,7 +47,7 @@ namespace Scrun.App
         protected internal override bool OnBack()
         {
             if (!SheetOpen) return false;
-            if (!saving) sheet.Close(); // 저장 중엔 닫지 않음(실패하면 그 시트에서 다시 시도)
+            sheet.Close(); // 저장 중엔 닫지 않음(실패하면 그 시트에서 다시 시도)
             return true;
         }
 
@@ -119,85 +116,17 @@ namespace Scrun.App
             }
         }
 
-        // H-08: −/+ · 1–7 칩 · 안내 · 저장·취소. 목표가 없으면 같은 시트로 처음 정하기
+        // H-08 시트(WeeklyGoalSheet, 홈 B-02와 같이 씀). 목표가 없으면 같은 시트로 처음 정하기
         internal void OpenSheet()
         {
             if (Nav?.Current != this && Nav != null) return;
-            if (SheetOpen || saving || goal == null) return; // 저장 중엔 새 시트를 열지 않음(늦게 끝난 저장이 새 시트를 닫지 않게)
-            sheet = new FriendParts.Sheet(Root);
-            sheet.Dim.AddToClassList("wg");
-            var title = UiExtensions.Text(WeeklyGoalText.SheetTitle, "fr-sheet-title");
-            title.AddToClassList("wg-sheet-title");
-            sheet.Body.Add(title);
-
-            var stepper = new VisualElement();
-            stepper.AddToClassList("wg-stepper");
-            minus = new Button(() => Pick(picked - 1)) { text = "−", name = "goal-minus" };
-            minus.AddToClassList("wg-step");
-            plus = new Button(() => Pick(picked + 1)) { text = "+", name = "goal-plus" };
-            plus.AddToClassList("wg-step");
-            var value = new VisualElement();
-            value.AddToClassList("wg-step-value");
-            sheetNumber = UiExtensions.Text("", "wg-step-number");
-            sheetNumber.name = "goal-number";
-            value.Add(sheetNumber);
-            value.Add(UiExtensions.Text("회", "wg-step-unit"));
-            stepper.Add(minus);
-            stepper.Add(value);
-            stepper.Add(plus);
-            sheet.Body.Add(stepper);
-
-            chips = new VisualElement();
-            chips.AddToClassList("wg-chips");
-            for (int n = WeeklyGoalText.Min; n <= WeeklyGoalText.Max; n++)
+            if (SheetOpen || sheet?.Saving == true || goal == null) return; // 저장 중엔 새 시트를 열지 않음(늦게 끝난 저장이 새 시트를 닫지 않게)
+            sheet = new WeeklyGoalSheet(Root, goal, got =>
             {
-                int v = n;
-                var chip = new Button(() => Pick(v)) { text = n.ToString(), name = "goal-chip-" + n };
-                chip.AddToClassList("wg-chip");
-                chips.Add(chip);
-            }
-            sheet.Body.Add(chips);
-            sheet.Body.Add(UiExtensions.Text(WeeklyGoalText.SheetNote(goal), "wg-sheet-note"));
-            saveButton = sheet.Button(WeeklyGoalText.Save, "btn-primary", Save, "goal-save");
-            saveButton.AddToClassList("wg-sheet-button");
-            cancelButton = sheet.Button(WeeklyGoalText.Cancel, "btn-ghost", sheet.Close, "goal-cancel");
-            cancelButton.AddToClassList("wg-sheet-button");
-            Pick(WeeklyGoalText.SheetStart(goal));
-        }
-
-        internal void Pick(int n)
-        {
-            picked = WeeklyGoalText.Clamp(n);
-            sheetNumber.text = picked.ToString();
-            minus.SetEnabled(picked > WeeklyGoalText.Min);
-            plus.SetEnabled(picked < WeeklyGoalText.Max);
-            for (int i = 0; i < chips.childCount; i++) chips[i].EnableInClassList("wg-chip--on", i + WeeklyGoalText.Min == picked);
-        }
-
-        async void Save()
-        {
-            if (saving || !SheetOpen) return;
-            saving = true;
-            // 저장 중엔 바깥·뒤로·취소로 닫히지 않게(닫힌 뒤 실패하면 오류창의 "다시 시도"가 아무것도 안 하던 것, #95 리뷰)
-            var mine = sheet;
-            mine.Locked = true;
-            var button = saveButton;
-            var cancel = cancelButton;
-            button.SetEnabled(false);
-            cancel.SetEnabled(false);
-            int target = picked;
-            WeeklyGoal got = null;
-            bool ok = await Feedback.Run(async () => got = await Api.Users.PutWeeklyGoalAsync(new WeeklyGoalUpdate { TargetCount = target }),
-                                         Save);
-            saving = false;
-            mine.Locked = false;
-            if (Root.panel == null) return;
-            button.SetEnabled(true);
-            cancel.SetEnabled(true);
-            if (!ok) return;
-            mine.Close();
-            if (got != null) Show(got);
-            else Load(); // 빈 응답이면 다시 받아서(저장은 됨)
+                if (Root.panel == null) return;
+                if (got != null) Show(got);
+                else Load(); // 빈 응답이면 다시 받아서(저장은 됨)
+            });
         }
     }
 }

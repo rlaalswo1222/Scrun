@@ -1,21 +1,44 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- E-01 종료 요약·인증 전(계획 0052): 앱이 꺼졌다 켜져 마무리한 러닝. Figma E-01을 아직 못 읽어 D-22·G-07 완료 화면 모양을 따름(임시, 상준 확인).
-         뒤로 가기 없음: 버튼으로만(D-22와 같음) -->
+    <!-- E-01 종료 요약·인증 전(계획 0052·0057, Figma 607:1054): I-04 "복구하고 인증하기"로 마무리한 러닝.
+         러닝 종료 · 수고했어요! · 안내 · 오늘의 러닝(거리 · 시간·평균 페이스·목표) · 미인증 경고 · 계기판 인증하기 / 미인증으로 저장.
+         뒤로 가기 없음: 버튼으로만(D-22와 같음). 카드 모양은 결과 화면(RunResult.uss)과 같음 -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
     <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
-    <ui:VisualElement class="onb fr">
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/My.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/RunResult.uss" />
+    <ui:VisualElement class="onb fr my rr">
         <ui:VisualElement class="nav-bar">
             <ui:VisualElement class="nav-side" />
-            <ui:Label text="러닝 마무리" class="nav-title" />
+            <ui:Label name="nav-title" class="nav-title" />
             <ui:VisualElement class="nav-side nav-side--right" />
         </ui:VisualElement>
-        <ui:VisualElement class="onb-scroll fr-done">
-            <ui:Label name="title" class="onb-title fr-center" />
-            <ui:Label name="info" class="onb-lead fr-center" />
-            <ui:Label name="stats" class="onb-title fr-center" />
-            <ui:Label name="body" class="onb-lead fr-center" />
-        </ui:VisualElement>
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+            <ui:Label name="title" class="onb-title" />
+            <ui:Label name="lead" class="onb-lead" />
+            <ui:VisualElement class="rr-card">
+                <ui:Label name="card-title" class="rr-card-title" />
+                <ui:VisualElement class="rr-distance">
+                    <ui:Label name="km" class="rr-km" />
+                    <ui:Label text="km" class="rr-unit" />
+                </ui:VisualElement>
+                <ui:VisualElement class="rr-stats">
+                    <ui:VisualElement class="rr-stat rr-stat--plain">
+                        <ui:Label text="시간" class="rr-label" />
+                        <ui:Label name="time" class="rr-stat-value" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="rr-stat rr-stat--plain">
+                        <ui:Label text="평균 페이스" class="rr-label" />
+                        <ui:Label name="pace" class="rr-stat-value" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="rr-stat rr-stat--plain">
+                        <ui:Label text="목표" class="rr-label" />
+                        <ui:Label name="goal" class="rr-stat-value" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:Label name="warning" class="rr-note" />
+        </ui:ScrollView>
         <ui:Button name="verify" class="btn btn-primary btn-fig" />
         <ui:Button name="skip" class="btn btn-fig" />
     </ui:VisualElement>
