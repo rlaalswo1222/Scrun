@@ -6,5 +6,15 @@ namespace Scrun.App
     {
         int PhoneSamplesPerSec { get; }   // 지난 1초 폰 가속도 샘플 수(요청 100 Hz)
         int AirPodsSamplesPerSec { get; } // 지난 1초 에어팟 헤드폰 모션 샘플 수(에어팟 프로 3 약 49 Hz)
+        SpeedMethodReading Methods { get; } // 달리기 방식별 속도(계획 0060, 개발 표시용)
+    }
+
+    // 세 방식을 다 계산한 값(scrun_speed_read 칸 11–15). 없으면 NaN, Swift가 옛 11칸이면 Has = false
+    public struct SpeedMethodReading
+    {
+        public bool Has;
+        public float BaseKmh, BlendKmh, FixKmh;
+        public float FlightMs;      // 최근 6초 에어팟 공중 시간 중앙값
+        public SpeedMethod InUse;   // Swift가 지금 쓰는 방식
     }
 }

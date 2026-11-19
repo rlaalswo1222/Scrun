@@ -16,6 +16,7 @@ namespace Scrun.App
         [DllImport("__Internal")] static extern IntPtr scrun_speed_stage_end();
         [DllImport("__Internal")] static extern void scrun_speed_stage_cancel();
         [DllImport("__Internal")] static extern int scrun_speed_load(byte[] modelJson);
+        [DllImport("__Internal")] static extern void scrun_speed_set_method(int method);
         [DllImport("__Internal")] static extern void scrun_free(IntPtr p);
 
         public void Start() => scrun_speed_start();
@@ -24,6 +25,7 @@ namespace Scrun.App
         public void StageBegin(double kmh) => scrun_speed_stage_begin(kmh);
         public void StageCancel() => scrun_speed_stage_cancel();
         public bool Load(string modelJson) => scrun_speed_load(modelJson == null ? null : Utf8(modelJson)) == 1;
+        public void SetMethod(int method) => scrun_speed_set_method(method);
 
         public string StageEnd()
         {

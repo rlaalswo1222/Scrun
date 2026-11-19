@@ -19,7 +19,8 @@ sys.path.insert(0, str(ROOT / 'speedlab'))
 import fusion_live as fl  # noqa: E402
 
 SET_NAME = {0: 'sync', 1: 'calib', 2: 'test', 3: 'free', 4: 'hop', 5: 'warmup', 6: 'still', 9: 'end'}
-COLS = ['t', 'kmh', 'kmh_phone', 'state', 'by_airpods', 'air_ok', 'cad', 'imp', 'amp', 'lowg_ms', 'n_run_points', 'steps']
+COLS = ['t', 'kmh', 'kmh_phone', 'state', 'by_airpods', 'air_ok', 'cad', 'imp', 'amp', 'lowg_ms', 'n_run_points', 'steps',
+        'kmh_base', 'kmh_blend', 'kmh_fix', 'kmh_stride', 'fl_ms', 'bias']   # 뒤 6칸: 달리기 방식(계획 0060)
 
 
 def replay(run: Path, model: Path = None) -> pd.DataFrame:
@@ -31,7 +32,8 @@ def replay(run: Path, model: Path = None) -> pd.DataFrame:
     if (ph / 'airpods_acc.csv').exists():
         a, g = pd.read_csv(ph / 'airpods_acc.csv'), pd.read_csv(ph / 'airpods_grav.csv')
         m = a.merge(g, on='t', suffixes=('', '_g'))
-        events += [(r.t, 1, (r.x + r.x_g, r.y + r.y_g, r.z + r.z_g)) for r in m.itertuples()]
+        # 전체 가속도(사용자 + 중력)와 중력을 따로(계획 0060: 수직으로 공중 시간)
+        events += [(r.t, 1, (r.x + r.x_g, r.y + r.y_g, r.z + r.z_g, r.x_g, r.y_g, r.z_g)) for r in m.itertuples()]
     if (ph / 'stage.csv').exists() and model is None:
         events +=[(r.t, 2, (SET_NAME.get(int(r.set), '?'), None if r.speed < 0 else float(r.speed)))
                    for r in pd.read_csv(ph / 'stage.csv').itertuples()]
@@ -48,7 +50,8 @@ def replay(run: Path, model: Path = None) -> pd.DataFrame:
             if s is not None and s is not before:
                 rows.append([s['t'], s['kmh'], s['kmh_phone'], s['state'], 1 if s['by'] == 'airpods' else 0,
                              1 if s['air_ok'] else 0, s['cad'], s['imp'], s['amp'], s['lowg_ms'],
-                             sum(p['running'] for p in est.points), s['steps']])
+                             sum(p['running'] for p in est.points), s['steps'],
+                             s['kmh_base'], s['kmh_blend'], s['kmh_fix'], s['kmh_stride'], s['fl_ms'], s['bias']])
         elif kind == 1:
             est.add_airpods(t, *v)
         else:

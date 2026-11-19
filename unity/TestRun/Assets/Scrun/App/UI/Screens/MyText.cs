@@ -17,6 +17,12 @@ namespace Scrun.App
         public const string SoonTitle = "준비 중이에요";                                 // 임시
         public const string SoonBody = "곧 쓸 수 있게 만들고 있어요.";                     // 임시
         public const string Soon = "준비 중";                                          // 메뉴 오른쪽 설명(임시)
+        // 속도 계산 방식(계획 0060, 개발 빌드에서만 보이는 실험 메뉴라 상준 확인 불필요)
+        public const string SpeedMethodTitle = "속도 계산 방식(실험)";
+        public const string SpeedMethodSub = "개발 빌드에서만 보여요";
+        public const string SpeedMethodInfo =
+            "달리기 속도를 어떻게 계산할지 골라요. 새 두 방식은 에어팟을 끼고 다시 보정해야 적용되고, 그 전엔 기본과 같아요. " +
+            "달리는 중 화면 아래 개발 표시에 세 방식 값이 같이 보여요.";
 
         // 러닝복 세트(BL-34 ②, Figma H-04 "[세트 구성: 💡 제안, 팀 확인]"). 단계 = 서버 progress.outfitStage(1–6)
         static readonly string[] Outfits = { "기본 러닝복", "기능성 세트", "스포츠 세트", "퍼포먼스 세트", "레이스 세트", "엘리트 세트" };

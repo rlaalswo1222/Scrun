@@ -18,6 +18,7 @@ namespace Scrun.App.Tests
             public readonly List<string> Calls = new List<string>();
             public readonly List<string> Loaded = new List<string>();
             public bool LoadOk = true;
+            public readonly List<int> Methods = new List<int>();
 
             public static double[] Make(params double[] v) => v;
             public void Start() => Calls.Add("start");
@@ -32,14 +33,18 @@ namespace Scrun.App.Tests
             public string StageEnd() { Calls.Add("end"); return StageResult; }
             public void StageCancel() => Calls.Add("cancel");
             public bool Load(string json) { Loaded.Add(json); return LoadOk; }
+            public void SetMethod(int method) => Methods.Add(method);
         }
 
         FakeApi api;
         IosSpeedSensor s;
+        int? savedMethod; // 개발자가 에디터에서 고른 방식(테스트가 지우지 않게 되돌림)
 
         [SetUp]
         public void SetUp()
         {
+            savedMethod = PlayerPrefs.HasKey(SpeedMethodPrefs.Key) ? PlayerPrefs.GetInt(SpeedMethodPrefs.Key) : (int?)null;
+            PlayerPrefs.DeleteKey(SpeedMethodPrefs.Key);
             api = new FakeApi();
             s = new IosSpeedSensor(api);
         }
@@ -48,6 +53,9 @@ namespace Scrun.App.Tests
         public void TearDown()
         {
             if (s.IsRunning) s.Stop();
+            if (savedMethod.HasValue) PlayerPrefs.SetInt(SpeedMethodPrefs.Key, savedMethod.Value);
+            else PlayerPrefs.DeleteKey(SpeedMethodPrefs.Key);
+            PlayerPrefs.Save();
         }
 
         [Test]
@@ -184,6 +192,99 @@ namespace Scrun.App.Tests
             s.Stop();
             CollectionAssert.AreEqual(new[] { "start", "stop" }, api.Calls);
             Assert.AreEqual(SensorFlow.Off, s.Phone);
+        }
+
+        // ---- 달리기 방식(계획 0060) ----
+
+        [Test]
+        public void 옛_11칸이면_방식_칸은_없음으로()
+        {
+            s.Start();
+            Assert.IsTrue(s.Current.HasSpeed, "0–10칸은 그대로 읽음");
+            Assert.IsFalse(s.Methods.Has);
+        }
+
+        [Test]
+        public void 덧붙인_칸에서_방식별_속도와_공중_시간을_읽는다()
+        {
+            api.Slots = FakeApi.Make(1, 12.5, 8.4, 2, 168, 120, 1, 2, 2, 100, 49, 8.6, 8.3, 8.2, 91.5, 1);
+            api.Count = IosSpeedSensor.SlotCountMethods;
+            s.Start();
+            var m = s.Methods;
+            Assert.IsTrue(m.Has);
+            Assert.AreEqual(8.6f, m.BaseKmh, 1e-5f);
+            Assert.AreEqual(8.3f, m.BlendKmh, 1e-5f);
+            Assert.AreEqual(8.2f, m.FixKmh, 1e-5f);
+            Assert.AreEqual(91.5f, m.FlightMs, 1e-5f);
+            Assert.AreEqual(SpeedMethod.Blend, m.InUse);
+            Assert.AreEqual(8.4f, s.Current.SpeedKmh, 1e-5f, "화면 속도는 2번 칸(Swift가 고른 방식) 그대로");
+        }
+
+        [Test]
+        public void 칸_약속이_깨지면_방식_값도_지운다()
+        {
+            api.Slots = FakeApi.Make(1, 12.5, 8.4, 2, 168, 120, 1, 2, 2, 100, 49, 8.6, 8.3, 8.2, 91.5, 1);
+            api.Count = IosSpeedSensor.SlotCountMethods;
+            s.Start();
+            Assert.IsTrue(s.Methods.Has);
+            LogAssert.Expect(LogType.Error, new Regex("칸이 약속과 다릅니다"));
+            api.Slots[0] = 9;
+            s.Tick();
+            Assert.IsFalse(s.Methods.Has);
+        }
+
+        [Test]
+        public void 모르는_방식_숫자는_기본으로()
+        {
+            api.Slots = FakeApi.Make(1, 1, 8, 2, 168, 0, 1, 2, 2, 100, 49, 8, 8, 8, double.NaN, 7);
+            api.Count = IosSpeedSensor.SlotCountMethods;
+            s.Start();
+            Assert.AreEqual(SpeedMethod.Base, s.Methods.InUse);
+            Assert.IsNaN(s.Methods.FlightMs);
+        }
+
+        [Test]
+        public void 켤_때_저장된_방식을_Swift에_넘긴다()
+        {
+            PlayerPrefs.SetInt(SpeedMethodPrefs.Key, (int)SpeedMethod.BlendFix);
+            s.Start();
+            CollectionAssert.AreEqual(new[] { (int)SpeedMethod.BlendFix }, api.Methods);
+        }
+
+        [Test]
+        public void 저장된_방식_값이_이상하면_기본()
+        {
+            PlayerPrefs.SetInt(SpeedMethodPrefs.Key, 9);
+            Assert.AreEqual(SpeedMethod.Base, SpeedMethodPrefs.Current);
+        }
+
+        [Test]
+        public void 방식을_바꾸면_저장하고_켜진_센서에도_바로()
+        {
+            s.Start();
+            SpeedMethodPrefs.Set(SpeedMethod.Blend, s);
+            Assert.AreEqual(SpeedMethod.Blend, SpeedMethodPrefs.Current);
+            CollectionAssert.AreEqual(new[] { (int)SpeedMethod.Base, (int)SpeedMethod.Blend }, api.Methods);
+        }
+
+        [Test]
+        public void 보정점_공중_시간을_읽고_옛_보정도_그대로()
+        {
+            api.StageResult = "{\"result\":\"Ok\",\"point\":{\"v\":9,\"limp\":2.5,\"cad\":170,\"amp\":0.7,\"running\":true,\"fl\":95.5}}";
+            var p = IosSpeedSensor.ParseStage(api.StageResult).Point;
+            Assert.AreEqual(95.5, p.FlightMs.Value, 1e-9);
+            StringAssert.Contains("\"fl\":95.5", new CalibrationModel(new[] { p }).ToJson());
+
+            var old = CalibrationModel.Parse("{\"version\":1,\"points\":[{\"v\":8,\"limp\":2.41,\"cad\":158.2,\"amp\":0.62,\"running\":true}]}");
+            Assert.IsNotNull(old, "공중 시간이 없는 옛 보정도 그대로 읽음");
+            Assert.IsNull(old.Points[0].FlightMs);
+        }
+
+        [Test]
+        public void 공중_시간이_숫자가_아니면_점이_아님()
+        {
+            var p = new CalibrationPoint { V = 9, LnImpact = 2.5, Cadence = 170, Running = true, FlightMs = double.NaN };
+            Assert.IsFalse(p.IsValid);
         }
     }
 }

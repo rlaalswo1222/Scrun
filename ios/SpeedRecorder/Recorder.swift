@@ -89,7 +89,8 @@ final class Recorder: NSObject, ObservableObject, CMHeadphoneMotionManagerDelega
                 self.append("airpods_gyro", [t, r.x, r.y, r.z])
                 // 중력 방향: airpods_acc + airpods_grav = 몸 전체 가속도 (공중에선 약 0g)
                 self.append("airpods_grav", [t, gr.x * g, gr.y * g, gr.z * g])
-                self.estimator.addAirPods(t, (a.x + gr.x) * g, (a.y + gr.y) * g, (a.z + gr.z) * g)
+                self.estimator.addAirPods(t, (a.x + gr.x) * g, (a.y + gr.y) * g, (a.z + gr.z) * g,
+                                          gx: gr.x * g, gy: gr.y * g, gz: gr.z * g) // 중력 따로: 공중 시간(계획 0060)
                 if !self.headConnected { DispatchQueue.main.async { self.headConnected = true } }
             }
         }

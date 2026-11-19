@@ -12,7 +12,7 @@ namespace Scrun.App
     {
         Label name, levelChip, marksChip, next, statDistance, statVerified, statLevel;
         VisualElement head, menu;
-        Label calibrationSub;
+        Label calibrationSub, methodValue;
         Me me;
         Progress progress;
         bool loading;
@@ -45,12 +45,42 @@ namespace Scrun.App
                                     () => { if (CanPush) Nav.Push(new RecalibrateScreen()); });
             calibrationSub = recal.Q<Label>(className: "my-row-sub");
             menu.Add(recal);
+            if (SpeedMethodPrefs.Available) // 계획 0060: 개발 빌드에서만, 달리기 속도 방식 비교 실험
+            {
+                var method = MyParts.Row(MyText.SpeedMethodTitle, MyText.SpeedMethodSub,
+                                         SpeedMethodPrefs.Name(SpeedMethodPrefs.Current), OpenSpeedMethod);
+                methodValue = method.Q<Label>(className: "my-row-value");
+                menu.Add(method);
+            }
             menu.Add(MyParts.Row("설정", null, null, () => { if (CanPush) Nav.Push(new SettingsScreen()); }));
             MyParts.MarkLast(menu);
             Render();
         }
 
         bool CanPush => Nav.Current == this && sheet?.Open != true;
+
+        // 세 방식 중 고르기. 지금 것엔 ✓, 고르면 저장하고 켜진 센서에도 바로(SpeedMethodPrefs.Set)
+        void OpenSpeedMethod()
+        {
+            if (!CanPush) return;
+            var cur = SpeedMethodPrefs.Current;
+            sheet = new FriendParts.Sheet(Root);
+            sheet.Body.Add(UiExtensions.Text(MyText.SpeedMethodTitle, "fr-sheet-title"));
+            sheet.Info(MyText.SpeedMethodInfo);
+            var methods = (SpeedMethod[])Enum.GetValues(typeof(SpeedMethod));
+            sheet.Info(string.Join("\n", Array.ConvertAll(methods, m => $"{SpeedMethodPrefs.Name(m)}: {SpeedMethodPrefs.Describe(m)}")));
+            foreach (var m in methods)
+            {
+                var pick = m;
+                sheet.Button((m == cur ? "✓ " : "") + SpeedMethodPrefs.Name(m), m == cur ? "btn-primary" : "btn-ghost", () =>
+                {
+                    SpeedMethodPrefs.Set(pick);
+                    if (methodValue != null) methodValue.text = SpeedMethodPrefs.Name(pick);
+                    sheet.Close();
+                }, "speed-method-" + (int)m);
+            }
+            sheet.Button("닫기", "btn-ghost", sheet.Close, "speed-method-close");
+        }
 
         protected internal override void OnShow() => Load();
 

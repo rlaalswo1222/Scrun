@@ -173,8 +173,19 @@ namespace Scrun.App
             {
                 double? rtt = together?.RoundTripMs;
                 dev.text = $"속도 {RunLink.PlayerSpeedKmh:0.0} km/h · 왕복 {(rtt.HasValue ? rtt.Value.ToString("0") + "ms" : "-")}" +
-                           $" · {together?.Status.ToString() ?? "혼자"}";
+                           $" · {together?.Status.ToString() ?? "혼자"}" + MethodsDev();
             }
+        }
+
+        // 개발 표시: 세 방식 값과 에어팟 공중 시간(계획 0060). 아이폰 센서가 덧붙인 칸을 줄 때만
+        internal static string MethodsDev() => MethodsDev((Native.Speed as ISpeedSensorDiagnostics)?.Methods ?? default);
+
+        internal static string MethodsDev(SpeedMethodReading m)
+        {
+            if (!m.Has) return "";
+            static string K(float v) => float.IsNaN(v) ? "-" : v.ToString("0.0");
+            return $"\n기본 {K(m.BaseKmh)} · 섞기 {K(m.BlendKmh)} · 고치기 {K(m.FixKmh)} · 공중 " +
+                   (float.IsNaN(m.FlightMs) ? "-" : m.FlightMs.ToString("0") + "ms") + $" · 쓰는 중 {SpeedMethodPrefs.Name(m.InUse)}";
         }
 
         // D-13 배너: 같은 출발선·같은 시계라 거리 차이 = 내 이번 거리 − 고스트 거리

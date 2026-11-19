@@ -11,7 +11,8 @@ final class ScrunSpeed {
     static let shared = ScrunSpeed()
 
     static let slotVersion = 1.0
-    static let slotCount = 11
+    // 0–10은 계획 0024 약속, 11–15는 계획 0060(달리기 방식 실험)에서 덧붙임. C#은 11칸이면 옛 약속으로 읽는다
+    static let slotCount = 16
     // 흐름 판정(계획 0020, 숫자는 가설이고 아이폰에서 고침)
     static let phoneOkPerSec = 80, airOkPerSec = 20, lostAfterS = 2.0
 
@@ -41,6 +42,7 @@ final class ScrunSpeed {
 
     // ---- 메인에서만 ----
     private var running = false
+    private var method = SpeedEstimator.methodBase // 달리기 방식(계획 0060). start 때 새 추정기에 넘김
     private var t0 = 0.0
     private var points: [SpeedEstimator.Point] = [] // 지금 보정(C#이 확정·불러온 것)
     private var openStage: (v: Double, t: Double)?
@@ -65,9 +67,10 @@ final class ScrunSpeed {
         airFlow = .off
         openStage = nil
         background = UIApplication.shared.applicationState == .background
-        let saved = points
+        let saved = points, m = method
         onQueue {
             self.est = SpeedEstimator()
+            self.est.method = m
             self.est.load(saved)
             self.airOffset = nil
         }
@@ -94,7 +97,9 @@ final class ScrunSpeed {
             }
             let t = m.timestamp + (self.airOffset ?? 0)
             let g = SpeedEstimator.g, a = m.userAcceleration, gr = m.gravity
-            self.est.addAirPods(t, (a.x + gr.x) * g, (a.y + gr.y) * g, (a.z + gr.z) * g)
+            // 중력도 따로: 수직으로 걸음마다 공중 시간(계획 0060)
+            self.est.addAirPods(t, (a.x + gr.x) * g, (a.y + gr.y) * g, (a.z + gr.z) * g,
+                                gx: gr.x * g, gy: gr.y * g, gz: gr.z * g)
             self.lock.lock()
             Self.push(&self.airTimes, t)
             self.lock.unlock()
@@ -206,6 +211,13 @@ final class ScrunSpeed {
             put(8, airFlow.rawValue)
             put(9, Double(phoneN))
             put(10, Double(airN))
+            // 계획 0060: 방식별 속도(걸음 없음이면 NaN), 창 안 에어팟 공중 ms(없으면 NaN), 지금 방식
+            let moving = s.map { $0.state != 0 } ?? false
+            put(11, moving ? (s?.kmhBase ?? .nan) : .nan)
+            put(12, moving ? (s?.kmhBlend ?? .nan) : .nan)
+            put(13, moving ? (s?.kmhFix ?? .nan) : .nan)
+            put(14, s?.flMs ?? .nan)
+            put(15, Double(s?.method ?? method)) // 2번 칸 속도를 계산한 방식(바꾼 직후 0.5초는 이전 방식)
         }
         return k
     }
@@ -248,7 +260,15 @@ final class ScrunSpeed {
         }
         return ["result": res.rawValue, "point": [
             "v": p.v, "limp": p.limp, "cad": p.cad, "amp": p.amp as Any? ?? NSNull(), "running": p.running,
+            "fl": p.fl as Any? ?? NSNull(),
         ] as [String: Any]]
+    }
+
+    // 달리기 방식(계획 0060): 0 기본, 1 섞기, 2 섞기 + 치우침 고치기. 모르는 값은 기본
+    func setMethod(_ m: Int) {
+        method = (SpeedEstimator.methodBase...SpeedEstimator.methodFix).contains(m) ? m : SpeedEstimator.methodBase
+        let v = method
+        if running { onQueue { self.est.method = v } }
     }
 
     // C# CalibrationModel JSON. nil·빈 문자열이면 보정 지움. 모양이 틀리면 false(지금 보정 그대로)
@@ -293,6 +313,9 @@ public func scrun_speed_stage_end() -> UnsafeMutablePointer<CChar>? {
 
 @_cdecl("scrun_speed_stage_cancel")
 public func scrun_speed_stage_cancel() { ScrunSpeed.shared.stageCancel() }
+
+@_cdecl("scrun_speed_set_method")
+public func scrun_speed_set_method(_ method: Int32) { ScrunSpeed.shared.setMethod(Int(method)) }
 
 @_cdecl("scrun_speed_load")
 public func scrun_speed_load(_ json: UnsafePointer<CChar>?) -> Int32 {
