@@ -190,6 +190,8 @@ class Hub:
         self._where: dict[str, str] = {}  # 사용자 → 지금 있는 방(사람은 한 방에만)
         # 사용자 → 지금 러닝에서 같이 달린 상대. start_tracking 뒤에만 모음
         self._tracks: dict[str, Track] = {}
+        # 지운 계정(계획 0058). 삭제 순간 다시 붙던 연결이 방에 되살아나지 않게 join이 바로 닫는다(ULID는 다시 안 쓰임)
+        self._gone: set[str] = set()
 
     # ---------- 연결 ----------
     def join(self, map_id: str, course_id: str, length_m: float, user_id: str, nickname: str,
@@ -197,6 +199,10 @@ class Hub:
         """방에 붙는다. (새 연결, welcome 메시지). 같은 사람의 앞 연결은 닫게 표시(닫는 건 그 연결 루프가)."""
         conn = Conn(user_id=user_id, map_id=map_id, wake=wake)
         with self._lock:
+            if user_id in self._gone:   # 지운 계정: 방에 넣지 않고 연결을 닫게 표시
+                conn.replaced = True
+                return conn, {"type": "welcome", "you": user_id, "mapInstanceId": map_id, "courseLengthM": float(length_m),
+                              "serverTime": server_time_ms(), "runners": []}
             self._sweep_locked()
             old_map = self._where.get(user_id)
             if old_map is not None and old_map != map_id:
@@ -286,6 +292,16 @@ class Hub:
             if t is not None and t.run_id == run_id:
                 del self._tracks[user_id]
 
+    def forget_user(self, user_id: str) -> None:
+        """계정 삭제(계획 0058): 방에서 바로 빼고(연결은 닫힘) 내 러닝 모으기를 버린다. 다시 붙어도 방에 넣지 않음.
+        남의 러닝에 모인 나는 저장할 때 걸러짐(runs._save_companions가 없는 사용자를 뺌)."""
+        with self._lock:
+            self._gone.add(user_id)
+            map_id = self._where.get(user_id)
+            if map_id is not None:
+                self._remove_locked(map_id, user_id)
+            self._tracks.pop(user_id, None)
+
     def states(self, conn: Conn) -> Optional[dict]:
         """이 연결에 보낼 states(나 빼고 방의 보이는 러너). 방에서 빠졌으면 None."""
         with self._lock:
@@ -348,6 +364,7 @@ class Hub:
             self._rooms.clear()
             self._where.clear()
             self._tracks.clear()
+            self._gone.clear()
 
     # ---------- 안쪽(잠금을 잡은 채로만) ----------
     def _note_companions_locked(self, room: Room, me: Runner) -> None:

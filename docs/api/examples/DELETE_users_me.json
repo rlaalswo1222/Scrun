@@ -2,6 +2,7 @@
   "request": {
     "method": "DELETE",
     "path": "/v1/users/me",
+    "auth": "Bearer {accessToken}",
     "body": null
   },
   "status": 204,

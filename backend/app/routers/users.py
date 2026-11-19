@@ -6,10 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..core import growth
+from ..core import accounts, growth
 from ..core import nickname as nick
 from ..core import timezones as tz
-from ..core.auth import Principal, stub_user
+from ..core.kakao import KakaoClient, get_kakao
 from ..core.security import current_user, signup_or_user_id
 from ..db.ids import new_id
 from ..db.models import Calibration as CalibrationRow
@@ -88,10 +88,19 @@ def patch_me(body: MeUpdate, request: Request, user: User = Depends(current_user
     "/users/me",
     status_code=204,
     summary="계정 삭제",
-    description="화면 H-10 · BL-48 · 계획 0015. 모든 데이터 삭제 + 카카오 연결 해제, 유예 없이 바로. 카카오가 응답하지 않으면 아무것도 지우지 않고 503",
+    description="화면 H-10 · BL-48 · 계획 0058. 카카오 연결을 끊은 뒤 모든 데이터 삭제(기록·인증·레벨·친구·주간 목표·보정값, "
+    "친구 기록의 '함께 달린 러너' 줄 포함), 유예 없이 바로. 카카오가 응답하지 않으면 아무것도 지우지 않고 503. "
+    "성공 뒤 그 사람의 액세스·리프레시 토큰은 모두 401",
     responses=error_responses(*AUTH, E.SERVICE_UNAVAILABLE),
 )
-def delete_me(_: Principal = Depends(stub_user)):
+def delete_me(user: User = Depends(current_user), db: Session = Depends(get_db),
+              kakao: KakaoClient = Depends(get_kakao)):
+    user_id = user.id
+    kakao_id = accounts.kakao_id_of(db, user_id)
+    db.rollback()   # 카카오를 기다리는 동안(최대 5초) DB 연결을 쥐고 있지 않게(리뷰)
+    if kakao_id is not None:
+        kakao.unlink(kakao_id)   # 실패하면 SERVICE_UNAVAILABLE, 아무것도 안 지움
+    accounts.delete_user(db, user_id, "앱에서 계정 삭제")
     return Response(status_code=204)
 
 

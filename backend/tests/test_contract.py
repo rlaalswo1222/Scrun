@@ -78,10 +78,13 @@ def test_requires_login(method, path, body, status):
     assert_fail(call(method, path, body), 401, "UNAUTHORIZED")
 
 
-# 아직 스텁인 API로 본다(내 정보는 계획 0028, 주간 목표는 계획 0054, 홈은 계획 0057에서 진짜가 됨 → tests/test_me.py 등)
+# 아직 스텁인 API로 본다(내 정보는 계획 0028, 주간 목표는 0054, 홈은 0057, 계정 삭제는 0058에서 진짜가 됨 → tests/test_me.py 등)
+EVENTS = {"events": [{"name": "APP_OPEN", "occurredAt": "2026-11-06T09:00:00Z"}]}
+
+
 def test_expired_and_signup_tokens():
-    assert_fail(client.delete("/v1/users/me", headers={"Authorization": "Bearer expired"}), 401, "TOKEN_EXPIRED")
-    assert_fail(client.delete("/v1/users/me", headers={"Authorization": "Bearer signup"}), 403, "SIGNUP_REQUIRED")
+    assert_fail(client.post("/v1/events", json=EVENTS, headers={"Authorization": "Bearer expired"}), 401, "TOKEN_EXPIRED")
+    assert_fail(client.post("/v1/events", json=EVENTS, headers={"Authorization": "Bearer signup"}), 403, "SIGNUP_REQUIRED")
 
 
 def test_validation_is_400_with_fields():

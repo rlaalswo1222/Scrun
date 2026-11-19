@@ -6,6 +6,13 @@ namespace Scrun.App
     // 마이 탭(H-01·H-04·H-09·H-10·H-11, 계획 0049) 글자. Figma 문구 그대로인 것과 Figma에 없어 임시로 쓴 것(상준 확인)을 나눠 적는다.
     public static class MyText
     {
+        // 계정 삭제 확인 시트(계획 0058, Figma에 없어 임시 · 상준 확인). G-11 친구 삭제 시트와 같은 모양
+        public const string DeleteTitle = "계정을 삭제할까요?";
+        public const string DeleteBody = "러닝 기록·인증·레벨·친구·주간 목표·보정값이 모두 지워지고 되돌릴 수 없어요.";
+        public const string DeleteKakao = "카카오 연결도 끊겨요. 같은 카카오 계정으로 다시 가입하면 새 계정으로 시작해요.";
+        public const string DeleteConfirm = "계정 삭제";
+        public const string Deleted = "계정을 삭제했어요."; // 로그인 화면 안내
+
         // 아직 없는 기능(계획 0049 정할 것 1 나): 메뉴·칸은 보이고 누르면 이 안내
         public const string SoonTitle = "준비 중이에요";                                 // 임시
         public const string SoonBody = "곧 쓸 수 있게 만들고 있어요.";                     // 임시

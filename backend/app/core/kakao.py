@@ -5,6 +5,9 @@ KAKAO_MODE=real(기본): 카카오 "액세스 토큰 정보 조회"(GET /v1/user
     https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api (액세스 토큰 정보 조회)
     https://developers.kakao.com/docs/latest/ko/rest-api/error-code (-401: 토큰 무효, -1: 카카오 내부 오류, -2: 인자 오류)
 KAKAO_MODE=fake: 로컬·테스트용. `k_123` → 회원번호 123, 그 밖은 INVALID_KAKAO_TOKEN
+
+연결 끊기(계정 삭제, 계획 0058): POST /v1/user/unlink, 어드민 키(KAKAO_ADMIN_KEY)로 회원번호를 지정.
+    https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api (연결 끊기). 이미 끊긴 사용자(-101)는 성공으로 봄
 """
 import logging
 import re
@@ -17,6 +20,8 @@ from .config import settings
 from .errors import ApiError, ErrorCode
 
 KAKAO_TOKEN_INFO_URL = "https://kapi.kakao.com/v1/user/access_token_info"
+KAKAO_UNLINK_URL = "https://kapi.kakao.com/v1/user/unlink"
+KAKAO_NOT_REGISTERED = -101  # 이 앱에 연결되지 않은 사용자(이미 끊김)
 KAKAO_TIMEOUT_S = 5.0
 KAKAO_BAD_ARGUMENT = -2  # 보낸 값(우리가 보내는 건 토큰뿐)이 형식에 안 맞음
 log = logging.getLogger("scrun.kakao")
@@ -25,6 +30,10 @@ log = logging.getLogger("scrun.kakao")
 class KakaoClient(Protocol):
     def user_id(self, access_token: str) -> str: ...
 
+    def unlink(self, kakao_user_id: str) -> None:
+        """연결 끊기. 실패하면 SERVICE_UNAVAILABLE(부른 쪽은 아무것도 지우지 않음)."""
+        ...
+
 
 class FakeKakao:
     def user_id(self, access_token: str) -> str:
@@ -32,6 +41,9 @@ class FakeKakao:
         if not m:
             raise ApiError(ErrorCode.INVALID_KAKAO_TOKEN)
         return m.group(1)
+
+    def unlink(self, kakao_user_id: str) -> None:
+        log.info("가짜 카카오 연결 끊기: %s", kakao_user_id)
 
 
 def _unavailable(detail: str) -> ApiError:
@@ -51,9 +63,27 @@ def _is_int(v) -> bool:
 
 
 class RealKakao:
-    def __init__(self, app_id: int, client: Optional[httpx.Client] = None):
+    def __init__(self, app_id: int, client: Optional[httpx.Client] = None, admin_key: Optional[str] = None):
         self.app_id = app_id
         self.client = client or _shared_client()
+        self.admin_key = admin_key
+
+    def unlink(self, kakao_user_id: str) -> None:
+        if not self.admin_key:
+            log.error("KAKAO_ADMIN_KEY가 없어 카카오 연결을 끊지 못함(계정 삭제 막힘)")
+            raise _unavailable("연결 끊기를 할 수 없습니다(서버 설정). 잠시 뒤 다시 시도하세요.")
+        try:
+            r = self.client.post(KAKAO_UNLINK_URL, headers={"Authorization": f"KakaoAK {self.admin_key}"},
+                                 data={"target_id_type": "user_id", "target_id": kakao_user_id})
+        except httpx.HTTPError:
+            raise _unavailable("서버에 연결하지 못했습니다.")
+        body = _json(r)
+        if r.status_code == 200 and body is not None and str(body.get("id")) == str(kakao_user_id):
+            return
+        if body is not None and body.get("code") == KAKAO_NOT_REGISTERED:
+            return  # 이미 끊김(사용자가 카카오 쪽에서 먼저 끊었는데 웹훅을 놓침)
+        log.warning("카카오 연결 끊기 실패: HTTP %s %s", r.status_code, (body or {}).get("code"))
+        raise _unavailable("서버가 응답하지 않습니다. 잠시 뒤 다시 시도하세요.")
 
     def user_id(self, access_token: str) -> str:
         try:
@@ -102,4 +132,4 @@ def get_kakao() -> KakaoClient:
     """라우터는 Depends(get_kakao). 테스트는 이 함수를 바꿔 끼운다."""
     if settings.kakao_mode == "fake":
         return FakeKakao()
-    return RealKakao(settings.kakao_app_id)
+    return RealKakao(settings.kakao_app_id, admin_key=settings.kakao_admin_key)
