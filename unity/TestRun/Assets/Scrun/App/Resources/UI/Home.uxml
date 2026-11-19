@@ -1,10 +1,71 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- B-01 홈 자리. "달리기 시작하기"는 Figma B-01 버튼 → C-01. 목표·아바타·친구·최근 기록은 S6(BL-31)에 채움 -->
-    <ui:VisualElement class="screen">
-        <ui:Label text="홈" class="screen-title" />
-        <ui:ScrollView class="screen-body">
-            <ui:Label text="이번 주 목표, 최근 기록, 달리는 친구가 들어갈 자리" class="body-text" />
+    <!-- 홈 B-01–B-04(계획 0057, Figma 601:321·417·497·587). 위 카드(상태마다 글자·캐릭터가 다름) → 레벨 줄 → 큰 버튼 → 오늘 달릴 코스 2장 → 지금 달리는 친구.
+         상태 고르기·글자는 HomeText, 채우기는 HomeScreen(GET /v1/home 한 번). 처음 불러오는 동안·실패는 공통 칸 state(계획 0056), 큰 버튼은 그때도 동작.
+         I-04 복구 안내창(RecoveryPrompt)도 이 화면 위에 뜬다(모양은 Home.uss) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
+    <!-- 목표 정하기 H-08 시트(WeeklyGoalSheet) 모양 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/WeeklyStatus.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Home.uss" />
+    <ui:VisualElement class="hm fr">
+        <ui:ScrollView name="scroll" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="hm-scroll">
+            <ui:VisualElement class="hm-page">
+                <ui:VisualElement class="hm-header">
+                    <ui:Label text="SCRUN" class="hm-logo" />
+                    <ui:Label name="greeting" class="hm-greeting" />
+                </ui:VisualElement>
+
+                <!-- 공통 상태: 처음 받는 동안 스켈레톤, 실패하면 여기에 -->
+                <ui:VisualElement name="state" />
+
+                <ui:VisualElement name="top-part">
+                    <!-- 위 카드: B-04 첫 러닝 / B-02 목표 정하기 / B-01 N / M회 / B-03 달성. 목표가 있으면 누르면 H-07 -->
+                    <ui:VisualElement name="top-card" class="hm-top">
+                        <ui:VisualElement class="hm-top-text" picking-mode="Ignore">
+                            <ui:Label name="kicker" class="hm-kicker" picking-mode="Ignore" />
+                            <ui:Label name="title" class="hm-title" picking-mode="Ignore" />
+                            <ui:VisualElement name="count-row" class="hm-count-row" picking-mode="Ignore">
+                                <ui:Label name="done" class="hm-done" picking-mode="Ignore" />
+                                <ui:Label name="of" class="hm-of" picking-mode="Ignore" />
+                            </ui:VisualElement>
+                            <ui:VisualElement name="dots" class="hm-dots" picking-mode="Ignore" />
+                            <ui:Label name="sub" class="hm-sub" picking-mode="Ignore" />
+                            <ui:Button name="set-goal" class="hm-set-goal" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="character" class="hm-character" picking-mode="Ignore" />
+                    </ui:VisualElement>
+
+                    <!-- 레벨 줄: Lv 칩 · 러닝복 · 다음 레벨까지 + 막대. 누르면 H-04 -->
+                    <ui:Button name="level" class="hm-level">
+                        <ui:Label name="level-chip" class="hm-level-chip" picking-mode="Ignore" />
+                        <ui:VisualElement class="hm-level-text" picking-mode="Ignore">
+                            <ui:Label name="level-line" class="hm-level-line" picking-mode="Ignore" />
+                            <ui:VisualElement class="hm-level-track" picking-mode="Ignore">
+                                <ui:VisualElement name="level-fill" class="hm-level-fill" picking-mode="Ignore" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:Button>
+                </ui:VisualElement>
+
+                <ui:Button name="start" text="달리기 시작하기" class="btn btn-primary hm-start" />
+
+                <ui:VisualElement name="bottom-part">
+                    <ui:VisualElement class="hm-section-row">
+                        <ui:Label text="오늘 달릴 코스" class="hm-section" />
+                        <ui:Button name="see-all" text="전체 보기" class="hm-see-all" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="courses" class="course hm-courses" />
+
+                    <ui:Label text="지금 달리는 친구" class="hm-section hm-section--friends" />
+                    <ui:VisualElement name="friends" />
+                    <!-- 달리는 친구 0명(Figma에 없음, 정할 것 1 가) -->
+                    <ui:VisualElement name="friends-empty" class="fr-empty-card hm-friends-empty">
+                        <ui:Label name="friends-empty-title" class="fr-empty-title" />
+                        <ui:Label name="friends-empty-body" class="fr-empty-body" />
+                        <ui:Button name="add-friend" class="hm-add-friend" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
         </ui:ScrollView>
-        <ui:Button name="choose-course" text="달리기 시작하기" class="btn btn-primary" />
     </ui:VisualElement>
 </ui:UXML>

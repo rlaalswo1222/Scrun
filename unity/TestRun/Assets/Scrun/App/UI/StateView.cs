@@ -40,6 +40,7 @@ namespace Scrun.App
         readonly string failTitle;
         Action onAction, netRetry, onAlt;
         string altText;
+        bool noHome; // 홈 화면 자신: 실패에 "홈으로"를 붙이지 않음
         IVisualElementScheduledItem pulse, netWatch;
 
         // host: 화면 UXML의 빈 칸. failTitle: "코스를 불러오지 못했어요"처럼 그 화면 말
@@ -69,6 +70,13 @@ namespace Scrun.App
         public StateView Padded()
         {
             tree.AddToClassList("state--padded");
+            return this;
+        }
+
+        // 홈 탭 첫 화면처럼 이미 홈일 때: I-09의 "홈으로"를 빼고 다시 시도만
+        public StateView WithoutHomeButton()
+        {
+            noHome = true;
             return this;
         }
 
@@ -149,7 +157,7 @@ namespace Scrun.App
             string altLabel = null;
             Action altAct = null;
             if (onAlt != null && (m == Mode.Failed || m == Mode.Offline)) { altLabel = altText; altAct = onAlt; }
-            else if (m == Mode.Failed && GoHome != null) { altLabel = HomeText; altAct = GoHome; }
+            else if (m == Mode.Failed && GoHome != null && !noHome) { altLabel = HomeText; altAct = GoHome; }
             alt.text = altLabel ?? "";
             alt.SetVisible(altAct != null);
             pressAlt = altAct;

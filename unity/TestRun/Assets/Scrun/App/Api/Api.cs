@@ -134,6 +134,10 @@ namespace Scrun.App
             await c.SendAsync<UserSettings>("PATCH", "/v1/users/me/settings", new { feedShareDefault }, AuthMode.User)
             ?? throw new ApiException(ApiFailure.BadResponse, "설정 응답이 비었습니다.");
 
+        // 홈 한 번에(B-01–B-04, 계획 0057)
+        public async Task<HomeData> HomeAsync() =>
+            await c.GetAsync<HomeData>("/v1/home", AuthMode.User) ?? throw new ApiException(ApiFailure.BadResponse, "홈 응답이 비었습니다.");
+
         // 레벨·인증 횟수(H-01·H-04, 계획 0048)
         public async Task<Progress> ProgressAsync() =>
             await c.GetAsync<Progress>("/v1/users/me/progress", AuthMode.User) ?? throw new ApiException(ApiFailure.BadResponse, "레벨 응답이 비었습니다.");
