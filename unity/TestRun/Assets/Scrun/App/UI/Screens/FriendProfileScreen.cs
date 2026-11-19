@@ -13,9 +13,10 @@ namespace Scrun.App
         readonly string userId;
         FriendProfile profile;
         RunningFriend running;
-        VisualElement content, head, chips, runs, loadFailed;
-        Label name, notRunning, runsEmpty, loadFailedText;
-        Button runTogether, more, reload;
+        VisualElement content, head, chips, runs;
+        Label name, notRunning, runsEmpty;
+        Button runTogether, more;
+        StateView state;
         FriendParts.Sheet sheet;
         bool loading, gone;
 
@@ -35,15 +36,11 @@ namespace Scrun.App
             notRunning = Q<Label>("not-running");
             runs = Q<VisualElement>("runs");
             runsEmpty = Q<Label>("runs-empty");
-            loadFailed = Q<VisualElement>("load-failed");
-            loadFailedText = Q<Label>("load-failed-text");
-            reload = Q<Button>("reload");
+            state = new StateView(Q<VisualElement>("state"), SkeletonKind.Detail, "친구 정보를 불러오지 못했어요").Padded();
             more = Q<Button>("more");
             more.clicked += OpenMore;
             runTogether.clicked += () => { if (running != null && sheet?.Open != true) sheet = FriendParts.RunTogether(this, running); };
-            reload.clicked += () => { if (gone) Nav.Pop(); else Load(); };
             content.SetVisible(false);
-            loadFailed.SetVisible(false);
             more.SetEnabled(false);
         }
 
@@ -73,8 +70,8 @@ namespace Scrun.App
                 p = pt.Result;
                 r = rt.Result?.FirstOrDefault(f => f.UserId == userId);
             };
-            // 처음만 덮개, 다시 보일 때는 조용히(그새 친구가 아니게 됐으면 그대로 알림)
-            bool ok = await Feedback.Load(profile != null, work, Load, OnLoadFailure);
+            // 처음만 스켈레톤(실패하면 그 자리에), 다시 보일 때는 조용히(그새 친구가 아니게 됐으면 그대로 알림)
+            bool ok = await Feedback.Load(state, profile != null, work, Load, OnLoadFailure);
             loading = false;
             if (Root.panel == null) return;
             if (gone)
@@ -82,11 +79,7 @@ namespace Scrun.App
                 ShowGone();
                 return;
             }
-            if (!ok)
-            {
-                if (profile == null) loadFailed.SetVisible(true);
-                return;
-            }
+            if (!ok) return;
             profile = p;
             running = p.RunningNow ? r : null; // 방금 멈췄으면 목록엔 아직 남아 있을 수 있음 → 프로필 기준
             Render();
@@ -95,7 +88,7 @@ namespace Scrun.App
         void Render()
         {
             content.SetVisible(true);
-            loadFailed.SetVisible(false);
+            state.Clear();
             more.SetEnabled(true);
             head.Clear();
             head.Add(FriendParts.Head(profile.Nickname, 88));
@@ -125,9 +118,7 @@ namespace Scrun.App
             FriendDirectory.Remove(userId);
             content.SetVisible(false);
             more.SetEnabled(false);
-            loadFailedText.text = "더 이상 친구가 아니에요"; // 임시 문구(상준)
-            reload.text = "친구 목록으로";
-            loadFailed.SetVisible(true);
+            state.Message("더 이상 친구가 아니에요", null, "친구 목록으로", () => { if (Nav?.Current == this) Nav.Pop(); }); // 임시 문구(상준)
         }
 
         // 더보기(G-09 노트 "더보기: 친구 삭제") → 바로 G-11 확인 시트

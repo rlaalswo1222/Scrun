@@ -16,6 +16,7 @@ namespace Scrun.App
         Me me;
         Progress progress;
         bool loading;
+        StateView state;
         FriendParts.Sheet sheet;
 
         protected override string Uxml => "UI/My";
@@ -32,6 +33,8 @@ namespace Scrun.App
             head = Q<VisualElement>("head");
             menu = Q<VisualElement>("menu");
             Q<Button>("profile").clicked += () => { if (me != null && CanPush) Nav.Push(new ProfileEditScreen(me)); };
+            state = new StateView(Q<VisualElement>("state"), SkeletonKind.Profile, "내 정보를 불러오지 못했어요",
+                                  Q<VisualElement>("profile"), Q<VisualElement>("stats"));
 
             menu.Add(MyParts.Row("러닝복 · 임팩트", "레벨별 러닝복과 해금한 임팩트", null,
                                  () => { if (progress != null && CanPush) Nav.Push(new LevelScreen(progress)); }));
@@ -74,8 +77,8 @@ namespace Scrun.App
                 await Task.WhenAll(meTask, progressTask, calTask);
                 (gotMe, gotProgress, gotCal) = (meTask.Result, progressTask.Result, calTask.Result);
             };
-            // 처음만 덮개, 다시 보일 때는 조용히(실패하면 지난 값 그대로)
-            bool ok = await Feedback.Load(me != null, work, Load);
+            // 처음만 스켈레톤(실패하면 그 자리에, 메뉴는 그대로), 다시 보일 때는 조용히(실패하면 지난 값 그대로)
+            bool ok = await Feedback.Load(state, me != null, work, Load);
             loading = false;
             if (!ok || Root.panel == null) return;
             me = gotMe;

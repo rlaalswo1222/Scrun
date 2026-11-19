@@ -1,0 +1,17 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- 공통 상태(계획 0056, BL-38 ③): 첫 로딩 스켈레톤(Figma I-08)·네트워크 없음(I-07)·일시적인 오류(I-09)·안내·빈 상태.
+         StateView.cs가 화면의 "state" 칸에 펼침. 모양은 States.uss 한 파일(상준이 다듬음). 스켈레톤 블록은 코드가 화면 모양대로 만든다 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/States.uss" />
+    <ui:VisualElement name="state-root" class="state">
+        <ui:VisualElement name="state-skeleton" class="skeleton" />
+        <ui:VisualElement name="state-message" class="state-message">
+            <ui:VisualElement name="state-icon" class="state-icon">
+                <ui:VisualElement class="state-glyph" />
+            </ui:VisualElement>
+            <ui:Label name="state-title" class="state-title" />
+            <ui:Label name="state-body" class="state-body" />
+            <ui:Button name="state-action" class="btn btn-primary state-action" />
+            <ui:Button name="state-alt" class="btn btn-ghost state-alt" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

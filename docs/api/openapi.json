@@ -430,7 +430,7 @@
           "User"
         ],
         "summary": "계정 삭제",
-        "description": "화면 H-10 · BL-48 · 계획 0015. 모든 데이터 삭제 + 카카오 연결 해제, 유예 없이 바로. 카카오가 응답하지 않으면 아무것도 지우지 않고 503",
+        "description": "화면 H-10 · BL-48 · 계획 0058. 카카오 연결을 끊은 뒤 모든 데이터 삭제(기록·인증·레벨·친구·주간 목표·보정값, 친구 기록의 '함께 달린 러너' 줄 포함), 유예 없이 바로. 카카오가 응답하지 않으면 아무것도 지우지 않고 503. 성공 뒤 그 사람의 액세스·리프레시 토큰은 모두 401",
         "operationId": "delete_me_v1_users_me_delete",
         "responses": {
           "204": {
@@ -931,7 +931,7 @@
           "User"
         ],
         "summary": "홈 한 번에",
-        "description": "화면 B-01에서 B-04 · BL-31. 각 항목 API도 따로 있음",
+        "description": "화면 B-01에서 B-04 · BL-31. 주간 목표·레벨·달리는 친구는 각 API와 같은 값. courses는 지금 달리는 사람이 많은 순(같으면 짧은 코스부터), recentRuns는 끝낸 러닝 최근 3개(비었으면 첫 이용 B-04). 목표가 없으면 weeklyGoal.targetCount가 null(B-02)",
         "operationId": "home_v1_home_get",
         "responses": {
           "200": {
@@ -4805,6 +4805,11 @@
       },
       "Home": {
         "properties": {
+          "nickname": {
+            "type": "string",
+            "title": "Nickname",
+            "description": "머리줄 \"닉네임 님\"(GET /users/me와 같은 값)"
+          },
           "weeklyGoal": {
             "$ref": "#/components/schemas/WeeklyGoal"
           },
@@ -4835,6 +4840,7 @@
         },
         "type": "object",
         "required": [
+          "nickname",
           "weeklyGoal",
           "progress",
           "runningFriends",

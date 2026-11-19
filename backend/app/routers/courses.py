@@ -60,9 +60,14 @@ def _active_course(db: Session, course_id: str, lock: bool = False) -> CourseRow
             "(실시간 방에 붙어 있는 사람 + 입장 2분 안에 아직 안 붙은 사람). 실사 영상 코스는 최하위라 type만 열어 둠",
             response_model=Envelope[list[Course]], responses=error_responses(*AUTH))
 def list_courses(request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    return ok(request, course_rows(db, user))
+
+
+def course_rows(db: Session, user: User) -> list[dict]:
+    """열린 코스 요약, 짧은 코스부터(C-01). 홈(GET /home)도 같이 쓴다."""
     courses = db.scalars(select(CourseRow).where(CourseRow.active).order_by(CourseRow.length_m, CourseRow.id)).all()
     present = count_present(db, [c.id for c in courses], exclude_user_id=user.id)  # 보는 사람은 빼고(get_course 참고)
-    return ok(request, [_summary(c, present[c.id]) for c in courses])
+    return [_summary(c, present[c.id]) for c in courses]
 
 
 @router.get("/courses/{courseId}", summary="코스 상세", description="화면 C-02 · BL-7. 숨긴 코스도 404",

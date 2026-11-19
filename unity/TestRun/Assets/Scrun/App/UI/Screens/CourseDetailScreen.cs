@@ -12,9 +12,10 @@ namespace Scrun.App
     {
         readonly string courseId;
         CourseDetail course;
-        Label title, description, runners, length, loadFailedText;
-        Button enter, reload;
-        VisualElement hero, content, loadFailed;
+        Label title, description, runners, length;
+        Button enter;
+        VisualElement hero, content;
+        StateView state;
         bool loading, skipReload, notFound, gating, fromCalibration;
         MapScreen map; // 띄운 맵(돌아올 때 끝낸 기록 ID를 받음)
         bool enterOnLoad; // 친구 탭 "같이 달리기"(G-03, 계획 0044): 처음 불러오면 바로 "맵 입장"
@@ -41,14 +42,10 @@ namespace Scrun.App
             length = Q<Label>("length");
             hero = Q<VisualElement>("hero");
             content = Q<VisualElement>("content");
-            loadFailed = Q<VisualElement>("load-failed");
-            loadFailedText = Q<Label>("load-failed-text");
-            reload = Q<Button>("reload");
-            reload.clicked += () => { if (notFound) Nav.Pop(); else Load(); };
+            state = new StateView(Q<VisualElement>("state"), SkeletonKind.Detail, "코스를 불러오지 못했어요");
             enter = Q<Button>("enter");
             enter.clicked += Enter;
             content.SetVisible(false);
-            loadFailed.SetVisible(false);
             enter.SetEnabled(false);
         }
 
@@ -69,8 +66,8 @@ namespace Scrun.App
             if (loading) return;
             loading = true;
             CourseDetail got = null;
-            // 처음만 덮개, 인증·맵에서 돌아오면 지금 상세를 둔 채 조용히(그새 없어진 코스면 그대로 알림)
-            bool ok = await Feedback.Load(course != null, async () => got = await Api.Courses.GetAsync(courseId), Load, OnLoadFailure);
+            // 처음만 스켈레톤(실패하면 그 자리에), 인증·맵에서 돌아오면 지금 상세를 둔 채 조용히(그새 없어진 코스면 그대로 알림)
+            bool ok = await Feedback.Load(state, course != null, async () => got = await Api.Courses.GetAsync(courseId), Load, OnLoadFailure);
             loading = false;
             // 바로 입장은 첫 불러오기 한 번만: 실패했거나 그 사이 다른 화면이 덮였으면 그냥 상세(나중에 다시 불러올 때 몰래 맵으로 가지 않게)
             bool autoEnter = enterOnLoad && ok && got != null && Nav.Current == this;
@@ -86,16 +83,16 @@ namespace Scrun.App
             {
                 ShowNotFound();
             }
-            else if (course == null)
+            else if (ok && course == null)
             {
-                loadFailed.SetVisible(true);
+                state.Failed(null, Load); // 빈 응답(리뷰): 아무것도 안 보이는 화면에 갇히지 않게
             }
         }
 
         void Render()
         {
             content.SetVisible(true);
-            loadFailed.SetVisible(false);
+            state.Clear();
             title.text = course.Name;
             description.text = course.Description ?? "";
             runners.text = CourseText.PeopleCount(course.RunnersNow);
@@ -111,9 +108,7 @@ namespace Scrun.App
             var (t, b) = CourseText.Failure(CourseText.CourseNotFound).Value;
             content.SetVisible(false);
             enter.SetEnabled(false);
-            loadFailedText.text = t + "\n" + b;
-            reload.text = "다른 코스 보기";
-            loadFailed.SetVisible(true);
+            state.Message(t, b, "다른 코스 보기", () => { if (Nav?.Current == this) Nav.Pop(); });
         }
 
         // 맵 입장 전 모션 권한 확인(계획 0025): 아직 안 물어봤으면 팝업, 거부·제한이면 I-05

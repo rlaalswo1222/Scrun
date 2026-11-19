@@ -8,7 +8,7 @@ namespace Scrun.App
     // E-01 종료 요약·인증 전(계획 0052). 앱이 꺼졌다 켜져 I-04에서 "마무리하기"를 누른 러닝(서버에 이미 끝냄).
     // 서버가 인증 대기(PENDING)로 끝냈으면 D-22처럼 "계기판 촬영하기"·"촬영 없이 마무리", 아니면(멈춘 뒤 10분이 지나 서버가 바로 미인증,
     // 정할 것 2 가) 왜 못 찍는지 알리고 "결과 보기". 판정은 서버 한 곳(앱이 따로 재면 서버와 어긋남, 리뷰).
-    // 인증·결과 흐름은 코스 상세(D-22 다음)와 같음: 인증 완료 → E-11, 아니면 E-12·E-14. Figma E-01은 아직 못 읽어 D-22 문구를 따름(임시)
+    // 인증·결과 흐름은 코스 상세(D-22 다음)와 같음: 인증 완료 → E-11, 아니면 E-12·E-14. 글자는 Figma E-01(607:1054, 계획 0057)
     public sealed class RecoveredRunScreen : AppScreen
     {
         readonly RecoveredRun run;
@@ -33,10 +33,17 @@ namespace Scrun.App
         protected override void OnCreate()
         {
             var body = run.FinishBody.Sensor;
+            Q<Label>("nav-title").text = RecoveryText.NavTitle;
             Q<Label>("title").text = RecoveryText.EndTitle;
-            Q<Label>("info").text = RecoveryText.Info(run);
-            Q<Label>("stats").text = RecoveryText.Stats(body.DistanceM, body.DurationS);
-            Q<Label>("body").text = RecoveryText.EndBody(body.DistanceM, canVerify);
+            Q<Label>("lead").text = canVerify ? RecoveryText.EndLead : RecoveryText.LateLead;
+            Q<Label>("card-title").text = RecoveryText.CardTitle;
+            Q<Label>("km").text = RunResultText.BigKm(body.DistanceM);
+            Q<Label>("time").text = FriendText.Duration(body.DurationS);
+            Q<Label>("pace").text = RunResultText.Pace(RunResultText.AvgPace(body.DistanceM, body.DurationS));
+            Q<Label>("goal").text = run.Start != null ? RunResultText.Goal(run.Start.Goal) : "-"; // 서버에만 있던 러닝은 목표를 모름(없음과 다름)
+            var warning = Q<Label>("warning");
+            warning.text = RecoveryText.SkipWarning;
+            warning.SetVisible(canVerify);
             var verify = Q<Button>("verify");
             verify.text = RecoveryText.Verify;
             verify.SetVisible(canVerify);

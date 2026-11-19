@@ -13,7 +13,8 @@ namespace Scrun.App
         List<Agreement> agreements;
         readonly HashSet<string> agreed = new HashSet<string>();
         readonly Dictionary<string, VisualElement> checks = new Dictionary<string, VisualElement>();
-        VisualElement allCheck, list, loadFailed;
+        VisualElement allCheck, list;
+        StateView state;
         Button next;
         bool loading;
 
@@ -24,10 +25,8 @@ namespace Scrun.App
         {
             Q<Button>("back").clicked += () => { if (Nav.Current == this) Nav.Pop(); };
             list = Q<VisualElement>("list");
-            loadFailed = Q<VisualElement>("load-failed");
-            loadFailed.style.display = DisplayStyle.None;
+            state = new StateView(Q<VisualElement>("state"), SkeletonKind.Rows, "약관을 불러오지 못했어요");
             list.style.display = DisplayStyle.None;
-            Q<Button>("reload").clicked += Load;
             allCheck = Q<VisualElement>("all-check");
             Q<VisualElement>("all").RegisterCallback<ClickEvent>(_ => ToggleAll());
             next = Q<Button>("next");
@@ -49,11 +48,9 @@ namespace Scrun.App
             if (loading) return;
             loading = true;
             List<Agreement> got = null;
-            bool ok = await Feedback.Run(async () => got = await Api.Auth.AgreementsAsync(), Load);
+            bool ok = await Feedback.Load(state, agreements != null, async () => got = await Api.Auth.AgreementsAsync(), Load);
             loading = false;
-            if (Root.panel == null) return;
-            loadFailed.style.display = ok ? DisplayStyle.None : DisplayStyle.Flex;
-            if (!ok) return;
+            if (Root.panel == null || !ok) return;
             Show(got);
         }
 

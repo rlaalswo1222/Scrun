@@ -7,6 +7,8 @@
             <ui:Label text="마이" class="fr-title" />
         </ui:VisualElement>
         <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="fr-scroll">
+            <!-- 공통 상태(계획 0056): 프로필·숫자를 처음 받는 동안 스켈레톤, 실패하면 여기에. 메뉴(설정·로그아웃)는 그대로 씀 -->
+            <ui:VisualElement name="state" />
             <ui:Button name="profile" class="my-profile">
                 <ui:VisualElement name="head" picking-mode="Ignore" />
                 <ui:VisualElement class="my-profile-text" picking-mode="Ignore">
@@ -19,7 +21,7 @@
                 </ui:VisualElement>
                 <ui:Label text="›" class="my-row-chevron" picking-mode="Ignore" />
             </ui:Button>
-            <ui:VisualElement class="my-stats">
+            <ui:VisualElement name="stats" class="my-stats">
                 <ui:VisualElement class="my-stat">
                     <ui:Label name="stat-distance" class="my-stat-value" />
                     <ui:Label text="누적 거리" class="my-stat-label" />

@@ -23,9 +23,7 @@
             <ui:VisualElement name="runs" />
             <ui:Label name="runs-empty" text="아직 공유한 러닝이 없어요" class="fr-hint" />
         </ui:ScrollView>
-        <ui:VisualElement name="load-failed" class="empty-state">
-            <ui:Label name="load-failed-text" text="친구 정보를 불러오지 못했어요" class="hint-text" />
-            <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
-        </ui:VisualElement>
+        <!-- 공통 상태(계획 0056): 첫 로딩 스켈레톤·불러오기 실패·더 이상 친구가 아님 -->
+        <ui:VisualElement name="state" />
     </ui:VisualElement>
 </ui:UXML>

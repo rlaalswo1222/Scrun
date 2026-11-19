@@ -92,6 +92,8 @@ REAL = {
     ("GET", "/v1/feed"),
     ("GET", "/v1/users/me/weekly-goal"),
     ("PUT", "/v1/users/me/weekly-goal"),
+    ("GET", "/v1/home"),
+    ("DELETE", "/v1/users/me"),
 }
 
 

@@ -173,6 +173,7 @@ class Settings:
     jwt_secret: str
     kakao_mode: str
     kakao_app_id: Optional[int]
+    kakao_admin_key: Optional[str] = None  # 연결 끊기·연결 끊기 웹훅(계획 0058). 없으면 계정 삭제가 503
     access_token_ttl_s: int = 3600
     signup_token_ttl_s: int = 1800
     realtime_token_ttl_s: int = 6 * 3600  # 맵 하나에 붙는 실시간 토큰(계획 0029)
@@ -217,6 +218,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         jwt_secret=jwt_secret,
         kakao_mode=kakao_mode,
         kakao_app_id=kakao_app_id,
+        kakao_admin_key=env.get("KAKAO_ADMIN_KEY", "").strip() or None,
         ocr_engine=ocr_engine,
         verification=load_verification(env),
         bots=load_bots(env),
@@ -229,5 +231,8 @@ load_env_file()
 settings = load_settings(os.environ)
 if settings.kakao_mode == "fake":
     log.warning("KAKAO_MODE=fake: 아무 `k_숫자` 토큰으로 로그인됩니다. 로컬·테스트 전용, 운영 서버에서 쓰면 안 됩니다.")
+if settings.kakao_mode == "real" and not settings.kakao_admin_key:
+    log.warning("KAKAO_ADMIN_KEY가 없습니다: 계정 삭제(카카오 연결 끊기)와 연결 끊기 웹훅이 503입니다. "
+                "카카오 개발자 > 앱 키 > 어드민 키를 .env에 넣으세요.")
 if settings.ocr_engine == "fake":
     log.warning("OCR_ENGINE=fake: 사진 파일 이름으로 계기판 값을 정합니다. 로컬·테스트 전용, 운영 서버에서 쓰면 안 됩니다.")

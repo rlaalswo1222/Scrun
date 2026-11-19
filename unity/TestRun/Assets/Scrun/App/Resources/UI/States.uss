@@ -1,0 +1,134 @@
+/* 공통 상태(계획 0056, BL-38): 스켈레톤·불러오기 실패·네트워크 없음·빈 상태. 전 화면이 이 파일 하나를 쓴다.
+   Figma(11/19 읽음): I-07 네트워크 없음(회색 원 + 와이파이 끊김), I-08 로딩·스켈레톤(회색 통 블록 #EEF2F9, shimmer),
+   I-09 일시적인 오류(주황 원 + 경고, "다시 시도" 꽉 찬 버튼 + "홈으로" 고스트). 상준이 여기만 고치면 전 화면에 반영 */
+
+.state {
+    width: 100%;
+    padding: var(--space-2) 0;
+}
+.state--padded .state {
+    padding-left: var(--space-5);
+    padding-right: var(--space-5);
+}
+
+/* ---- I-08 스켈레톤: 회색 통 블록. 깜빡임은 StateView가 클래스를 바꾸고 흐려지기는 transition ---- */
+.skeleton {
+    width: 100%;
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: 0.8s;
+    transition-timing-function: ease-in-out;
+}
+.skeleton--dim {
+    opacity: 0.45;
+}
+.skeleton-row {
+    flex-direction: row;
+    align-items: center;
+    padding: var(--space-3) 0;
+}
+.skeleton-card {
+    height: 120px;
+    border-radius: 20px;
+    background-color: var(--color-surface-2);
+    margin-bottom: var(--space-4);
+}
+.skeleton-card--short {
+    height: 56px;
+}
+.skeleton-col {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+.skeleton-bar {
+    height: 18px;
+    border-radius: 6px;
+    background-color: var(--color-surface-2);
+    margin: 4px 0;
+}
+.skeleton-bar--title {
+    height: 24px;
+}
+.skeleton-bar--short {
+    width: 45%;
+}
+.skeleton-bar--mid {
+    width: 70%;
+}
+.skeleton-dot {
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+    background-color: var(--color-surface-2);
+    margin-right: var(--space-3);
+}
+.skeleton-dot--big {
+    width: 64px;
+    height: 64px;
+    border-radius: 32px;
+}
+.skeleton-hero {
+    height: 189px;
+    border-radius: 28px;
+    background-color: var(--color-surface-2);
+    margin-bottom: var(--space-4);
+}
+
+/* ---- I-07·I-09·안내·빈 상태: 가운데 원 아이콘 72 + 제목 28 + 설명 16 + 꽉 찬 버튼 ---- */
+.state-message {
+    align-items: center;
+    padding: var(--space-6) 0;
+}
+.state-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 36px;
+    background-color: var(--color-primary-soft);
+    align-items: center;
+    justify-content: center;
+}
+.state-glyph {
+    width: 36px;
+    height: 36px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+.state-icon--network {
+    background-color: var(--color-muted);
+}
+.state-icon--network .state-glyph {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/state-offline.svg");
+}
+.state-icon--error {
+    background-color: var(--color-warn);
+}
+.state-icon--error .state-glyph {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/state-error.svg");
+}
+.state-icon--empty {
+    background-color: var(--color-surface-2);
+}
+.state-title {
+    margin-top: var(--space-3);
+    font-size: var(--font-size-title);
+    -unity-font-style: bold;
+    color: var(--color-text);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+.state-body {
+    margin-top: var(--space-3);
+    font-size: var(--font-size-body);
+    color: var(--color-body);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+.state-action {
+    width: 100%;
+    margin-top: var(--space-6);
+    margin-bottom: 0;
+}
+.state-alt {
+    width: 100%;
+    margin-top: var(--space-3);
+    margin-bottom: 0;
+}

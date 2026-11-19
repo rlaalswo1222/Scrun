@@ -1,5 +1,7 @@
 """로그인 API 5개 — 진짜 구현(계획 0016). DB에 저장하고 토큰을 발급한다."""
+import hmac
 import logging
+import re
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request, Response
@@ -7,11 +9,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..core import friend_code
+from ..core import accounts, friend_code
 from ..core import nickname as nick
 from ..core import sessions, tokens
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode
+from ..core.config import settings
 from ..core.kakao import KakaoClient, get_kakao
 from ..core.security import current_user, signup_identity
 from ..db.ids import new_id
@@ -157,3 +160,51 @@ def refresh(body: RefreshRequest, request: Request, db: Session = Depends(get_db
 def logout(body: LogoutRequest, user: User = Depends(current_user), db: Session = Depends(get_db)):
     sessions.end(db, user.id, body.refresh_token)
     return Response(status_code=204)
+
+
+# ---------- 카카오 연결 끊기 웹훅(계획 0058 정할 것 2 가) ----------
+# 사용자가 카카오계정 "연결된 서비스 관리"에서 SCRUN을 끊으면 카카오가 끊기를 마친 뒤 보낸다.
+# https://developers.kakao.com/docs/latest/ko/kakaologin/callback (app_id·user_id·referrer_type, GET 또는 POST,
+# 헤더 Authorization: KakaoAK {대표 어드민 키}, 3초 안에 200). 앱이 부르는 API가 아니라 문서(openapi·노션)에서 뺀다
+
+def kakao_webhook_secret() -> tuple[Optional[str], Optional[int]]:
+    """(어드민 키, 앱 ID). 테스트는 바꿔 끼운다."""
+    return settings.kakao_admin_key, settings.kakao_app_id
+
+
+async def kakao_webhook_params(request: Request) -> dict:
+    """GET은 쿼리, POST는 폼(또는 JSON) 본문. 둘 다 오면 본문이 이김."""
+    params = dict(request.query_params)
+    if request.method == "POST":
+        ctype = request.headers.get("content-type", "")
+        try:
+            if "application/json" in ctype:
+                body = await request.json()
+                if isinstance(body, dict):
+                    params.update({k: str(v) for k, v in body.items()})
+            else:
+                params.update({k: str(v) for k, v in (await request.form()).items()})
+        except Exception:  # 형식이 깨진 본문 → 아래에서 값이 없어 400
+            pass
+    return params
+
+
+@router.api_route("/auth/kakao/unlink", methods=["GET", "POST"], include_in_schema=False)
+def kakao_unlink_webhook(request: Request, params: dict = Depends(kakao_webhook_params),
+                         secret: tuple = Depends(kakao_webhook_secret), db: Session = Depends(get_db)):
+    admin_key, app_id = secret
+    if not admin_key:
+        log.error("KAKAO_ADMIN_KEY가 없어 카카오 연결 끊기 웹훅을 확인할 수 없음")
+        raise ApiError(ErrorCode.SERVICE_UNAVAILABLE, "서버 설정이 끝나지 않았습니다.")
+    given = request.headers.get("authorization", "")
+    if not hmac.compare_digest(given.encode(), f"KakaoAK {admin_key}".encode()):
+        raise ApiError(ErrorCode.UNAUTHORIZED, "카카오 웹훅 키가 다릅니다.")
+    kakao_user_id = params.get("user_id", "").strip()
+    if params.get("app_id", "").strip() != str(app_id) or not kakao_user_id.isdigit():
+        raise ApiError(ErrorCode.VALIDATION_ERROR, "app_id·user_id가 올바르지 않습니다.")
+    user_id = accounts.user_of_kakao(db, kakao_user_id)
+    if user_id is not None:   # 모르는 회원(가입 전에 끊음·이미 지움)도 200: 카카오가 다시 보내지 않게
+        reason = params.get("referrer_type", "")
+        reason = reason if re.fullmatch(r"[A-Z_]{1,40}", reason) else "?"   # 로그에 남기는 값이라 알려진 꼴만
+        accounts.delete_user(db, user_id, f"카카오 쪽 연결 끊기({reason})")
+    return Response(status_code=200)

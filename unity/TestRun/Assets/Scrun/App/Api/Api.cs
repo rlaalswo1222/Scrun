@@ -134,6 +134,19 @@ namespace Scrun.App
             await c.SendAsync<UserSettings>("PATCH", "/v1/users/me/settings", new { feedShareDefault }, AuthMode.User)
             ?? throw new ApiException(ApiFailure.BadResponse, "설정 응답이 비었습니다.");
 
+        // 계정 삭제(H-10, 계획 0058). 서버가 카카오 연결을 끊은 뒤 모두 지움. 카카오가 응답하지 않으면 503(아무것도 안 지움)
+        // 지운 뒤 응답만 못 받고 다시 보내면 재발급이 거절됨 → "다시 로그인하세요"(Expired)를 띄우지 않고 부른 쪽이 마무리(로그아웃과 같음)
+        public async Task DeleteMeAsync()
+        {
+            c.Session.LoggingOut = true;
+            try { await c.SendAsync<object>("DELETE", "/v1/users/me", null, AuthMode.User); }
+            finally { c.Session.LoggingOut = false; }
+        }
+
+        // 홈 한 번에(B-01–B-04, 계획 0057)
+        public async Task<HomeData> HomeAsync() =>
+            await c.GetAsync<HomeData>("/v1/home", AuthMode.User) ?? throw new ApiException(ApiFailure.BadResponse, "홈 응답이 비었습니다.");
+
         // 레벨·인증 횟수(H-01·H-04, 계획 0048)
         public async Task<Progress> ProgressAsync() =>
             await c.GetAsync<Progress>("/v1/users/me/progress", AuthMode.User) ?? throw new ApiException(ApiFailure.BadResponse, "레벨 응답이 비었습니다.");

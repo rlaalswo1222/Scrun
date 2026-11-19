@@ -5,7 +5,9 @@ using UnityEngine.UIElements;
 
 namespace Scrun.App
 {
-    // 로딩·오류 공통 처리(화면 I-07 로딩, I-08 오류, I-09 네트워크). 화면은 서버 호출을 Feedback.Run으로 감싼다.
+    // 로딩·오류 공통 처리. 화면은 서버 호출을 Feedback.Run으로 감싼다(버튼 동작: 덮개 + 실패 안내창).
+    // 화면을 처음 불러올 때는 Feedback.Load(state, …): 덮개 대신 그 화면의 공통 칸(StateView)에 스켈레톤·실패·네트워크 없음(계획 0056).
+    // 화면 번호(Figma 11/19): I-07 네트워크 없음, I-08 로딩·스켈레톤, I-09 일시적인 오류 — 처음 불러오기에선 StateView가 이 셋을 보여 줌
     //   bool ok = await Feedback.Run(async () => list = await Api.Auth.AgreementsAsync(), retry: Load);
     // 로그인이 끝났으면(NotLoggedIn) 오류창 대신 로그인 화면으로 보낸다(AppRoot).
     // 문구는 임시 — 상준이 Figma 예외 화면(I-07–I-09)과 docs/api/README.md "오류 코드"의 문구 칸을 채우면 바꾼다.
@@ -84,10 +86,54 @@ namespace Scrun.App
             }
         }
 
-        // 화면이 보일 때마다 다시 받는 곳의 규칙 하나: 아직 보여 줄 게 없으면(처음) 덮개·실패 안내(Run), 이미 보이면 조용히(RunQuiet).
-        // 탭을 누를 때마다 "잠시만요"가 화면을 덮지 않게
-        public static Task<bool> Load(bool shown, Func<Task> work, Action retry = null, Func<ApiException, bool> onError = null) =>
-            shown ? RunQuiet(work, onError) : Run(work, retry, onError);
+        // 화면이 보일 때마다 다시 받는 곳의 규칙 하나: 아직 보여 줄 게 없으면(처음) 공통 칸에 스켈레톤·실패, 이미 보이면 조용히(RunQuiet).
+        // 탭을 누를 때마다 "잠시만요"가 화면을 덮지 않게. (덮개·안내창으로 처음 받던 옛 Load(bool …)는 계획 0056에서 없앰: 새 화면도 StateView로)
+
+        // 공통 상태 칸이 있는 화면의 처음 불러오기(계획 0056 정할 것 1·2 가): 덮개 대신 그 칸에 스켈레톤, 실패하면 그 칸에
+        // 실패·네트워크 없음(안내창은 안 띄움). 이미 보이면 조용히(위와 같음). onError가 true면 화면이 직접 처리(state.Message 등)
+        // current: 이 요청이 아직 최신인지(칩을 빨리 바꿔 버려진 옛 요청이 새 요청의 스켈레톤·실패 칸을 건드리지 않게, 리뷰)
+        public static async Task<bool> Load(StateView state, bool shown, Func<Task> work, Action retry, Func<ApiException, bool> onError = null,
+                                            Func<bool> current = null)
+        {
+            if (shown) return await RunQuiet(work, onError);
+            if (state == null) return await Run(work, retry, onError);
+            state.Loading();
+            try
+            {
+                await work();
+                if (current == null || current()) state.Clear();
+                return true;
+            }
+            catch (ApiException e)
+            {
+                if (current != null && !current())
+                {
+                    if (e.Failure == ApiFailure.NotLoggedIn) Handle(e);
+                    return false;
+                }
+                if (e.Failure == ApiFailure.NotLoggedIn)
+                {
+                    state.Clear();
+                    Handle(e);
+                }
+                else if (onError != null && onError(e))
+                {
+                    if (state.Current == StateView.Mode.Loading) state.Clear(); // 화면이 안내를 띄우지 않았으면 스켈레톤만 걷음
+                }
+                else
+                {
+                    Debug.LogWarning("[Api] 처음 불러오기 실패: " + e);
+                    state.Failed(e, retry);
+                }
+                return false;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                if (current == null || current()) state.Failed(null, retry);
+                return false;
+            }
+        }
 
         // 이미 보이는 화면을 뒤에서 다시 받을 때(탭에 다시 들어옴·뒤 화면에서 돌아옴): 덮개·오류창 없이, 실패하면 지난 값 그대로.
         // 로그인이 풀렸으면 로그인으로 보내고, onError는 화면이 직접 처리할 실패(없어진 친구·코스 등)에만 불림

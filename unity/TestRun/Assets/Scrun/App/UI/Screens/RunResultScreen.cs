@@ -16,7 +16,8 @@ namespace Scrun.App
         readonly bool asRecord; // 기록 탭에서 연 기록 상세(F-03·F-04)
         Task before; // 미인증 마무리(skip)를 서버에 알리는 중이면 끝난 뒤 불러옴(인증 대기로 보이지 않게)
         RunDetail detail;
-        VisualElement content, loadFailed, chip, companions, heads, graphCard, shareSwitch;
+        VisualElement content, chip, companions, heads, graphCard, shareSwitch;
+        StateView state;
         Label date, chipText, km, unit, companionLine, time, pace, goal, shareSub, note;
         Button share, compare;
         SpeedGraph graph;
@@ -57,7 +58,7 @@ namespace Scrun.App
                 StartedAt = startedAtUtc,
                 DistanceM = m,
                 DurationS = sec,
-                AvgPaceSPerKm = m > 0 ? (int?)(sec * 1000L / m) : null,
+                AvgPaceSPerKm = RunResultText.AvgPace(m, sec),
                 Verification = "UNVERIFIED",
                 Goal = goal,
             });
@@ -68,7 +69,7 @@ namespace Scrun.App
         protected override void OnCreate()
         {
             content = Q<VisualElement>("content");
-            loadFailed = Q<VisualElement>("load-failed");
+            state = new StateView(Q<VisualElement>("state"), SkeletonKind.Detail, "기록을 불러오지 못했어요").Padded();
             date = Q<Label>("date");
             chip = Q<VisualElement>("chip");
             chipText = Q<Label>("chip-text");
@@ -108,12 +109,10 @@ namespace Scrun.App
             ghost.SetVisible(asRecord);
             ghost.SetEnabled(false); // 기록을 받은 뒤에(Render) 켬. 그 전엔 넘길 기록이 없음
             records.SetVisible(!asRecord && !offline); // 서버에 못 올린 기록은 아직 목록에 없음
-            Q<Button>("reload").clicked += Load;
             share.clicked += ToggleShare;
             compare.clicked += OpenCompare;
 
             content.SetVisible(false);
-            loadFailed.SetVisible(false);
             if (detail != null) Render();
         }
 
@@ -160,22 +159,16 @@ namespace Scrun.App
             loading = true;
             if (before != null)
             {
-                Feedback.ShowLoading(true); // 미인증 마무리를 기다리는 동안 빈 화면 대신 덮개
+                if (detail == null) state.Loading(); // 미인증 마무리를 기다리는 동안도 같은 스켈레톤(덮개 대신, 계획 0056 리뷰)
                 try { await before; }
                 catch (System.Exception e) { UnityEngine.Debug.LogException(e); }
-                finally { Feedback.ShowLoading(false); }
                 before = null;
             }
             RunDetail got = null;
-            // 처음만 덮개, 다시 보일 때(시트·다른 화면에서 돌아옴)는 조용히
-            bool ok = await Feedback.Load(detail != null, async () => got = await Api.Runs.GetAsync(runId), Load);
+            // 처음만 스켈레톤(실패하면 그 자리에), 다시 보일 때(시트·다른 화면에서 돌아옴)는 조용히
+            bool ok = await Feedback.Load(state, detail != null, async () => got = await Api.Runs.GetAsync(runId), Load);
             loading = false;
-            if (Root.panel == null) return;
-            if (!ok)
-            {
-                if (detail == null) loadFailed.SetVisible(true);
-                return;
-            }
+            if (Root.panel == null || !ok) return;
             Show(got);
         }
 
@@ -189,7 +182,6 @@ namespace Scrun.App
         {
             var d = detail;
             content.SetVisible(true);
-            loadFailed.SetVisible(false);
             date.text = FriendText.RunDate(d.StartedAt);
             var (chipLabel, verified) = RunResultText.Chip(d.Verification);
             chipText.text = chipLabel;

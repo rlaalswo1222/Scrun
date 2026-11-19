@@ -86,6 +86,24 @@ def _summary(run: Run, course_name: str, distance_m: int, duration_s: int, verif
             "verification": verification, "shared": run.shared}
 
 
+def _finished_query(user: User):
+    """내 끝낸 러닝(목록·홈이 같이 씀). 순서는 부른 쪽이 _NEWEST로."""
+    return (select(Run, Course.name).join(Course, Course.id == Run.course_id)
+            .where(Run.user_id == user.id, Run.status.in_(FINISHED)))
+
+
+_NEWEST = (Run.started_at.desc(), Run.id.desc())
+
+
+def _list_row(run: Run, course_name: str) -> dict:
+    return _summary(run, course_name, run.official_distance_m or 0, run.official_duration_s or 0, run.status)
+
+
+def recent_rows(db: Session, user: User, limit: int) -> list[dict]:
+    """끝낸 러닝 최근 것부터 limit개(목록과 같은 모양). 마감 닫기(close_expired)는 부른 쪽이 먼저. 홈(GET /home)이 쓴다."""
+    return [_list_row(run, name) for run, name in db.execute(_finished_query(user).order_by(*_NEWEST).limit(limit)).all()]
+
+
 def _course_name(db: Session, course_id: str) -> str:
     return db.scalar(select(Course.name).where(Course.id == course_id)) or ""
 
@@ -271,18 +289,16 @@ def list_runs(
 ):
     if close_expired(db, user_id=user.id):
         db.commit()
-    q = (select(Run, Course.name).join(Course, Course.id == Run.course_id)
-         .where(Run.user_id == user.id, Run.status.in_(FINISHED)))
+    q = _finished_query(user)
     if month is not None:
         start, end = _month_range(month, user.timezone)
         q = q.where(Run.started_at >= start, Run.started_at < end)
     if cursor is not None:
         at, run_id = cursors.decode(cursor)
         q = q.where(tuple_(Run.started_at, Run.id) < tuple_(at, run_id))
-    rows = db.execute(q.order_by(Run.started_at.desc(), Run.id.desc()).limit(PAGE_SIZE + 1)).all()
+    rows = db.execute(q.order_by(*_NEWEST).limit(PAGE_SIZE + 1)).all()
     page = rows[:PAGE_SIZE]
-    items = [_summary(run, name, run.official_distance_m or 0, run.official_duration_s or 0, run.status)
-             for run, name in page]
+    items = [_list_row(run, name) for run, name in page]
     next_cursor = cursors.encode(page[-1][0].started_at, page[-1][0].id) if len(rows) > PAGE_SIZE else None
     return ok(request, {"items": items, "nextCursor": next_cursor})
 

@@ -279,33 +279,37 @@ namespace Scrun.App
     }
 
     // 글자(Figma I-04·E-01을 아직 못 읽어 임시 → 읽은 뒤 맞춤·상준 확인)
+    // I-04·E-01 글자(계획 0057, Figma 611:2252·607:1054). Figma 문구 그대로인 것과 Figma에 없어 임시로 쓴 것(상준 확인)을 나눈다
     public static class RecoveryText
     {
-        public const string Title = "끝나지 않은 러닝이 있어요";
-        public const string Body = "앱이 꺼져서 마무리하지 못했어요. 마무리하면 기록으로 남아요.";
-        public const string Finish = "마무리하기";
-        public const string Discard = "버리기";
+        // ---- I-04 (Figma) ----
+        public const string Title = "마지막 러닝이 중간에 종료됐어요";
+        public const string Finish = "복구하고 인증하기";
+        public const string Discard = "기록 버리기";
+
+        // "1.8km · 10:12 기록이 저장되어 있어요. 이어서 인증할까요?"
+        public static string Body(int meters, int seconds) =>
+            $"{FriendText.KmShort(meters)} · {FriendText.Duration(seconds)} 기록이 저장되어 있어요. 이어서 인증할까요?";
+
+        // ---- 버리기 확인(Figma에 없음, 정할 것 3 가 · 임시) ----
         public const string DiscardTitle = "이 러닝을 버릴까요?";
         public const string DiscardBody = "기록이 지워지고 되돌릴 수 없어요.";
+        public const string DiscardConfirm = "버리기";
         public const string Cancel = "취소";
-        public const string EndTitle = "수고했어요!";       // E-01(D-22와 같은 제목)
-        public const string Verify = "계기판 촬영하기";       // D-22와 같음
-        public const string Skip = "촬영 없이 마무리 (미인증)";
-        public const string SeeResult = "결과 보기";
-        public const string KeptLocal = "인터넷이 안 돼 기록을 폰에 저장했어요. 연결되면 미인증 기록으로 올라가요.";
-        public const string Rejected = "이 러닝은 더 이상 마무리할 수 없어요.";
         public const string DiscardFailedTitle = "버리지 못했어요";
 
-        // "노을 호수 한 바퀴 · 11.19 (수) 오전 7:40"
-        public static string Info(RecoveredRun r, TimeZoneInfo zone = null) =>
-            (string.IsNullOrEmpty(r.CourseName) ? "" : r.CourseName + " · ") + FriendText.RunDate(r.StartedAtUtc, zone);
+        // ---- E-01 (Figma) ----
+        public const string NavTitle = "러닝 종료";
+        public const string EndTitle = "수고했어요!";
+        public const string EndLead = "계기판을 인증하면 경험치와 주간 목표에 반영돼요";
+        public const string CardTitle = "오늘의 러닝";
+        public const string SkipWarning = "촬영하지 않으면 미인증으로 저장되고, 경험치·인증 마크·주간 목표에 반영되지 않아요";
+        public const string Verify = "계기판 인증하기";
+        public const string Skip = "미인증으로 저장";
 
-        // "2.10km · 12:08"
-        public static string Stats(int meters, int seconds) => FriendText.Km(meters) + " · " + FriendText.Duration(seconds);
-
-        // E-01 본문: 찍을 수 있으면(서버가 인증 대기) D-22와 같은 안내, 아니면 왜 못 찍는지
-        public static string EndBody(int meters, bool canVerify) => canVerify
-            ? $"{FriendText.Km(meters)}를 달렸어요. 폰을 거치대에서 내려 러닝머신 계기판을 촬영해 인증해요."
-            : $"{FriendText.Km(meters)}를 달렸어요. 앱이 꺼진 지 10분이 지나 계기판으로 인증할 수 없어 미인증 기록으로 남아요.";
+        // ---- E-01 촬영할 수 없을 때(서버가 바로 미인증으로 닫음, Figma에 없음 · 임시) ----
+        public const string LateLead = "앱이 꺼진 지 10분이 지나 계기판으로 인증할 수 없어 미인증 기록으로 남아요";
+        public const string SeeResult = "결과 보기";
+        public const string Rejected = "이 러닝은 더 이상 마무리할 수 없어요.";
     }
 }

@@ -28,7 +28,7 @@
 
 ## 노션
 - 개발 계획(작업 표·기능 보드): `https://app.notion.com/p/4114ae82f1de81a9bec2db16a9bfe635`, API 명세 표는 SCRUN > 문서 > API 명세. 노션 MCP로 표를 SQL로 읽고 줄 속성을 고침
-- API 명세 각 줄 본문은 손으로 쓰지 않는다: `cd backend; ../.venv/Scripts/python -m scripts.notion_pages` → `build/notion/<동작>_<주소>.md`를 그 줄 페이지(`NOTION_PAGE_IDS`)에 통째로 덮어씀. 공통 규칙 줄은 `_common.md`
+- API 명세 각 줄 본문은 손으로 쓰지 않는다: `cd backend; ../.venv/Scripts/python -m scripts.notion_pages` → `build/notion/<동작>_<주소>.md`를 그 줄 페이지(`NOTION_PAGE_IDS`)에 통째로 덮어씀. 공통 규칙 줄은 `_common.md`. 이 스크립트와 `scripts.export_openapi`는 pytest와 같은 테스트 DB를 비우고 쓰므로 pytest가 도는 동안 돌리지 않기(11/19 "예시 흐름 실패 401")
 - 상준 공개 개발 백로그: 공개 API `POST https://heavenly-beak-116.notion.site/api/v3/queryCollection`(collection `14a69719-4a05-45bb-8bda-36cc20118493`, view `7fe2ce1d-a4a0-4daf-8d77-8a5db8ebd139`, spaceId `e29dea3b-d189-81ed-896d-0003ca665f04`)으로 51개를 읽었는데 11/17부터 403. User-Agent를 바꿔 다시 부르는 건 권한 검사에 막힘 → Chrome으로 표를 열고 `javascript_tool`로 스크롤하며 줄 글자를 모음(BL 번호로 찾기). 11번부터 번호가 바뀜(HUD 14→12, 계정 삭제 39→48, 실시간 36→25)
 
 ## 로컬 HTML·PDF

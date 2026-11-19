@@ -41,9 +41,7 @@
             </ui:VisualElement>
         </ui:ScrollView>
         <ui:Button name="action" class="btn btn-primary wg-action" />
-        <ui:VisualElement name="load-failed" class="empty-state">
-            <ui:Label text="주간 목표를 불러오지 못했어요" class="hint-text" />
-            <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
-        </ui:VisualElement>
+        <!-- 공통 상태(계획 0056): 첫 로딩 스켈레톤·불러오기 실패 -->
+        <ui:VisualElement name="state" />
     </ui:VisualElement>
 </ui:UXML>

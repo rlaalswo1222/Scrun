@@ -43,11 +43,11 @@ namespace Scrun.App.Tests
             AttachFake();
             bool blockedDuring = true;
             ApiException seen = null;
-            var quiet = Feedback.Load(true, () =>
+            var quiet = Feedback.RunQuiet(() =>
             {
                 blockedDuring = Feedback.IsBlocking;
                 return Task.FromException(new ApiException(ApiFailure.Server, "없음", 404, "USER_NOT_FOUND"));
-            }, null, e => { seen = e; return true; });
+            }, e => { seen = e; return true; });
             Assert.IsTrue(quiet.IsCompleted);
             Assert.IsFalse(quiet.Result);
             Assert.IsFalse(blockedDuring, "받는 동안 덮개 없음(탭에 다시 들어올 때 '잠시만요'가 뜨지 않게)");
@@ -68,7 +68,7 @@ namespace Scrun.App.Tests
         {
             AttachFake();
             bool blockedDuring = false;
-            var first = Feedback.Load(false, () =>
+            var first = Feedback.Run(() =>
             {
                 blockedDuring = Feedback.IsBlocking;
                 return Task.FromException(new ApiException(ApiFailure.Network, "x"));

@@ -380,6 +380,17 @@ namespace Scrun.App
     }
 
     // 지금 달리는 친구(GET /v1/friends/running)
+    // GET /v1/home(B-01–B-04, 계획 0057). 각 칸은 따로 있는 API와 같은 값. RecentRuns가 비었으면 첫 이용(B-04)
+    public sealed class HomeData
+    {
+        public string Nickname { get; set; }
+        public WeeklyGoal WeeklyGoal { get; set; }
+        public Progress Progress { get; set; }
+        public List<RunningFriend> RunningFriends { get; set; } = new List<RunningFriend>();
+        public List<RunSummary> RecentRuns { get; set; } = new List<RunSummary>();
+        public List<Course> Courses { get; set; } = new List<Course>(); // 지금 달리는 사람 많은 순
+    }
+
     public sealed class RunningFriend
     {
         public string UserId { get; set; }

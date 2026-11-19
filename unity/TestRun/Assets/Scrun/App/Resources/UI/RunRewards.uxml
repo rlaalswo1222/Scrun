@@ -59,11 +59,8 @@
 
             <ui:Button name="next" text="운동 결과 보기" class="btn btn-primary rr-home" />
         </ui:ScrollView>
-        <ui:VisualElement name="load-failed" class="empty-state">
-            <ui:Label text="반영 결과를 불러오지 못했어요" class="hint-text" />
-            <ui:Button name="reload" text="다시 불러오기" class="btn btn-secondary" />
-            <ui:Button name="skip" text="운동 결과 보기" class="btn btn-ghost" />
-        </ui:VisualElement>
+        <!-- 공통 상태(계획 0056): 받는 동안 스켈레톤, 실패하면 다시 시도·운동 결과 보기 -->
+        <ui:VisualElement name="state" />
 
         <!-- E-13 레벨업(풀스크린). 러닝복 그림은 BL-34 에셋 전까지 메인 캐릭터(정할 것 2 가) -->
         <ui:VisualElement name="levelup" class="rr-levelup">
