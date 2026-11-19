@@ -168,13 +168,13 @@ namespace Scrun.App
             }
         }
 
-        // 권한 줄 하나(이름·설명·필수·아이콘)
+        // 권한 줄 하나(이름·설명·필수·아이콘 클래스 = OnboardingSpace.uss perm-*, 계획 0061)
         public static PermissionInfo Permission(PermissionKind kind) => kind switch
         {
-            PermissionKind.Motion => new PermissionInfo("모션 및 피트니스", "걸음 수와 발 충격으로 속도를 추정해요", true, "icon-motion"),
-            PermissionKind.HeadphoneMotion => new PermissionInfo("헤드폰 모션 (AirPods)", "이어폰 센서로 공중 시간을 보완해요", false, "icon-headphone"),
-            PermissionKind.Camera => new PermissionInfo("카메라", "운동 직후 계기판을 촬영해 인증해요", true, "icon-camera"),
-            PermissionKind.Notifications => new PermissionInfo("알림", "친구가 달리기 시작할 때 알려줘요", false, "icon-bell"),
+            PermissionKind.Motion => new PermissionInfo("모션 및 피트니스", "걸음 수와 발 충격으로 속도를 추정해요", true, "perm-motion"),
+            PermissionKind.HeadphoneMotion => new PermissionInfo("헤드폰 모션 (AirPods)", "이어폰 센서로 공중 시간을 보완해요", false, "perm-headphone"),
+            PermissionKind.Camera => new PermissionInfo("카메라", "운동 직후 계기판을 촬영해 인증해요", true, "perm-camera"),
+            PermissionKind.Notifications => new PermissionInfo("알림", "친구가 달리기 시작할 때 알려줘요", false, "perm-bell"),
             _ => throw new System.ArgumentOutOfRangeException(nameof(kind), kind, null),
         };
 

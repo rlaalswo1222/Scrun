@@ -13,6 +13,7 @@ namespace Scrun.App
         bool asking, subscribed;
 
         protected override string Uxml => "UI/Permissions";
+        public override string RootClass => SpaceArt.RootClass; // 우주 시안(계획 0061)
 
         protected override void OnCreate()
         {
@@ -70,36 +71,35 @@ namespace Scrun.App
             Nav.Push(new EarphoneScreen());
         }
 
+        // 우주 시안 카드: 아이콘 칸(그림 perm-*) + 제목·설명 + 상태 칩(시안엔 없지만 허용 여부를 보여 줌)
         VisualElement Row(PermissionKind kind)
         {
             var info = OnboardingText.Permission(kind);
             var row = new VisualElement();
-            row.AddToClassList("info-row");
-            var box = new VisualElement();
-            box.AddToClassList("info-icon-box");
+            row.AddToClassList("sp-card");
+            row.AddToClassList("perm-row");
             var icon = new VisualElement();
-            icon.AddToClassList("info-icon");
+            icon.AddToClassList("perm-icon");
             icon.AddToClassList(info.IconClass);
-            box.Add(icon);
-            row.Add(box);
+            row.Add(icon);
             var text = new VisualElement();
-            text.AddToClassList("info-text");
-            text.Add(UiExtensions.Text(info.Title, "info-name"));
-            text.Add(UiExtensions.Text(info.Body, "info-desc"));
+            text.AddToClassList("perm-text");
+            text.Add(UiExtensions.Text(info.Title, "perm-name"));
+            text.Add(UiExtensions.Text(info.Body, "perm-desc"));
             row.Add(text);
-            var chip = UiExtensions.Text("", "tag");
+            var chip = UiExtensions.Text("", "perm-chip");
             chips[kind] = (chip, info.Required);
             row.Add(chip);
             return row;
         }
 
-        // 칩: 허용 "허용됨"(초록), 거부 "꺼짐"(회색), 아직이면 필수(파랑)·선택(회색)
+        // 칩: 허용 "허용됨"(초록), 거부 "꺼짐"(흐림), 아직이면 필수·선택(테두리)
         void Refresh(PermissionKind kind, PermissionStatus status)
         {
             if (!chips.TryGetValue(kind, out var c)) return;
             c.chip.text = OnboardingText.Chip(c.required, status);
-            c.chip.EnableInClassList("tag--success", status == PermissionStatus.Granted);
-            c.chip.EnableInClassList("tag--gray", status != PermissionStatus.Granted && (!c.required || status != PermissionStatus.NotDetermined));
+            c.chip.EnableInClassList("perm-chip--ok", status == PermissionStatus.Granted);
+            c.chip.EnableInClassList("perm-chip--off", status != PermissionStatus.Granted && (!c.required || status != PermissionStatus.NotDetermined));
         }
 
         void Subscribe(bool on)

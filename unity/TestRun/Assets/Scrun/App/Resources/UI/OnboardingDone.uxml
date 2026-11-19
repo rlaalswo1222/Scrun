@@ -1,16 +1,18 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- A-17 온보딩 완료(Figma 599:434, 계획 0031). 배경은 스플래시 그라데이션(AppScreen.RootClass) -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
-    <ui:VisualElement class="onb onb-done">
-        <ui:Label text="준비 끝!" class="done-title" />
-        <ui:Label text="이제 첫 러닝을 시작해 볼까요?" class="done-lead" />
-        <ui:VisualElement class="spacer" />
-        <ui:VisualElement class="char-stretch" />
-        <ui:VisualElement class="spacer" />
-        <ui:VisualElement class="done-card">
-            <ui:Label text="첫 러닝 전에 속도 보정이 필요해요 (약 3분)" class="done-card-text" />
+    <!-- A-17 온보딩 완료(계획 0031, 모양은 우주 시안 886:229 계획 0061). 빛줄기·받침대·캐릭터는 한 그림(DoneScene) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingSpace.uss" />
+    <ui:VisualElement class="sp">
+        <ui:VisualElement name="fit" class="sp-fit">
+            <ui:VisualElement class="sp-art art-done">
+                <ui:VisualElement class="sp-img img-done" />
+                <ui:Label text="준비 끝!" class="done-title" />
+            </ui:VisualElement>
         </ui:VisualElement>
-        <ui:Button name="home" text="홈으로" class="btn btn-dark btn-fig" />
+        <ui:Label text="이제 첫 러닝을 시작해 볼까요?" class="sp-lead done-lead" />
+        <ui:VisualElement class="sp-card done-info">
+            <ui:VisualElement class="done-dot" />
+            <ui:Label text="첫 러닝 전에 속도 보정이 필요해요 (약 3분)" class="done-info-text" />
+        </ui:VisualElement>
+        <ui:Button name="home" text="홈으로" class="sp-cta cta-gap" />
     </ui:VisualElement>
 </ui:UXML>

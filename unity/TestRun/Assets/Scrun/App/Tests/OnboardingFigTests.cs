@@ -60,7 +60,9 @@ namespace Scrun.App.Tests
             Assert.AreEqual(2, intro.PageIndex);
             Assert.AreEqual("기록이 남고, 이어져요", intro.Root.Q<Label>("title").text);
             Assert.AreEqual("시작하기", intro.Root.Q<Button>("next").text);
-            Assert.AreEqual(Visibility.Hidden, intro.Root.Q<Button>("skip").style.visibility.value, "A-04는 건너뛰기 없음");
+            Assert.AreNotEqual(Visibility.Hidden, intro.Root.Q<Button>("skip").style.visibility.value, "우주 시안은 A-04에도 건너뛰기");
+            Assert.IsTrue(intro.Root.Q("illust").ClassListContains("intro-record"), "장면은 그림 칸 클래스로 고름");
+            Assert.IsFalse(intro.Root.Q("illust").ClassListContains("intro-run"));
             var dots = intro.Root.Q("dots");
             Assert.IsTrue(dots[2].ClassListContains("dot--on"));
             Assert.IsFalse(dots[0].ClassListContains("dot--on"));
@@ -83,7 +85,8 @@ namespace Scrun.App.Tests
         {
             var login = new LoginScreen();
             nav.StartFlow(login);
-            Assert.AreEqual("카카오로 계속하기", login.Root.Q<Button>("kakao").text);
+            Assert.IsNotNull(login.Root.Q<Button>("kakao"));
+            Assert.AreEqual("카카오로 계속하기", login.Root.Q<Label>("kakao-label").text, "우주 시안: 심볼 + 글자 한 줄");
             var failed = new LoginScreen(failed: true);
             nav.Push(failed);
             Assert.AreEqual("카카오로 다시 시도", failed.Root.Q<Button>("kakao").text);
@@ -154,14 +157,28 @@ namespace Scrun.App.Tests
             var goal = new WeeklyGoalScreen();
             nav.StartFlow(goal);
             Assert.AreEqual(3, goal.Count);
-            Assert.AreEqual(7, goal.Root.Q("chips").childCount);
             Assert.AreEqual(7, goal.Root.Q("days").childCount);
+            Assert.IsTrue(goal.Root.Q("days")[0].ClassListContains("week-day--today"), "오늘 = 1일");
             goal.Set(5);
             Assert.AreEqual("5", goal.Root.Q<Label>("count").text);
-            Assert.IsTrue(goal.Root.Q("chips")[4].ClassListContains("goal-chip--on"));
             goal.Set(0);
             goal.Set(8);
             Assert.AreEqual(5, goal.Count, "범위 밖은 무시");
+        }
+
+        [Test]
+        public void 주간_목표_빼기_더하기는_1과_7에서_멈춤()
+        {
+            var goal = new WeeklyGoalScreen();
+            nav.StartFlow(goal);
+            var minus = goal.Root.Q<Button>("minus");
+            var plus = goal.Root.Q<Button>("plus");
+            goal.Set(1);
+            Assert.IsFalse(minus.enabledSelf);
+            Assert.IsTrue(plus.enabledSelf);
+            goal.Set(7);
+            Assert.IsTrue(minus.enabledSelf);
+            Assert.IsFalse(plus.enabledSelf);
         }
 
         [Test]
@@ -178,12 +195,45 @@ namespace Scrun.App.Tests
 
         // ---- A-17 완료 ----
         [Test]
-        public void 완료_화면은_스플래시_배경()
+        public void 완료_화면은_우주_배경()
         {
             var done = new OnboardingDoneScreen();
             nav.StartFlow(done);
-            Assert.AreEqual("app-root--splash", done.RootClass);
+            Assert.AreEqual(SpaceArt.RootClass, done.RootClass);
             Assert.AreEqual("홈으로", done.Root.Q<Button>("home").text);
+        }
+
+        [Test]
+        public void 우주_시안_화면은_우주_배경_로그인_실패는_옛_배경()
+        {
+            Assert.AreEqual(SpaceArt.RootClass, new IntroScreen().RootClass);
+            Assert.AreEqual(SpaceArt.RootClass, new LoginScreen().RootClass);
+            Assert.IsNull(new LoginScreen(failed: true).RootClass, "A-19는 시안이 없어 그대로");
+            Assert.AreEqual(SpaceArt.RootClass, new PermissionsScreen().RootClass);
+            Assert.AreEqual(SpaceArt.RootClass, new WeeklyGoalScreen().RootClass);
+            Assert.AreEqual(SpaceArt.RootClass, new CalibrationIntroScreen().RootClass);
+        }
+
+        [Test]
+        public void 그림_칸은_자리보다_크면_줄이고_키우지는_않음()
+        {
+            Assert.AreEqual(1f, SpaceArt.ScaleFor(new UnityEngine.Vector2(393, 900), new UnityEngine.Vector2(393, 420)), 1e-5f);
+            Assert.AreEqual(0.5f, SpaceArt.ScaleFor(new UnityEngine.Vector2(393, 210), new UnityEngine.Vector2(393, 420)), 1e-5f);
+            Assert.AreEqual(0.5f, SpaceArt.ScaleFor(new UnityEngine.Vector2(196.5f, 900), new UnityEngine.Vector2(393, 420)), 1e-5f);
+            Assert.AreEqual(0f, SpaceArt.ScaleFor(new UnityEngine.Vector2(393, 0), new UnityEngine.Vector2(393, 420)), 1e-5f, "자리가 없으면 안 그림");
+        }
+
+        [Test]
+        public void 보정_안내_속도_칩은_실제_사다리()
+        {
+            var ladder = CalibrationLadder.SpeedsKmh;
+            var intro = new CalibrationIntroScreen();
+            nav.StartFlow(intro);
+            var chips = intro.Root.Q("speeds");
+            Assert.AreEqual(3, chips.childCount);
+            Assert.AreEqual($"{ladder[0]:0.#} → {ladder[ladder.Length - 1]:0.#} km/h", ((Label)chips[0]).text);
+            Assert.AreEqual($"{ladder.Length}단계", ((Label)chips[1]).text);
+            Assert.AreEqual($"× {CalibrationLadder.StageSec:0}초", ((Label)chips[2]).text);
         }
 
         // ---- A-06 프로필 ----

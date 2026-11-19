@@ -1,38 +1,7 @@
 /* 보정 화면(A-11–A-15) 모양. 임시 — 상준 UI Kit이 오면 다듬는다. 색은 App.uss 변수.
    Figma: 가로 화면은 흐린 코스 사진 위에 흰 카드. 사진·흐림은 아직 없어 어두운 단색으로 대신한다. */
 
-/* A-11 안내 */
-.calib-intro-steps {
-    margin: var(--space-6) 0 var(--space-4) 0;
-    padding: var(--space-4);
-    border-radius: 14px;
-    background-color: var(--color-surface);
-}
-
-.calib-intro-step {
-    flex-direction: row;
-    align-items: center;
-    margin: 6px 0;
-}
-
-.calib-intro-num {
-    width: 24px;
-    height: 24px;
-    border-radius: 12px;
-    margin-right: 10px;
-    background-color: var(--color-primary);
-    color: #FFFFFF;
-    font-size: 13px;
-    -unity-text-align: middle-center;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
-}
-
-.calib-intro-text {
-    flex-shrink: 1;
-    font-size: 15px;
-    color: var(--color-text);
-    white-space: normal;
-}
+/* A-11 안내는 우주 시안 OnboardingSpace.uss(계획 0061) */
 
 /* 가로 보정 화면 */
 .calib {

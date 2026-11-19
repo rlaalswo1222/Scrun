@@ -1,15 +1,20 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- A-11 속도 보정 안내(첫 러닝 전, 세로). 문구는 코드(CalibrationCopy)에서 채움 -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Calibration.uss" />
-    <ui:VisualElement class="screen">
-        <ui:VisualElement class="top-bar">
-            <ui:Button name="back" text="‹" class="back-button" />
+    <!-- A-11 속도 보정 안내(첫 러닝 전·재보정, 세로). 모양은 우주 시안 886:25(계획 0061), 문구·속도 칩은 실제 사다리(CalibrationCopy) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingSpace.uss" />
+    <ui:VisualElement class="sp">
+        <ui:VisualElement name="fit" class="sp-fit">
+            <ui:VisualElement class="sp-art art-calib">
+                <ui:VisualElement class="sp-img img-calib" />
+            </ui:VisualElement>
         </ui:VisualElement>
-        <ui:Label name="title" class="screen-title" />
-        <ui:Label name="lead" class="body-text" />
-        <ui:VisualElement name="steps" class="calib-intro-steps" />
-        <ui:Label name="note" class="hint-text" />
-        <ui:VisualElement class="screen-body" />
-        <ui:Button name="start" class="btn btn-primary" />
+        <ui:Label name="title" class="sp-title sp-center" />
+        <ui:Label name="lead" class="sp-lead calib-lead" />
+        <ui:VisualElement class="sp-card quest">
+            <ui:VisualElement name="steps" />
+            <ui:VisualElement name="speeds" class="quest-chips" />
+        </ui:VisualElement>
+        <ui:Label name="note" class="sp-caption" />
+        <ui:Button name="start" class="sp-cta cta-gap" />
+        <ui:Button name="back" text="‹" class="sp-pill sp-back calib-top" />
     </ui:VisualElement>
 </ui:UXML>

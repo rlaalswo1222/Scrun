@@ -1,19 +1,22 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- A-05 로그인(Figma 596:190, 계획 0031). 실패·취소는 A-19(LoginFailed.uxml) -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
-    <ui:VisualElement class="onb">
-        <ui:VisualElement class="nav-bar" />
-        <ui:Label text="SCRUN" class="onb-logo" />
-        <ui:Label text="로그인하고 내 러닝을 시작해요" class="onb-lead gap" />
-        <ui:VisualElement class="illust illust--login">
-            <ui:VisualElement class="char-stand" />
+    <!-- A-05 로그인(계획 0031, 모양은 우주 시안 885:39 계획 0061). 실패·취소는 A-19(LoginFailed.uxml, 아직 옛 모양) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingSpace.uss" />
+    <ui:VisualElement class="sp">
+        <ui:VisualElement name="fit" class="sp-fit">
+            <ui:VisualElement class="sp-art art-login">
+                <ui:VisualElement class="sp-img img-login-logo" />
+                <ui:VisualElement class="sp-img img-login-planet" />
+            </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement class="spacer" />
-        <!-- 로그인 화면으로 돌아온 이유(예: "다시 로그인해 주세요."). Figma에 없음, 있을 때만 -->
-        <ui:Label name="notice" class="notice-text gap" />
-        <ui:Button name="kakao" text="카카오로 계속하기" class="btn btn-kakao btn-fig" />
-        <ui:Label text="로그인 후 약관 동의 단계가 이어져요" class="onb-caption" />
+        <ui:Label text="로그인하고 내 러닝을 시작해요" class="login-lead" />
+        <!-- 로그인 화면으로 돌아온 이유(예: "다시 로그인해 주세요."). 시안에 없음, 있을 때만 -->
+        <ui:Label name="notice" class="notice-text" />
+        <!-- 심볼 + 글자를 한 줄로 가운데(버튼 폭이 달라도 겹치지 않게) -->
+        <ui:Button name="kakao" class="sp-kakao">
+            <ui:VisualElement class="kakao-symbol" />
+            <ui:Label name="kakao-label" text="카카오로 계속하기" class="kakao-label" />
+        </ui:Button>
+        <ui:Label text="로그인 후 약관 동의 단계가 이어져요" class="sp-caption" />
         <!-- 개발 빌드에서만 보임(LoginScreen) -->
         <ui:Button name="dev-native" text="네이티브 점검 (개발 빌드)" class="link-button" />
     </ui:VisualElement>
