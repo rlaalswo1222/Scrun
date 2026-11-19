@@ -10,7 +10,8 @@ namespace Scrun.App
     // 공통 상태 한 칸(계획 0056, BL-38 ③). 화면 UXML의 빈 칸("state")에 UI/StateView 틀을 펼치고, 한 번에 하나만 보인다:
     //   Loading(스켈레톤) · Failed(불러오기 실패, 다시 시도) · Offline(기기에 망 없음, 망이 생기면 저절로 다시) · Message(화면이 정한 안내) · Empty(빈 상태)
     // 처음 불러오기는 Feedback.Load(state, …)가 이 칸을 움직인다. content를 주면 상태가 보이는 동안 그것을 숨김.
-    // 문구는 임시(상준, Figma I-07–I-09 확인 뒤), 모양은 States.uss
+    // Figma(11/19): Loading = I-08 로딩·스켈레톤, Offline = I-07 네트워크 없음, Failed(다시 보내면 될 수 있는 실패) = I-09 일시적인 오류
+    // ("문제가 생겼어요", 다시 시도 + 홈으로). 모양은 States.uss. I-07 설명은 Figma가 맵 입장 문구라 공통 칸은 자동 다시 불러오기 안내로
     public sealed class StateView
     {
         public enum Mode { None, Loading, Failed, Offline, Message, Empty }
@@ -18,6 +19,12 @@ namespace Scrun.App
         internal const string OfflineTitle = "인터넷에 연결되어 있지 않아요";
         internal const string OfflineBody = "연결되면 자동으로 다시 불러올게요.";
         internal const string RetryText = "다시 시도";
+        internal const string ErrorTitle = "문제가 생겼어요";                                        // Figma I-09
+        internal const string ErrorBody = "잠시 후 다시 시도해 주세요. 계속되면 앱을 다시 실행해 주세요."; // Figma I-09
+        internal const string HomeText = "홈으로";                                                   // Figma I-09
+
+        // I-09 "홈으로"(AppRoot가 넣음: 홈 탭 첫 화면). 화면이 WithAlt로 다른 버튼을 주면 그것
+        public static Action GoHome;
         internal const float NetCheckSec = 2f;
 
         // 기기에 망이 있는지(테스트가 바꿈). 망이 있어도 서버가 안 닿을 수 있어 "없음"일 때만 믿는다
@@ -75,7 +82,8 @@ namespace Scrun.App
 
         // 버튼(테스트는 패널 없이 이걸 부름)
         internal void PressAction() => onAction?.Invoke();
-        internal void PressAlt() => onAlt?.Invoke();
+        internal void PressAlt() => pressAlt?.Invoke();
+        Action pressAlt; // 지금 보이는 두 번째 버튼이 할 일
 
         public void Loading() => Show(Mode.Loading);
 
@@ -89,20 +97,17 @@ namespace Scrun.App
                 Show(Mode.Offline);
                 return;
             }
-            string why;
-            bool canRetry;
-            if (e == null)
-            {
-                why = "잠시 후 다시 시도해 주세요.";
-                canRetry = true;
-            }
-            else
+            // 다시 보내면 될 수 있는 실패(서버·통신·응답 이상) = I-09 문구. 다시 보내도 같은 실패(4xx)는 그 화면 말 + 서버 설명, 버튼 없음
+            bool canRetry = true;
+            string why = "";
+            if (e != null)
             {
                 var d = Feedback.Describe(e);
-                why = d.body;
                 canRetry = d.canRetry;
+                why = d.body;
             }
-            SetText(failTitle, why, canRetry && retry != null ? RetryText : null, retry);
+            if (canRetry) SetText(ErrorTitle, ErrorBody, retry != null ? RetryText : null, retry);
+            else SetText(failTitle, why, null, null);
             Show(Mode.Failed);
         }
 
@@ -140,10 +145,16 @@ namespace Scrun.App
             Root.SetVisible(m != Mode.None);
             skeleton.SetVisible(m == Mode.Loading);
             message.SetVisible(msg);
-            bool showAlt = (m == Mode.Failed || m == Mode.Offline) && onAlt != null;
-            alt.text = altText ?? "";
-            alt.SetVisible(showAlt);
+            // 두 번째 버튼: 화면이 준 것(실패·네트워크 없음), 없으면 I-09의 "홈으로"(실패만, I-07엔 없음)
+            string altLabel = null;
+            Action altAct = null;
+            if (onAlt != null && (m == Mode.Failed || m == Mode.Offline)) { altLabel = altText; altAct = onAlt; }
+            else if (m == Mode.Failed && GoHome != null) { altLabel = HomeText; altAct = GoHome; }
+            alt.text = altLabel ?? "";
+            alt.SetVisible(altAct != null);
+            pressAlt = altAct;
             icon.EnableInClassList("state-icon--network", m == Mode.Offline);
+            icon.EnableInClassList("state-icon--error", m == Mode.Failed);
             icon.EnableInClassList("state-icon--empty", m == Mode.Empty);
             foreach (var c in content) c?.SetVisible(m == Mode.None);
 
@@ -188,6 +199,13 @@ namespace Scrun.App
             return true;
         }
 
+        static VisualElement Block(params string[] classes)
+        {
+            var b = new VisualElement();
+            foreach (var c in classes) b.AddToClassList(c);
+            return b;
+        }
+
         static void BuildSkeleton(VisualElement into, SkeletonKind kind)
         {
             VisualElement Bar(params string[] mods)
@@ -215,16 +233,8 @@ namespace Scrun.App
                         into.Add(row);
                     }
                     break;
-                case SkeletonKind.Cards:
-                    for (int i = 0; i < 3; i++)
-                    {
-                        var card = new VisualElement();
-                        card.AddToClassList("skeleton-card");
-                        card.Add(Bar("skeleton-bar--title", "skeleton-bar--mid"));
-                        card.Add(Bar());
-                        card.Add(Bar("skeleton-bar--short"));
-                        into.Add(card);
-                    }
+                case SkeletonKind.Cards: // Figma I-08: 회색 통 블록
+                    for (int i = 0; i < 3; i++) into.Add(Block("skeleton-card"));
                     break;
                 case SkeletonKind.Profile:
                     var me = new VisualElement();
@@ -239,17 +249,11 @@ namespace Scrun.App
                     me.Add(face);
                     me.Add(lines);
                     into.Add(me);
-                    var stats = new VisualElement();
-                    stats.AddToClassList("skeleton-card");
-                    stats.Add(Bar("skeleton-bar--title"));
-                    into.Add(stats);
+                    into.Add(Block("skeleton-card", "skeleton-card--short"));
                     break;
                 case SkeletonKind.Rows:
-                    var box = new VisualElement();
-                    box.AddToClassList("skeleton-card");
-                    box.Add(Bar("skeleton-bar--mid"));
-                    box.Add(Bar("skeleton-bar--short"));
-                    into.Add(box);
+                    into.Add(Block("skeleton-card", "skeleton-card--short"));
+                    into.Add(Block("skeleton-card", "skeleton-card--short"));
                     break;
                 default:
                     var hero = new VisualElement();

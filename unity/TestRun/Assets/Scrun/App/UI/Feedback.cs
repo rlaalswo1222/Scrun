@@ -7,7 +7,7 @@ namespace Scrun.App
 {
     // 로딩·오류 공통 처리. 화면은 서버 호출을 Feedback.Run으로 감싼다(버튼 동작: 덮개 + 실패 안내창).
     // 화면을 처음 불러올 때는 Feedback.Load(state, …): 덮개 대신 그 화면의 공통 칸(StateView)에 스켈레톤·실패·네트워크 없음(계획 0056).
-    // 화면 번호: Figma I-07 = 네트워크 없음(계획 0041). I-08·I-09는 Figma 확인 전(11/19 못 읽음) — 확인하면 여기와 StateView에 적음
+    // 화면 번호(Figma 11/19): I-07 네트워크 없음, I-08 로딩·스켈레톤, I-09 일시적인 오류 — 처음 불러오기에선 StateView가 이 셋을 보여 줌
     //   bool ok = await Feedback.Run(async () => list = await Api.Auth.AgreementsAsync(), retry: Load);
     // 로그인이 끝났으면(NotLoggedIn) 오류창 대신 로그인 화면으로 보낸다(AppRoot).
     // 문구는 임시 — 상준이 Figma 예외 화면(I-07–I-09)과 docs/api/README.md "오류 코드"의 문구 칸을 채우면 바꾼다.
