@@ -6,7 +6,7 @@ namespace Scrun.App
 {
     // H-10 설정(계획 0049, Figma 610:2647). 알림·공개·연결·데이터 줄 + 아래 로그아웃·계정 삭제.
     // 되는 것: 친구에게 러닝 피드 공개(feedShareDefault, PATCH /users/me/settings), 이어폰 지금 상태, 약관 문서 열기, 로그아웃.
-    // 아직 없는 것(정할 것 1 나): 알림 두 줄(BL-46)·공동 맵 인증 마크 보이기(API 없음)는 잠긴 스위치 + "준비 중", 계정 삭제(BL-48)는 "준비 중".
+    // 아직 없는 것(정할 것 1 나): 알림 두 줄(BL-46)·공동 맵 인증 마크 보이기(API 없음)는 잠긴 스위치 + "준비 중". 계정 삭제는 계획 0058(확인 시트 → DELETE /users/me).
     // 개발 빌드면 맨 아래 "네이티브 점검"(예전 마이 자리에서 옮김)
     public sealed class SettingsScreen : AppScreen
     {
@@ -15,7 +15,7 @@ namespace Scrun.App
         UserSettings settings;
         List<Agreement> agreements;
         FriendParts.Sheet sheet;
-        bool loading, saving, loggingOut;
+        bool loading, saving, loggingOut, deleting;
 
         protected override string Uxml => "UI/Settings";
         public override bool HidesTabBar => true;
@@ -55,7 +55,7 @@ namespace Scrun.App
             foot.AddToClassList("my-foot");
             var logout = new Button(AskLogout) { text = "로그아웃", name = "logout" };
             logout.AddToClassList("my-foot-btn");
-            var delete = new Button(Soon) { text = "계정 삭제", name = "delete-account" };
+            var delete = new Button(AskDelete) { text = "계정 삭제", name = "delete-account" };
             delete.AddToClassList("my-foot-btn");
             foot.Add(logout);
             foot.Add(delete);
@@ -170,6 +170,49 @@ namespace Scrun.App
             catch (System.Exception e) { Debug.LogException(e); }
             finally { Feedback.ShowLoading(false); }
             AppRoot.GoToLogin(null);
+        }
+
+        // 계정 삭제(계획 0058, BL-48): 확인 시트 한 번(정할 것 3 가). 지우는 중엔 시트를 잠금
+        internal void AskDelete()
+        {
+            if (sheet?.Open == true || deleting || (Nav != null && Nav.Current != this)) return;
+            sheet = new FriendParts.Sheet(Root);
+            sheet.Body.Add(UiExtensions.Text(MyText.DeleteTitle, "fr-sheet-title"));
+            sheet.Info(MyText.DeleteBody);
+            sheet.Info(MyText.DeleteKakao);
+            sheet.Button(MyText.DeleteConfirm, "btn-danger", DeleteAccount, "delete-confirm");
+            sheet.Button("취소", "btn-ghost", sheet.Close, "delete-cancel");
+        }
+
+        // 서버가 카카오 연결을 끊고 모두 지운 뒤에만 이 기기를 정리하고 로그인 화면으로. 실패(카카오 503·연결)는 안내창의 다시 시도
+        async void DeleteAccount()
+        {
+            if (deleting) return;
+            deleting = true;
+            var mine = sheet;
+            if (mine != null) mine.Locked = true;
+            string uid = RunRecordUploader.TokenSubject(Api.Session.AccessToken);
+            bool gone = false;
+            bool ok;
+            // 지운 뒤 응답만 못 받고 "다시 시도"하면 그 계정 토큰은 401(재발급도 거절) → 이미 지워진 것으로 보고 마무리(리뷰).
+            // 몇 초 전에 살아 있던 로그인이 이 요청에서만 거절되는 다른 경우는 없음
+            try
+            {
+                ok = await Feedback.Run(() => Api.Users.DeleteMeAsync(), DeleteAccount, e =>
+                {
+                    gone = e.Failure == ApiFailure.NotLoggedIn;
+                    return gone;
+                });
+            }
+            finally
+            {
+                deleting = false;
+                if (mine != null) mine.Locked = false;
+            }
+            if (!ok && !gone) return;
+            mine?.Close();
+            AccountCleanup.Forget(uid);
+            AppRoot.GoToLogin(MyText.Deleted);
         }
 
         void Soon()

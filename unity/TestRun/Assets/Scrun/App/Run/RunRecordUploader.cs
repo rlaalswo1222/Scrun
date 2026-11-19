@@ -269,6 +269,20 @@ namespace Scrun.App
 
         public bool Has(string clientRunId) => Load().Exists(r => r.Start?.ClientRunId == clientRunId);
 
+        // 계정 삭제(계획 0058): 그 계정이 남긴 기록을 지움(다른 계정 것은 그대로). 주인이 없는 옛 기록(UserId 전 앱)은
+        // 누구도 보낼 수 없어(FlushAsync가 계정이 같을 때만 보냄) 같이 지움. 지운 개수
+        public int RemoveUser(string userId)
+        {
+            if (string.IsNullOrEmpty(userId)) return 0;
+            lock (gate)
+            {
+                var all = Load();
+                int n = all.RemoveAll(r => r.UserId == userId || string.IsNullOrEmpty(r.UserId));
+                if (n > 0) Save(all);
+                return n;
+            }
+        }
+
         // 남긴 기록에 "촬영 없이 마무리"를 적어 둠(보낼 때 미인증으로)
         public void MarkSkipVerification(string clientRunId)
         {

@@ -130,6 +130,64 @@ namespace Scrun.App.Tests
             Assert.IsFalse(sw.ClassListContains("my-switch--on"));
         }
 
+        // ---- 계정 삭제(계획 0058) ----
+
+        [Test]
+        public void DeleteAccountAsksOnceWithWhatGoesAway()
+        {
+            var s = new SettingsScreen();
+            s.Create(null);
+            s.AskDelete();
+            var sheet = s.Root.Q("fr-sheet");
+            Assert.IsNotNull(sheet, "확인 시트 한 번(정할 것 3 가)");
+            var texts = sheet.Query<Label>().ToList().ConvertAll(l => l.text);
+            CollectionAssert.Contains(texts, MyText.DeleteTitle);
+            CollectionAssert.Contains(texts, MyText.DeleteBody);
+            CollectionAssert.Contains(texts, MyText.DeleteKakao);
+            Assert.AreEqual(MyText.DeleteConfirm, sheet.Q<Button>("delete-confirm").text);
+            Assert.IsTrue(sheet.Q<Button>("delete-confirm").ClassListContains("btn-danger"));
+            s.AskDelete();
+            Assert.AreEqual(1, s.Root.Query("fr-sheet").ToList().Count, "두 번 눌러도 시트 하나");
+        }
+
+        [Test]
+        public void DeleteMeSendsDelete()
+        {
+            http.Handler = _ => new HttpResponse { Status = 204, Body = "" };
+            var t = users.DeleteMeAsync();
+            Assert.IsTrue(t.IsCompleted);
+            t.GetAwaiter().GetResult();
+            Assert.AreEqual("DELETE", http.Sent[0].Method);
+            StringAssert.EndsWith("/v1/users/me", http.Sent[0].Url);
+        }
+
+        [Test]
+        public void CleanupForgetsOnlyThatAccount()
+        {
+            string dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "scrun-cleanup-" + Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(dir);
+            try
+            {
+                var pending = new PendingRunStore(System.IO.Path.Combine(dir, "pending.json"));
+                pending.Add(new PendingRun { UserId = "u1", Start = new RunStartBody { ClientRunId = "c1" } });
+                pending.Add(new PendingRun { UserId = "u2", Start = new RunStartBody { ClientRunId = "c2" } });
+                pending.Add(new PendingRun { UserId = null, Start = new RunStartBody { ClientRunId = "c0" } }); // 옛 앱(주인 없음)
+                var active = new ActiveRunStore(System.IO.Path.Combine(dir, "active.json"));
+                active.Save(new ActiveRunRecord { UserId = "u2", Start = new RunStartBody { ClientRunId = "c3" } });
+
+                AccountCleanup.Forget("u1", pending, active);
+                var left = pending.Load();
+                Assert.AreEqual(1, left.Count);
+                Assert.AreEqual("u2", left[0].UserId, "같은 폰의 다른 계정 기록은 그대로");
+                Assert.AreEqual("u2", active.Load()?.UserId, "다른 계정의 진행 기록도 그대로");
+
+                AccountCleanup.Forget("u2", pending, active);
+                Assert.AreEqual(0, pending.Load().Count);
+                Assert.IsNull(active.Load());
+            }
+            finally { System.IO.Directory.Delete(dir, true); }
+        }
+
         // ---- 요청 모양 ----
 
         [Test]
