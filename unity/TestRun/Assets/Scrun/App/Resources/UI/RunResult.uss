@@ -139,6 +139,11 @@
     margin-right: var(--space-2);
 }
 
+/* E-01 "오늘의 러닝" 카드 안 세 칸(테두리 없이, 계획 0057) */
+.rr-stat--plain {
+    padding: 14px 0 0 0;
+}
+
 .rr .rr-stat-value {
     margin-top: 4px;
     font-size: var(--font-size-sub);
