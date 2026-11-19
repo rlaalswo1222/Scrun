@@ -24,7 +24,7 @@ namespace Scrun.App
     // 서버 오류를 흐름이 아는 만큼만(화면이 ApiException을 이걸로 바꿈)
     // Camera는 서버가 아니라 카메라를 못 연 것(안내·다시 찍기 화면에 문구)
     // Stale은 확인할 값이 이미 없음(CONFIRM_NOT_PENDING: 새 사진을 보냈거나 다른 답을 함) → 다시 찍기로
-    public enum VerifyError { None, Network, Closed, Busy, NotFound, Other, Camera, Stale }
+    public enum VerifyError { None, Network, Closed, Busy, NotFound, Other, Camera, Stale, Timeout } // Timeout: 서버 OCR 시간 초과(503 details.reason OCR_TIMEOUT, 계획 0055)
 
     // 흐름 판단만(순수 C#, EditMode 테스트). 카메라·서버·시계는 밖에서 결과만 넣는다(RunReadyFlow와 같은 방식)
     public sealed class VerifyFlow
@@ -135,6 +135,13 @@ namespace Scrun.App
             {
                 HasPhoto = false;
                 Step = VerifyStep.TimeOver;
+                return;
+            }
+            if (e == VerifyError.Timeout && !confirming) // 이 사진은 읽는 데 너무 오래 걸림 → 같은 사진을 다시 보내지 말고 다시 찍기(횟수 안 씀, 계획 0055 리뷰)
+            {
+                HasPhoto = false;
+                before = VerifyStep.Guide;
+                Step = VerifyStep.Guide;
                 return;
             }
             if (e == VerifyError.Stale && confirming) // 확인할 값이 이미 없음 → 다시 찍기

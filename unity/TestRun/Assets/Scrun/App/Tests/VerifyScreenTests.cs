@@ -23,6 +23,24 @@ namespace Scrun.App.Tests
             Assert.AreEqual("계기판 인증", s.Root.Q<Label>("nav-title").text);
         }
 
+        // 계획 0055: 서버 OCR 시간 초과(503 details.reason)만 Timeout, 일꾼이 다 찬 503은 그대로 바빠요
+        [Test]
+        public void Ocr_timeout_is_told_apart_from_busy()
+        {
+            ApiException E(string details) => new ApiException(ApiFailure.Server, "x", 503, "SERVICE_UNAVAILABLE", null, details);
+            Assert.IsTrue(VerifyScreen.IsOcrTimeout(E("{\"reason\":\"OCR_TIMEOUT\"}")));
+            Assert.IsFalse(VerifyScreen.IsOcrTimeout(E(null)));
+            Assert.IsFalse(VerifyScreen.IsOcrTimeout(E("{\"reason\":\"OTHER\"}")));
+        }
+
+        [Test]
+        public void Photos_go_zero_ev_first()
+        {
+            CameraPhoto P(float ev, string path) => new CameraPhoto { ExposureBias = ev, Path = path };
+            var order = VerifyPhotos.SendOrder(new[] { P(-3f, "a"), P(0f, "b"), P(-1.5f, "c"), P(0f, "d") });
+            CollectionAssert.AreEqual(new[] { "b", "d", "c", "a" }, order.Select(p => p.Path).ToArray());
+        }
+
         [TestCase(3000, "3.00km")]
         [TestCase(3120, "3.12km")]
         [TestCase(520, "0.52km")]

@@ -18,14 +18,29 @@ namespace Scrun.App
 
         public static async Task<List<MultipartBody.FilePart>> PrepareAsync(CameraShot shot, RunStatsBody sensor, FakeOcrResult? fakeOcr)
         {
+            var photos = SendOrder(shot.Photos);
             var paths = new List<string>();
-            foreach (var p in shot.Photos) paths.Add(p.Path);
+            foreach (var p in photos) paths.Add(p.Path);
             // 파일 읽기는 스레드 풀에서(세 장 합쳐 수 MB). await 뒤는 Unity 메인 스레드로 돌아옴
             var files = await Task.Run(() => paths.ConvertAll(p => File.ReadAllBytes(p)));
             var parts = new List<MultipartBody.FilePart>();
             for (int i = 0; i < files.Count; i++)
-                parts.Add(new MultipartBody.FilePart(FileName(i, shot.Photos[i].ExposureBias, sensor, fakeOcr), Shrink(files[i])));
+                parts.Add(new MultipartBody.FilePart(FileName(i, photos[i].ExposureBias, sensor, fakeOcr), Shrink(files[i])));
             return parts;
+        }
+
+        // 보내는 순서: 0 EV(자동 노출)에 가까운 것부터. 서버는 같은 값으로 읽힌 사진이 두 장이면 나머지를 안 읽음(계획 0055).
+        // EV가 같으면 찍은 순서(안정 정렬)
+        public static List<CameraPhoto> SendOrder(IReadOnlyList<CameraPhoto> shot)
+        {
+            var idx = new List<int>();
+            for (int i = 0; i < shot.Count; i++) idx.Add(i);
+            idx.Sort((a, b) =>
+            {
+                int c = System.Math.Abs(shot[a].ExposureBias).CompareTo(System.Math.Abs(shot[b].ExposureBias));
+                return c != 0 ? c : a.CompareTo(b);
+            });
+            return idx.ConvertAll(i => shot[i]);
         }
 
         // 파일 이름. 에디터에서는 로컬 서버 가짜 OCR(파일 이름으로 값을 정함)이 고른 결과를 내게 붙인다 — 진짜 서버는 이름을 보지 않음
