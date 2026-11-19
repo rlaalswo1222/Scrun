@@ -76,7 +76,11 @@ namespace Scrun.App
                     string id = (string)r["userId"];
                     if (string.IsNullOrEmpty(id)) continue;
                     seen.Add(id);
-                    if (byId.TryGetValue(id, out var known)) SampleFrom(known, r, now);
+                    if (byId.TryGetValue(id, out var known))
+                    {
+                        SampleFrom(known, r, now);
+                        LevelFrom(known, r); // 다시 붙었을 때 그 사이 다시 입장한 사람의 새 레벨(리뷰)
+                    }
                     else if (Add(r, now, out var added) && welcomed) Joined?.Invoke(added);
                 }
             foreach (var id in new List<string>(byId.Keys))
@@ -115,12 +119,14 @@ namespace Scrun.App
             if (byId.TryGetValue(id, out var known)) // 이미 있음(joined가 겹침): 값만 갱신, 알림 없음
             {
                 SampleFrom(known, r, now);
+                LevelFrom(known, r);
                 return false;
             }
             // bot은 true/false만 봄(다른 모양이면 사람으로: 형변환 예외로 메시지 전체를 버리지 않게)
             bool isBot = r["bot"]?.Type == JTokenType.Boolean && (bool)r["bot"];
             added = new RemoteRunner(id, (string)r["nickname"], CourseLengthM, isBot);
             SampleFrom(added, r, now);
+            LevelFrom(added, r);
             byId[id] = added;
             runners.Add(added);
             return true;
@@ -133,6 +139,15 @@ namespace Scrun.App
             runners.Remove(gone);
             if (notify) Left?.Invoke(gone);
             return true;
+        }
+
+        // level(계획 0059): 1 이상 정수만(지금 서버는 1–6, 경험치 기준을 늘리면 더 커질 수 있음). 다른 모양·너무 큰 값은 모르는 것으로,
+        // 메시지는 버리지 않음(int 범위 밖 정수를 (int)로 바꾸면 예외 → welcome 전체를 잃음, 리뷰). 봇엔 안 붙임
+        static void LevelFrom(RemoteRunner runner, JObject r)
+        {
+            if (runner.IsBot || r["level"]?.Type != JTokenType.Integer) return;
+            long lv = r["level"].Value<long>();
+            if (lv >= 1 && lv <= 999) runner.Level = (int)lv;
         }
 
         static void SampleFrom(RemoteRunner runner, JObject r, double now)

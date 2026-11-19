@@ -101,6 +101,36 @@ namespace Scrun.App.Tests
             Assert.IsNull(bot.dist, "봇은 거리 없음");
         }
 
+        // 계획 0059: 서버가 welcome·joined에 실은 level → 이름표·카드 "Lv.N". 봇·옛 서버·이상한 값은 칩 없음
+        [Test]
+        public void LevelComesWithRunnerAndShowsAsChip()
+        {
+            double now = 0;
+            var room = new RunTogetherRoom(() => now);
+            room.Apply("{\"type\":\"welcome\",\"you\":\"me\",\"courseLengthM\":1000,\"runners\":[" +
+                       "{\"userId\":\"a\",\"nickname\":\"비락식혜\",\"d\":100,\"v\":9,\"running\":true,\"level\":3}," +
+                       "{\"userId\":\"b\",\"nickname\":\"하늘보리\",\"d\":50,\"v\":9,\"running\":true}," +
+                       "{\"userId\":\"c\",\"nickname\":\"이상한값\",\"d\":60,\"v\":9,\"running\":true,\"level\":\"3\"}," +
+                       "{\"userId\":\"bot_1\",\"nickname\":\"페이스 6:40\",\"d\":90,\"v\":9,\"running\":true,\"bot\":true,\"level\":2}]}");
+            Assert.AreEqual(4, room.Runners.Count, "level 모양이 달라도 메시지는 버리지 않음");
+            Assert.AreEqual("Lv.3", RunnerTagsView.LevelText(room.Runners[0]));
+            Assert.IsNull(RunnerTagsView.LevelText(room.Runners[1]), "옛 서버(레벨 없음)");
+            Assert.IsNull(RunnerTagsView.LevelText(room.Runners[2]), "숫자가 아니면 모르는 것으로");
+            Assert.IsNull(RunnerTagsView.LevelText(room.Runners[3]), "봇은 레벨 없음");
+
+            // joined가 겹쳐 늦게 와도 레벨을 채움
+            room.Apply("{\"type\":\"joined\",\"runner\":{\"userId\":\"b\",\"nickname\":\"하늘보리\",\"d\":51,\"v\":9,\"running\":true,\"level\":1}}");
+            Assert.AreEqual("Lv.1", RunnerTagsView.LevelText(room.Runners[1]));
+
+            // 다시 붙어 welcome으로 이미 아는 사람을 받아도 새 레벨(그 사이 맵 밖에서 인증하고 다시 입장, 리뷰)
+            room.Apply("{\"type\":\"welcome\",\"you\":\"me\",\"courseLengthM\":1000,\"runners\":[" +
+                       "{\"userId\":\"a\",\"nickname\":\"비락식혜\",\"d\":100,\"v\":9,\"running\":true,\"level\":4}," +
+                       "{\"userId\":\"b\",\"nickname\":\"하늘보리\",\"d\":50,\"v\":9,\"running\":true,\"level\":3000000000}]}");
+            Assert.AreEqual(2, room.Runners.Count, "int 범위 밖 레벨이 와도 메시지를 버리지 않음");
+            Assert.AreEqual("Lv.4", RunnerTagsView.LevelText(room.Runners[0]));
+            Assert.AreEqual("Lv.1", RunnerTagsView.LevelText(room.Runners[1]), "이상한 값은 무시하고 아는 값 유지");
+        }
+
         [Test]
         public void ReconnectingShowsBannerAndDimsOthers()
         {

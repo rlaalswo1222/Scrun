@@ -7,16 +7,19 @@ namespace Scrun.App
 {
     // 다른 러너 머리 위 이름표와 러너 정보 카드(BL-22, Figma D-12, 계획 0041 정할 것 5·6).
     // 이름표 위치는 섬이 매 프레임 RunLink.Heads에 넣고(화면 픽셀), 여기서 HUD 층에 붙여 누를 수 있게 한다.
-    // 카드: 이름·나와의 간격·이번 러닝 거리·닫기(Figma "누적 거리"는 전체 누적으로 읽혀서 바꿈, 상준 확인). 봇은 간격만. 친구면 "친구" 배지(계획 0044, FriendDirectory). 레벨·인증 마크는 BL-32(S8)
+    // 카드: 이름·나와의 간격·이번 러닝 거리·닫기(Figma "누적 거리"는 전체 누적으로 읽혀서 바꿈, 상준 확인). 봇은 간격만. 친구면 "친구" 배지(계획 0044, FriendDirectory).
+    // 레벨: 카드 머리와 이름표에 "Lv.N" 칩(계획 0059, 서버가 입장 때 보낸 값). 인증 마크는 안 보임(Figma D-12 "레벨 배지·간격·누적 거리만")
     public sealed class RunnerTagsView
     {
         public const string BotSubtitle = "일정한 페이스로 함께 달리는 페이스메이커예요"; // 임시 문구(상준)
 
         readonly IRunTogether together;
         readonly VisualElement layer, card;
-        readonly Label cardName, cardBadge, cardSub, cardGap, cardDist;
+        readonly Label cardName, cardBadge, cardLevel, cardSub, cardGap, cardDist;
         readonly VisualElement cardDistRow;
-        readonly Dictionary<string, Label> tags = new Dictionary<string, Label>();
+        readonly Dictionary<string, VisualElement> tags = new Dictionary<string, VisualElement>();
+        readonly Dictionary<string, Label> tagLevels = new Dictionary<string, Label>(); // 사람만(봇은 칩 없음)
+        readonly Dictionary<string, int?> shownLevels = new Dictionary<string, int?>();  // 칩에 쓴 값(매 프레임 글자를 새로 만들지 않게)
         readonly List<string> gone = new List<string>();
         readonly HashSet<string> present = new HashSet<string>();
         readonly List<Rect> placed = new List<Rect>();
@@ -31,11 +34,12 @@ namespace Scrun.App
             card = hudRoot.Q<VisualElement>("hud-runner-card");
             cardName = hudRoot.Q<Label>("hud-card-name");
             cardBadge = hudRoot.Q<Label>("hud-card-badge");
+            cardLevel = hudRoot.Q<Label>("hud-card-level");
             cardSub = hudRoot.Q<Label>("hud-card-sub");
             cardGap = hudRoot.Q<Label>("hud-card-gap");
             cardDist = hudRoot.Q<Label>("hud-card-dist");
             cardDistRow = hudRoot.Q<VisualElement>("hud-card-dist-row");
-            if (layer == null || card == null || cardName == null || cardGap == null || cardDist == null)
+            if (layer == null || card == null || cardName == null || cardGap == null || cardDist == null || cardLevel == null)
                 throw new InvalidOperationException("RunHud.uxml에 이름표 층·러너 카드가 없음");
             hudRoot.Q<Button>("hud-card-close").clicked += Close;
             card.SetVisible(false);
@@ -73,6 +77,8 @@ namespace Scrun.App
             {
                 tags[id].RemoveFromHierarchy();
                 tags.Remove(id);
+                tagLevels.Remove(id);
+                shownLevels.Remove(id);
             }
             if (openId != null)
             {
@@ -99,7 +105,7 @@ namespace Scrun.App
         }
 
         // 머리 위 화면 자리에 이름표를 놓음
-        void Place(Label tag, Vector2 screen, IPanel panel)
+        void Place(VisualElement tag, Vector2 screen, IPanel panel)
         {
             // 화면 픽셀(아래에서 위) → 패널 좌표(위에서 아래)
             var at = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(screen.x, Screen.height - screen.y));
@@ -128,19 +134,44 @@ namespace Scrun.App
         static void Show(VisualElement e, bool on) =>
             e.style.visibility = on ? Visibility.Visible : Visibility.Hidden;
 
-        Label TagFor(RemoteRunner r)
+        // 이름표: 이름 + (레벨을 알면) 작은 Lv 칩(Figma D-12 "하늘보리 · Lv.1"). 레벨은 joined가 겹쳐 늦게 올 수 있어 매번 맞춤
+        VisualElement TagFor(RemoteRunner r)
         {
-            if (tags.TryGetValue(r.UserId, out var tag)) return tag;
-            tag = new Label(r.DisplayName);
-            tag.AddToClassList("hud-tag");
-            if (r.IsBot) tag.AddToClassList("hud-tag--bot");
-            tag.pickingMode = PickingMode.Position;
-            string id = r.UserId;
-            tag.RegisterCallback<ClickEvent>(_ => Open(id));
-            layer.Add(tag);
-            tags[id] = tag;
+            if (!tags.TryGetValue(r.UserId, out var tag))
+            {
+                tag = new VisualElement { name = "tag-" + r.UserId };
+                tag.AddToClassList("hud-tag");
+                if (r.IsBot) tag.AddToClassList("hud-tag--bot");
+                tag.pickingMode = PickingMode.Position;
+                var label = new Label(r.DisplayName) { pickingMode = PickingMode.Ignore };
+                label.AddToClassList("hud-tag-name");
+                tag.Add(label);
+                string id = r.UserId;
+                if (!r.IsBot)
+                {
+                    var lv = new Label { pickingMode = PickingMode.Ignore };
+                    lv.AddToClassList("hud-tag-level");
+                    lv.SetVisible(false);
+                    tag.Add(lv);
+                    tagLevels[id] = lv;
+                }
+                tag.RegisterCallback<ClickEvent>(_ => Open(id));
+                layer.Add(tag);
+                tags[id] = tag;
+            }
+            if (tagLevels.TryGetValue(r.UserId, out var chip)
+                && (!shownLevels.TryGetValue(r.UserId, out var shown) || shown != r.Level))
+            {
+                shownLevels[r.UserId] = r.Level;
+                string text = LevelText(r);
+                chip.text = text ?? "";
+                chip.SetVisible(text != null);
+            }
             return tag;
         }
+
+        // "Lv.2". 봇·레벨 모름(옛 서버)은 null(칩 숨김)
+        public static string LevelText(RemoteRunner r) => r.IsBot || r.Level is not int lv ? null : MyText.Level(lv);
 
         public void Open(string userId)
         {
@@ -163,6 +194,9 @@ namespace Scrun.App
             cardName.text = name;
             cardBadge.text = badge ?? "";
             cardBadge.SetVisible(badge != null);
+            string level = LevelText(r);
+            cardLevel.text = level ?? "";
+            cardLevel.SetVisible(level != null);
             cardSub.text = sub ?? "";
             cardSub.SetVisible(sub != null);
             cardGap.text = gap;

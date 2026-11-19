@@ -55,6 +55,8 @@
 
 .course .hud-tag {
     position: absolute;
+    flex-direction: row; /* 이름 + Lv 칩(계획 0059) */
+    align-items: center;
     translate: -50% -100%;
     font-size: var(--font-size-caption);
     color: var(--color-surface);
@@ -102,6 +104,32 @@
     color: #FFFFFF;
     background-color: var(--color-primary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+/* Lv 칩(Figma D-12 연초록, 계획 0059). 이름표 안 칩은 hud-tag-level */
+.course .hud-card-level {
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: var(--font-size-caption);
+    color: var(--color-success);
+    background-color: var(--color-success-soft);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.course .hud-tag-name {
+    padding: 0;
+    margin: 0;
+}
+
+.course .hud-tag-level {
+    margin: 0 0 0 5px;
+    padding: 0 5px;
+    border-radius: 6px;
+    font-size: 10px;
+    color: var(--color-text);
+    background-color: var(--color-lime);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 .course .hud-card-sub {
