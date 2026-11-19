@@ -69,7 +69,7 @@ enum ScrunBridge {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         let windows = scenes.flatMap { $0.windows }
         var vc = (windows.first { $0.isKeyWindow } ?? windows.first)?.rootViewController
-        while let p = vc?.presentedViewController { vc = p }
+        while let p = vc?.presentedViewController, !p.isBeingDismissed { vc = p } // 사라지는 중인 창 위엔 못 띄움(카메라·공유 시트)
         return vc
     }
 
