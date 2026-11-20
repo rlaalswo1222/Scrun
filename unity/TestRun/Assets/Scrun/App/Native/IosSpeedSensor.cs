@@ -16,20 +16,24 @@ namespace Scrun.App
         string StageEnd();             // {"result":"Ok","point":{...}} / {"result":"Irregular","point":null}
         void StageCancel();
         bool Load(string modelJson);   // null이면 보정 지움
+        void SetMethod(int method);    // 달리기 방식(계획 0060): SpeedMethod 숫자
     }
 
     // 아이폰 진짜 속도 센서(계획 0024). 계산은 Swift가 하고 여기선 한 프레임에 한 번 숫자 칸을 읽는다(ADR-0009).
     // 켜기·끄기·이벤트·보정 순서는 SpeedSensorBase가 하고, 이 클래스는 칸을 SpeedReading으로 옮기기와 단계 결과 읽기만.
-    public sealed class IosSpeedSensor : SpeedSensorBase, ISpeedSensorDiagnostics
+    public sealed class IosSpeedSensor : SpeedSensorBase, ISpeedSensorDiagnostics, ISpeedMethodSwitch
     {
-        // scrun_speed_read 칸(순서 고정, Swift ScrunSpeed.swift와 짝)
+        // scrun_speed_read 칸(순서 고정, Swift ScrunSpeed.swift와 짝). 0–10은 꼭 있어야 하고(계획 0024),
+        // 11–15는 계획 0060에서 덧붙인 달리기 방식 칸(있으면 읽음)
         public const int SlotVersion = 1;
         public const int SlotCount = 11;
+        public const int SlotCountMethods = 16;
         const int IVersion = 0, ITime = 1, ISpeed = 2, IGait = 3, ICadence = 4, ISteps = 5, IAir = 6,
-                  IPhoneFlow = 7, IAirFlow = 8, IPhoneRate = 9, IAirRate = 10;
+                  IPhoneFlow = 7, IAirFlow = 8, IPhoneRate = 9, IAirRate = 10,
+                  IBase = 11, IBlend = 12, IFix = 13, IFlight = 14, IMethod = 15;
 
         readonly ISpeedNativeApi api;
-        readonly double[] slots = new double[SlotCount];
+        readonly double[] slots = new double[SlotCountMethods];
         bool layoutWarned;
 
         public IosSpeedSensor(ISpeedNativeApi api) => this.api = api ?? throw new ArgumentNullException(nameof(api));
@@ -37,14 +41,22 @@ namespace Scrun.App
         // 점검 화면용(ISpeedSensorDiagnostics, 칸 9·10): 지난 1초에 들어온 샘플 수
         public int PhoneSamplesPerSec { get; private set; }
         public int AirPodsSamplesPerSec { get; private set; }
+        public SpeedMethodReading Methods { get; private set; }
 
-        protected override void OnStart() => api.Start();
+        protected override void OnStart()
+        {
+            api.Start();
+            api.SetMethod((int)SpeedMethodPrefs.Current); // 출시 빌드는 늘 기본
+        }
 
         protected override void OnStop()
         {
             api.Stop();
             PhoneSamplesPerSec = AirPodsSamplesPerSec = 0;
+            Methods = default;
         }
+
+        public void SetMethod(SpeedMethod method) => api.SetMethod((int)method);
 
         protected override void Sample(out SpeedReading reading, out SensorFlow phone, out SensorFlow airPods)
         {
@@ -59,6 +71,7 @@ namespace Scrun.App
                 }
                 reading = default;
                 phone = airPods = SensorFlow.Lost;
+                Methods = default; // 개발 표시가 지난 값을 지금 값처럼 보이지 않게
                 return;
             }
             double kmh = slots[ISpeed];
@@ -77,6 +90,15 @@ namespace Scrun.App
             airPods = Flow(slots[IAirFlow]);
             PhoneSamplesPerSec = (int)slots[IPhoneRate];
             AirPodsSamplesPerSec = (int)slots[IAirRate];
+            Methods = n < SlotCountMethods ? default : new SpeedMethodReading
+            {
+                Has = true,
+                BaseKmh = (float)slots[IBase],
+                BlendKmh = (float)slots[IBlend],
+                FixKmh = (float)slots[IFix],
+                FlightMs = (float)slots[IFlight],
+                InUse = Enum.IsDefined(typeof(SpeedMethod), (int)slots[IMethod]) ? (SpeedMethod)(int)slots[IMethod] : SpeedMethod.Base,
+            };
         }
 
         static SensorFlow Flow(double v) =>

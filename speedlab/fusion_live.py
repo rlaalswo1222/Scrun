@@ -8,6 +8,11 @@ Unity 플러그인의 SpeedEstimator.swift(옛 iOS SpeedRecorder)가 이 파일�
 3. 걷기: 걸음 수 공식. 기울기는 공통, 절편은 이 사람의 걷기 보정점이 있으면 그걸로(계획 0023·0024), 없으면 공통
 4. 앱 보정 단계(계획 0024): measure_stage가 단계 하나를 재서 (결과, 점)을 돌려줌. 결과 이름은 C# CalStageResult와 같음
 5. 누적 걸음: 포락선 봉우리를 그때그때 셈(다리 애니메이션용, 감지 지연 없이). 문턱은 0.5초마다 최근 3초로 다시 정함
+6. 달리기 방식(계획 0060, 실험): 기본(2번) / 섞기 = 기본 × (1 − BLEND_W) + 보폭 × BLEND_W /
+   섞기 + 치우침 고치기 = 기본에서 "기본 − 보폭"을 FIX_TAU_S로 따라간 치우침을 뺀 뒤 섞음. 셋 다 매번 계산, method가 kmh를 고름.
+   보폭 = 걸음 수 × (L0 + KS·발 닿는 시간), 발 닿는 시간 = 폰 걸음 시간(60000 ÷ 걸음 수) − 에어팟 공중 시간.
+   공중 시간은 에어팟 수직(중력 방향)에서 걸음마다(계획 0012 규칙: 착지 = 0.2 g 위로, 발 떼기 = 0.3 g 아래로).
+   L0·KS는 공중 시간이 있는 달리기 보정점으로. 에어팟 중력이 없거나(옛 호출)·공중이 없는 옛 보정이면 셋 다 기본과 같음
 충격·걸음 수는 StepSpeed.cs를 옮긴 speedlab/exp/soundtrackdb.py와 같은 계산. 필터는 샘플마다 이어서(앱과 같게)
 근거 docs/speed/airpods_flight.md, fusion.md
 """
@@ -53,6 +58,22 @@ WALK_ONLY_KMH = 4.0  # 이 속도 이하에서 달리기로 나오면 걸음 수
 STEP_HALF = 12       # 봉우리: 앞뒤 0.12초 안 최댓값(impact와 같음)
 STEP_GAP_S = 60 / 220  # 220 spm보다 빠른 봉우리는 같은 걸음
 STEP_REL = 0.5       # 문턱 = 최근 3초 포락선 90% 값 × 이 비율(아래는 STILL_ENV)
+# 달리기 방식(계획 0060). 숫자는 10/29 B·M 기록 재분석(speedlab/exp/stride_model.py)에서, 실제 달리기로 다시 확인
+METHOD_BASE, METHOD_BLEND, METHOD_FIX = 0, 1, 2
+BLEND_W = 0.5        # 보폭 몫
+FIX_TAU_S = 60.0     # 치우침 고치기 시간 상수
+KS_DEFAULT = -0.0039  # m per ms: 달리기 보정점이 하나뿐일 때 빌리는 보폭 기울기(10/29 B −0.0037, M −0.0041 평균, 가설)
+FL_UP, FL_DN = 0.2, 0.3          # g: 착지 = 수직이 FL_UP 위로, 발 떼기 = FL_DN 아래로(Nijs 2021로 정함, 계획 0012)
+FL_HS_BIAS, FL_TO_BIAS = 0.002, 0.016  # 초: 힘판 정답 대비 치우침(이어버드가 착지 2 ms·발 떼기 16 ms 이르게 잡음)
+FL_STANCE = 1.2      # g: 이 위로 올라가면 디딤(그 전 마지막 FL_UP 위로 = 착지). 걷기는 FL_DN 아래로 안 내려가 공중 없음
+FL_HS_AGE = 0.25     # 초: 착지(FL_UP 위로)가 디딤 시작보다 이만큼 넘게 앞이면 버림
+FL_MAX_GAP = 0.15    # 초: 에어팟 샘플 사이가 이보다 길면 걸음 찾기를 처음부터
+FL_MIN_STEPS = 5     # 창 안 공중 시간이 이보다 적으면 없음
+FL_MAX_MS = 250.0    # 공중 상한(우리 달리기 50–110 ms). 디딤 하나를 놓쳐 이어 붙이면 걸음 주기만큼 길어짐 → 버림
+STRIDE_MIN_CONTACT_MS = 100.0  # 발 닿는 시간(걸음 주기 − 공중)이 이보다 짧으면 공중을 잘못 이은 것 → 안 씀
+STRIDE_MIN_SPAN_MS = 10.0      # 보정점 발 닿는 시간 폭이 이보다 좁으면 기울기는 빌림(잡음으로 맞춰짐)
+KS_RANGE = (-0.010, -0.0005)   # 맞춘 기울기가 이 밖이면(부호가 틀리거나 너무 큼) 빌림. B·M −0.0037·−0.0041
+STRIDE_HOLD_S = 3.0  # 공중이 잠깐 빠져도 마지막 보폭 값을 이만큼 이어 씀(섞기가 기본으로 튀지 않게)
 HP = butter(4, 8, 'high', fs=FS, output='sos')
 LP = butter(4, 5, 'low', fs=FS, output='sos')
 
@@ -104,6 +125,17 @@ class SpeedEstimator:
         self.steps = 0          # 누적 걸음
         self.step_thr = None    # 봉우리 문턱(0.5초마다)
         self.last_step_t = -1e9
+        # 달리기 방식(계획 0060)
+        self.method = METHOD_BASE
+        self.stride = None      # 보폭 L = L0 + KS·발 닿는 시간 → (L0, KS)
+        self.last_stride = None  # (t, km/h) 마지막으로 계산한 보폭 속도
+        self.bias = 0.0         # 치우침 고치기: 기본 − 보폭을 천천히 따라간 값
+        self.hist_blend, self.hist_fix = deque(), deque()
+        self.flights = deque()  # (디딤 시작 t, 공중 ms)
+        self.vert_prev = None
+        self.fl_up = None       # 마지막 FL_UP 위로 시각
+        self.fl_stance = False
+        self.fl_to = None       # 마지막 발 떼기 시각
 
     # ---------- 입력 ----------
     def add_phone(self, t, x, y, z):
@@ -116,10 +148,43 @@ class SpeedEstimator:
             self.last_update = t
             self.snap = self.update(t)
 
-    def add_airpods(self, t, x, y, z):
+    def add_airpods(self, t, x, y, z, gx=None, gy=None, gz=None):
+        """에어팟 전체 가속도(중력 포함, m/s²). 중력(gx, gy, gz)을 같이 주면 수직으로 걸음마다 공중 시간(계획 0060)"""
         self.air.append((t, np.sqrt(x * x + y * y + z * z) / G))
         while self.air and self.air[0][0] < t - 30:
             self.air.popleft()
+        if gx is not None:
+            gn = np.sqrt(gx * gx + gy * gy + gz * gz)
+            if gn > 0:
+                self.flight_step(t, (x * gx + y * gy + z * gz) / gn / G)
+
+    def flight_step(self, t, v):
+        """수직(g, 서 있으면 1) 샘플 하나. 디딤 시작(FL_STANCE 위로)마다 공중 = 이번 착지 − 지난 발 떼기(치우침 고침)"""
+        prev, self.vert_prev = self.vert_prev, (t, v)
+        if prev is None or t <= prev[0] or t - prev[0] > FL_MAX_GAP:
+            self.fl_up, self.fl_stance, self.fl_to = None, False, None
+            return
+        t0, v0 = prev
+        if v0 < FL_UP <= v:
+            self.fl_up = t0 + (t - t0) * (FL_UP - v0) / (v - v0)
+        if not self.fl_stance:
+            if v >= FL_STANCE:
+                self.fl_stance = True
+                hs = self.fl_up if self.fl_up is not None and t - self.fl_up <= FL_HS_AGE else None
+                if hs is not None and self.fl_to is not None:
+                    f = ((hs + FL_HS_BIAS) - (self.fl_to + FL_TO_BIAS)) * 1000
+                    if 0 < f < FL_MAX_MS:
+                        self.flights.append((t, f))
+                        while self.flights and self.flights[0][0] < t - 30:
+                            self.flights.popleft()
+        elif v0 >= FL_DN > v:
+            self.fl_to = t0 + (t - t0) * (v0 - FL_DN) / (v0 - v)
+            self.fl_stance, self.fl_up = False, None
+
+    def flight_feat(self, t0, t1):
+        """[t0, t1] 안 공중 시간 중앙값(ms), 걸음이 FL_MIN_STEPS보다 적으면 None"""
+        f = [x for tt, x in self.flights if t0 <= tt <= t1]
+        return float(np.median(f)) if len(f) >= FL_MIN_STEPS else None
 
     def begin_stage(self, set_, speed, t):
         """구간이 바뀔 때: 끝난 구간이 보정이면 보정점 하나"""
@@ -194,7 +259,7 @@ class SpeedEstimator:
         if running and v <= WALK_ONLY_KMH:
             return 'Irregular', None
         return 'Ok', dict(v=v, limp=float(np.log(imp)), cad=float(cad), amp=af['amp'] if air_ok else None,
-                          running=bool(running))
+                          running=bool(running), fl=self.flight_feat(t0, t1) if air_ok else None)
 
     def add_point(self, v, t0, t1):
         """SpeedRecorder 구간 방식(begin_stage): 끝난 보정 구간에서 점 하나"""
@@ -214,6 +279,11 @@ class SpeedEstimator:
         run = [p for p in self.points if p['running']]
         self.phone = self.fit([(p['limp'], p['v']) for p in run], B_PHONE)
         self.full = self.fit([(p['limp'], p['v'] - AIR_D * p['amp']) for p in run if p['amp'] is not None], B_FULL)
+        # 보폭(계획 0060): L(m) = v / 3.6 ÷ (걸음 수 / 60) = L0 + KS·(60000 / 걸음 수 − 공중 ms)
+        self.stride = self.fit_stride([(60000 / p['cad'] - p['fl'], p['v'] / 3.6 / (p['cad'] / 60))
+                                       for p in run if p.get('fl') is not None
+                                       and 60000 / p['cad'] - p['fl'] >= STRIDE_MIN_CONTACT_MS])
+        self.bias, self.last_stride = 0.0, None   # 보정이 바뀌면 치우침도 처음부터
         walk = [p for p in self.points if not p['running']]
         walk = [p for p in walk if p['v'] >= WALK_MIN_KMH] or walk
         self.walk_a = float(np.mean([p['v'] - WALK[1] * p['cad'] for p in walk])) if walk else None
@@ -230,6 +300,18 @@ class SpeedEstimator:
             b = b_default
             a = float(np.mean(y - b * x))
         return float(a), float(b)
+
+    @staticmethod
+    def fit_stride(xy):
+        """보폭 L = L0 + KS·발 닿는 시간. 발 닿는 시간 폭이 좁거나 맞춘 KS가 KS_RANGE 밖이면 KS는 빌림"""
+        if not xy:
+            return None
+        x, y = np.array(xy).T
+        if len(xy) >= 2 and np.ptp(x) >= STRIDE_MIN_SPAN_MS:
+            b, a = np.polyfit(x, y, 1)
+            if KS_RANGE[0] <= b <= KS_RANGE[1]:
+                return float(a), float(b)
+        return float(np.mean(y - KS_DEFAULT * x)), KS_DEFAULT
 
     # ---------- 실시간 ----------
     def update(self, t1):
@@ -262,10 +344,33 @@ class SpeedEstimator:
             kmh = (self.walk_a if WALK_OWN and self.walk_a is not None else WALK[0]) + WALK[1] * pf['cad']
         elif self.state == 0:
             kmh = 0.0
-        if kmh is not None:
-            self.hist.append((t1, float(np.clip(kmh, 0, 25))))
-        while self.hist and self.hist[0][0] < t1 - SMOOTH_S:
-            self.hist.popleft()
-        return dict(t=t1, kmh=median([k for _, k in self.hist]) if kmh is not None else None, kmh_phone=kmh_phone,
+        # 달리기 방식(계획 0060): 에어팟이 있을 때만 다름, 걷기·멈춤은 셋 다 같음
+        fl = self.flight_feat(t0, t1) if air_ok else None
+        kmh_stride = None
+        kb = kf = kmh
+        if self.state == 2 and kmh is not None and air_ok:
+            contact = 60000 / pf['cad'] - fl if fl is not None and pf['cad'] > 0 else None
+            if self.stride and contact is not None and contact >= STRIDE_MIN_CONTACT_MS:
+                kmh_stride = pf['cad'] / 60 * (self.stride[0] + self.stride[1] * contact) * 3.6
+                self.last_stride = (t1, kmh_stride)
+                self.bias += UPDATE_S / FIX_TAU_S * ((kmh - kmh_stride) - self.bias)
+            elif self.last_stride and t1 - self.last_stride[0] <= STRIDE_HOLD_S:
+                kmh_stride = self.last_stride[1]          # 잠깐 빠짐: 이어 씀(치우침은 새 값으로만 고침)
+            if kmh_stride is not None:
+                kb = (1 - BLEND_W) * kmh + BLEND_W * kmh_stride
+                kf = (1 - BLEND_W) * (kmh - self.bias) + BLEND_W * kmh_stride
+            else:
+                kf = kmh - self.bias
+        shown = {}
+        for name, h, k in (('base', self.hist, kmh), ('blend', self.hist_blend, kb), ('fix', self.hist_fix, kf)):
+            if k is not None:
+                h.append((t1, float(np.clip(k, 0, 25))))
+            while h and h[0][0] < t1 - SMOOTH_S:
+                h.popleft()
+            shown[name] = median([x for _, x in h]) if k is not None else None
+        sel = {METHOD_BASE: 'base', METHOD_BLEND: 'blend', METHOD_FIX: 'fix'}.get(self.method, 'base')
+        return dict(t=t1, kmh=shown[sel], kmh_phone=kmh_phone,
                     state=self.state, by=by, air_ok=air_ok, cad=pf['cad'] if pf else None, imp=pf['imp'] if pf else None,
-                    amp=af['amp'] if af else None, lowg_ms=af['lowg_ms'] if af else None, steps=self.steps)
+                    amp=af['amp'] if af else None, lowg_ms=af['lowg_ms'] if af else None, steps=self.steps,
+                    kmh_base=shown['base'], kmh_blend=shown['blend'], kmh_fix=shown['fix'], kmh_stride=kmh_stride,
+                    fl_ms=fl, bias=self.bias, method=self.method)

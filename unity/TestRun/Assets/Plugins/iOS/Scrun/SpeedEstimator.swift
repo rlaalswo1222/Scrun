@@ -7,6 +7,9 @@ import Foundation
 /// 3. 걷기: 걸음 수 공식. 기울기는 공통, 절편은 이 사람의 걷기 보정점이 있으면 그걸로(walkOwn), 없으면 공통
 /// 4. 보정 단계 하나 판정(계획 0023·0024): measureStage. 점은 쌓지 않고 돌려준다(Unity 앱은 C#이 모아 확정한 뒤 load)
 /// 5. 누적 걸음: 포락선 봉우리를 그때그때 셈(다리 애니메이션용, 감지 지연 없이). 문턱은 0.5초마다 최근 3초로 다시 정함
+/// 6. 달리기 방식(계획 0060, 실험): 기본 / 섞기(기본과 보폭을 blendW로) / 섞기 + 치우침 고치기(fixTauS). 셋 다 매번 계산,
+///    method가 kmh를 고름. 보폭 = 걸음 수 × (L0 + KS·(60000 ÷ 걸음 수 − 에어팟 공중 ms)), 공중은 에어팟 수직에서 걸음마다
+///    (계획 0012 규칙). 에어팟 중력을 안 넘기거나(옛 호출) 공중이 없는 옛 보정이면 셋 다 기본과 같음
 /// 쓰는 곳: Unity 앱(ScrunSpeed.swift), 실험 앱 SpeedRecorder(ios/SpeedRecorder, 이 파일을 복사하지 않고 참조),
 /// 재생 도구(ios/SpeedReplay). 한 객체는 한 직렬 큐에서만 부른다.
 final class SpeedEstimator {
@@ -24,6 +27,14 @@ final class SpeedEstimator {
         var nPoints: Int
         var nRunPoints: Int
         var steps: Int          // 누적 걸음
+        // 달리기 방식별(계획 0060). kmh는 이 중 method가 고른 것
+        var kmhBase: Double?
+        var kmhBlend: Double?
+        var kmhFix: Double?
+        var kmhStride: Double?  // 보폭만(섞기 전, 매끄럽게 하기 전)
+        var flMs: Double?       // 창 안 에어팟 공중 시간 중앙값
+        var bias: Double        // 치우침 고치기 값
+        var method: Int         // kmh를 고른 방식(이 틱 계산 때)
     }
 
     struct Point: Codable {
@@ -32,6 +43,7 @@ final class SpeedEstimator {
         var cad: Double
         var amp: Double?
         var running: Bool
+        var fl: Double? = nil   // 이 단계 에어팟 공중 시간(ms, 계획 0060). 옛 보정엔 없음
     }
 
     static let fs = 100.0, winS = 6.0, calSkipS = 5.0
@@ -55,6 +67,22 @@ final class SpeedEstimator {
     static let stepHalf = 12        // 봉우리: 앞뒤 0.12초 안 최댓값(impact와 같음)
     static let stepGapS = 60.0 / 220 // 220 spm보다 빠른 봉우리는 같은 걸음
     static let stepRel = 0.5        // 문턱 = 최근 3초 포락선 90% 값 × 이 비율(아래는 stillEnv)
+    // 달리기 방식(계획 0060). fusion_live.py와 같음, 숫자는 10/29 B·M 재분석(speedlab/exp/stride_model.py)에서
+    static let methodBase = 0, methodBlend = 1, methodFix = 2
+    static let blendW = 0.5         // 보폭 몫
+    static let fixTauS = 60.0       // 치우침 고치기 시간 상수
+    static let ksDefault = -0.0039  // m per ms: 달리기 보정점이 하나뿐일 때 빌리는 보폭 기울기(가설)
+    static let flUp = 0.2, flDn = 0.3            // g: 착지 = 수직이 위로, 발 떼기 = 아래로(Nijs 2021, 계획 0012)
+    static let flHsBias = 0.002, flToBias = 0.016 // 초: 힘판 정답 대비 이르게 잡는 만큼
+    static let flStance = 1.2       // g: 이 위로 가면 디딤(그 전 마지막 flUp 위로 = 착지)
+    static let flHsAge = 0.25       // 초: 착지가 디딤 시작보다 이만큼 넘게 앞이면 버림
+    static let flMaxGap = 0.15      // 초: 에어팟 샘플 사이가 이보다 길면 걸음 찾기를 처음부터
+    static let flMinSteps = 5       // 창 안 공중 시간이 이보다 적으면 없음
+    static let flMaxMs = 250.0      // 공중 상한(달리기 50–110 ms). 디딤 하나를 놓쳐 이어 붙이면 걸음 주기만큼 → 버림
+    static let strideMinContactMs = 100.0 // 발 닿는 시간(걸음 주기 − 공중)이 이보다 짧으면 공중을 잘못 이은 것
+    static let strideMinSpanMs = 10.0     // 보정점 발 닿는 시간 폭이 이보다 좁으면 기울기는 빌림
+    static let ksMin = -0.010, ksMax = -0.0005 // 맞춘 기울기가 이 밖이면(부호가 틀리거나 너무 큼) 빌림
+    static let strideHoldS = 3.0    // 공중이 잠깐 빠져도 마지막 보폭 값을 이만큼 이어 씀
 
     /// 보정 단계 하나를 잰 결과. 이름은 C# CalStageResult와 같다(NotFaster는 앞 점과 비교라 C#이 판정)
     enum StageResult: String {
@@ -100,6 +128,17 @@ final class SpeedEstimator {
     private(set) var steps = 0          // 누적 걸음
     private var stepThr: Double?        // 봉우리 문턱(0.5초마다)
     private var lastStepT = -1e9
+    // 달리기 방식(계획 0060)
+    var method = SpeedEstimator.methodBase
+    private var strideFit: (a: Double, b: Double)?  // 보폭 L = L0 + KS·발 닿는 시간
+    private(set) var bias = 0.0
+    private var lastStride: (t: Double, kmh: Double)?
+    private var histBlend: [(Double, Double)] = [], histFix: [(Double, Double)] = []
+    private var flT: [Double] = [], flV: [Double] = []  // 디딤 시작 시각, 공중 ms
+    private var vertPrev: (t: Double, v: Double)?
+    private var flUpT: Double?      // 마지막 flUp 위로 시각
+    private var flStanceOn = false
+    private var flToT: Double?      // 마지막 발 떼기 시각
 
     // MARK: 입력
 
@@ -115,11 +154,56 @@ final class SpeedEstimator {
         return update(t)
     }
 
-    /// 에어팟 전체 가속도(중력 포함, m/s²)
-    func addAirPods(_ t: Double, _ x: Double, _ y: Double, _ z: Double) {
+    /// 에어팟 전체 가속도(중력 포함, m/s²). 중력(m/s²)을 같이 주면 수직으로 걸음마다 공중 시간(계획 0060)
+    func addAirPods(_ t: Double, _ x: Double, _ y: Double, _ z: Double,
+                    gx: Double? = nil, gy: Double? = nil, gz: Double? = nil) {
         airT.append(t)
         airV.append((x * x + y * y + z * z).squareRoot() / Self.g)
         trim(&airT, &airV, t)
+        if let gx, let gy, let gz {
+            let gn = (gx * gx + gy * gy + gz * gz).squareRoot()
+            if gn > 0 { flightStep(t, (x * gx + y * gy + z * gz) / gn / Self.g) }
+        }
+    }
+
+    /// 수직(g, 서 있으면 1) 샘플 하나. 디딤 시작(flStance 위로)마다 공중 = 이번 착지 − 지난 발 떼기(치우침 고침)
+    private func flightStep(_ t: Double, _ v: Double) {
+        let prev = vertPrev
+        vertPrev = (t, v)
+        guard let p = prev, t > p.t, t - p.t <= Self.flMaxGap else {
+            flUpT = nil; flStanceOn = false; flToT = nil
+            return
+        }
+        if p.v < Self.flUp && Self.flUp <= v {
+            flUpT = p.t + (t - p.t) * (Self.flUp - p.v) / (v - p.v)
+        }
+        if !flStanceOn {
+            if v >= Self.flStance {
+                flStanceOn = true
+                let hs = flUpT.flatMap { t - $0 <= Self.flHsAge ? $0 : nil }
+                if let hs, let to = flToT {
+                    let f = ((hs + Self.flHsBias) - (to + Self.flToBias)) * 1000
+                    if f > 0 && f < Self.flMaxMs {
+                        flT.append(t)
+                        flV.append(f)
+                        if flT.count > 200, let k = flT.firstIndex(where: { $0 >= t - 30 }), k > 0 {
+                            flT.removeFirst(k)
+                            flV.removeFirst(k)
+                        }
+                    }
+                }
+            }
+        } else if p.v >= Self.flDn && Self.flDn > v {
+            flToT = p.t + (t - p.t) * (p.v - Self.flDn) / (p.v - v)
+            flStanceOn = false
+            flUpT = nil
+        }
+    }
+
+    /// [t0, t1] 안 공중 시간 중앙값(ms), 걸음이 flMinSteps보다 적으면 nil
+    private func flightFeat(_ t0: Double, _ t1: Double) -> Double? {
+        let f = Array(slice(flT, flV, t0, t1).v)
+        return f.count >= Self.flMinSteps ? Self.median(f) : nil
     }
 
     /// 구간이 바뀔 때: 끝난 구간이 보정이면 보정점 하나
@@ -214,7 +298,8 @@ final class SpeedEstimator {
         let airOK = (af?.cover ?? 0) >= Self.airMinCover
         let running = airOK ? af!.lowgMs >= Self.runLowgMs : cad >= Self.runCad
         if running && v <= Self.walkOnlyKmh { return (.irregular, nil) }
-        return (.ok, Point(v: v, limp: log(imp), cad: cad, amp: airOK ? af!.amp : nil, running: running))
+        return (.ok, Point(v: v, limp: log(imp), cad: cad, amp: airOK ? af!.amp : nil, running: running,
+                           fl: airOK ? flightFeat(t0, t1) : nil))
     }
 
     /// 사람 걸음으로 볼 수 있나: 세기가 서 있을 때보다 크고, 걸음 수가 찾는 범위 끝(벨트 모터 진동)에 붙지 않음.
@@ -238,10 +323,31 @@ final class SpeedEstimator {
         let run = points.filter { $0.running }
         phone = Self.fit(run.map { ($0.limp, $0.v) }, bDefault: Self.bPhone)
         full = Self.fit(run.compactMap { p in p.amp.map { (p.limp, p.v - Self.airD * $0) } }, bDefault: Self.bFull)
+        // 보폭(계획 0060): L(m) = v / 3.6 ÷ (걸음 수 / 60) = L0 + KS·(60000 / 걸음 수 − 공중 ms)
+        strideFit = Self.fitStride(run.compactMap { p in
+            p.fl.flatMap { 60000 / p.cad - $0 >= Self.strideMinContactMs ? (60000 / p.cad - $0, p.v / 3.6 / (p.cad / 60)) : nil }
+        })
+        bias = 0          // 보정이 바뀌면 치우침도 처음부터
+        lastStride = nil
         let allWalk = points.filter { !$0.running }
         let fast = allWalk.filter { $0.v >= Self.walkMinKmh }
         let walk = fast.isEmpty ? allWalk : fast
         walkA = walk.isEmpty ? nil : walk.map { $0.v - Self.walkB * $0.cad }.reduce(0, +) / Double(walk.count)
+    }
+
+    /// 보폭 L = L0 + KS·발 닿는 시간. 발 닿는 시간 폭이 좁거나 맞춘 KS가 [ksMin, ksMax] 밖이면 KS는 빌림
+    static func fitStride(_ xy: [(Double, Double)]) -> (a: Double, b: Double)? {
+        guard !xy.isEmpty else { return nil }
+        let n = Double(xy.count)
+        let xs = xy.map { $0.0 }
+        let mx = xs.reduce(0, +) / n, my = xy.map { $0.1 }.reduce(0, +) / n
+        if xy.count >= 2, xs.max()! - xs.min()! >= strideMinSpanMs {
+            let sxy = xy.map { ($0.0 - mx) * ($0.1 - my) }.reduce(0, +)
+            let sxx = xy.map { ($0.0 - mx) * ($0.0 - mx) }.reduce(0, +)
+            let b = sxy / sxx
+            if b >= ksMin && b <= ksMax { return (my - b * mx, b) }
+        }
+        return (xy.map { $0.1 - ksDefault * $0.0 }.reduce(0, +) / n, ksDefault)
     }
 
     /// y = a + b·x. 점 2개 이상이면 둘 다, 하나면 b를 빌림
@@ -291,12 +397,39 @@ final class SpeedEstimator {
         } else if state == 0 {
             kmh = 0
         }
-        if let k = kmh { hist.append((t1, min(max(k, 0), 25))) }
-        hist.removeAll { $0.0 < t1 - Self.smoothS }
-        let shown = kmh == nil ? nil : Self.median(hist.map { $0.1 })
+        // 달리기 방식(계획 0060): 에어팟이 있을 때만 다름, 걷기·멈춤은 셋 다 같음
+        let fl = airOK ? flightFeat(t0, t1) : nil
+        var kmhStride: Double?
+        var kb = kmh, kf = kmh
+        if state == 2, let k = kmh, airOK {
+            let contact: Double? = { if let fl, let pf, pf.cad > 0 { return 60000 / pf.cad - fl }; return nil }()
+            if let s = strideFit, let c = contact, c >= Self.strideMinContactMs, let pf {
+                let ks = pf.cad / 60 * (s.a + s.b * c) * 3.6
+                kmhStride = ks
+                lastStride = (t1, ks)
+                bias += Self.updateS / Self.fixTauS * ((k - ks) - bias)
+            } else if let l = lastStride, t1 - l.t <= Self.strideHoldS {
+                kmhStride = l.kmh       // 잠깐 빠짐: 이어 씀(치우침은 새 값으로만 고침)
+            }
+            if let ks = kmhStride {
+                kb = (1 - Self.blendW) * k + Self.blendW * ks
+                kf = (1 - Self.blendW) * (k - bias) + Self.blendW * ks
+            } else {
+                kf = k - bias
+            }
+        }
+        func smooth(_ h: inout [(Double, Double)], _ k: Double?) -> Double? {
+            if let k { h.append((t1, min(max(k, 0), 25))) }
+            h.removeAll { $0.0 < t1 - Self.smoothS }
+            return k == nil ? nil : Self.median(h.map { $0.1 })
+        }
+        let sBase = smooth(&hist, kmh), sBlend = smooth(&histBlend, kb), sFix = smooth(&histFix, kf)
+        let shown = method == Self.methodBlend ? sBlend : method == Self.methodFix ? sFix : sBase
         return Snapshot(t: t1, kmh: shown, kmhPhone: kmhPhone, state: state, byAirPods: byAir, airOK: airOK,
                         cad: pf?.cad, imp: pf?.imp, amp: af?.amp, lowgMs: af?.lowgMs,
-                        nPoints: points.count, nRunPoints: points.filter { $0.running }.count, steps: steps)
+                        nPoints: points.count, nRunPoints: points.filter { $0.running }.count, steps: steps,
+                        kmhBase: sBase, kmhBlend: sBlend, kmhFix: sFix, kmhStride: kmhStride, flMs: fl, bias: bias,
+                        method: method)
     }
 
     // MARK: StepSpeed.cs 계산 (speedlab/exp/soundtrackdb.py와 같음, 포락선 100 Hz)

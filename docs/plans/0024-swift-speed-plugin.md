@@ -65,6 +65,9 @@ C 함수(Swift `@_cdecl`, C# `[DllImport("__Internal")]`). 모두 **메인 스�
 | 8 | 에어팟 흐름 0·1·2·3 | 연결·허용 없으면 0 |
 | 9 | 지난 1초 폰 샘플 수 | 점검 화면용 |
 | 10 | 지난 1초 에어팟 샘플 수 | 점검 화면용 |
+| 11–13 | 기본·섞기·고치기 km/h | **계획 0060에서 덧붙임**(달리기 방식 실험). 걸음 없음이면 NaN. C#은 16칸이면 읽고 11칸이면 옛 약속 |
+| 14 | 최근 6초 에어팟 공중 시간 ms | 계획 0060, 없으면 NaN |
+| 15 | 지금 방식 0·1·2 | 계획 0060, `SpeedMethod`. 함수 `void scrun_speed_set_method(int)`(8번째 C 함수)로 바꿈 |
 
 - 걷기 절편·단계 판정의 숫자·누적 걸음 방식은 1번(Python)에서 정해지면 Swift를 맞춘다. 그 전까지 Swift는 지금 `SpeedEstimator` 그대로 + 단계 판정은 아래 "판정 기준"의 규칙(NoSteps 문턱은 임시값), 누적 걸음은 임시로 케이던스 × 시간
 - 맥·Windows가 같은 브랜치 `feat/speed-plugin`에 올린다. 파일이 갈림: 맥은 `Assets/Plugins/iOS/Scrun/*.swift`·`ios/SpeedRecorder`·Swift 재생 도구, Windows는 `speedlab/`·C# `App/Native/IosSpeed*.cs`·테스트. 올리기 전 `git pull --rebase`. 진행 기록은 이 계획의 "진행"에 줄을 나눠(맥 / Windows) 적고, `handoff/minjae.md`는 Windows 쪽만 고친다(같은 사람 파일이라 겹침)

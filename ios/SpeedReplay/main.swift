@@ -78,13 +78,13 @@ if let stagesPath {
     exit(0)
 }
 
-enum Event { case phone(Row), air(Double, Double, Double, Double), stage(Row) }
+enum Event { case phone(Row), air(Double, Double, Double, Double, Double, Double, Double), stage(Row) }
 var events: [(t: Double, order: Int, e: Event)] = []
 for r in readCSV(file("iphone_acc.csv")) { events.append((r.t, 0, .phone(r))) }
 let acc = readCSV(file("airpods_acc.csv")), grav = readCSV(file("airpods_grav.csv"))
-// airpods_acc(사용자 가속도) + airpods_grav(중력) = 앱이 넣은 전체 가속도. 두 파일은 같은 줄이 같은 샘플
+// airpods_acc(사용자 가속도) + airpods_grav(중력) = 앱이 넣은 전체 가속도, 중력도 따로(계획 0060 공중 시간). 같은 줄이 같은 샘플
 for (a, g) in zip(acc, grav) where a.t == g.t {
-    events.append((a.t, 1, .air(a.t, a.v[0] + g.v[0], a.v[1] + g.v[1], a.v[2] + g.v[2])))
+    events.append((a.t, 1, .air(a.t, a.v[0] + g.v[0], a.v[1] + g.v[1], a.v[2] + g.v[2], g.v[0], g.v[1], g.v[2])))
 }
 if modelPath == nil { for r in readCSV(file("stage.csv")) { events.append((r.t, 2, .stage(r))) } }
 events.sort { $0.t != $1.t ? $0.t < $1.t : $0.order < $1.order }
@@ -102,10 +102,11 @@ for ev in events {
     case .phone(let r):
         if let s = est.addPhone(r.t, r.v[0], r.v[1], r.v[2]) {
             out.append([s.t, s.kmh ?? -1, s.kmhPhone ?? -1, Double(s.state), s.byAirPods ? 1 : 0, s.airOK ? 1 : 0,
-                        s.cad ?? -1, s.imp ?? -1, s.amp ?? -1, s.lowgMs ?? -1, Double(s.nRunPoints), Double(s.steps)])
+                        s.cad ?? -1, s.imp ?? -1, s.amp ?? -1, s.lowgMs ?? -1, Double(s.nRunPoints), Double(s.steps),
+                        s.kmhBase ?? -1, s.kmhBlend ?? -1, s.kmhFix ?? -1, s.kmhStride ?? -1, s.flMs ?? -1, s.bias])
         }
-    case .air(let t, let x, let y, let z):
-        est.addAirPods(t, x, y, z)
+    case .air(let t, let x, let y, let z, let gx, let gy, let gz):
+        est.addAirPods(t, x, y, z, gx: gx, gy: gy, gz: gz)
     case .stage(let r):
         let speed = r.v[1] < 0 ? nil : r.v[1]
         if let c = openCalib {
@@ -119,7 +120,8 @@ for ev in events {
     }
 }
 
-let cols = ["t", "kmh", "kmh_phone", "state", "by_airpods", "air_ok", "cad", "imp", "amp", "lowg_ms", "n_run_points", "steps"]
+let cols = ["t", "kmh", "kmh_phone", "state", "by_airpods", "air_ok", "cad", "imp", "amp", "lowg_ms", "n_run_points", "steps",
+            "kmh_base", "kmh_blend", "kmh_fix", "kmh_stride", "fl_ms", "bias"] // 뒤 6칸: 달리기 방식(계획 0060)
 var text = cols.joined(separator: ",") + "\n"
 for r in out { text += r.map { String(format: "%.5f", $0) }.joined(separator: ",") + "\n" }
 try! text.write(toFile: outPath, atomically: true, encoding: .utf8)
@@ -132,7 +134,8 @@ var byT: [String: [Double]] = [:]
 for r in out { byT[String(format: "%.5f", r[0])] = Array(r.dropFirst()) }
 
 // 다른 쪽 CSV(t, kmh, kmh_phone, state, ..., 값 없음 = -1)와 0.5초 칸마다 비교
-func compareWith(_ path: String, _ label: String, columns: [(name: String, idx: Int)]) {
+// signed 칸(치우침·보폭 속도처럼 음수도 진짜 값)은 정확히 -1만 "값 없음"으로 본다
+func compareWith(_ path: String, _ label: String, columns: [(name: String, idx: Int)], signed: Set<String> = []) {
     let other = readCSV(path)
     guard !other.isEmpty else { print("\(label): \(path)를 못 읽음"); return }
     var matched = 0
@@ -143,7 +146,9 @@ func compareWith(_ path: String, _ label: String, columns: [(name: String, idx: 
         matched += 1
         for (k, c) in columns.enumerated() where c.idx < r.v.count {
             let a = r.v[c.idx], b = mine[c.idx]
-            if (a < 0) != (b < 0) { stats[k].onlyOne += 1; continue }
+            let noA = signed.contains(c.name) ? a == -1 : a < 0, noB = signed.contains(c.name) ? b == -1 : b < 0
+            if noA != noB { stats[k].onlyOne += 1; continue }
+            if noA { continue }
             let d = abs(a - b)
             if d > stats[k].maxD { stats[k].maxD = d; stats[k].at = r.t - other[0].t }
         }
@@ -157,4 +162,5 @@ func compareWith(_ path: String, _ label: String, columns: [(name: String, idx: 
 
 let base: [(name: String, idx: Int)] = [("kmh", 0), ("kmh_phone", 1), ("state", 2), ("cad", 5), ("imp", 6), ("amp", 7), ("lowg_ms", 8)]
 if compare { compareWith(file("estimate.csv"), "그날 폰(estimate.csv)", columns: base) }
-if let golden { compareWith(golden, "Python 기준(\((golden as NSString).lastPathComponent))", columns: base + [("n_run_points", 9), ("steps", 10)]) }
+let methods: [(name: String, idx: Int)] = [("kmh_base", 11), ("kmh_blend", 12), ("kmh_fix", 13), ("kmh_stride", 14), ("fl_ms", 15), ("bias", 16)]
+if let golden { compareWith(golden, "Python 기준(\((golden as NSString).lastPathComponent))", columns: base + [("n_run_points", 9), ("steps", 10)] + methods, signed: ["kmh_stride", "bias"]) }
