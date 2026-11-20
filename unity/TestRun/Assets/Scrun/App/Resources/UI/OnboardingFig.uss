@@ -1,4 +1,4 @@
-/* 계획 0031: A-02–A-06·A-16–A-19 모양(Figma A 섹션 596:22, 11/12 플러그인 API로 읽음).
+/* 계획 0031: A-06·A-18·A-19 모양(Figma A 섹션 596:22, 11/12 플러그인 API로 읽음). A-02–A-05·A-16·A-17은 우주 시안 OnboardingSpace.uss(계획 0061).
    Onboarding.uss(Nav Bar·제목·설명·칩) 다음에 붙인다. 색·크기는 App.uss 변수.
    Figma Body: 세로 자동 배치 간격 16, 안쪽 여백 8/20/16/20 → .onb + 요소마다 위 간격(.gap 등). 그림자·줄 높이는 USS에 없어 빠짐 */
 
@@ -28,13 +28,9 @@
     align-items: center;
 }
 
-.illust--intro { height: 430px; background-color: rgba(0, 0, 0, 0); }
 .illust--login { height: 380px; justify-content: flex-end; }
 .illust--failed { height: 280px; justify-content: flex-end; }
 
-.intro-run { background-image: url("project://database/Assets/Scrun/App/UI/Images/IntroRun.png"); }
-.intro-together { background-image: url("project://database/Assets/Scrun/App/UI/Images/IntroTogether.png"); }
-.intro-record { background-image: url("project://database/Assets/Scrun/App/UI/Images/IntroRecord.png"); }
 
 /* 서 있는 캐릭터 124×280. 로그인 칸에선 아래에서 34 위(Figma y 66), 실패 칸에선 아래에 붙음 */
 .char-stand {
@@ -68,27 +64,6 @@
 .btn-dark:hover,
 .btn-dark:active {
     background-color: var(--color-text);
-}
-
-/* ---- A-02–A-04 소개: 점 3개(지금 24×8 파랑, 나머지 8×8 #CBD3E1, 간격 8) ---- */
-.dots {
-    flex-direction: row;
-    justify-content: center;
-    margin-top: var(--space-4);
-    height: 8px;
-}
-
-.dot {
-    width: 8px;
-    height: 8px;
-    margin: 0 4px;
-    border-radius: 4px;
-    background-color: #CBD3E1;
-}
-
-.dot--on {
-    width: 24px;
-    background-color: var(--color-primary);
 }
 
 /* ---- A-06 프로필 칸(흰 바탕, 모서리 16, 테두리 1.5 line, 고른 칸은 2 파랑). 단위는 칸 안 오른쪽 ---- */
@@ -240,151 +215,6 @@
 
 .onb .agree-view:hover,
 .onb .agree-view:active { background-color: rgba(0, 0, 0, 0); }
-
-/* ---- A-16 주간 목표 ---- */
-.goal-card {
-    margin-top: var(--space-4);
-    padding: 24px 20px;
-    border-width: 1px;
-    border-color: var(--color-line);
-    border-radius: 20px;
-    background-color: var(--color-surface);
-    align-items: center;
-}
-
-.goal-value {
-    flex-direction: row;
-    align-items: flex-end;
-}
-
-/* Figma는 ExtraBold 72. 앱 글꼴은 Bold까지라 Bold */
-.onb .goal-number {
-    font-size: 72px;
-    letter-spacing: -1.44px;
-    color: var(--color-primary);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
-}
-
-.onb .goal-unit {
-    margin: 0 0 12px 8px;
-    font-size: var(--font-size-sub);
-    letter-spacing: -0.27px;
-    color: var(--color-body);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
-}
-
-.goal-chips {
-    flex-direction: row;
-    margin-top: var(--space-4);
-}
-
-.onb .goal-chip {
-    min-width: 30px;
-    height: 28px;
-    margin: 0 4px;
-    padding: 0 10px;
-    border-width: 0;
-    border-radius: 14px;
-    background-color: var(--color-primary-soft);
-    color: #2459BC;
-    font-size: var(--font-size-caption);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
-}
-
-.onb .goal-chip:hover,
-.onb .goal-chip:active { background-color: var(--color-primary-soft); }
-
-.onb .goal-chip--on,
-.onb .goal-chip--on:hover,
-.onb .goal-chip--on:active {
-    background-color: var(--color-primary);
-    color: #FFFFFF;
-}
-
-.goal-days {
-    flex-direction: row;
-    margin-top: var(--space-4);
-}
-
-.goal-day {
-    width: 30px;
-    margin: 0 6px;
-    align-items: center;
-}
-
-.onb .goal-day-label {
-    font-size: var(--font-size-caption);
-    color: var(--color-muted);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
-}
-
-.goal-day-dot {
-    width: 30px;
-    height: 30px;
-    margin-top: var(--space-2);
-    border-width: 2px;
-    border-color: var(--color-line);
-    border-radius: 15px;
-    background-color: var(--color-surface);
-}
-
-.onb .goal-note {
-    margin-top: var(--space-4);
-    font-size: var(--font-size-caption);
-    color: var(--color-muted);
-    white-space: normal;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
-}
-
-/* ---- A-17 온보딩 완료(배경은 스플래시와 같은 그라데이션 App.uss .app-root--splash, 간격 12) ---- */
-.onb-done { align-items: center; }
-
-.onb .done-title {
-    font-size: var(--font-size-title);
-    letter-spacing: -0.56px;
-    color: #FFFFFF;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
-}
-
-.onb .done-lead {
-    margin-top: 12px;
-    font-size: var(--font-size-body);
-    letter-spacing: -0.16px;
-    color: #FFFFFF;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
-}
-
-.char-stretch {
-    width: 241px;
-    height: 280px;
-    margin-top: 12px;
-    flex-shrink: 1;
-    background-image: url("project://database/Assets/Scrun/App/UI/Images/CharacterStretch.png");
-    -unity-background-scale-mode: scale-to-fit;
-}
-
-.onb-done .spacer { margin-top: 12px; }
-
-.done-card {
-    width: 100%;
-    height: 57px;
-    margin-top: 12px;
-    border-radius: 16px;
-    background-color: var(--color-surface);
-    align-items: center;
-    justify-content: center;
-}
-
-.onb .done-card-text {
-    font-size: var(--font-size-body-sm);
-    color: var(--color-text);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
-}
-
-.onb-done .btn.btn-fig {
-    width: 100%;
-    margin-top: 12px;
-}
 
 /* ---- A-19 오류 배너(바탕 #FFECEC, 동그라미 #F0565B) ---- */
 .err-banner {

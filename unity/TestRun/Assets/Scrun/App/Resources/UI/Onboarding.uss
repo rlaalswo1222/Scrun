@@ -132,10 +132,6 @@
     height: 22px;
 }
 
-.icon-motion { background-image: url("project://database/Assets/Scrun/App/UI/Icons/perm-motion.svg"); }
-.icon-headphone { background-image: url("project://database/Assets/Scrun/App/UI/Icons/perm-headphone.svg"); }
-.icon-camera { background-image: url("project://database/Assets/Scrun/App/UI/Icons/perm-camera.svg"); }
-.icon-bell { background-image: url("project://database/Assets/Scrun/App/UI/Icons/perm-bell.svg"); }
 .icon-earphone-off { background-image: url("project://database/Assets/Scrun/App/UI/Icons/earphone-off.svg"); }
 .icon-earphone-on { background-image: url("project://database/Assets/Scrun/App/UI/Icons/earphone-on.svg"); }
 

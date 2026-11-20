@@ -2,8 +2,8 @@ using UnityEngine.UIElements;
 
 namespace Scrun.App
 {
-    // A-02–A-04 서비스 소개(Figma 596:59·596:101·596:145, 계획 0031). 이 기기에서 처음 켰고 로그인이 없을 때 스플래시 다음.
-    // 한 화면에서 그림·글·점·버튼만 바꾼다. "다음"·옆으로 밀기로 넘기고, "건너뛰기"·마지막 "시작하기"는 로그인(A-05)으로.
+    // A-02–A-04 서비스 소개(계획 0031, 모양은 우주 시안 883:25·884:26·884:127 계획 0061). 이 기기에서 처음 켰고 로그인이 없을 때 스플래시 다음.
+    // 한 화면에서 장면·글·점·버튼만 바꾼다. "다음"·옆으로 밀기로 넘기고, "건너뛰기"·마지막 "시작하기"는 로그인(A-05)으로.
     // 끝까지 보거나 건너뛰면 다시 안 보여 준다(Onboarding.MarkIntroSeen).
     public sealed class IntroScreen : AppScreen
     {
@@ -19,12 +19,12 @@ namespace Scrun.App
             }
         }
 
-        // Figma 문구 그대로(PP01–PP03)
+        // 우주 시안 문구·줄바꿈 그대로
         public static readonly Page[] Pages =
         {
-            new Page("intro-run", "내 속도로 달려요", "폰 하나로 속도를 추정해 아바타가 내 속도로 달려요"),
-            new Page("intro-together", "같은 코스를 함께 달려요", "실시간 러너, 친구, 어제의 나와 한 화면에서 달려요"),
-            new Page("intro-record", "기록이 남고, 이어져요", "계기판을 인증하면 기록과 주간 목표가 차곡차곡 쌓여요"),
+            new Page("intro-run", "내 속도로 달려요", "폰 하나로 속도를 추정해\n아바타가 내 속도로 달려요"),
+            new Page("intro-together", "같은 코스를 함께 달려요", "실시간 러너, 친구, 어제의 나와\n한 화면에서 달려요"),
+            new Page("intro-record", "기록이 남고, 이어져요", "계기판을 인증하면 기록과\n주간 목표가 차곡차곡 쌓여요"),
         };
 
         const float SwipePx = 60f; // 이만큼 옆으로 밀면 넘김(패널 좌표, 기준 390 폭)
@@ -40,6 +40,7 @@ namespace Scrun.App
 
         protected override string Uxml => "UI/Intro";
         public override bool HidesTabBar => true;
+        public override string RootClass => SpaceArt.RootClass;
 
         protected override void OnCreate()
         {
@@ -50,6 +51,7 @@ namespace Scrun.App
             lead = Q<Label>("lead");
             skip = Q<Button>("skip");
             next = Q<Button>("next");
+            SpaceArt.Fit(Q<VisualElement>("fit"));
             skip.clicked += Leave;
             next.clicked += Next;
             pager.RegisterCallback<PointerDownEvent>(e =>
@@ -96,8 +98,7 @@ namespace Scrun.App
             lead.text = page.Lead;
             for (int i = 0; i < dots.childCount; i++) dots[i].EnableInClassList("dot--on", i == index);
             bool last = index == Pages.Length - 1;
-            next.text = last ? "시작하기" : "다음";
-            skip.style.visibility = last ? Visibility.Hidden : Visibility.Visible; // Figma A-04는 건너뛰기 없음(자리는 둠)
+            next.text = last ? "시작하기" : "다음"; // 우주 시안은 A-04에도 건너뛰기가 있음
         }
 
         void Leave()

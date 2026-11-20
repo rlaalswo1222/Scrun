@@ -54,6 +54,13 @@
     -unity-background-scale-mode: stretch-to-fill;
 }
 
+/* 우주 시안 온보딩(계획 0061): 남색 그라데이션 + 흐린 빛 + 별(Figma 880:49를 그림으로). 노치·홈 바까지 */
+.app-root--space {
+    background-color: #13253A;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/SpaceBg.png");
+    -unity-background-scale-mode: scale-and-crop;
+}
+
 .safe-area {
     flex-grow: 1;
 }

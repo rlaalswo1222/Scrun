@@ -20,26 +20,33 @@ namespace Scrun.App
 
         protected override string Uxml => "UI/CalibrationIntro";
         public override bool HidesTabBar => true;
+        public override string RootClass => SpaceArt.RootClass; // 우주 시안(계획 0061)
 
         protected override void OnCreate()
         {
             var ladder = CalibrationLadder.SpeedsKmh;
             Q<Label>("title").text = CalibrationCopy.IntroTitle;
-            Q<Label>("lead").text = CalibrationCopy.IntroLead(ladder.Length, ladder.First(), ladder.Last(), CalibrationLadder.StageSec);
+            Q<Label>("lead").text = CalibrationCopy.IntroLead; // 사다리 숫자는 속도 칩(speeds)
             Q<Label>("note").text = CalibrationCopy.IntroNote;
+            SpaceArt.Fit(Q<VisualElement>("fit"));
             var steps = Q<VisualElement>("steps");
             for (int i = 0; i < CalibrationCopy.IntroSteps.Length; i++)
             {
                 var row = new VisualElement();
-                row.AddToClassList("calib-intro-step");
+                row.AddToClassList("quest-step");
                 var num = new Label((i + 1).ToString());
-                num.AddToClassList("calib-intro-num");
+                num.AddToClassList("quest-num");
                 var text = new Label(CalibrationCopy.IntroSteps[i]);
-                text.AddToClassList("calib-intro-text");
+                text.AddToClassList("quest-text");
                 row.Add(num);
                 row.Add(text);
                 steps.Add(row);
             }
+            // 시안의 속도 칩 자리: 실제 사다리(계획 0061 정할 것 2)
+            var speeds = Q<VisualElement>("speeds");
+            speeds.Add(UiExtensions.Text(CalibrationCopy.IntroRange(ladder.First(), ladder.Last()), "sp-chip"));
+            speeds.Add(UiExtensions.Text(CalibrationCopy.IntroStages(ladder.Length), "sp-chip"));
+            speeds.Add(UiExtensions.Text(CalibrationCopy.IntroTimes(CalibrationLadder.StageSec), "quest-times"));
 
             Q<Button>("back").clicked += () =>
             {

@@ -1,32 +1,33 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- A-16 주간 목표 설정(Figma 599:351, 계획 0031). 칩·날짜는 코드가 채움(WeeklyGoalScreen) -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
-    <ui:VisualElement class="onb">
-        <ui:VisualElement class="nav-bar">
-            <ui:VisualElement class="nav-side">
-                <ui:Button name="back" class="nav-back" />
-            </ui:VisualElement>
-            <ui:Label text="주간 목표" class="nav-title" />
-            <ui:VisualElement class="nav-side nav-side--right">
-                <ui:Button name="skip" text="건너뛰기" class="nav-action" />
+    <!-- A-16 주간 목표 설정(계획 0031, 모양은 우주 시안 886:125 계획 0061). −/+ 단계(주 1–7회)·7일 궤도는 코드가 채움(WeeklyGoalScreen).
+         뒤로·건너뛰기는 시안엔 없지만 기능 유지(정할 것 4) -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingSpace.uss" />
+    <ui:VisualElement class="sp">
+        <ui:VisualElement class="sp-top">
+            <ui:Button name="back" text="‹" class="sp-pill sp-back" />
+            <ui:Button name="skip" text="건너뛰기" class="sp-pill" />
+        </ui:VisualElement>
+        <ui:Label text="한 주에 몇 번&#10;달릴까요?" class="sp-title goal-title" />
+        <ui:Label text="매일 달리지 않아도 괜찮아요. 내 일정에 맞게 정해요" class="sp-lead sp-lead--sm" />
+        <ui:VisualElement name="fit" class="sp-fit">
+            <ui:VisualElement class="sp-art art-goal">
+                <ui:VisualElement class="sp-img img-goal-flag" />
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
-            <ui:VisualElement class="head">
-                <ui:Label text="한 주에 몇 번&#10;달릴까요?" class="onb-title" />
-                <ui:Label text="매일 달리지 않아도 괜찮아요. 내 일정에 맞게 정해요" class="onb-lead" />
+        <ui:VisualElement class="sp-card stepper">
+            <ui:Button name="minus" text="−" class="step-btn" />
+            <ui:VisualElement class="goal-value">
+                <ui:Label name="count" text="3" class="goal-number" />
+                <ui:Label text="회 / 주" class="goal-unit" />
             </ui:VisualElement>
-            <ui:VisualElement class="goal-card">
-                <ui:VisualElement class="goal-value">
-                    <ui:Label name="count" text="3" class="goal-number" />
-                    <ui:Label text="회 / 주" class="goal-unit" />
-                </ui:VisualElement>
-                <ui:VisualElement name="chips" class="goal-chips" />
-                <ui:VisualElement name="days" class="goal-days" />
-            </ui:VisualElement>
-            <ui:Label text="목표를 정한 날부터 7일이 한 주예요. 목표는 마이에서 언제든 바꿀 수 있고, 변경은 이번 주가 끝난 뒤부터 적용돼요." class="goal-note" />
-        </ui:ScrollView>
-        <ui:Button name="save" text="목표 정하기" class="btn btn-primary btn-fig" />
+            <ui:Button name="plus" text="+" class="step-btn" />
+        </ui:VisualElement>
+        <ui:Label text="한 주 (7일)" class="week-label" />
+        <ui:VisualElement class="week">
+            <ui:VisualElement class="week-track" />
+            <ui:VisualElement name="days" class="week-days" />
+        </ui:VisualElement>
+        <ui:Label text="목표를 정한 날부터 7일이 한 주예요. 목표는 마이에서 언제든 바꿀 수 있고, 변경은 이번 주가 끝난 뒤부터 적용돼요." class="goal-note" />
+        <ui:Button name="save" text="목표 정하기" class="sp-cta cta-gap" />
     </ui:VisualElement>
 </ui:UXML>

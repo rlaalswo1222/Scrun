@@ -1,0 +1,561 @@
+/* 계획 0061: 우주 시안 온보딩(Figma "스크런 우주 디자인" > S · 게임 UI 전체 시안 880:12, 승인 전 시안).
+   A-02–A-05·A-07·A-11·A-16·A-17. 화면 바탕은 app-root--space(App.uss, SpaceBg.png). 그림은 unity/tools/space_onboarding_assets.py로 만듦.
+   좌표·크기는 Figma 393×852 그대로(pt). 그림 칸(.sp-art)은 SpaceArt.Fit이 남는 높이에 맞게 줄임.
+   UI Toolkit에 없는 것: 그라데이션·흐림·그림자 → 그림으로, 버튼의 단단한 그림자는 아래 테두리로 */
+
+.sp {
+    flex-grow: 1;
+    padding: 4px 20px 16px 20px;
+}
+
+.sp .unity-label {
+    margin: 0;
+    padding: 0;
+}
+
+.sp .spacer { flex-grow: 1; }
+
+/* ---- 위 줄: 왼쪽 뒤로·오른쪽 건너뛰기 알약(#101a33 60%, 높이 44) ---- */
+.sp-top {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    height: 44px;
+    flex-shrink: 0;
+}
+
+.sp-pill {
+    height: 44px;
+    margin: 0;
+    padding: 0 14px;
+    border-width: 0;
+    border-radius: 22px;
+    background-color: rgba(16, 26, 51, 0.6);
+    color: #CDD5EA;
+    font-size: 14px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.sp-pill:hover,
+.sp-pill:active {
+    background-color: rgba(16, 26, 51, 0.6);
+}
+
+.sp .sp-back {
+    width: 44px;
+    padding: 0 0 4px 0;
+    font-size: 30px;
+    -unity-text-align: middle-center;
+}
+
+/* ---- 글 ---- */
+.sp .sp-title {
+    font-size: 28px;
+    letter-spacing: -0.56px;
+    color: #F4F6FB;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.sp .sp-lead {
+    margin-top: 10px;
+    font-size: 16px;
+    color: #CDD5EA;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.sp .sp-lead--sm { font-size: 14px; margin-top: 6px; }
+.sp .sp-center { -unity-text-align: upper-center; }
+
+.sp .sp-caption {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #A9B4D3;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* ---- 주황 알약 버튼(#ff844d, 글자 ExtraBold 30 #05070f). 아래 단단한 그림자 #d9643a 6 = 아래 테두리 ---- */
+.sp .sp-cta {
+    height: 68px;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    border-bottom-width: 6px;
+    border-top-width: 2px;
+    border-radius: 34px;
+    border-bottom-color: #D9643A;
+    border-top-color: rgba(255, 255, 255, 0.55);
+    background-color: #FF844D;
+    color: #05070F;
+    font-size: 30px;
+    flex-shrink: 0;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset");
+}
+
+.sp .sp-cta:hover,
+.sp .sp-cta:active {
+    background-color: #FF844D;
+}
+
+.sp .sp-cta:disabled { opacity: 0.5; }
+
+/* 글자만 있는 버튼(A-07 "지금은 건너뛰기") */
+.sp .sp-ghost {
+    height: 44px;
+    margin: 6px 0 0 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    color: #CDD5EA;
+    font-size: 14px;
+    flex-shrink: 0;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.sp .sp-ghost:hover,
+.sp .sp-ghost:active { background-color: rgba(0, 0, 0, 0); }
+
+/* ---- 유리 카드(#101a33 88%, 흰 테두리 12%) ---- */
+.sp-card {
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.12);
+    border-radius: 22px;
+    background-color: rgba(16, 26, 51, 0.88);
+}
+
+/* 밝은 칩(#d7ebe8, 글자 Bold 15 #0a1020) */
+.sp .sp-chip {
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 15px;
+    background-color: #D7EBE8;
+    color: #0A1020;
+    font-size: 15px;
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+/* 진행 점(지금 28×8 하늘 #3dd9ff, 나머지 8×8 흰 30%) */
+.sp-dots {
+    flex-direction: row;
+    justify-content: center;
+    height: 8px;
+    margin: 0 0 32px 0;
+    flex-shrink: 0;
+}
+
+.sp-dots .dot {
+    width: 8px;
+    height: 8px;
+    margin: 0 4px;
+    border-radius: 4px;
+    background-color: rgba(244, 246, 251, 0.3);
+}
+
+.sp-dots .dot--on {
+    width: 28px;
+    background-color: #3DD9FF;
+}
+
+/* ---- 그림 칸: 바깥(.sp-fit)이 남는 자리를 차지, 안(.sp-art)은 Figma 크기 그대로 두고 줄여 맞춤(SpaceArt.Fit) ---- */
+.sp-fit {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    margin: 0 -20px;
+    overflow: visible;
+}
+
+/* 절대 위치라 바깥 칸 크기에 영향 없음. 가운데 맞추기·줄이기는 SpaceArt.Fit */
+.sp-art {
+    position: absolute;
+    width: 393px;
+}
+
+.sp-img {
+    position: absolute;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* ---- A-02–A-04 소개: 그림 칸 393×420(Figma y 104–524). 장면은 IntroScreen이 칸에 붙이는 intro-* 클래스로 고름 ---- */
+.art-intro { height: 420px; }
+.scene { display: none; position: absolute; left: 0; top: 0; width: 393px; height: 420px; }
+.intro-run .scene-run,
+.intro-together .scene-together,
+.intro-record .scene-record { display: flex; }
+
+.img-intro-run { left: 6px; top: 0; width: 380px; height: 420px; background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/IntroRun.png"); }
+.img-intro-together { left: 6px; top: 76px; width: 387px; height: 344px; background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/IntroTogether.png"); }
+.img-intro-stage { left: 6px; top: 220px; width: 380px; height: 200px; background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/IntroRecordStage.png"); }
+.img-intro-flag { left: 262px; top: 66px; width: 110px; height: 110px; background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/GoalFlag.png"); }
+
+/* A-04 기록 카드 예시 3장(260×72, 모서리 20, 기울기 Figma −6°·3°·−2° → 시계 방향이 +) */
+.rec-card {
+    position: absolute;
+    left: 66px;
+    width: 260px;
+    height: 72px;
+    flex-direction: row;
+    align-items: center;
+    padding: 0 14px;
+    border-radius: 20px;
+    transform-origin: left top; /* Figma처럼 왼쪽 위 모서리를 축으로 기울임 */
+}
+
+.rec-card--1 { top: 110px; opacity: 0.5; rotate: 6deg; }
+.rec-card--2 { top: 164px; opacity: 0.75; rotate: -3deg; }
+.rec-card--3 { top: 222px; rotate: 2deg; }
+
+.rec-planet {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/PlanetSky.png");
+}
+
+.rec-text { flex-grow: 1; margin-left: 12px; }
+
+.sp .rec-km {
+    font-size: 18px;
+    color: #F4F6FB;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.sp .rec-name {
+    margin-top: 2px;
+    font-size: 12px;
+    color: #CDD5EA;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.sp .rec-ok {
+    padding: 3px 8px;
+    border-radius: 11px;
+    background-color: #0F2E26;
+    color: #3DDC97;
+    font-size: 11px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.rec-week {
+    position: absolute;
+    left: 143px;
+    top: 310px;
+    width: 107px;
+    border-bottom-width: 3px;
+    border-bottom-color: #95B8B5;
+}
+
+.sp .intro-text { margin: 16px 0 36px 0; flex-shrink: 0; }
+.sp .intro-text .sp-lead { margin-top: 10px; }
+
+/* ---- A-05 로그인: 로고(20,78 353×198) + 내 행성(0,210 393×420) → 칸 393×552 ---- */
+.art-login { height: 552px; }
+.img-login-logo { left: 20px; top: 0; width: 353px; height: 198px; background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/LoginLogo.png"); }
+.img-login-planet { left: 0; top: 132px; width: 393px; height: 420px; background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/LoginPlanet.png"); }
+
+.sp .login-lead {
+    margin-top: 10px;
+    font-size: 18px;
+    color: #F4F6FB;
+    -unity-text-align: middle-center;
+    flex-shrink: 0;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+/* 카카오 버튼(#fee500, 높이 58, 아래 단단한 그림자 #05070f 4). 심볼 20×18 + 사이 8 + 글자를 한 줄로 가운데 */
+.sp .sp-kakao {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    height: 62px;
+    margin: 18px 0 0 0;
+    padding: 0;
+    border-width: 0;
+    border-bottom-width: 4px;
+    border-radius: 31px;
+    border-bottom-color: #05070F;
+    background-color: #FEE500;
+    flex-shrink: 0;
+}
+
+.sp .sp-kakao:hover,
+.sp .sp-kakao:active { background-color: #FEE500; }
+
+.kakao-symbol {
+    width: 20px;
+    height: 18px;
+    margin-right: 8px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/KakaoSymbol.png");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.sp .kakao-label {
+    font-size: 17px;
+    color: #05070F;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.sp .notice-text { margin-top: 8px; color: #FFB84D; -unity-text-align: middle-center; }
+.sp .link-button { color: #A9B4D3; }
+
+/* ---- A-07 권한: 카드 353×82(모서리 22), 아이콘 칸 52(그림), 사이 12 ---- */
+.sp .perm-title { margin-top: 8px; flex-shrink: 0; }
+.perm-list { margin-top: 26px; }
+
+.perm-row {
+    flex-direction: row;
+    align-items: center;
+    min-height: 82px;
+    margin-bottom: 12px;
+    padding: 14px 14px 14px 14px;
+}
+
+.perm-icon { width: 52px; height: 52px; -unity-background-scale-mode: scale-to-fit; flex-shrink: 0; }
+.perm-motion { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/PermMotion.png"); }
+.perm-headphone { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/PermHeadphones.png"); }
+.perm-camera { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/PermCamera.png"); }
+.perm-bell { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/PermBell.png"); }
+
+.perm-text { flex-grow: 1; flex-shrink: 1; margin: 0 0 0 14px; }
+
+.sp .perm-name {
+    font-size: 16px;
+    color: #F4F6FB;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.sp .perm-desc {
+    margin-top: 3px;
+    font-size: 14px;
+    color: #CDD5EA;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* 상태 칩(허용됨·꺼짐·필수·선택, 시안엔 없지만 기능 유지). 설명 줄이 꺾이지 않게 카드 오른쪽 위에 */
+.sp .perm-chip {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: rgba(205, 213, 234, 0.4);
+    color: #CDD5EA;
+    font-size: 11px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.sp .perm-chip--ok { border-color: rgba(61, 220, 151, 0.5); background-color: #0F2E26; color: #3DDC97; }
+.sp .perm-chip--off { color: #A9B4D3; border-color: rgba(169, 180, 211, 0.3); }
+
+/* ---- A-11 보정 안내: 그림 칸 393×300(러닝머신, 빛은 아래로 넘침) ---- */
+.art-calib { height: 300px; }
+.img-calib { left: 30px; top: 0; width: 332px; height: 366px; background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/CalibHero.png"); }
+.sp .calib-top { position: absolute; left: 20px; top: 4px; }
+.sp .calib-lead { margin-top: 8px; font-size: 14px; -unity-text-align: upper-center; }
+
+.quest {
+    margin-top: 20px;
+    padding: 16px 16px 14px 16px;
+    border-radius: 24px;
+    flex-shrink: 0;
+}
+
+.quest-step { flex-direction: row; align-items: center; margin-bottom: 14px; }
+
+.sp .quest-num {
+    width: 32px;
+    height: 32px;
+    border-width: 1.5px;
+    border-radius: 16px;
+    border-color: rgba(61, 217, 255, 0.6);
+    background-color: #12305A;
+    color: #A4D2FF;
+    font-size: 15px;
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.sp .quest-text {
+    flex-shrink: 1;
+    margin-left: 12px;
+    font-size: 16px;
+    color: #F4F6FB;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.quest-chips { flex-direction: row; align-items: center; margin-left: 44px; }
+.quest-chips .sp-chip { margin-right: 8px; }
+
+.sp .quest-times {
+    font-size: 14px;
+    color: #CDD5EA;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+/* ---- A-16 주간 목표 ---- */
+.sp .goal-title { margin-top: 8px; flex-shrink: 0; }
+.art-goal { height: 150px; }
+.img-goal-flag { left: 121px; top: 0; width: 150px; height: 150px; background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/GoalFlag.png"); }
+
+.stepper {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 120px;
+    margin-top: 4px;
+    padding: 0 20px;
+    border-radius: 28px;
+    flex-shrink: 0;
+}
+
+.sp .step-btn {
+    width: 56px;
+    height: 60px;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    border-bottom-width: 4px;
+    border-radius: 30px;
+    border-bottom-color: #95B8B5;
+    background-color: #D7EBE8;
+    color: #0A1020;
+    font-size: 30px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset");
+}
+
+.sp .step-btn:hover,
+.sp .step-btn:active { background-color: #D7EBE8; }
+.sp .step-btn:disabled { opacity: 0.35; }
+
+.goal-value { flex-direction: row; align-items: flex-end; }
+
+.sp .goal-number {
+    font-size: 48px;
+    color: #F4F6FB;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset");
+}
+
+.sp .goal-unit {
+    margin: 0 0 8px 6px;
+    font-size: 16px;
+    color: #CDD5EA;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.sp .week-label {
+    margin-top: 24px;
+    font-size: 14px;
+    color: #CDD5EA;
+    flex-shrink: 0;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+/* 7일 궤도: 선(313×4 #223259) 위 점 7개, 오늘(1일)만 하늘 26 */
+.week {
+    height: 56px;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+
+.week-days {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0 7px;
+}
+
+.week-track {
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    top: 18px;
+    height: 4px;
+    border-radius: 2px;
+    background-color: #223259;
+}
+
+.week-day { align-items: center; width: 26px; }
+
+.week-dot {
+    width: 20px;
+    height: 20px;
+    margin-top: 3px;
+    border-width: 1.5px;
+    border-radius: 10px;
+    border-color: #33457A;
+    background-color: #223259;
+}
+
+.week-day--today .week-dot {
+    width: 26px;
+    height: 26px;
+    margin-top: 0;
+    border-width: 0;
+    border-radius: 13px;
+    background-color: #3DD9FF;
+}
+
+.sp .week-day-label {
+    margin-top: 7px;
+    font-size: 12px;
+    color: #A9B4D3;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.week-day--today .week-day-label { margin-top: 4px; color: #F4F6FB; }
+
+.sp .goal-note {
+    margin-top: 8px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background-color: rgba(16, 26, 51, 0.6);
+    font-size: 12px;
+    color: #CDD5EA;
+    white-space: normal;
+    flex-shrink: 0;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* ---- A-17 완료: 빛줄기·받침대·캐릭터 그림(0,0 393×640, 칸은 화면 위 54부터라 위로 54 넘침) ---- */
+.art-done { height: 502px; }
+.img-done { left: 0; top: -54px; width: 393px; height: 640px; background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/DoneScene.png"); }
+
+.sp .done-title {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 62px;
+    font-size: 48px;
+    color: #F4F6FB;
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset");
+}
+
+.sp .done-lead { margin-top: 0; -unity-text-align: middle-center; flex-shrink: 0; }
+
+.done-info {
+    flex-direction: row;
+    align-items: center;
+    align-self: center;
+    height: 43px;
+    margin-top: 20px;
+    padding: 0 16px;
+    border-radius: 22px;
+    flex-shrink: 0;
+}
+
+.done-dot { width: 8px; height: 8px; margin-right: 8px; border-radius: 4px; background-color: #FFB84D; }
+
+.sp .done-info-text {
+    font-size: 14px;
+    color: #F4F6FB;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.sp .cta-gap { margin-top: 24px; }

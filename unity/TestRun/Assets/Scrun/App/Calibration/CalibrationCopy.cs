@@ -12,9 +12,8 @@ namespace Scrun.App
 
         // A-11 안내
         public const string IntroTitle = "속도를 내 몸에 맞춰요";
-        public static string IntroLead(int stages, float from, float to, float stageSec) =>
-            $"러닝머신 속도를 {Kmh(from)}부터 {Kmh(to)}까지 차례로 올리며 {stageSec:0}초씩 걷고 달리면, " +
-            $"폰이 내 발걸음과 속도를 맞춰 기억해요. {stages}단계, 2분쯤 걸려요.";
+        // 우주 시안(계획 0061): 사다리 숫자(2–14 km/h·7단계·15초)는 아래 속도 칩(IntroRange·IntroStages·IntroTimes)이 보여 줌
+        public const string IntroLead = "러닝머신 속도를 차례로 올리며 걷고 달리면,\n폰이 내 발걸음과 속도를 맞춰 기억해요";
         public static readonly string[] IntroSteps =
         {
             "폰을 러닝머신 계기판 위에 가로로 올려요",
@@ -23,6 +22,10 @@ namespace Scrun.App
         };
         public const string IntroNote = "처음 달리기 전에 한 번 해요. 나중에 내 정보에서 다시 할 수 있어요.";
         public const string IntroStart = "보정 시작";
+        // A-11 속도 칩(우주 시안 계획 0061): 시안의 "6 · 8 · 10 km/h × 1분" 자리에 실제 사다리
+        public static string IntroRange(float from, float to) => $"{from:0.#} → {Kmh(to)}";
+        public static string IntroStages(int stages) => $"{stages}단계";
+        public static string IntroTimes(float stageSec) => $"× {stageSec:0}초";
 
         // A-12 거치
         public const string MountTitle = "폰을 계기판 위에\n가로로 올려 주세요";

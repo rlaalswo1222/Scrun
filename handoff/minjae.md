@@ -1,7 +1,8 @@
 # 민재 인수인계 (2026-11-19 밤, Windows)
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만 하고 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/api/`, `docs/adr/`, `docs/plans/`)에, Claude 작업 요령(Figma·에디터·노션·HTML)은 `docs/claude_howto.md`에 있다. 옛 전체본: `docs/log/HANDOFF_minjae_20261119.md`(11/19 밤 정리 전: 그날 PR별 자세한 기록·지난 팀원 전달 전부), `_20261118.md`(11/18 정리 전, 끝난 머지·결정의 자세한 기록), `_20261## 지금 (11/19 밤, 세션 초기화 전)
-- **develop 0bf7099(#113까지), 오라클 e75d48c(#112까지 배포, 그 뒤는 문서만)**, 마이그레이션 없음, DB `d5b8e3f2a6c1`. 열린 PR 없음
+- **develop 0bf7099(#113까지), 오라클 e75d48c(#112까지 배포, 그 뒤는 문서만)**, 마이그레이션 없음, DB `d5b8e3f2a6c1`. 열린 PR: #115 속도 방식 실험(계획 0060, 맥 확인 전 머지 보류)
+- **11/20 우주 시안 온보딩(계획 0061, `feat/space-onboarding`)**: Figma "스크런 우주 디자인" > S · 게임 UI 전체 시안(승인 전)의 A-02–05·07·11·16·17을 옮김. EditMode 531, 에디터 캡처로 Figma와 비교, 리뷰 반영. 남은 것: 아이폰(안전 영역·SE)·상준 확인. 그림 다시 만들기는 `unity/tools/space_onboarding_assets.py`(Figma JSON은 git 밖, 받는 법 docs/claude_howto.md)
 - **11/19 한 것**(자세한 건 각 계획 "진행"·`docs/log/HANDOFF_minjae_20261119.md`):
   - 지환 #94·#95 리뷰·머지, 세션 복구 #97(0052), OCR 시간 초과 #98·#99(0055), 공통 상태 #102·#103(0056), #66 카메라 Swift(0033, 맥 확인 끝)
   - **홈 BL-31을 지환에게서 가져와 #106(0057)**: `GET /home` DB 연결 + B-01–B-04, I-04 가운데 안내창·E-01 Figma대로. 아이폰 확인 끝(노션 홈 화면·BL-37 완료)
