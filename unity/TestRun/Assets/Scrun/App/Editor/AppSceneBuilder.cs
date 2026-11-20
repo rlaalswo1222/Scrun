@@ -107,6 +107,12 @@ namespace Scrun.App.Editor
                                          "CalibHero", "DoneScene", "PermMotion", "PermHeadphones", "PermCamera", "PermBell",
                                          "KakaoSymbol", "PlanetSky" })
                 SetImage($"{ImageDir}/Space/{name}.png", uncompressed: false);
+            // 우주 시안 홈·코스(계획 0062, unity/tools/space_home_assets.py): 바탕 둘은 무압축(2배), 나머지는 고품질 압축
+            foreach (var name in new[] { "HomeBg", "CourseDetailBg" })
+                SetImage($"{ImageDir}/Space/{name}.png", uncompressed: true);
+            foreach (var name in new[] { "HomeHero", "HomeHeroShort", "CourseThumb", "CourseHero", "Face", "Zone1", "Zone2", "Zone3",
+                                         "Zone4", "Zone5", "DockHome", "DockFriends", "DockRecords", "DockMe" })
+                SetImage($"{ImageDir}/Space/{name}.png", uncompressed: false);
         }
 
         static void SetImage(string path, bool uncompressed)

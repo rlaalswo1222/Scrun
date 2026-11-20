@@ -4,8 +4,11 @@
     <ui:VisualElement name="app-root" class="app-root">
         <ui:VisualElement name="safe-area" class="safe-area">
             <ui:VisualElement name="screen-host" class="screen-host" />
-            <!-- 아래 탭: Figma UI Kit "Tab Bar"(아이콘 + 글자, 홈·친구·기록·마이 순서) -->
+            <!-- 아래 탭: 우주 시안 Game/Dock(계획 0062, 떠 있는 막대 + 고른 탭은 솟은 받침). 홈·친구·기록·마이 순서.
+                 tab-bar 아래 여백은 SafeArea가 홈 바만큼 넣고, 막대·탭은 안쪽 dock에 -->
             <ui:VisualElement name="tab-bar" class="tab-bar">
+              <ui:VisualElement class="dock">
+                <ui:VisualElement class="dock-bar" picking-mode="Ignore" />
                 <ui:Button name="tab-home" class="tab">
                     <ui:VisualElement class="tab-icon tab-icon--home" picking-mode="Ignore" />
                     <ui:Label text="홈" class="tab-label" picking-mode="Ignore" />
@@ -22,6 +25,7 @@
                     <ui:VisualElement class="tab-icon tab-icon--me" picking-mode="Ignore" />
                     <ui:Label text="마이" class="tab-label" picking-mode="Ignore" />
                 </ui:Button>
+              </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
 

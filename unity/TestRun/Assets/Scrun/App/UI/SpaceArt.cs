@@ -8,6 +8,8 @@ namespace Scrun.App
     public static class SpaceArt
     {
         public const string RootClass = "app-root--space";
+        public const string HomeRootClass = "app-root--home";                  // B·C 시안(계획 0062): 홈·코스 목록
+        public const string CourseDetailRootClass = "app-root--course-detail"; // C-02: 위 420이 맨 위 코스 그림 색
 
         public static void Fit(VisualElement fit)
         {
