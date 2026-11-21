@@ -9,19 +9,30 @@ namespace Scrun.App
     // 섬 씬을 혼자 Play하면 남긴 것이 없으므로 씬의 기본 코스 그대로.
     public static class MapLaunch
     {
-        public const string SceneName = "Island01";
+        public const string IslandScene = "Island01";
+        public const string SpaceLoopScene = "SpaceLoop";             // 우주 루프(ADR-0013, 계획 0063·0066)
+        public const string SpaceLoopCourseId = "crs_space_loop";
         const string CoursePrefix = "crs_";
+
+        // 코스 → 맵 씬. 우주 루프 코스만 SpaceLoop, 나머지(섬 도로망 코스)는 섬
+        public static string SceneOf(string courseId) =>
+            courseId == SpaceLoopCourseId ? SpaceLoopScene : IslandScene;
+
+        // 앱이 겹쳐 여는 맵 씬인지(이 둘만)
+        public static bool IsMapScene(string sceneName) => sceneName == IslandScene || sceneName == SpaceLoopScene;
 
         public sealed class Request
         {
             public string CourseId { get; }
-            public string RouteId { get; }        // 섬 도로망(RoadNetwork) 코스 ID
+            public string RouteId { get; }        // 섬 도로망(RoadNetwork) 코스 ID(우주 루프는 경로 고르기 없음)
+            public string SceneName { get; }      // 이 코스를 그리는 맵 씬
             public float EntryPositionM { get; }  // 코스 시작점부터 m
 
             public Request(string courseId, float entryPositionM)
             {
                 CourseId = courseId;
                 RouteId = RouteIdOf(courseId);
+                SceneName = SceneOf(courseId);
                 EntryPositionM = Math.Max(0f, entryPositionM);
             }
         }
@@ -69,6 +80,9 @@ namespace Scrun.App
         }
 
         public static bool HasPending => pending != null;
+
+        // 남긴 요청이 이 씬 것인지(섬 요청을 우주 루프가 가져가지 않게)
+        public static bool IsPendingFor(string sceneName) => pending != null && pending.SceneName == sceneName;
 
         // 씬을 못 불렀거나 화면을 떠날 때
         public static void Clear()

@@ -260,13 +260,14 @@ namespace Scrun.App
             // 섬 씬이 깨어나는 동안 Camera.main이 섬 카메라를 가리키게(ScrunQuality·이름표가 앱 카메라를 잡지 않게) 미리 비켜 둔다
             YieldAppCamera();
             MapLaunch.Store(entry);
+            string sceneName = MapLaunch.SceneOf(entry.CourseId);
             JoinRoom(entry); // 섬을 불러오는 동안 붙어서, 맵이 열릴 때 다른 러너가 이미 보이게
 
             sceneLoading = true;
             try
             {
-                var op = SceneManager.LoadSceneAsync(MapLaunch.SceneName, LoadSceneMode.Additive)
-                         ?? throw new InvalidOperationException($"섬 씬을 못 불러옴: {MapLaunch.SceneName}(빌드 씬 목록 확인)");
+                var op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive)
+                         ?? throw new InvalidOperationException($"맵 씬을 못 불러옴: {sceneName}(빌드 씬 목록 확인)");
                 while (!op.isDone)
                 {
                     SetProgress(EntryShare + (1f - EntryShare) * Mathf.Clamp01(op.progress / 0.9f));
@@ -278,9 +279,9 @@ namespace Scrun.App
                 sceneLoading = false;
             }
 
-            island = SceneManager.GetSceneByName(MapLaunch.SceneName); // 한 번에 하나뿐(islandFree)
+            island = SceneManager.GetSceneByName(sceneName); // 한 번에 하나뿐(islandFree)
             if (!island.IsValid() || !island.isLoaded)
-                throw new InvalidOperationException($"섬 씬이 열리지 않음: {MapLaunch.SceneName}");
+                throw new InvalidOperationException($"맵 씬이 열리지 않음: {sceneName}");
             if (leaving) { ReleaseIsland(); return; } // 불러오는 사이 나가기를 누름
 
             // 섬 씬의 하늘·안개·조명이 적용되게 활성 씬으로, 앱 카메라(단색 배경)와 그 소리 듣는 곳은 끔(섬 카메라 것만 남게)
