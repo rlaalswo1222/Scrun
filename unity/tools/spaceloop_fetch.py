@@ -155,4 +155,7 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    # Windows Git Bash처럼 파이프로 받는 창에서 한글이 cp949로 나가 깨지지 않게(진짜 콘솔은 원래 괜찮음)
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.exit(main(sys.argv[1:]))

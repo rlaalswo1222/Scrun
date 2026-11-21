@@ -26,9 +26,11 @@ namespace Scrun.Experiments
         public float sweepSeconds = 40f;       // 0 → 최대 → 0 한 바퀴
         [HideInInspector] public float speedKmh;
 
-        [Header("걷기·달리기 경계 (Hreljac 외 연구 6.8–7.8 km/h, 가운데를 비워 깜빡임 방지)")]
-        public float runAboveKmh = 7.5f;
-        public float walkBelowKmh = 6.5f;
+        // 기본값은 새 아바타(다리 0.54m) 값: Froude 수 0.5 기준 6.2 이상 달리기, 5.4 이하 걷기(README "다리 길이 대비 걸음 박자").
+        // 사람 키 체형(Y Bot 다리 0.83m)은 Hreljac 외 연구 6.8–7.8 km/h → 7.5 / 6.5. 빌더(저장소 밖)가 쓰던 값을 리셋해도 같게
+        [Header("걷기·달리기 경계 (다리 길이로 정함, 가운데를 비워 깜빡임 방지)")]
+        public float runAboveKmh = 6.2f;
+        public float walkBelowKmh = 5.4f;
         public float crossFade = 0.25f;
         public float stopBelowKmh = 0.3f, startAboveKmh = 0.5f;
 

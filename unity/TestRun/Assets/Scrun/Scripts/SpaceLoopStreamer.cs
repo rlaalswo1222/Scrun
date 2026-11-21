@@ -20,12 +20,13 @@ namespace Scrun
 
         bool Near(int i, float s, float p)
         {
+            // 루프라 한 바퀴 앞·뒤도 본다(매 프레임 배열을 만들지 않게 세 번 직접 비교 → 아이폰 GC 끊김 방지)
             float lap = zoneRoots.Length * zoneLength;
             float a = i * zoneLength - p, b = (i + 1) * zoneLength + p;
-            foreach (float off in new[] { -lap, 0f, lap })
-                if (s + off >= a && s + off <= b) return true;
-            return false;
+            return In(s, a, b) || In(s - lap, a, b) || In(s + lap, a, b);
         }
+
+        static bool In(float x, float a, float b) => x >= a && x <= b;
 
         public void Refresh()
         {

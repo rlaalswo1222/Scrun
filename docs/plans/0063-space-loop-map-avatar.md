@@ -1,6 +1,6 @@
 # 계획 0063: 우주 루프 맵과 새 아바타를 저장소에 (SpaceLoop 장면)
 
-- 상태: **구현 · PR #120 리뷰 대기** (11/21 상준). 큰 파일 Release `spaceloop-assets-v1` 올림. 아이폰 실측 전
+- 상태: **머지 #120**(11/21 민재). 리뷰에서 고친 것 `fix/space-loop-review`(아래 "리뷰"). 큰 파일 Release `spaceloop-assets-v1` 올림. 아이폰 실측 전
 - 담당: 상준(맵·아바타·이 PR), 리뷰 민재
 - 근거: ADR-0013(우주 루프), 작업 기록 `docs/unity/space_loop.md`, 아바타 기록 `unity/TestRun/Assets/Scrun/Experiments/AvatarGait/README.md`
 - 왜 지금: 팀원이 자기 기능(속도·실시간·HUD)을 새 맵·아바타 위에서 폰으로 시험하려 한다. 11/21에 unitypackage로 먼저 나눴지만, 저장소에 있어야 develop과 같이 움직인다
@@ -49,3 +49,9 @@
 ## 정할 것 (리뷰 때)
 1. 큰 파일을 Release zip + 받기 스크립트로 두는 방식(Poly Haven과 같음)이 괜찮은지
 2. ADR-0013(섬 맵 대신 우주 루프) 승인 여부
+
+## 리뷰 (11/21 민재)
+- Windows에서 받기 스크립트 확인: Release zip 131MB 25초, 199개 모두 같은 내용
+- 고침(`fix/space-loop-review`): `SpaceLoopStreamer`가 매 프레임 배열 5개를 만들던 것(아이폰 GC 끊김) → 직접 비교, `SpaceLoopDevKeys`는 개발 빌드에서만(출시 빌드에 구간 글자 안 뜸), `AvatarGaitDriver` 걷기·달리기 경계 코드 기본값을 장면 값 6.2·5.4로(빌더가 저장소 밖이라 리셋하면 7.5·6.5가 들어갔음), 받기 스크립트 2개 출력이 Git Bash에서 깨지던 것(UTF-8로)
+- **확인 필요(상준)**: 걷기 v9 4개는 Mixamo `Y Bot@Walking`을 옮겨 고친 파생본인데 공개 저장소에 들어감(팀은 Mixamo 파일을 git에 안 올려 왔음, Mixamo는 파일 자체 재배포를 막는 것으로 앎 → 약관 확인), 메쉬두 키트·달리기 원본도 공개 Release라 누구나 받음(유료 플랜 소유권·공개 여부). 안 되면 그 파일만 비공개로 나눠 받기
+- 남은 것(앱 연결 때 민재): 장면에 `ScrunQuality`가 없어 아이폰 기본 30fps·앱 품질 단계 안 걸림(섬 전용 값이 섞여 있어 연결하면서), 아이폰 그리기 호출·fps 실측 → 그 뒤 ADR-0013 승인
