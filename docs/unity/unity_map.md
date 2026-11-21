@@ -297,6 +297,13 @@
 - **아래 탭 바**(11/10, UI Kit Tab Bar): 아이콘 24 + 글자 12, 홈·친구·기록·마이 순서, 고른 탭은 파란 아이콘(`tab-*-on.svg`)·굵은 글자. 탭 버튼 이름(`tab-home` 등)은 그대로라 `Navigator`는 안 바뀜
 - 패키지: Test Framework 1.8.0, Newtonsoft Json 3.2.2(서버 JSON, ApiClient에서 씀)를 manifest에 직접 적음(원래 다른 패키지를 따라 들어와 있던 버전)
 
+## 우주 루프 맵 `SpaceLoop` (11/21, 계획 0063, ADR-0013 제안)
+- 장면 `Scenes/SpaceLoop.unity`: 3km 루프 하나, 5구간 x 600m(구름 위 기지, 화성 협곡, 밤 숲 호수, 얼음 위성, 달 기지). 러너는 팀 `RunnerController`·`SplineTrack`·`FollowCamera` 그대로, 속도는 `FakeSpeedSource`(↑/↓ ±0.5 km/h, Space 멈춤) → 진짜 센서는 `SetSpeedSource`
+- 구간 하늘·조명·안개는 `SpaceLoopAtmosphere`가 내 러너 거리로 경계 100m에서 섞고, `SpaceLoopStreamer`가 지금 구간 ± 150m만 켠다. 1–5 = 구간 이동, [ ] = ±100m(`SpaceLoopDevKeys`)
+- 아바타는 새 아바타 v8 + v9 걷기 4·달리기 7(`Experiments/AvatarGait/AvatarGaitDriver`, 6.2 km/h 위 달리기·5.4 km/h 아래 걷기). 팀 `RunnerAnimator`(Y Bot)와는 아직 따로
+- 큰 파일(메쉬두 키트·구간 메시 147MB)은 `python unity/tools/spaceloop_fetch.py`로 받는다(README "처음 받았을 때" 3번)
+- 작업 기록·측정(맥 에디터): `docs/unity/space_loop.md`. 아이폰 실측은 아직 0회
+
 ## 남은 큰 것 (11/06 기준)
 - 손그림 텍스처 에셋(땅·바위·건물), 실제 캐릭터(자주 뛰면 탄탄·안 뛰면 둥근 체형 변화가 가능해야 함, 지금은 Mixamo Y Bot 임시), 0에서 3 km/h·20 km/h 발 미끄러짐, 디버그 HUD 교체, 60fps·발열 측정, 앱 화면 흐름(UI Toolkit), 빌드 대상 iOS로 전환(ADR-0007)
 - 맵: 11/05엔 크게 다시 만들기로 했으나, 11/07 민재 결정으로 새 블록아웃은 하지 않고 기존 섬 맵(Island01, 도로망·코스 4개)을 그대로 쓴다. 이건 임시이고, 맵·아바타 컨셉아트가 정해지면 에셋을 만들어(또는 구매) 새 맵(BL-43 3km 루프)·새 아바타(BL-42)를 새로 만든다(11/07 민재, 노션 기능 "새 맵·아바타")
