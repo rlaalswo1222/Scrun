@@ -9,18 +9,19 @@
 
 ## 처음 받았을 때 (Unity를 열기 전에)
 
-용량 때문에 일부 파일은 저장소에 없고 각자 받거나 다시 만든다. **Unity를 열기 전에** 1, 2를 해야 연결(.meta)이 안 깨진다.
+용량 때문에 일부 파일은 저장소에 없고 각자 받거나 다시 만든다. **Unity를 열기 전에** 1–3을 해야 연결(.meta)이 안 깨진다.
 
 1. 커밋 규칙 검사기 켜기: `git config core.hooksPath tools/githooks`
 2. Poly Haven 에셋(CC0, 약 230MB) 받기: `python unity/tools/polyhaven_fetch.py` → "모두 같은 내용"이 나오면 끝
-3. Mixamo 캐릭터 받기(무료 Adobe 계정): [mixamo.com](https://www.mixamo.com) → 캐릭터 **Y Bot** → 아래 동작을 Format **FBX for Unity(.fbx)**로 받아 `unity/TestRun/Assets/Scrun/Characters/YBot/`에 **정확히 이 이름**으로 저장
+3. 우주 루프 맵 큰 파일(메쉬두 모델·텍스처, 구간 메시, 약 147MB) 받기: `python unity/tools/spaceloop_fetch.py` → "모두 같은 내용"이 나오면 끝(GitHub Release zip 131MB, 계획 0063)
+4. Mixamo 캐릭터 받기(무료 Adobe 계정): [mixamo.com](https://www.mixamo.com) → 캐릭터 **Y Bot** → 아래 동작을 Format **FBX for Unity(.fbx)**로 받아 `unity/TestRun/Assets/Scrun/Characters/YBot/`에 **정확히 이 이름**으로 저장
    - `Y Bot@Breathing Idle.fbx` (Skin: **With Skin**)
    - `Y Bot@Walking.fbx`, `Y Bot@Jogging.fbx`, `Y Bot@Slow Run.fbx`, `Y Bot@Standard Run.fbx`, `Y Bot@Fast Run.fbx`, `Y Bot@Sprint.fbx` (Skin: **Without Skin**, In Place 있으면 켜기)
-4. Unity Hub에서 `unity/TestRun` 열기 (Unity 6.6, 6000.6.7f1). 처음엔 Library를 만드느라 오래 걸림
-5. 메뉴 Scrun → Reimport Mixamo Characters → Scrun → Build Island Scene (약 3분, 섬 지형·도로·식생을 다시 만듦)
+5. Unity Hub에서 `unity/TestRun` 열기 (Unity 6.6, 6000.6.7f1). 처음엔 Library를 만드느라 오래 걸림
+6. 메뉴 Scrun → Reimport Mixamo Characters → Scrun → Build Island Scene (약 3분, 섬 지형·도로·식생을 다시 만듦)
    - 씬 파일(`Island01.unity`)·조명 데이터·반사 텍스처가 바뀌지만 각자 다시 만드는 것이라 커밋하지 않는다(저장소가 추적하는 파일이라 `git status`에 보임 → `git restore unity/TestRun/Assets/Scrun/Scenes`로 되돌림. 씬을 일부러 바꾼 PR만 커밋). 러너 애니메이터(`YBotRunner.controller`)는 이미 있으면 그대로 둔다(계획 0036). 콘솔에 `[Scrun] 클립 없음`·`클립이 … 다름` 오류가 나오면 Mixamo FBX를 다시 받는다(지문은 `YBotRunner.clips.txt`). 기준점을 다시 재야 할 때만 Scrun → Build Runner Animator → Play 중 Scrun → Measure Runner Gait → 씬 다시 만들기, 지문 파일까지 같이 커밋
 
-빠진 것: `Course/Generated`(섬 메시, 5번에서 생성), APK 빌드, SoundTrackDB 등 공개 데이터(`data/external`), 옛 프로토타입 영상·3D 자료(`run3d/assets`, `run3d/data`), 인증서(`certs`)
+빠진 것: `Course/Generated`(섬 메시, 6번에서 생성), APK 빌드, SoundTrackDB 등 공개 데이터(`data/external`), 옛 프로토타입 영상·3D 자료(`run3d/assets`, `run3d/data`), 인증서(`certs`)
 
 ## 폴더
 | 위치 | 내용 |

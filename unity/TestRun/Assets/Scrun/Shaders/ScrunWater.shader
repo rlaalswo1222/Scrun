@@ -51,6 +51,8 @@ Shader "Scrun/Water"
             CBUFFER_END
             float4 _ScrunSkyHorizon;
             float4 _ScrunSkyZenith;
+            float _ScrunReflectOn;   // 0 = 반사 텍스처 없음(하늘색만), >0 = SpaceLoopLakeReflection 반사 세기
+            TEXTURE2D(_ScrunReflectTex); SAMPLER(sampler_ScrunReflectTex);
 
             TEXTURE2D(_NormalMap); SAMPLER(sampler_NormalMap);
             TEXTURE2D(_HeightMap); SAMPLER(sampler_HeightMap);
@@ -60,6 +62,7 @@ Shader "Scrun/Water"
             {
                 float4 positionCS : SV_POSITION;
                 float3 positionWS : TEXCOORD0;
+                float4 screenPos : TEXCOORD1;
             };
 
             Varyings vert(Attributes v)
@@ -67,6 +70,7 @@ Shader "Scrun/Water"
                 Varyings o;
                 o.positionWS = TransformObjectToWorld(v.positionOS.xyz);
                 o.positionCS = TransformWorldToHClip(o.positionWS);
+                o.screenPos = ComputeScreenPos(o.positionCS);
                 return o;
             }
 
@@ -97,6 +101,16 @@ Shader "Scrun/Water"
                 // 손그림풍: 반사는 파란 하늘 쪽으로, 양은 절반까지만 → 물 색이 살아 있음
                 half3 sky = lerp(_ScrunSkyHorizon.rgb, _ScrunSkyZenith.rgb, saturate(r.y * 3 + 0.45));
                 half3 col = lerp(water, sky, min(0.45, fres * _Reflect + 0.05));
+                // 거울 반사(숲 호수): 먼 산·나무 줄·달·하늘을 잔물결로 흔들어 섞음
+                if (_ScrunReflectOn > 0)
+                {
+                    float2 suv = i.screenPos.xy / i.screenPos.w;
+                    suv.y = 1 - suv.y;   // 거울 카메라 이미지는 위아래가 반대로 저장됨
+                    suv += n.xz * 0.025;
+                    half3 refl = SAMPLE_TEXTURE2D(_ScrunReflectTex, sampler_ScrunReflectTex, suv).rgb;
+                    half k = saturate(0.35 + fres * 0.65) * _ScrunReflectOn;
+                    col = lerp(col, refl * 0.9 + water * 0.1, k);
+                }
 
                 Light light = GetMainLight(TransformWorldToShadowCoord(i.positionWS));
                 half diff = 0.75 + 0.25 * saturate(dot(n, light.direction));

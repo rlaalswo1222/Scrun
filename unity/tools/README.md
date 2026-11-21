@@ -12,6 +12,7 @@ Unity에서 Window → MCP for Unity → Start Server 켠 상태에서 실행(Wi
 | `fast.sh` | 플레이 중지 → 컴파일 → Rebuild Vegetation Meshes (fast)(약 1분) → 플레이 |
 | `ROUTE=거목 PRESET=0 WAIT=4 shoot.sh dist 4410 이름` | 코스·거리로 순간이동 후 메인 카메라 캡처 → `cap/이름.png` (`region 0~4`도 가능, PRESET 0 = 맑은 오후, 1 = 노을) |
 | `t_ping.cs` / `t_stats.cs` | 상태 확인 / 삼각형·그리기 호출 통계(플레이 중) |
+| `spaceloop_fetch.py` | 우주 루프 맵 큰 파일 받기(Release zip, SHA-256 대조). `--zip <경로>` 받은 zip으로, `--check` 확인만, 파일을 바꾼 사람만 `--manifest`·`--pack <zip>` (계획 0063) |
 | `phget.py <폴더> <해상도> <맵들> <에셋...>` | Poly Haven 파일 받기 (예: `phget.py out 1k Diffuse,nor_gl rock_face`) |
 | `foliage_photo_atlas.py foliage_src out.png` | 사진 잎 아틀라스 합성(`FoliageAtlas`가 읽음) |
 
