@@ -130,3 +130,9 @@
 - 그림·영상: `art/avatar/unity_v9_gait.gif`(플레이 일시정지 + 1/30초 Step으로 찍은 실제 게임 화면), `gait_v9_fix_1120.png`, `gait_v8_v9_cycle_1120.png`
 - 캡처 요령: 에디터가 뒤에 있으면 게임 루프가 멈춤. 같은 호출 안에서 Animator.Update 후 바로 렌더하면 스키닝이 다음 프레임에 돼 이전 자세가 찍힘 → 플레이 일시정지 + `Time.captureDeltaTime = 1/30` + `EditorApplication.Step()` 한 번씩
 
+## v10: 러닝복 6세트 (11/21, 상준 "러닝복 레벨 세트 먼저", Q-26 = 6세트, 계획 0067)
+- `avatar_lowpoly_rigged_v10.fbx` = v8 몸·뼈대 + 옷 메시 `Outfit_L1`–`L6`(기본 → 기능성 → 스포츠 → 퍼포먼스 → 레이스 → 엘리트). 동작은 v9 그대로
+- 몸·옷 6벌이 팔레트 한 장(`avatar_palette_v10.png`, 줄 = 세트)·재질 하나(`AV_Palette_v10`) → 옷만 켜고 끔(`Scripts/AvatarOutfit.cs`), 그리기 호출 안 늘어남
+- 싱글렛(Lv.4–6)은 소매를 지우고 겨드랑이 구멍을 피부색 판으로 막음(몸통 피부가 없어서). 번호표는 앞뒤(러닝 카메라가 뒤에 있어서). 종아리 슬리브는 종아리 가운데만(발목 쪽은 피부가 발 뼈를 따라 움직여 뚫림)
+- 확인 장면 `OutfitLineup.unity`(6세트 나란히 10 km/h), 우주 맵은 개발 키 O로 단계 바꾸기
+- 원본 스크립트 `art/avatar/scripts/build_v10_outfits.py`(저장소 밖), 그림 `art/avatar/outfits_v10_*_1121.png`, `unity_v10_outfits_*.png`
