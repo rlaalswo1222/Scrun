@@ -15,6 +15,12 @@ namespace Scrun
         string msg = "";
         float msgUntil;
 
+        // 개발용이라 출시 빌드에서는 끔(꺼진 컴포넌트는 Update·OnGUI 모두 안 불림 → 구간 글자가 화면에 안 뜸)
+        void Awake()
+        {
+            if (!Debug.isDebugBuild) enabled = false;
+        }
+
         void Go(float d, string label)
         {
             runner.Teleport(d);
