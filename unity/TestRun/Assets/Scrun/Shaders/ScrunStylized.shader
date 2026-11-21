@@ -44,6 +44,9 @@ Shader "Scrun/Stylized"
         _Flutter("Leaf Flutter", Range(0,1)) = 0
         _FadeShrink("LOD Fade by Shrinking", Float) = 0
         _BackfaceFlip("Flip Normal on Back Face", Float) = 1
+        _SpecStrength("Specular (0 = off)", Range(0,2)) = 0
+        _SpecPower("Specular Sharpness", Range(4,256)) = 48
+        _EnvReflect("Sky Reflection (fresnel)", Range(0,1)) = 0
         _Cutoff("Alpha Cutoff", Range(0,1)) = 0.5
         [Toggle(_ALPHATEST_ON)] _AlphaTest("Alpha Test", Float) = 0
         [Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull", Float) = 2
@@ -86,6 +89,9 @@ Shader "Scrun/Stylized"
             float _FadeShrink;
             float _BackfaceFlip;
             float _Cutoff;
+            float _SpecStrength;
+            float _SpecPower;
+            float _EnvReflect;
         CBUFFER_END
 
         // 주변광: 조명 프리셋이 넣는 하늘·땅 색(라이트 프로브 없이, 인스턴싱에서도 안정적)
@@ -307,6 +313,18 @@ Shader "Scrun/Stylized"
                 // 테두리 빛: 역광에서 윤곽이 살아나게
                 half rim = pow(1 - saturate(dot(n, v)), 3) * _RimStrength * saturate(dot(-v, light.direction) * 0.5 + 0.5);
                 col += light.color * rim * albedo.rgb;
+                // 하이라이트(금속·유리·젖은 면): 블린-퐁 + 하늘색 프레넬 반사. 0이면 기존과 같음
+                if (_SpecStrength > 0)
+                {
+                    half3 h = normalize(light.direction + v);
+                    half spec = pow(saturate(dot(n, h)), _SpecPower) * _SpecStrength * light.shadowAttenuation;
+                    col += light.color * spec;
+                }
+                if (_EnvReflect > 0)
+                {
+                    half fres = pow(1 - saturate(dot(n, v)), 4);
+                    col = lerp(col, Ambient(reflect(-v, n)) * 1.4, fres * _EnvReflect);
+                }
 
                 col = ScrunFog(col, i.positionWS, i.fog);
                 return half4(col, alphaOut);
