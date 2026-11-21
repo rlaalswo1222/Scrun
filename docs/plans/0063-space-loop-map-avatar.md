@@ -1,6 +1,6 @@
 # 계획 0063: 우주 루프 맵과 새 아바타를 저장소에 (SpaceLoop 장면)
 
-- 상태: **구현 · PR #120 리뷰 대기** (11/21 상준). 큰 파일 Release `spaceloop-assets-v1` 올림. 아이폰 실측 전
+- 상태: **구현 · PR #120 리뷰 대기** (11/21 상준). 큰 파일 Release `spaceloop-assets-v1` 올림. 아이폰 15 실측 완료(30fps 유지, 아래)
 - 담당: 상준(맵·아바타·이 PR), 리뷰 민재
 - 근거: ADR-0013(우주 루프), 작업 기록 `docs/unity/space_loop.md`, 아바타 기록 `unity/TestRun/Assets/Scrun/Experiments/AvatarGait/README.md`
 - 왜 지금: 팀원이 자기 기능(속도·실시간·HUD)을 새 맵·아바타 위에서 폰으로 시험하려 한다. 11/21에 unitypackage로 먼저 나눴지만, 저장소에 있어야 develop과 같이 움직인다
@@ -38,10 +38,11 @@
 - 장면 검사: 오브젝트 1,237개, 빠진 스크립트 0, 끊긴 연결 0, 깨진 재질 0, 셰이더 오류 0. AvatarV5 Animator = V5Fix 컨트롤러, v8 Avatar 유효
 - 재생 6초: 10 km/h에서 러너 16.1m 이동(5.8초, 속도와 일치), 아바타 `RunV9_k10` 재생, 게임 코드 실행 오류 0(편집기 검색 색인 예외 1건은 Unity 내부)
 - 받기 스크립트: 빈 폴더에서 GitHub Release zip(131MB, 24초) → 199개 모두 같은 내용, `--check`는 없을 때 실패 코드
-- **못 한 것**: 아이폰 빌드·fps·그리기 호출 실측(0회), Windows에서 받기 스크립트 실행
+- **아이폰 15 실측(11/21, 앱과 같은 Medium·30fps, 가로)**: 5구간 15곳 x 3바퀴 모두 30.0fps(p95 33.4ms), CPU 3.3–5.0ms, 그리기 호출 60–110, 6분 내내 발열 보통. 60fps로 풀어도 15곳 모두 60fps(약 2배 여유). 아바타 20명도 30fps·그리기 호출 112–142. 자세히 `docs/unity/space_loop.md` "아이폰 실측", 원본 `data/perf/`. 측정 빌드: 메뉴 Scrun → Space Loop → iOS 성능 측정 빌드(`SpaceLoopPerfProbe`, 번들 ID 따로라 앱을 덮어쓰지 않음)
+- **못 한 것**: 메모리 4GB 폰(Low 단계), 30분 이상 연속 발열, 앱 HUD·실시간과 함께, Windows에서 받기 스크립트 실행
 
 ## 다음 (이 PR 뒤)
-1. 아이폰 실측(목표 그리기 호출 300 이하). 넘으면 구간별 거리 컬링 → LOD → 반사 카메라 끄기
+1. 아이폰 실측: 아이폰 15는 끝(11/21). 남은 것은 4GB 폰·30분 연속·앱 흐름 안에서. 줄여야 하면 하늘(`SpaceSky`)부터
 2. 팀 `RunnerAnimator`(`YBotRunner`)와 새 아바타 구동 합치기(민재·지환과 상의). 그때 구동 스크립트·컨트롤러를 `Experiments`에서 정식 위치로 옮김
 3. 앱 러닝 흐름에서 이 장면을 쓸지(섬 맵 대신), 실시간 공동 맵·봇·구간 시작 지점 연결
 4. ADR-0013 승인되면 `CLAUDE.md` "이미 정한 방향"과 `docs/unity/unity_map.md`의 섬 맵 문구 고치기
