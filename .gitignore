@@ -47,6 +47,14 @@ unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/**
 !unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/**/*.meta
 !unity/TestRun/Assets/Scrun/ThirdParty/PolyHaven/README.md
 
+# 우주 루프 맵 큰 파일(메쉬두 모델·텍스처 103MB, 구간 메시 40MB): python unity/tools/spaceloop_fetch.py 로 받음
+# 재질(.mat)·.meta는 올림(장면 연결 유지)
+unity/TestRun/Assets/Scrun/SpaceLoop/Kit/**/*.fbx
+unity/TestRun/Assets/Scrun/SpaceLoop/Kit/**/*.png
+unity/TestRun/Assets/Scrun/SpaceLoop/Kit/**/*.jpg
+unity/TestRun/Assets/Scrun/SpaceLoop/Models/*.fbx
+unity/TestRun/Assets/Scrun/SpaceLoop/Models/*.asset
+
 # 서버 테스트 캐시
 .pytest_cache/
 backend/build/
