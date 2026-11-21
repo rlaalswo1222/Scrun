@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace Scrun.Experiments
+namespace Scrun
 {
-    // 아바타 걷기·달리기 실험(팀 코드와 별개, 결과를 보고 RunnerAnimator에 제안).
+    // 새 아바타(우주 루프) 걷기·달리기 구동(11/17 상준 실험에서 정식으로, 계획 0066). 섬 Y Bot은 RunnerAnimator 그대로 — 둘 다 러너 속도만 읽음.
     // 걷기 무리(Walk)와 달리기 무리(Run)를 섞지 않고 둘 중 하나만 재생한다. 속도가 경계를 넘으면 짧게 교차 전환.
     //  - 달리기 시작: runAboveKmh 이상, 걷기로 돌아감: walkBelowKmh 이하(사이는 지금 상태 유지 = 깜빡임 방지)
     //  - 각 무리 안에서는 블렌드 값 = 속도(기준점은 이 아바타로 잰 발 속도). 기준 범위를 벗어나면 재생 속도로 맞춘다
