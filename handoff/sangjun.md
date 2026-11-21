@@ -5,7 +5,7 @@
 ## 지금 (11/21): 우주 루프 맵·새 아바타를 저장소에 (계획 0063, 브랜치 `feat/space-loop`)
 - 한 것: 최신 develop 위 별도 작업 폴더(`Scrun_spaceloop`, git worktree)에서 장면 `SpaceLoop.unity`, 맵 에셋·스크립트·셰이더, 아바타 v8 + v9 걷기·달리기, 레이어 8 `SL_Reflect`, 큰 파일 받기(`unity/tools/spaceloop_fetch.py`), ADR-0013(제안)·계획 0063·`docs/unity/space_loop.md`. 장면의 꺼 둔 옛 아바타(v3·v4)는 지움. 새 Library로 열어 컴파일 오류 0, 장면 끊긴 연결 0, 재생 6초 정상 확인
 - 커밋 이메일: GitHub noreply(이 맥 계정 `shape-0218`). 커밋할 때만 `git -c user.email=...`로 넣었고 저장소 설정은 안 바꿈
-- 막힌 것: `shape-0218`이 팀 저장소에 쓰기 권한이 없어(push 403) 민재(저장소 주인)가 Collaborator로 추가해야 함. 권한이 생기면 push → Release `spaceloop-assets-v1`에 `spaceloop_assets_v1.zip`(131MB, 저장소 밖 `/Users/sangjun/scrun/share/`) 올리기 → develop으로 PR
+- 올림(11/21): 민재가 `shape-0218`을 Collaborator로 추가 → 브랜치 push, Release [spaceloop-assets-v1](https://github.com/rlaalswo1222/Scrun/releases/tag/spaceloop-assets-v1)(zip 131MB, 받기 스크립트로 받아 199개 같은 내용 확인), PR #120(develop). 민재 리뷰 대기
 - 다음: 아이폰 실측(맵·아바타 0회), 팀 `RunnerAnimator`와 새 아바타 구동 합치기(민재·지환 상의)
 
 ## 지난 (11/10): 맥에서 개발 환경 준비 + UI 고도화 결정 정리
