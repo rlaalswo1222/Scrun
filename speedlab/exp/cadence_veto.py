@@ -1,4 +1,4 @@
-"""계획 0063 진행(11/21 맥): "걸음 수가 내려간 동안은 속도를 더 올리지 않음" 규칙 시험(세게 밟기 튐 막기, 가설).
+"""계획 0064 진행(11/21 맥): "걸음 수가 내려간 동안은 속도를 더 올리지 않음" 규칙 시험(세게 밟기 튐 막기, 가설).
 앱과 같은 계산(speedlab/fusion_live.py)으로 0.5초 틱 값을 낸 뒤, 그 위에 규칙을 얹어 비교한다.
 
 실행: .venv\\Scripts\\python speedlab/exp/cadence_veto.py (맥: numpy·pandas·scipy가 있는 python)
