@@ -128,6 +128,26 @@ namespace Scrun.App.Tests
             Assert.IsNull(MapLaunch.Take(), "두 번 적용되지 않게");
         }
 
+        // 코스 → 맵 씬(계획 0066): 우주 루프만 SpaceLoop, 섬 도로망 코스는 섬
+        [TestCase("crs_space_loop", "SpaceLoop")]
+        [TestCase("crs_lake_loop", "Island01")]
+        [TestCase("crs_island_tour", "Island01")]
+        public void SceneFollowsCourse(string courseId, string scene)
+        {
+            Assert.AreEqual(scene, MapLaunch.SceneOf(courseId));
+            Assert.IsTrue(MapLaunch.IsMapScene(scene));
+        }
+
+        [Test]
+        public void PendingBelongsToItsScene()
+        {
+            MapLaunch.Store(new MapEntry { CourseId = "crs_space_loop", EntryPositionM = 0f });
+            Assert.IsTrue(MapLaunch.IsPendingFor("SpaceLoop"));
+            Assert.IsFalse(MapLaunch.IsPendingFor("Island01"), "섬 씬이 우주 루프 요청을 가져가지 않게");
+            Assert.AreEqual("SpaceLoop", MapLaunch.Take().SceneName);
+            Assert.IsFalse(MapLaunch.IsPendingFor("SpaceLoop"));
+        }
+
         [Test]
         public void ClearDropsPending()
         {

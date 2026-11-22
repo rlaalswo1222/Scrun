@@ -15,6 +15,7 @@ from app.routers import courses as courses_router
 from tests.helpers import bearer, data, fail, run_together, signup
 
 COURSES = [  # 짧은 코스부터
+    ("crs_space_loop", "우주 루프", 3000),
     ("crs_lake_loop", "노을 호수 한 바퀴", 6671),
     ("crs_coast_run", "해안 절벽 순환", 8776),
     ("crs_forest_run", "거목 협곡 순환", 9695),
@@ -93,7 +94,7 @@ def test_runners_now_counts_people_in_the_map(db_client, me, db):
     add_run(db, e)                                   # 달리는 중 기록만(입장 없음) → 안 셈
     add_entry(db, f, course_id="crs_island_tour")
     counts = {x["courseId"]: x["runnersNow"] for x in data(db_client.get("/v1/courses", headers=me[0]))}
-    assert counts == {"crs_lake_loop": 2, "crs_coast_run": 0, "crs_forest_run": 0, "crs_island_tour": 2}
+    assert counts == {"crs_space_loop": 0, "crs_lake_loop": 2, "crs_coast_run": 0, "crs_forest_run": 0, "crs_island_tour": 2}
     assert data(db_client.get("/v1/courses/crs_lake_loop", headers=me[0]))["runnersNow"] == 2
 
 
@@ -128,7 +129,7 @@ def test_unknown_course_is_404(db_client, me):
 
 @pytest.fixture
 def hidden_course(db):
-    """목록에서 숨긴 테스트 전용 코스(운영 코스 4개는 건드리지 않음)."""
+    """목록에서 숨긴 테스트 전용 코스(운영 코스 5개는 건드리지 않음)."""
     db.add(Course(id="crs_test_hidden", name="숨긴 코스", type="LOOP_3D", length_m=3000, active=False))
     db.commit()
     yield "crs_test_hidden"

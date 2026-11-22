@@ -33,7 +33,8 @@ namespace Scrun
 
         void LateUpdate()
         {
-            bool on = mainCamera && water && water.gameObject.activeInHierarchy;
+            // 저사양 단계(처음부터든 달리는 중 품질 낮추기든)에선 반사 카메라를 끔 → 하늘색 반사만(계획 0066)
+            bool on = mainCamera && water && water.gameObject.activeInHierarchy && ScrunQuality.Current != ScrunQuality.Tier.Low;
             Shader.SetGlobalFloat(ReflectOn, on ? strength : 0f);
             if (!on) { if (reflCam) reflCam.enabled = false; return; }
             Ensure();

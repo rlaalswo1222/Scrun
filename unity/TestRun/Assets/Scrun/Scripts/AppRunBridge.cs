@@ -27,7 +27,7 @@ namespace Scrun
         public static bool HidesIslandRunners { get; private set; }
 
         RunnerTag player;
-        RouteTrack route;
+        Track route;      // 섬 도로망(RouteTrack) 또는 우주 루프(SplineTrack)
         GameObject template; // 꺼 둔 봇 하나(다른 사람 몸 원본)
         Transform remoteRoot;
         readonly Dictionary<string, RemoteBody> bodies = new Dictionary<string, RemoteBody>();
@@ -47,10 +47,10 @@ namespace Scrun
         void Awake()
         {
             player = RunnerTag.Player;
-            route = FindInScene<RouteTrack>();
+            route = FindInScene<Track>();
             if (player == null || player.runner == null || route == null)
             {
-                Debug.LogError("[같이 뛰기] 섬 씬에서 플레이어나 코스를 못 찾음 → 속도·다른 러너 연결 안 함");
+                Debug.LogError("[같이 뛰기] 맵 씬에서 플레이어나 코스를 못 찾음 → 속도·다른 러너 연결 안 함");
                 enabled = false;
                 return;
             }
@@ -77,8 +77,9 @@ namespace Scrun
 
         void UseSensorSpeed()
         {
+            // 키보드 ↑/↓가 두 번 먹지 않게. 우주 루프는 러너와 같은 오브젝트에 붙어 있어 오브젝트가 아니라 컴포넌트만 끔
             foreach (var fake in FindObjectsByType<FakeSpeedSource>(FindObjectsInactive.Include))
-                if (fake.gameObject.scene == gameObject.scene) fake.gameObject.SetActive(false); // 키보드 ↑/↓가 두 번 먹지 않게
+                if (fake.gameObject.scene == gameObject.scene) fake.enabled = false;
             var go = player.runner.gameObject;
             var native = go.AddComponent<NativeSpeedSource>();
             var gated = go.AddComponent<GatedSpeed>();
@@ -109,6 +110,13 @@ namespace Scrun
             var recorder = player.runner.GetComponent<GhostRecorder>();
             if (recorder != null) recorder.enabled = false;
             if (template == null && bots.Count > 0) template = bots[0].gameObject;
+            // 우주 루프: 섬 봇이 없어 SpaceLoopAppSetup이 플레이어를 복제해 둔 몸을 씀(계획 0066)
+            var provided = FindInScene<SpaceLoopAppSetup>();
+            if (provided != null)
+            {
+                if (template == null) template = provided.Body;
+                if (ghostTag == null) ghostTag = provided.Ghost;
+            }
             if (template == null) Debug.LogWarning("[같이 뛰기] 복제할 봇 몸이 없음 → 다른 사람이 안 보임");
         }
 
@@ -117,7 +125,7 @@ namespace Scrun
         const float LabelMaxM = 80f;             // 이 거리 안의 사람만 이름표(섬 RunnerLabels와 같음)
 
         // 위에서 본 코스 모양(x·z). 앱 미니맵이 줄여 그림
-        static Vector2[] SampleRoute(RouteTrack track, int n)
+        static Vector2[] SampleRoute(Track track, int n)
         {
             float lap = track.LapLength;
             if (lap <= 0f) return null;
@@ -265,6 +273,8 @@ namespace Scrun
             tag.crowd = false;
             tag.displayName = r.DisplayName; // 봇이어도 kind는 Remote: Bot은 섬 봇(품질 단계·순간이동 도구가 건드림)
             tag.color = color;
+            // 셔츠 색 칠하기는 섬 Y Bot(단색 재질)만. 새 아바타는 색표 그림 하나라 칠하면 얼굴·신발까지 물듦 → 이름표 색만
+            if (go.GetComponentInChildren<AvatarGaitDriver>(true) != null) { go.SetActive(true); return new RemoteBody { runner = rc, speed = speed }; }
             block ??= new MaterialPropertyBlock();
             foreach (var smr in go.GetComponentsInChildren<Renderer>(true))
             {

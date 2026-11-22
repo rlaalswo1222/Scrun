@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 
 namespace Scrun
 {
-    // 앱 맵 화면이 섬 씬을 불러올 때 남긴 코스·입장 위치(Scrun.App.MapLaunch)를 적용한다(계획 0022). 달리기 연결은 AppRunBridge(계획 0029).
+    // 앱 맵 화면이 맵 씬(섬·우주 루프)을 불러올 때 남긴 코스·입장 위치(Scrun.App.MapLaunch)를 적용한다(계획 0022). 달리기 연결은 AppRunBridge(계획 0029).
     // 씬 파일을 고치지 않도록(섬 씬은 각자 Build Island Scene으로 다시 만듦) 씬이 불릴 때 코드로 붙는다.
     // 앱 없이 섬 씬만 Play하면 남긴 것이 없어서 아무것도 안 함(씬의 기본 코스 그대로).
     public sealed class MapLaunchApplier : MonoBehaviour
@@ -21,11 +21,13 @@ namespace Scrun
 
         static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name != MapLaunch.SceneName || !MapLaunch.HasPending) return;
+            if (!MapLaunch.IsPendingFor(scene.name)) return;
             var go = new GameObject("MapLaunchApplier");
             SceneManager.MoveGameObjectToScene(go, scene);
             go.AddComponent<MapLaunchApplier>().request = MapLaunch.Take();
             HideDevTools(scene);
+            // 우주 루프는 장면에 플레이어 표식·몸 원본·품질 단계가 없어 코드로 붙임(계획 0066). AppRunBridge보다 먼저
+            if (scene.name == MapLaunch.SpaceLoopScene) SpaceLoopAppSetup.Prepare(scene);
             AppRunBridge.Attach(scene); // 진짜 속도 → 내 아바타, 가짜 봇 끄기, 다른 사람 그리기(계획 0029)
         }
 
@@ -58,26 +60,31 @@ namespace Scrun
         void Apply()
         {
             var scene = gameObject.scene;
-            var route = Find<RouteTrack>(scene);
+            var track = Find<Track>(scene);
             var player = RunnerTag.Player;
-            if (route == null || player == null || player.runner == null)
+            if (track == null || player == null || player.runner == null)
             {
-                Debug.LogError("[MapLaunch] 섬 씬에서 코스(RouteTrack)나 플레이어를 못 찾음 → 기본 코스로 시작");
+                Debug.LogError("[MapLaunch] 맵 씬에서 코스(Track)나 플레이어를 못 찾음 → 기본 코스로 시작");
                 return;
             }
-            if (!route.HasRoute(request.RouteId))
+            // 섬은 도로망에서 코스를 고름. 우주 루프(SplineTrack)는 코스가 하나라 고를 것 없음
+            string name = scene.name;
+            if (track is RouteTrack route)
             {
-                Debug.LogError($"[MapLaunch] 도로망에 없는 코스: {request.RouteId}({request.CourseId}) → 기본 코스로 시작");
-                return;
+                if (!route.HasRoute(request.RouteId))
+                {
+                    Debug.LogError($"[MapLaunch] 도로망에 없는 코스: {request.RouteId}({request.CourseId}) → 기본 코스로 시작");
+                    return;
+                }
+                route.SetRoute(request.RouteId);
+                name = route.RouteName;
             }
-
-            route.SetRoute(request.RouteId);
-            float d = Mathf.Repeat(request.EntryPositionM, route.LapLength); // 서버와 같은 계산이라 한 바퀴 안이지만 혹시 몰라
+            float d = Mathf.Repeat(request.EntryPositionM, track.LapLength); // 서버와 같은 계산이라 한 바퀴 안이지만 혹시 몰라
             player.runner.Teleport(d);
             RunnerTag.GatherBotsAround(d);
             var follow = Find<FollowCamera>(scene);
             if (follow != null) follow.Snap();
-            Debug.Log($"[MapLaunch] {route.RouteName}({request.RouteId}) {d:0}m에서 시작");
+            Debug.Log($"[MapLaunch] {name}({request.CourseId}) {d:0}m에서 시작");
         }
 
         static T Find<T>(Scene scene) where T : Component
