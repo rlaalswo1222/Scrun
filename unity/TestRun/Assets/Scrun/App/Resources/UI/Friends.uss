@@ -309,7 +309,7 @@
 
 .fr .fr-feed-numbers {
     font-size: var(--font-size-body);
-    color: var(--color-surface);
+    color: var(--color-on-color);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 
