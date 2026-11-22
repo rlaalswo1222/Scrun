@@ -557,7 +557,7 @@
     width: 280px;
     height: 280px;
     border-radius: 140px;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.025); /* Figma .1, 선형 섞기(App.uss 유리 주석) */
 }
 
 .rr-levelup-halo--inner {
@@ -566,7 +566,7 @@
     width: 210px;
     height: 210px;
     border-radius: 105px;
-    background-color: rgba(255, 255, 255, 0.16);
+    background-color: rgba(255, 255, 255, 0.045); /* Figma .16 */
 }
 
 .rr-levelup-char {
