@@ -643,7 +643,7 @@
     font-size: 16px;
     color: var(--text-primary);
     padding: 12px 20px;
-    border-radius: 999px;
+    border-radius: 22px;
     border-top-width: 1px;
     border-top-color: var(--glass-edge);
     background-color: var(--glass-sheet);

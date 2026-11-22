@@ -18,7 +18,7 @@
     flex-grow: 1;
 }
 
-.ui-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container {
+.ui-scroll .unity-scroll-view__content-container { /* Unity 6 ScrollView 구조에 맞게 자손 선택자로 */
     padding: 0 20px 24px 20px;
 }
 
@@ -85,7 +85,7 @@
 
 .ui-nav-back {
     width: 44px;
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/nav-back.svg");
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/chevron-left-line.svg"); /* 흰 선(색은 tint) */
 }
 
 /* ---------- 글자 ---------- */
@@ -227,8 +227,7 @@
     width: 20px;
     height: 20px;
     flex-shrink: 0;
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/nav-back.svg");
-    rotate: 180deg;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/chevron-right-line.svg");
     -unity-background-image-tint-color: var(--icon-muted);
     -unity-background-scale-mode: scale-to-fit;
 }
@@ -299,7 +298,7 @@
     align-self: flex-start;
     height: 28px;
     padding: 0 12px;
-    border-radius: 999px;
+    border-radius: 14px;   /* 999px는 Unity에서 타원이 됨 → 높이의 반 */
     border-top-width: 1px;
     border-top-color: var(--glass-control-edge);
     background-color: var(--glass-control);
@@ -324,6 +323,7 @@
 
 .ui-chip--small {
     height: 22px;
+    border-radius: 11px;
     padding: 0 8px;
     font-size: 11px;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
@@ -339,7 +339,7 @@
     margin: 0 8px 0 0;
     padding: 0 14px;
     border-width: 0;
-    border-radius: 999px;
+    border-radius: 18px;
     border-top-width: 1px;
     border-top-color: var(--glass-control-edge);
     background-color: var(--glass-control);
@@ -403,7 +403,7 @@
 /* 아바타(얼굴 렌더) */
 .ui-av {
     flex-shrink: 0;
-    border-radius: 999px;
+    border-radius: 14px;
     background-color: var(--bg-subtle);
     -unity-background-scale-mode: scale-and-crop;
     -unity-text-align: middle-center;
@@ -411,11 +411,11 @@
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
-.ui-av--28 { width: 28px; height: 28px; font-size: 12px; }
-.ui-av--40 { width: 40px; height: 40px; font-size: 16px; }
-.ui-av--46 { width: 46px; height: 46px; font-size: 18px; }
-.ui-av--56 { width: 56px; height: 56px; font-size: 22px; }
-.ui-av--96 { width: 96px; height: 96px; font-size: 36px; }
+.ui-av--28 { width: 28px; height: 28px; border-radius: 14px; font-size: 12px; }
+.ui-av--40 { width: 40px; height: 40px; border-radius: 20px; font-size: 16px; }
+.ui-av--46 { width: 46px; height: 46px; border-radius: 23px; font-size: 18px; }
+.ui-av--56 { width: 56px; height: 56px; border-radius: 28px; font-size: 22px; }
+.ui-av--96 { width: 96px; height: 96px; border-radius: 48px; font-size: 36px; }
 
 /* 진행 막대(레벨·목표) */
 .ui-bar {
