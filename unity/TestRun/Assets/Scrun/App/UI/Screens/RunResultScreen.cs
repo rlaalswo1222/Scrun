@@ -22,7 +22,7 @@ namespace Scrun.App
         Button share, compare;
         SpeedGraph graph;
         FriendParts.Sheet sheet;
-        bool loading, sharing;
+        bool loading, sharing, revealed;
 
         public RunResultScreen(string runId, Task before = null) : this(runId, before, asRecord: false) { }
 
@@ -209,6 +209,11 @@ namespace Scrun.App
             Q<Button>("ghost").SetEnabled(asRecord && !offline);
             graph.Set(d.SpeedSeries?.SpeedsKmh);
             graphCard.SetVisible(graph.HasData);
+            if (!revealed && graph.HasData) // 처음 그릴 때만 왼쪽부터 그려짐(미리보기 chartReveal). 다시 받아 그릴 땐 그대로
+            {
+                revealed = true;
+                graph.Reveal();
+            }
 
             share.SetVisible(!offline);
             shareSub.text = RunResultText.ShareSub(d.Verification);
@@ -243,11 +248,21 @@ namespace Scrun.App
             sheet = new FriendParts.Sheet(Root);
             sheet.Body.AddToClassList("rr");
             sheet.Body.Add(UiExtensions.Text(RunResultText.CompareTitle, "fr-sheet-title"));
-            sheet.Body.Add(CompareRow("항목", "센서 추정", "계기판", "차이", head: true));
+            var table = new VisualElement { pickingMode = PickingMode.Ignore }; // 표는 유리 카드 안(미리보기 compareTable)
+            table.AddToClassList("ui-card");
+            table.AddToClassList("rr-compare");
+            table.Add(CompareRow("항목", "센서 추정", "계기판", "차이", head: true));
+            bool first = true;
             foreach (var (item, s, c, diff) in RunResultText.Compare(detail.Sensor, detail.Console))
-                sheet.Body.Add(CompareRow(item, s, c, diff, head: false));
+            {
+                var row = CompareRow(item, s, c, diff, head: false);
+                if (first) row.AddToClassList("rr-compare-row--first"); // 머리 바로 아래 줄은 구분선 없음
+                first = false;
+                table.Add(row);
+            }
+            sheet.Body.Add(table);
             sheet.Info(RunResultText.IsVerified(detail.Verification) ? RunResultText.CompareOk : RunResultText.CompareBad);
-            sheet.Button("닫기", "btn-ghost", sheet.Close, "compare-close");
+            sheet.Button("닫기", "btn-secondary", sheet.Close, "compare-close");
         }
 
         static VisualElement CompareRow(string a, string b, string c, string d, bool head)
@@ -256,6 +271,7 @@ namespace Scrun.App
             row.AddToClassList("rr-compare-row");
             if (head) row.AddToClassList("rr-compare-row--head");
             foreach (var t in new[] { a, b, c, d }) row.Add(UiExtensions.Text(t, "rr-compare-cell"));
+            if (!head) row[0].AddToClassList("rr-compare-cell--item");
             return row;
         }
     }

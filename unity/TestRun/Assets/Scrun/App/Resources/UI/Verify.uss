@@ -1,252 +1,339 @@
-/* 계기판 인증(계획 0038, Figma E-02·E-04–E-10·I-06). 공통(nav-bar·onb-title·btn·steps)은 Onboarding.uss, 색·크기는 App.uss 변수.
-   모양은 상준이 Figma와 나란히 놓고 다듬음 */
-.verify-page {
+/* 계기판 인증(계획 0038, Figma E-02·E-04–E-10·I-06). 우주 디자인(계획 0068): 상준 미리보기 js/views/verify.js 화면을 그대로 옮김.
+   공통 부품(ui-card·ui-photo·ui-chip·ui-li·ui-stats·글자 단계)은 Space.uss, 여기는 이 화면만의 자리·크기. 색은 App.uss 토큰만.
+   USS에 없는 것: 그림 그림자(st3d drop-shadow)·유리 흐림 → 빠짐, 돌아가는 고리 둥근 끝 → 테두리 고리 */
+
+/* 글자 기본 여백 없앰. 한 클래스라 아래 규칙이 덮을 수 있음(이 USS는 이 화면에만 붙음) */
+.unity-label {
+    margin: 0;
+    padding: 0;
+}
+
+.vf .ui-chip {
+    padding: 0 12px;
+    border-radius: 14px;    /* 999는 Unity가 가로·세로 반지름을 따로 줄여 타원이 됨 → 높이의 반 */
+}
+
+/* 내비 바 양쪽 칸(뒤로가 숨어도 제목이 가운데) */
+/* 공통 부품 보충(Space.uss의 .ui-scroll 안쪽 여백 선택자가 Unity 6 ScrollView 구조(뷰포트가 바로 아래 자식이 아님)에 안 맞아 여기서 채움,
+   뒤로 아이콘 nav-back.svg는 어두운 선이라 색을 입혀도 어두움 → 흰 선 아이콘) */
+.ui-scroll .unity-scroll-view__content-container {
+    padding: 0 20px 24px 20px;
+}
+
+.ui-nav-back {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/chevron-left-line.svg");
+}
+
+.vf-nav-side {
+    width: 44px;
+    height: 44px;
+}
+
+.vf-page {
     flex-grow: 1;
 }
-.verify-center {
-    align-items: center;
-    padding-top: 40px;
+
+/* 아래 버튼: 사이 12(미리보기 .foot gap). 주 버튼 60 = 54 + 아래 두께 6 */
+.vf-foot {
+    padding-top: 0;
 }
-/* ---- E-02 예시 사진 자리(상준 예시 사진이 오면 그림으로) ---- */
-.verify-sample {
-    height: 230px;
-    margin-top: var(--space-4);
-    border-radius: 20px;
-    background-color: var(--color-night);
-    align-items: center;
-    justify-content: center;
+
+.vf-foot > .btn {
+    margin: 12px 0 0 0;
 }
-.verify-sample-icon {
-    width: 48px;
-    height: 48px;
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-camera.svg");
+
+.vf-error {
+    margin-top: 12px;
+    color: var(--text-error);
 }
-.onb .verify-sample-text {
-    margin-top: var(--space-2);
-    color: rgba(255, 255, 255, 0.7);
-    font-size: var(--font-size-body-sm);
+
+.vf-card {
+    margin-top: 12px;
 }
-/* ---- 팁 목록(E-02·E-07)·진행 목록(E-05) ---- */
-.verify-tips {
-    margin-top: var(--space-4);
-    padding: 5px 17px 17px 17px;
-    border-width: 1px;
-    border-color: var(--color-line);
-    border-radius: 20px;
-    background-color: var(--color-surface);
-    align-self: stretch;
+
+/* ---- E-02 예시 사진(미리보기 console.webp, 위 30% 기준으로 잘라 둔 그림) ---- */
+.vf-sample {
+    height: 228px;
+    margin-top: 20px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/ConsoleSample.png");
 }
-.verify-tip {
+
+/* ---- 팁 목록(E-02·E-07)·진행 목록(E-05): 카드 안 줄 사이 8 ---- */
+.vf-tips {
+    margin-top: 12px;
+}
+
+.vf-tip {
     flex-direction: row;
-    align-items: center;
-    min-height: 21px;
-    margin-top: var(--space-3);
+    align-items: flex-start;
+    margin-top: 8px;
 }
-.verify-check {
-    width: 20px;
-    height: 20px;
-    margin-right: var(--space-3);
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-tick.svg");
+
+.vf-tip--first {
+    margin-top: 0;
 }
-.verify-dot {
-    width: 20px;
-    height: 20px;
-    margin-right: var(--space-3);
-    border-radius: 10px;
-    background-color: var(--color-primary-soft);
+
+.vf-check {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin: 1px 12px 0 0;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/check-line.svg");
+    -unity-background-image-tint-color: var(--text-brand);
+    -unity-background-scale-mode: scale-to-fit;
 }
-.onb .verify-tip-text {
+
+.vf-tip-text {
     flex-shrink: 1;
-    font-size: var(--font-size-body-sm);
-    color: var(--color-text);
-    white-space: normal;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
-/* ---- E-04 사진 ---- */
-.verify-photo {
+
+/* ---- E-04·E-05b 사진 ---- */
+.vf-photo {
     height: 300px;
-    margin-top: var(--space-4);
-    border-radius: 20px;
-    overflow: hidden;
-    background-color: var(--color-night);
+    margin-top: 20px;
 }
+
+.vf-photo--read {
+    height: 200px;
+}
+
 .verify-photo-img {
     flex-grow: 1;
 }
-.onb .verify-info {
-    margin-top: var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: 14px;
-    background-color: var(--color-primary-tint);
-    color: var(--color-primary);
-    font-size: var(--font-size-body-sm);
-    white-space: normal;
+
+/* ---- E-05 인증 중: 위 120(내비 48 + 72), 고리 140, 제목 위 28, 목록 위 28 ---- */
+.vf-sending {
+    align-items: center;
+    padding: 72px 20px 0 20px;
 }
-.onb .verify-error {
-    margin-top: var(--space-3);
-    color: #D64545;
-    font-size: var(--font-size-body-sm);
-    white-space: normal;
-}
-/* ---- E-05 돌아가는 고리(VerifyScreen이 돌리지 않아도 고리 모양) ---- */
+
 .verify-spinner {
     width: 140px;
     height: 140px;
     border-radius: 70px;
     border-width: 10px;
-    border-color: var(--color-primary-soft);
-    border-top-color: var(--color-primary);
-    border-right-color: var(--color-primary);
-    margin-bottom: var(--space-6);
+    border-color: var(--brand-accent);
+    border-left-color: var(--bg-subtle);    /* 미리보기는 280/380(약 3/4) 호 → 네 변 중 셋 */
 }
-/* ---- 결과 머리: 동그란 아이콘 + 제목 + 설명 + 남은 시간 칩 ---- */
-.verify-head {
+
+.vf-sending-title {
+    margin-top: 28px;
+    -unity-text-align: upper-center;
+}
+
+.vf-sending-lead {
+    margin-top: 8px;
+    -unity-text-align: upper-center;
+}
+
+.vf-progress {
+    align-self: stretch;
+    margin-top: 28px;
+}
+
+.vf-progress .vf-tip {
     align-items: center;
-    margin-top: var(--space-4);
 }
-.verify-icon {
-    width: 72px;
-    height: 72px;
-    border-radius: 36px;
-    background-color: var(--color-primary);
-    background-size: 36px 36px;
-}
-.verify-icon--ok { background-color: #2BB673; background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-check.svg"); }
-.verify-icon--warn { background-color: var(--color-warn); background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-alert.svg"); }
-.verify-icon--bad { background-color: #EF5A5A; background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-x.svg"); }
-.verify-icon--clock { background-color: var(--color-muted); background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-clock.svg"); }
-.verify-icon--camera { background-color: var(--color-warn); background-image: url("project://database/Assets/Scrun/App/UI/Icons/verify-camera.svg"); }
-.onb .verify-title {
-    margin-top: var(--space-5);
-    font-size: var(--font-size-heading);
-    color: var(--color-text);
-    -unity-text-align: middle-center;
-    white-space: normal;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
-}
-.onb .verify-lead {
-    margin-top: var(--space-2);
-    font-size: var(--font-size-body-sm);
-    color: var(--color-body);
-    -unity-text-align: middle-center;
-    white-space: normal;
-}
-.onb .verify-chip {
-    margin-top: var(--space-3);
-    padding: 4px 12px;
+
+.vf-ring {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    margin-right: 12px;
     border-radius: 12px;
-    background-color: rgba(255, 176, 32, 0.18);
-    color: #B26A00;
-    font-size: var(--font-size-caption);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    border-width: 2px;
+    border-color: var(--brand-accent);
 }
-/* ---- E-06 계기판 값 카드 ---- */
-.verify-stats {
-    flex-direction: row;
-    margin-top: var(--space-5);
+
+/* ---- E-05b 읽은 값: 거리·시간 줄 카드 ---- */
+.vf-read-caption {
+    margin-top: 16px;
 }
-.verify-stat {
-    flex-grow: 1;
-    flex-basis: 0;
-    padding: var(--space-4);
-    border-radius: 16px;
-    background-color: var(--color-surface);
+
+.vf-list {
+    margin-top: 8px;
+    padding: 4px 16px;
 }
-.verify-stat--second {
-    margin-left: var(--space-3);
-}
-.onb .verify-stat-label {
-    font-size: var(--font-size-caption);
-    color: var(--color-muted);
-}
-.onb .verify-stat-value {
-    margin-top: 4px;
-    font-size: var(--font-size-heading);
-    color: var(--color-text);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
-}
-/* ---- E-05b 읽은 값 확인(계획 0045): 사진은 E-04보다 낮게(값·버튼이 한 화면에), 값 카드는 테두리로 강조 ---- */
-.verify-photo--read {
-    height: 180px; /* 아이폰 SE(약 390×645)에서도 값 카드까지 스크롤 없이 */
-}
-.onb .verify-read-caption {
-    margin-top: var(--space-5);
-    font-size: var(--font-size-body-sm);
-    color: var(--color-body);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
-}
-.verify-stats--read {
-    margin-top: var(--space-2);
-}
-.verify-stat--read {
-    border-width: 1.5px;
-    border-color: var(--color-primary-soft);
-}
-.onb .verify-read-value {
-    font-size: var(--font-size-title);
-    color: var(--color-primary);
-}
-/* ---- E-08 대조 표 ---- */
-.verify-table {
-    margin-top: var(--space-5);
-    padding: var(--space-3) var(--space-4);
-    border-radius: 16px;
-    background-color: var(--color-surface);
-}
-.verify-row {
-    flex-direction: row;
-    padding: 10px 4px;
-    border-bottom-width: 1px;
-    border-color: var(--color-line);
-}
-.verify-row--head {
-    padding-top: 0;
-}
-.verify-row--bad {
-    background-color: rgba(239, 90, 90, 0.1);
-}
-.onb .verify-cell {
-    flex-grow: 1;
-    flex-basis: 0;
-    font-size: var(--font-size-body-sm);
-    color: var(--color-text);
-}
-.onb .verify-row--head .verify-cell {
-    font-size: var(--font-size-caption);
-    color: var(--color-muted);
-}
-.onb .verify-row--bad .verify-cell--diff {
-    color: #D64545;
-}
-.verify-notice {
-    margin-top: var(--space-4);
-    padding: var(--space-4);
-    border-radius: 16px;
-    background-color: rgba(239, 90, 90, 0.1);
-}
-.onb .verify-notice-title {
-    color: #D64545;
-    font-size: var(--font-size-body-sm);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
-}
-.onb .verify-notice-text {
-    margin-top: 4px;
-    color: var(--color-text);
-    font-size: var(--font-size-body-sm);
-    white-space: normal;
-}
-/* ---- E-09 캐릭터 ---- */
-.verify-character-box {
-    height: 200px;
-    margin-top: var(--space-5);
-    border-radius: 20px;
-    background-color: var(--color-primary-soft);
+
+/* ---- 결과 머리: 상태 그림 + 제목 + 설명 + 남은 시간 칩(가운데) ---- */
+.vf-head {
     align-items: center;
-    justify-content: center;
 }
-.verify-character {
-    width: 140px;
-    height: 170px;
-    background-image: url("project://database/Assets/Scrun/App/UI/Images/CharacterStand.png");
+
+.verify-icon {
+    width: 132px;
+    height: 132px;
+    margin: -22px 0 -29px 0;    /* 그림 둘레 여백만큼 당김(미리보기 st3d: 크기 × .17, .22) */
     -unity-background-scale-mode: scale-to-fit;
+}
+
+.verify-icon--ok {
+    width: 170px;
+    height: 170px;
+    margin: -5px 0 -37px 0;     /* E-06: 위 72(내비 48 + 24) − 170 × .17 */
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/BadgeVerified.png");
+}
+
+.verify-icon--warn { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/StatusWarn.png"); }
+.verify-icon--bad { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/StatusErr.png"); }
+.verify-icon--camera { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/StatusCamera.png"); }
+
+/* E-10 시간 초과: 상태 그림 대신 아쉬운 포즈(미리보기 pose_sad, 위 40, 높이 220) */
+.verify-icon--clock {
+    width: 147px;
+    height: 220px;
+    margin: 40px 0 0 0;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/PoseSad.png");
+}
+
+.vf-result-title {
+    margin-top: 16px;
+    -unity-text-align: upper-center;
+}
+
+/* E-06 인증 완료·I-06 카메라 권한은 큰 제목(28) */
+.vf-result-title--big {
+    font-size: 28px;
+    margin-top: 20px;
+}
+
+.vf-result-lead {
+    margin-top: 4px;
+    -unity-text-align: upper-center;
+}
+
+.vf-chip {
+    align-self: center;
+    margin-top: 12px;
+}
+
+/* ---- E-06 계기판 값 두 칸 ---- */
+.vf-stats {
+    margin-top: 28px;
+}
+
+/* ---- E-07 반사로 숫자가 가려진 예시(미리보기 console_glare.webp) ---- */
+.vf-glare {
+    height: 136px;
+    margin-top: 16px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/ConsoleGlare.png");
+}
+
+/* ---- E-08 대조 표 ---- */
+.vf-table {
+    margin-top: 20px;
+    padding: 8px 12px;
+}
+
+.vf-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 10px 6px;
+    border-top-width: 1px;
+    border-top-color: var(--glass-divider);
+}
+
+.vf-row--head,
+.vf-row--first {
+    border-top-width: 0;
+}
+
+.vf-row--head {
+    padding: 6px;
+}
+
+.vf-row--bad {
+    border-radius: 8px;
+    background-color: var(--status-error-bg);
+}
+
+.vf-cell {
+    flex-grow: 1;
+    flex-basis: 0;
+    font-size: 14px;
+    color: var(--text-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.vf-cell--item {
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.vf-row--head .vf-cell {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.vf-row--bad .vf-cell--diff {
+    color: var(--text-error);
+}
+
+.vf-notice {
+    margin-top: 12px;
+}
+
+.vf-notice-text {
+    margin-top: 4px;
+}
+
+/* ---- E-09 읽을 수 없는 계기판: 유리 칸 200 안 갸웃하는 포즈 184 ---- */
+.vf-ill {
+    height: 200px;
+    margin-top: 20px;
+}
+
+.vf-pose {
+    width: 123px;
+    height: 184px;
+    -unity-background-scale-mode: scale-to-fit;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/PosePuzzled.png");
+}
+
+/* ---- I-06 카메라 권한: 번호 줄 카드 ---- */
+.vf-steps {
+    margin-top: 20px;
+}
+
+.vf-step {
+    flex-direction: row;
+    align-items: center;
+}
+
+.vf-step--next {
+    margin-top: 12px;
+}
+
+.vf-step-text {
+    margin-left: 12px;
+}
+
+/* ---- E-02 나가기 확인: 아래 시트(사이 16) ---- */
+.vf-leave {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* 흐림이 없어 반투명(.94)이면 뒤 글·버튼이 비침 → 같은 색의 불투명 바탕 */
+.vf-sheet {
+    background-color: var(--bg-surface);
+}
+
+.vf-sheet > * {
+    margin-top: 16px;
+}
+
+.vf-sheet > .ui-sheet-handle {
+    margin: 0 0 -4px 0;
+}
+
+.vf-sheet > .btn {
+    margin: 12px 0 0 0;
+}
+
+.vf-sheet-text {
+    margin-top: 8px;
 }

@@ -119,6 +119,11 @@ namespace Scrun.App.Editor
             foreach (var tab in new[] { "Home", "Friends", "Records", "My" })
                 foreach (var state in new[] { "Idle", "Active" })
                     SetImage($"{ImageDir}/Space/Tab{tab}{state}.png", uncompressed: false);
+            // E 인증·결과, F 기록(계획 0068, 미리보기 img/의 임시 그림, Figma 원본으로 바꿀 것): 계기판 사진 둘(미리보기처럼 위 30% 기준으로
+            // 잘라 둠)·상태 3D·인증 메달·포즈 셋. 모두 고품질 압축
+            foreach (var name in new[] { "ConsoleSample", "ConsoleGlare", "StatusWarn", "StatusErr", "StatusCamera", "BadgeVerified",
+                                         "PoseSad", "PosePuzzled", "PoseWait" })
+                SetImage($"{ImageDir}/Space/{name}.png", uncompressed: false);
         }
 
         static void SetImage(string path, bool uncompressed)
