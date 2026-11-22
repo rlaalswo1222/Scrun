@@ -10,6 +10,7 @@
 - 큰 `findAll`은 45초 넘게 멈춤 → 탭 다시 열고 프레임 하나씩 `children`만
 - 캔버스가 비고 `exportAsync`가 "no visible layers"로 실패하면 렌더러가 아직 안 뜬 것 → 탭을 다시 열고 기다림(새 탭은 한동안 안 됨). 로그인 안 된 창(보기 전용)은 그림은 보이지만 `figma`가 없음. 그림을 페이지 위 `<img>` 덮개로 띄워 스크린샷으로 보는 게 빠름(계획 0061)
 - 그림 받기: `exportAsync({format:'PNG', constraint:{type:'SCALE', value:3}})` → blob 다운로드. Chrome은 같은 탭의 두 번째 자동 다운로드부터 막음 → 새 탭에서 여러 장을 한 파일로 묶어 한 번에(길이 머리 + 이름 + 바이트) 받고 Python으로 나눔
+- 그림 원본 받기(11/23, 계획 0068): 채움 그림은 `figma.getImageByHash(hash).getBytesAsync()`가 올린 파일 그대로(손실 없음). 해시는 레이어 `fills`의 `imageHash`. 페이지 전체 `findAll`은 탭을 멈추게 함 → `currentPage.findOne(x => x.name === '레이어 이름')`으로 하나씩, 또는 화면 프레임(`findOne(x => /^I-10/.test(x.name))`) 안에서만 찾기. 여러 장은 한 파일로 묶어(길이 머리 + 이름 + 바이트) 한 번에 내려받고 Python으로 나눔(Windows `다운로드` 폴더)
 
 ## 파일 고치기(Windows)
 - **Python `Path.write_text`·`open(..., 'w')`는 Windows에서 줄바꿈을 CRLF로 바꿔 씀** → 저장소 파일(LF)이 통째로 바뀐 diff가 됨(11/20 #115에서 겪음). `write_bytes(s.encode())`나 `open(..., 'w', newline='\n')`로 쓰고, 커밋 전에 `git diff --stat`이 실제 바꾼 줄 수와 맞는지 봄. bash heredoc 안 Python 문자열의 `\\n`은 진짜 줄바꿈이 되기도 함 → C# 문자열의 `\n`은 Edit로 넣기
