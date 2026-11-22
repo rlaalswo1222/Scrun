@@ -146,6 +146,8 @@ namespace Scrun.App
                 levelLine.text = HomeText.LevelLine(p);
                 levelFill.style.width = Length.Percent(HomeText.LevelFill(p) * 100f);
             }
+            var portrait = Q<VisualElement>("portrait"); // 레벨 얼굴(Figma Set face Lv.N, HomeSpace.uss hs-face--N). 레벨을 모르면 기본 얼굴
+            for (int lv = 1; lv <= 6; lv++) portrait.EnableInClassList("hs-face--" + lv, p != null && System.Math.Clamp(p.Level, 1, 6) == lv);
 
             var s = HomeText.Pick(home);
             Shown = s;
@@ -162,6 +164,7 @@ namespace Scrun.App
                 ring.Progress = HomeText.Ring(g);
             }
             topCard.EnableInClassList("hs-hero--short", s == HomeText.State.NoGoal);
+            topCard.EnableInClassList("hs-hero--done", s == HomeText.State.Done); // B-03: 캐릭터 없는 행성 + 기쁜 포즈(미리보기 hero_nochar·pose_joy)
             setGoal.SetVisible(s == HomeText.State.NoGoal);
 
             BuildFriends(home.RunningFriends ?? new List<RunningFriend>());

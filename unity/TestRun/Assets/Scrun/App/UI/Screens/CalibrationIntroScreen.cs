@@ -28,7 +28,6 @@ namespace Scrun.App
             Q<Label>("title").text = CalibrationCopy.IntroTitle;
             Q<Label>("lead").text = CalibrationCopy.IntroLead; // 사다리 숫자는 속도 칩(speeds)
             Q<Label>("note").text = CalibrationCopy.IntroNote;
-            SpaceArt.Fit(Q<VisualElement>("fit"));
             var steps = Q<VisualElement>("steps");
             for (int i = 0; i < CalibrationCopy.IntroSteps.Length; i++)
             {

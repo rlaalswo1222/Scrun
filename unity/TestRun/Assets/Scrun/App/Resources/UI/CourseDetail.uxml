@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- C-02 코스 상세(모양은 우주 시안 825:749 계획 0062). 값은 GET /v1/courses/{courseId}, 친구 칸은 지금 달리는 친구 중 이 코스(GET /v1/friends/running).
+    <!-- C-02 코스 상세(모양은 상준 미리보기 course 계획 0068). 값은 GET /v1/courses/{courseId}, 친구 칸은 지금 달리는 친구 중 이 코스(GET /v1/friends/running).
          "맵 입장"을 누르면 가로 맵 화면이 입장(POST /entries)·로딩(I-10)을 맡는다. 맨 위 그림·구간 행성 5개는 시안 그대로(모든 코스 같음, 계획 0062 정할 것 2) -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/HomeSpace.uss" />
     <ui:VisualElement class="bc">
@@ -8,7 +8,10 @@
                 <ui:VisualElement class="cd-hero" picking-mode="Ignore" />
                 <ui:VisualElement class="cd-body">
                     <ui:VisualElement class="cd-live-row">
-                        <ui:Label name="live-tag" text="LIVE" class="bc-live" />
+                        <ui:VisualElement class="bc-live">
+                            <ui:VisualElement class="bc-live-dot" picking-mode="Ignore" />
+                            <ui:Label name="live-tag" text="LIVE" class="bc-live-text" />
+                        </ui:VisualElement>
                         <ui:Label name="live-text" class="cd-live-text" />
                     </ui:VisualElement>
                     <ui:Label name="title" class="bc-title cd-title" />
@@ -46,6 +49,6 @@
             <ui:Label text="맵에 들어가면 화면이 가로로 바뀌어요" class="cd-note" />
             <ui:Button name="enter" text="맵 입장" class="bc-cta" />
         </ui:VisualElement>
-        <ui:Button name="back" text="‹" class="bc-back cd-back" />
+        <ui:Button name="back" class="bc-back cd-back" />
     </ui:VisualElement>
 </ui:UXML>

@@ -1,13 +1,20 @@
-/* 보정 화면(A-11–A-15) 모양. 임시 — 상준 UI Kit이 오면 다듬는다. 색은 App.uss 변수.
-   Figma: 가로 화면은 흐린 코스 사진 위에 흰 카드. 사진·흐림은 아직 없어 어두운 단색으로 대신한다. */
+/* 보정 화면(A-12–A-15, 가로) 모양. 상준 미리보기 calib(계획 0068): 흐린 맵 하늘(map-bg blur) + 어두운 덮개(map-dim) 위에
+   왼쪽 단계 막대·안내(28 Bold)·걸음 감지 칩, 오른쪽 타이머 고리 220(바탕 bg/surface, 채움 brand/accent), 카드는 유리 대화상자(.dlg).
+   흐림은 USS에 없어 미리 흐리게 만든 그림(MapSkyBlur), 덮개는 그림 색을 곱해 어둡게(tint). 색은 App.uss 토큰만.
+   A-11 안내는 OnboardingSpace.uss */
 
-/* A-11 안내는 우주 시안 OnboardingSpace.uss(계획 0061) */
-
-/* 가로 보정 화면 */
 .calib {
     flex-grow: 1;
-    background-color: #2C3440;
-    padding: var(--space-4) var(--space-6);
+    padding: 20px 56px 20px 84px;    /* 미리보기: 왼쪽 84(가로 노치 자리), 오른쪽 56 */
+    background-color: var(--bg-app);
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/MapSkyBlur.png");
+    -unity-background-scale-mode: scale-and-crop;
+    -unity-background-image-tint-color: rgb(84, 92, 115);
+}
+
+.calib .unity-label {
+    margin: 0;
+    padding: 0;
 }
 
 .calib-top {
@@ -16,37 +23,46 @@
     align-items: flex-start;
 }
 
+/* 단계 막대 56×6(사이 8): 지난·지금 단계는 하늘색, 남은 건 bg/muted */
 .calib-segments {
     flex-direction: row;
+    margin-top: 20px;
 }
 
 .calib-segment {
-    width: 28px;
-    height: 4px;
-    margin-right: 6px;
-    border-radius: 2px;
-    background-color: rgba(255, 255, 255, 0.3);
+    width: 56px;
+    height: 6px;
+    margin-right: 8px;
+    border-radius: 3px;
+    background-color: var(--bg-muted);
 }
 
-.calib-segment--done {
-    background-color: #D7F75B;
-}
-
+.calib-segment--done,
 .calib-segment--now {
-    background-color: #FFFFFF;
+    background-color: var(--brand-accent);
 }
 
-.calib-stage-label {
+.calib .calib-stage-label {
     margin-top: 6px;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.8);
+    font-size: 11px;
+    color: var(--text-secondary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 
 .calib-cancel {
+    min-height: 44px;
+    margin: 0;
+    padding: 0 12px;
     border-width: 0;
     background-color: rgba(0, 0, 0, 0);
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 15px;
+    color: var(--text-primary);
+    font-size: 14px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.calib-cancel:hover,
+.calib-cancel:active {
+    background-color: rgba(0, 0, 0, 0);
 }
 
 .calib-run {
@@ -60,54 +76,63 @@
     flex-basis: 0;
 }
 
-.calib-instruction {
-    font-size: 34px;
-    color: #FFFFFF;
+.calib .calib-instruction {
+    font-size: 28px;
+    color: var(--text-primary);
     white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
-.calib-next-hint {
-    margin-top: var(--space-2);
-    font-size: 16px;
-    color: #D7F75B;
-    min-height: 22px;
-}
-
-.calib-badge {
-    align-self: flex-start;
-    margin-top: var(--space-4);
-    padding: 4px 12px;
-    border-radius: 12px;
-    background-color: #D7F75B;
-    color: #1F2328;
+.calib .calib-next-hint {
+    margin-top: 8px;
+    min-height: 20px;
     font-size: 14px;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    color: var(--text-secondary);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.calib-badge--waiting {
-    background-color: rgba(255, 255, 255, 0.85);
+/* 걸음 감지 칩(미리보기 .chip.live): 하늘색, Bold 12. 기다리는 중은 유리 칩 */
+.calib .calib-badge {
+    align-self: flex-start;
+    height: 28px;
+    margin-top: 16px;
+    padding: 0 12px;
+    border-radius: 14px;
+    background-color: var(--brand-accent);
+    color: var(--text-on-accent);
+    font-size: 12px;
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.calib .calib-badge--waiting {
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
+    background-color: var(--glass-control);
+    color: var(--text-primary);
 }
 
 .calib-ring-host {
-    width: 200px;
-    height: 200px;
+    width: 220px;
+    height: 220px;
     justify-content: center;
     align-items: center;
 }
 
-.calib-timer {
-    font-size: 52px;
-    color: #FFFFFF;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+.calib .calib-timer {
+    font-size: 56px;
+    color: var(--text-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset");
 }
 
-.calib-timer-sub {
+.calib .calib-timer-sub {
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--text-secondary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-/* 카드(A-12·A-14·A-15, 다시·도움·멈춤) */
+/* ---- 카드(A-12·A-14·A-15, 다시·도움·멈춤): 덮개(미리보기 .scrim) + 가운데 유리 대화상자(.dlg: 모서리 28, 안쪽 24, 사이 14) ---- */
 .calib-dim {
     position: absolute;
     left: 0;
@@ -116,92 +141,189 @@
     bottom: 0;
     justify-content: center;
     align-items: center;
-    background-color: rgba(20, 24, 30, 0.55);
+    background-color: var(--bg-overlay);
     display: none;
 }
 
+/* 거치·완료는 진행 화면 없이 바탕 위에 카드만(바탕과 같은 그림으로 덮음) */
+.calib-dim--clear {
+    background-color: var(--bg-app);
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/MapSkyBlur.png");
+    -unity-background-scale-mode: scale-and-crop;
+    -unity-background-image-tint-color: rgb(84, 92, 115);
+}
+
 .calib-card {
-    width: 360px;
-    padding: var(--space-6) var(--space-6) var(--space-2) var(--space-6);
-    border-radius: 24px;
-    background-color: var(--color-surface);
-    align-items: stretch;
+    width: 420px;
+    padding: 24px;
+    border-radius: 28px;
+    border-width: 1px;
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-sheet);
+    align-items: center;
 }
 
-.calib-card--wide {
-    width: 440px;
+.calib-card--done {
+    width: 460px;                 /* 미리보기 364(속도 3개), 앱은 7단계라 넓힘 */
 }
 
-.calib-card-icon {
-    align-self: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 24px;
-    background-color: var(--color-primary);
-    color: #FFFFFF;
+/* A-12: 572×284 패널, 왼쪽 글·버튼(사이 16), 오른쪽 그림 칸 200×228 */
+.calib-card--mount {
+    width: 572px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.calib-mount-text {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-right: 24px;
+}
+
+.calib-mount-ill {
+    width: 200px;
+    height: 228px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    border-width: 1px;
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-fill);
+}
+
+.calib-mount-img {
+    width: 190px;
+    height: 200px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/GuideTreadmill.png");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.calib .calib-card-title.calib-left,
+.calib .calib-card-body.calib-left {
+    -unity-text-align: upper-left;
+}
+
+.calib-mount-ok {
+    margin: 16px 0 0 0;
+}
+
+/* 상태 3D(미리보기 st3d 120: 그림 둘레 여백만큼 당김). 저장 중(…)은 그림 없이 유리 원 */
+.calib .calib-card-icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 14px;
+    border-radius: 28px;
+    background-color: var(--glass-control);
+    color: var(--text-primary);
     font-size: 24px;
     -unity-text-align: middle-center;
-    margin-bottom: var(--space-2);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.calib .calib-card-icon--ok,
+.calib .calib-card-icon--warn {
+    width: 120px;
+    height: 120px;
+    margin: -12px 0 0 0;
+    border-radius: 0;
+    background-color: rgba(0, 0, 0, 0);
+    color: rgba(0, 0, 0, 0);
+    -unity-background-scale-mode: scale-to-fit;
 }
 
 .calib-card-icon--ok {
-    background-color: #22B573;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/StatusOk.png");
 }
 
 .calib-card-icon--warn {
-    background-color: #F2A93B;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/StatusWarn.png");
 }
 
-.calib-card-title {
-    font-size: 24px;
-    color: var(--color-text);
-    -unity-text-align: middle-center;
+.calib .calib-card-title {
+    align-self: stretch;
+    font-size: 22px;
+    color: var(--text-primary);
+    -unity-text-align: upper-center;
     white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
-.calib-card-body {
-    margin-top: var(--space-2);
-    font-size: 15px;
-    color: var(--color-muted);
-    -unity-text-align: middle-center;
+.calib .calib-card-body {
+    align-self: stretch;
+    margin-top: 14px;
+    font-size: 16px;
+    color: var(--text-secondary);
+    -unity-text-align: upper-center;
     white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
+.calib-buttons {
+    align-self: stretch;
+}
+
+/* 칩(미리보기 .chip): 높이 28, 모서리 14. 완료 속도는 초록, 센서는 유리, 이어폰 없음은 회색 */
 .calib-chips {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    margin-top: var(--space-2);
+    margin-top: 10px;
 }
 
-.calib-chip {
-    align-self: center;
-    margin: 4px 3px 0 3px;
-    padding: 3px 10px;
-    border-radius: 12px;
-    background-color: #E7F6EE;
-    color: #1F7A4D;
+.calib .calib-chip {
+    height: 28px;
+    margin: 4px;
+    padding: 0 12px;
+    border-radius: 14px;
+    background-color: var(--status-success-bg);
+    color: var(--text-success);
+    font-size: 12px;
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.calib .card-chip,
+.calib .calib-chip--glass {
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
+    background-color: var(--glass-control);
+    color: var(--text-primary);
+}
+
+.calib #card-chip {
+    margin-top: 14px;
+}
+
+.calib .calib-chip--gray {
+    border-width: 1px;
+    border-color: var(--border-strong);
+    background-color: var(--bg-muted);
+    color: var(--text-secondary);
+}
+
+.calib .calib-chip-label {
+    margin-right: 4px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.calib .calib-note {
+    margin-top: 10px;
     font-size: 13px;
+    color: var(--text-tertiary);
+    -unity-text-align: upper-center;
+    white-space: normal;
 }
 
-.calib-chip--blue {
-    background-color: #E8F0FD;
-    color: var(--color-primary);
-}
-
-.calib-chip--gray {
-    background-color: var(--color-line);
-    color: var(--color-muted);
-}
-
-.calib-chip-label {
-    margin: 4px 6px 0 0;
-    font-size: 13px;
-    color: var(--color-muted);
+.calib-done-next {
+    align-self: stretch;
+    margin: 16px 0 0 0;
 }
 
 .calib-btn-tight {
-    margin-top: 0;
+    margin: 12px 0 0 0;
 }

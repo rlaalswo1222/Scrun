@@ -1,17 +1,18 @@
 /* 공통 상태(계획 0056, BL-38): 스켈레톤·불러오기 실패·네트워크 없음·빈 상태. 전 화면이 이 파일 하나를 쓴다.
-   Figma(11/19 읽음): I-07 네트워크 없음(회색 원 + 와이파이 끊김), I-08 로딩·스켈레톤(회색 통 블록 #EEF2F9, shimmer),
-   I-09 일시적인 오류(주황 원 + 경고, "다시 시도" 꽉 찬 버튼 + "홈으로" 고스트). 상준이 여기만 고치면 전 화면에 반영 */
+   모양은 상준 미리보기(계획 0068): I-07 인터넷 없음 = 갸웃한 포즈(pose_puzzled) + 제목 28 + 설명 16 + 다시 시도,
+   I-09 일시적인 오류 = 슬픈 포즈(pose_sad) + "다시 시도" 주 버튼 + "홈으로" 고스트, I-08 스켈레톤 = 유리 컨트롤 색 통 블록(.skel).
+   포즈 그림은 Figma 원본(PosePuzzled·PoseSad). 화면 USS가 크기만 바꿔 씀(예: HomeSpace.uss .bc) */
 
 .state {
     width: 100%;
-    padding: var(--space-2) 0;
+    padding: 8px 0;
 }
 .state--padded .state {
-    padding-left: var(--space-5);
-    padding-right: var(--space-5);
+    padding-left: 20px;
+    padding-right: 20px;
 }
 
-/* ---- I-08 스켈레톤: 회색 통 블록. 깜빡임은 StateView가 클래스를 바꾸고 흐려지기는 transition ---- */
+/* ---- I-08 스켈레톤(미리보기 .skel): 유리 컨트롤 색 통 블록, 모서리 20(글줄 8). 깜빡임은 StateView가 클래스를 바꾸고 흐려지기는 transition ---- */
 .skeleton {
     width: 100%;
     opacity: 1;
@@ -25,16 +26,16 @@
 .skeleton-row {
     flex-direction: row;
     align-items: center;
-    padding: var(--space-3) 0;
+    padding: 12px 0;
 }
 .skeleton-card {
     height: 120px;
     border-radius: 20px;
-    background-color: var(--color-surface-2);
-    margin-bottom: var(--space-4);
+    background-color: var(--glass-pressed);
+    margin-bottom: 12px;
 }
 .skeleton-card--short {
-    height: 56px;
+    height: 54px;
 }
 .skeleton-col {
     flex-grow: 1;
@@ -42,25 +43,25 @@
 }
 .skeleton-bar {
     height: 18px;
-    border-radius: 6px;
-    background-color: var(--color-surface-2);
+    border-radius: 8px;
+    background-color: var(--glass-pressed);
     margin: 4px 0;
 }
 .skeleton-bar--title {
     height: 24px;
 }
 .skeleton-bar--short {
-    width: 45%;
+    width: 46%;
 }
 .skeleton-bar--mid {
-    width: 70%;
+    width: 62%;
 }
 .skeleton-dot {
     width: 44px;
     height: 44px;
     border-radius: 22px;
-    background-color: var(--color-surface-2);
-    margin-right: var(--space-3);
+    background-color: var(--glass-pressed);
+    margin-right: 12px;
 }
 .skeleton-dot--big {
     width: 64px;
@@ -68,67 +69,61 @@
     border-radius: 32px;
 }
 .skeleton-hero {
-    height: 189px;
+    height: 230px;
     border-radius: 28px;
-    background-color: var(--color-surface-2);
-    margin-bottom: var(--space-4);
+    background-color: var(--glass-pressed);
+    margin-bottom: 12px;
 }
 
-/* ---- I-07·I-09·안내·빈 상태: 가운데 원 아이콘 72 + 제목 28 + 설명 16 + 꽉 찬 버튼 ---- */
+/* ---- I-07·I-09·안내·빈 상태: 포즈 그림 200 + 제목 28 + 설명 16 + 꽉 찬 버튼 ---- */
 .state-message {
     align-items: center;
-    padding: var(--space-6) 0;
+    padding: 16px 0 24px 0;
 }
+
+/* 그림은 인터넷 없음·오류일 때만(안내·빈 상태는 글만) */
 .state-icon {
-    width: 72px;
-    height: 72px;
-    border-radius: 36px;
-    background-color: var(--color-primary-soft);
-    align-items: center;
-    justify-content: center;
-}
-.state-glyph {
-    width: 36px;
-    height: 36px;
+    display: none;
+    width: 200px;
+    height: 200px;
     -unity-background-scale-mode: scale-to-fit;
 }
-.state-icon--network {
-    background-color: var(--color-muted);
+.state-glyph {
+    display: none;
 }
-.state-icon--network .state-glyph {
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/state-offline.svg");
+.state-icon--network {
+    display: flex;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/PosePuzzled.png");
 }
 .state-icon--error {
-    background-color: var(--color-warn);
-}
-.state-icon--error .state-glyph {
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/state-error.svg");
-}
-.state-icon--empty {
-    background-color: var(--color-surface-2);
+    display: flex;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/PoseSad.png");
 }
 .state-title {
-    margin-top: var(--space-3);
-    font-size: var(--font-size-title);
-    -unity-font-style: bold;
-    color: var(--color-text);
-    -unity-text-align: middle-center;
+    margin: 16px 0 0 0;
+    padding: 0;
+    font-size: 28px;
+    color: var(--text-primary);
+    -unity-text-align: upper-center;
     white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 .state-body {
-    margin-top: var(--space-3);
-    font-size: var(--font-size-body);
-    color: var(--color-body);
-    -unity-text-align: middle-center;
+    margin: 8px 0 0 0;
+    padding: 0;
+    font-size: 16px;
+    color: var(--text-secondary);
+    -unity-text-align: upper-center;
     white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 .state-action {
     width: 100%;
-    margin-top: var(--space-6);
+    margin-top: 24px;
     margin-bottom: 0;
 }
 .state-alt {
     width: 100%;
-    margin-top: var(--space-3);
+    margin-top: 12px;
     margin-bottom: 0;
 }

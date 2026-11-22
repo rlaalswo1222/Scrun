@@ -43,14 +43,14 @@
             <ui:Label text="잠시만요" class="loading-text" />
         </ui:VisualElement>
 
-        <!-- I-08·I-09 오류·네트워크 -->
+        <!-- I-08·I-09 오류·네트워크(미리보기 .scrim·.dlg, 계획 0068) -->
         <ui:VisualElement name="error" class="overlay">
             <ui:VisualElement class="dialog">
                 <ui:Label name="error-title" class="dialog-title" />
                 <ui:Label name="error-body" class="dialog-body" />
                 <ui:Label name="error-id" class="dialog-id" />
                 <ui:VisualElement class="dialog-buttons">
-                    <ui:Button name="error-close" text="닫기" class="btn btn-secondary" />
+                    <ui:Button name="error-close" text="닫기" class="btn btn-ghost" />
                     <ui:Button name="error-retry" text="다시 시도" class="btn btn-primary" />
                 </ui:VisualElement>
             </ui:VisualElement>

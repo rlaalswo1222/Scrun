@@ -4,7 +4,7 @@ using UnityEngine.UIElements;
 
 namespace Scrun.App.Tests
 {
-    // 계획 0031: 온보딩 A-02–A-19 흐름과 화면 규칙(Figma 노트)
+    // 계획 0031: 온보딩 A-05–A-19 흐름과 화면 규칙(Figma 노트). 소개 A-02–A-04는 계획 0068에서 뺌
     public class OnboardingFigTests
     {
         sealed class Other : AppScreen
@@ -24,11 +24,12 @@ namespace Scrun.App.Tests
 
         // ---- 흐름 판단 ----
         [Test]
-        public void 스플래시_다음은_로그인됨이면_온보딩_처음이면_소개_아니면_로그인()
+        public void 스플래시_다음은_로그인됨이면_온보딩_아니면_로그인()
         {
-            Assert.AreEqual(StartStep.Onboarding, Onboarding.AfterSplash(loggedIn: true, introSeen: false));
-            Assert.AreEqual(StartStep.Intro, Onboarding.AfterSplash(loggedIn: false, introSeen: false));
-            Assert.AreEqual(StartStep.Login, Onboarding.AfterSplash(loggedIn: false, introSeen: true));
+            Assert.AreEqual(StartStep.Onboarding, Onboarding.AfterSplash(loggedIn: true));
+            Assert.AreEqual(StartStep.Login, Onboarding.AfterSplash(loggedIn: false));
+            CollectionAssert.AreEquivalent(new[] { StartStep.Onboarding, StartStep.Login },
+                (StartStep[])System.Enum.GetValues(typeof(StartStep)), "소개(A-02–A-04) 단계는 없음(계획 0068)");
         }
 
         [Test]
@@ -40,43 +41,13 @@ namespace Scrun.App.Tests
         }
 
         [Test]
-        public void 처음_켠_기기는_스플래시_다음_소개()
+        public void 로그인_안_된_기기는_처음_켜도_스플래시_다음_바로_로그인()
         {
             nav.StartFlow(new Other());
-            AppRoot.AfterSplash(nav, loggedIn: false, introSeen: false);
-            Assert.IsInstanceOf<IntroScreen>(nav.Current);
-        }
-
-        // ---- A-02–A-04 소개 ----
-        [Test]
-        public void 소개는_세_장_마지막만_시작하기()
-        {
-            var intro = new IntroScreen();
-            nav.StartFlow(intro);
-            Assert.AreEqual(3, IntroScreen.Pages.Length);
-            Assert.AreEqual("다음", intro.Root.Q<Button>("next").text);
-            intro.Next();
-            intro.Next();
-            Assert.AreEqual(2, intro.PageIndex);
-            Assert.AreEqual("기록이 남고, 이어져요", intro.Root.Q<Label>("title").text);
-            Assert.AreEqual("시작하기", intro.Root.Q<Button>("next").text);
-            Assert.AreNotEqual(Visibility.Hidden, intro.Root.Q<Button>("skip").style.visibility.value, "우주 시안은 A-04에도 건너뛰기");
-            Assert.IsTrue(intro.Root.Q("illust").ClassListContains("intro-record"), "장면은 그림 칸 클래스로 고름");
-            Assert.IsFalse(intro.Root.Q("illust").ClassListContains("intro-run"));
-            var dots = intro.Root.Q("dots");
-            Assert.IsTrue(dots[2].ClassListContains("dot--on"));
-            Assert.IsFalse(dots[0].ClassListContains("dot--on"));
-        }
-
-        [Test]
-        public void 소개에서_뒤로는_앞_장_첫_장에선_닫지_않음은_화면에_맡김()
-        {
-            var intro = new IntroScreen();
-            nav.StartFlow(intro);
-            Assert.IsFalse(intro.OnBack(), "첫 장");
-            intro.Next();
-            Assert.IsTrue(intro.OnBack());
-            Assert.AreEqual(0, intro.PageIndex);
+            AppRoot.AfterSplash(nav, loggedIn: false);
+            Assert.IsInstanceOf<LoginScreen>(nav.Current);
+            Assert.IsFalse(((LoginScreen)nav.Current).Failed);
+            Assert.IsFalse(nav.CanPop, "로그인이 흐름의 맨 아래(스플래시·소개로 돌아가지 않음)");
         }
 
         // ---- A-05·A-19 로그인 ----
@@ -195,20 +166,19 @@ namespace Scrun.App.Tests
 
         // ---- A-17 완료 ----
         [Test]
-        public void 완료_화면은_우주_배경()
+        public void 완료_화면은_축하_바탕()
         {
             var done = new OnboardingDoneScreen();
             nav.StartFlow(done);
-            Assert.AreEqual(SpaceArt.RootClass, done.RootClass);
+            Assert.AreEqual(SpaceArt.CelebrateRootClass, done.RootClass);
             Assert.AreEqual("홈으로", done.Root.Q<Button>("home").text);
         }
 
         [Test]
-        public void 우주_시안_화면은_우주_배경_로그인_실패는_옛_배경()
+        public void 우주_디자인_화면의_바탕()
         {
-            Assert.AreEqual(SpaceArt.RootClass, new IntroScreen().RootClass);
-            Assert.AreEqual(SpaceArt.RootClass, new LoginScreen().RootClass);
-            Assert.IsNull(new LoginScreen(failed: true).RootClass, "A-19는 시안이 없어 그대로");
+            Assert.AreEqual(SpaceArt.LoginRootClass, new LoginScreen().RootClass, "A-05 로그인 바탕(bg_login)");
+            Assert.AreEqual(SpaceArt.LoginRootClass, new LoginScreen(failed: true).RootClass, "A-19도 같은 화면 모양");
             Assert.AreEqual(SpaceArt.RootClass, new PermissionsScreen().RootClass);
             Assert.AreEqual(SpaceArt.RootClass, new WeeklyGoalScreen().RootClass);
             Assert.AreEqual(SpaceArt.RootClass, new CalibrationIntroScreen().RootClass);

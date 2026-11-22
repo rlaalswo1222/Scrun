@@ -30,7 +30,6 @@ namespace Scrun.App
             plus = Q<Button>("plus");
             minus.clicked += () => Set(Count - 1);
             plus.clicked += () => Set(Count + 1);
-            SpaceArt.Fit(Q<VisualElement>("fit"));
             // 목표를 정한 날부터 7일 궤도(오늘 = 1일만 빛남, 나머지는 달린 날이 차는 자리)
             var days = Q<VisualElement>("days");
             for (int d = 1; d <= 7; d++)

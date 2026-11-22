@@ -96,15 +96,12 @@ namespace Scrun.App
         }
 
         // 스플래시 다음: 로그인됨 → 권한 안내(모션을 아직 안 물어봤으면, 계획 0025)·주간 목표(가입 직후) 또는 홈,
-        // 로그인 없음 → 이 기기에서 처음이면 서비스 소개(A-02–A-04, 계획 0031), 아니면 로그인
-        internal static void AfterSplash(Navigator nav, bool loggedIn) => AfterSplash(nav, loggedIn, Onboarding.IntroSeen);
-
-        internal static void AfterSplash(Navigator nav, bool loggedIn, bool introSeen)
+        // 로그인 없음 → 로그인(A-05). 서비스 소개(A-02–A-04)는 Figma에서 지워 앱에서도 뺌(계획 0068 정할 것 2)
+        internal static void AfterSplash(Navigator nav, bool loggedIn)
         {
-            switch (Onboarding.AfterSplash(loggedIn, introSeen))
+            switch (Onboarding.AfterSplash(loggedIn))
             {
                 case StartStep.Onboarding: Onboarding.Begin(nav); break;
-                case StartStep.Intro: nav.StartFlow(new IntroScreen()); break;
                 default: nav.StartFlow(new LoginScreen()); break;
             }
         }

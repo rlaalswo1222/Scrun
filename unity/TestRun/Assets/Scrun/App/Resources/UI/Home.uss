@@ -1,52 +1,49 @@
-/* 홈 I-04 복구 안내창(RecoveryPrompt) 모양. 홈 화면 자체는 우주 시안 HomeSpace.uss(계획 0062)로 옮김 */
+/* 홈 I-04 복구 안내(RecoveryPrompt) 모양. 미리보기 home.js recoverSheet(계획 0068): 홈을 어둡게 덮고 아래에서 올라온 시트
+   (유리 시트, 위 모서리 28, 제목 22 + 설명 16 + 주 버튼 + 고스트). 홈 화면 자체는 HomeSpace.uss */
 
 .hm .unity-label {
     margin: 0;
     padding: 0;
 }
 
-/* ---- I-04 복구 안내창(Figma 611:2252): 홈을 어둡게 덮고 가운데 흰 창 ---- */
 .hm-dim {
     position: absolute;
     left: 0;
     top: 0;
     right: 0;
     bottom: 0;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--color-night-dim);
+    justify-content: flex-end;
+    background-color: var(--bg-overlay);
 }
 
 .hm-dialog {
-    width: 84%;
-    max-width: 360px;
-    padding: 26px 20px 18px 20px;
-    border-radius: 24px;
-    background-color: var(--color-surface);
+    padding: 28px 20px 34px 20px;
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    border-top-width: 1px;
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-sheet);
 }
 
 .hm .hm-dialog-title {
-    font-size: var(--font-size-sub);
-    color: var(--color-text);
-    -unity-text-align: middle-center;
+    font-size: 22px;
+    color: var(--text-primary);
     white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 .hm .hm-dialog-body {
-    margin-top: 10px;
-    font-size: var(--font-size-body-sm);
-    color: var(--color-body);
-    -unity-text-align: middle-center;
+    margin-top: 16px;
+    font-size: 16px;
+    color: var(--text-secondary);
     white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
 .hm-dialog .btn {
-    margin: 10px 0 0 0;
+    margin: 12px 0 0 0;
 }
 
 .hm-dialog .hm-dialog-first {
-    margin-top: 22px;
+    margin-top: 16px;
 }
-

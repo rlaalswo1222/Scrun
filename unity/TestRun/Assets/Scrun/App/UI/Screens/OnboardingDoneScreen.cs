@@ -9,11 +9,11 @@ namespace Scrun.App
     {
         protected override string Uxml => "UI/OnboardingDone";
         public override bool HidesTabBar => true;
-        public override string RootClass => SpaceArt.RootClass;
+        public override string RootClass => SpaceArt.CelebrateRootClass; // 축하 바탕(미리보기 bg celebrate, 계획 0068)
 
         protected override void OnCreate()
         {
-            SpaceArt.Fit(Q<VisualElement>("fit"));
+            UiMotion.Pop(Q<VisualElement>("art")); // 우주인이 통 튀어 들어옴(미리보기 .pop)
             Q<Button>("home").clicked += () => { if (Nav.Current == this) Onboarding.FinishGoal(Nav); };
         }
     }
