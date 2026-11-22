@@ -1,107 +1,154 @@
-/* 기록 탭(F-01·F-02, 계획 0053) 모양. Figma "SCRUN" > 스크런 와이어 프레임 F 섹션 기준(11/18 읽음).
-   제목·카드(Record Row)·칩·빈 상태 글자는 Friends.uss, 미인증 칩 색은 RunResult.uss를 같이 씀 */
+/* 기록 탭(F-01·F-02, 계획 0053). 우주 디자인(계획 0068): 상준 미리보기 js/views/records.js를 옮김.
+   공통 부품(ui-title·ui-pill 모양·ui-stats·ui-card·ui-ill)은 Space.uss, 칩 색(인증 완료·미인증)과 글자 여백 없앰은 RunResult.uss */
 
-/* 기록이 많아 아래 목록이 길면 제목 줄이 눌려 칩과 겹치던 것(11/18 에디터 캡처) → 제목 줄은 줄지 않게 */
-.rc > .fr-header {
+/* 제목 "기록": 위 12(미리보기 margin-top 12), 아래 칩 위 12 */
+.rc-title {
     flex-shrink: 0;
+    margin: 12px 20px 0 20px;
 }
 
-/* ---- 달 칩: 고른 달은 파랑 바탕·흰 글자, 나머지는 연한 파랑 ---- */
+/* 당겨서 새로고침 안내(맨 위에서 아래로 끌 때만 보임, FriendParts.PullToRefresh가 --on) */
+.rc-pull {
+    height: 0;
+    overflow: hidden;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    -unity-text-align: middle-center;
+}
+
+.rc-pull.fr-pull--on {
+    height: 28px;
+}
+
+/* ---- 달 칩: 알약(미리보기 .pill 36, 고르면 파랑). 버튼이라 기본 모양을 덮음 ---- */
 .rc-months {
-    flex-direction: row;
-    margin-top: var(--space-2);
+    margin: 12px 0;
 }
 
 .rc-month {
-    height: 28px;
-    margin: 0 6px 0 0;
-    padding: 0 12px;
+    height: 36px;
+    margin: 0 8px 0 0;
+    padding: 0 14px;
     border-width: 0;
-    border-radius: 14px;
-    background-color: var(--color-primary-soft);
-    font-size: var(--font-size-caption);
-    color: var(--color-primary);
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
+    border-radius: 18px;
+    background-color: var(--glass-control);
+    color: var(--text-primary);
+    font-size: 14px;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    transition-property: scale, background-color;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
 }
 
-.rc-month:hover,
+.rc-month:hover {
+    background-color: var(--glass-control);
+}
+
 .rc-month:active {
-    background-color: var(--color-primary-soft);
+    scale: 0.96 0.96;
 }
 
 .rc-month--on,
 .rc-month--on:hover,
 .rc-month--on:active {
-    background-color: var(--color-primary);
-    color: var(--color-on-color);
+    border-top-width: 0;
+    background-color: var(--brand-primary);
+    color: var(--text-on-brand);
 }
 
-/* ---- 이번 주 요약 3칸(파란 칸) ---- */
-.rc-week {
-    flex-direction: row;
-    margin-top: var(--space-3);
+/* ---- 기록 카드(코드가 만드는 버튼): 유리 카드, 사이 12. 날짜 · (거리 + 칩) · 시간·페이스 ---- */
+.rc-card {
+    margin: 12px 0 0 0;
+    padding: 16px;
+    border-radius: 20px;
+    border-width: 1px;
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-fill);
+    -unity-text-align: upper-left; /* 버튼 기본(가운데)이 안의 글자로 내려가지 않게 */
+    transition-property: scale, background-color;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
 }
 
-.rc-tile {
-    flex-grow: 1;
-    flex-basis: 0;
-    height: 68px;
-    padding: 12px 14px;
-    border-radius: 16px;
-    background-color: var(--color-primary);
+.rc-card:hover {
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-fill);
 }
 
-.rc-tile--mid {
-    margin: 0 var(--space-2);
+.rc-card:active {
+    scale: 0.98 0.98;
+    background-color: var(--glass-pressed);
 }
 
-.rc .rc-tile-label {
-    font-size: var(--font-size-caption);
-    color: rgba(255, 255, 255, 0.85);
+.fr-record-date {
+    font-size: 12px;
+    color: var(--text-secondary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.rc .rc-tile-value {
-    margin-top: 4px;
-    font-size: var(--font-size-sub);
-    color: var(--color-on-color);
+.rc-card-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2px;
+}
+
+.fr-record-km {
+    font-size: 22px;
+    color: var(--text-primary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
-/* 기록 카드는 Friends.uss의 Record Row(.fr-record)를 버튼으로 */
-.rc-card {
-    margin-left: 0;
-    margin-right: 0;
-    margin-bottom: 0;
-    -unity-text-align: upper-left; /* 버튼 기본(가운데)이 안의 글자로 내려가지 않게 */
+.rc-card-detail {
+    margin-top: 2px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.rc-card:hover,
-.rc-card:active {
-    background-color: var(--color-surface);
-}
-
-/* ---- F-02 빈 상태: 연한 파랑 카드 위 캐릭터(Figma는 앉은 캐릭터, 그림이 오기 전엔 서 있는 캐릭터) ---- */
-.rc-illust {
-    height: 300px;
-    margin-top: var(--space-3);
-    border-radius: 20px;
-    background-color: var(--color-primary-soft);
-    align-items: center;
-    justify-content: center;
-}
-
-.rc-illust-image {
-    width: 110px;
-    height: 240px;
-    background-image: url("project://database/Assets/Scrun/App/UI/Images/CharacterStand.png");
-    -unity-background-scale-mode: scale-to-fit;
-}
-
-.rc .rc-center {
+.rc-month-empty {
+    margin-top: 32px;
     -unity-text-align: upper-center;
 }
 
-.rc .rc-empty-title {
-    margin-top: var(--space-6);
+.rc-more {
+    margin: 12px 0 0 0;
+}
+
+/* ---- F-02 빈 상태: 유리 칸 300 안 기다리는 포즈 270(미리보기 pose_wait), 가운데 글 ---- */
+.rc-empty {
+    flex-grow: 1;
+}
+
+.rc-empty-body {
+    flex-grow: 1;
+    padding: 0 20px;
+}
+
+.rc-illust {
+    height: 300px;
+    margin-top: 20px;
+}
+
+.rc-illust-image {
+    width: 180px;
+    height: 270px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/PoseWait.png");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rc-center {
+    -unity-text-align: upper-center;
+}
+
+.rc-empty-title {
+    margin-top: 20px;
+}
+
+.rc-empty-text {
+    margin-top: 8px;
 }

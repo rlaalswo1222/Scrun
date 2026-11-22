@@ -26,6 +26,7 @@ namespace Scrun.App
 
         protected override string Uxml => "UI/RunRewards";
         public override bool HidesTabBar => true;
+        public override string RootClass => "app-root--celebrate"; // 축하 바탕(미리보기 E-11·E-13 bg celebrate)
 
         protected override void OnCreate()
         {
@@ -133,7 +134,12 @@ namespace Scrun.App
                     dot.AddToClassList("rr-dot");
                     bool done = i < r.WeeklyGoal.DoneCount;
                     dot.EnableInClassList("rr-dot--done", done);
-                    if (done) dot.Add(UiExtensions.Text("✓", "rr-dot-mark"));
+                    if (done)
+                    {
+                        var check = new VisualElement { pickingMode = PickingMode.Ignore };
+                        check.AddToClassList("rr-dot-check");
+                        dot.Add(check);
+                    }
                     weeklyDots.Add(dot);
                 }
             }
@@ -187,8 +193,14 @@ namespace Scrun.App
         {
             if (levelUpShown || Root.panel == null || Nav?.Current != this) return;
             levelUpShown = true;
+            // 덮개 뒤 카드·내비를 숨김(바탕은 앱 바탕의 축하 그림이 그대로 보임, 미리보기 levelUp)
+            content.SetVisible(false);
+            Root.Q("rewards-nav")?.SetVisible(false);
             levelUp.SetVisible(true);
             levelUp.schedule.Execute(() => levelUp.AddToClassList("rr-levelup--in")).StartingIn(16); // 첫 배치 뒤에 페이드인
+            UiMotion.Pop(levelUp.Q("levelup-title"));            // 미리보기 .pop
+            UiMotion.Rise(levelUp.Q("levelup-levels"));          // .rise
+            UiMotion.StatusIn(levelUp.Q("levelup-stage"), false); // 캐릭터 튀어 들어온 뒤 둥실
         }
     }
 }

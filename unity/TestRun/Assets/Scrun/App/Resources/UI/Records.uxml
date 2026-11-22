@@ -1,46 +1,47 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <!-- F-01 기록 목록·F-02 빈 상태(계획 0053, Figma 608:1332·608:1427). 위: "기록" + 달 칩(이번 달·지난 달·전체) + 이번 주 요약 3칸,
-         아래: 기록 카드(RecordsScreen이 코드로). 기록이 하나도 없으면 F-02 -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
+         아래: 기록 카드(RecordsScreen이 코드로). 기록이 하나도 없으면 F-02.
+         모양은 상준 우주 디자인 미리보기(계획 0068, js/views/records.js). 칩·카드 칩 색은 RunResult.uss, 이 화면만의 것은 Records.uss -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/RunResult.uss" />
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Records.uss" />
-    <ui:VisualElement class="fr rr rc fr-page">
-        <ui:VisualElement class="fr-header">
-            <ui:Label text="기록" class="fr-title" />
-        </ui:VisualElement>
+    <ui:VisualElement class="rr rc ui-screen">
+        <ui:Label text="기록" class="ui-title rc-title" />
 
         <!-- F-01 -->
-        <ui:ScrollView name="scroll" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="fr-scroll">
-            <ui:Label name="pull" class="fr-pull" />
-            <ui:VisualElement name="months" class="rc-months" />
-            <ui:VisualElement class="rc-week">
-                <ui:VisualElement class="rc-tile">
-                    <ui:Label text="이번 주" class="rc-tile-label" />
-                    <ui:Label name="week-count" class="rc-tile-value" />
+        <ui:ScrollView name="scroll" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ui-scroll">
+            <ui:Label name="pull" class="rc-pull" />
+            <ui:VisualElement name="months" class="ui-pills rc-months" />
+            <ui:VisualElement class="ui-stats">
+                <ui:VisualElement class="ui-stat ui-stat--first">
+                    <ui:Label text="이번 주" class="ui-stat-key" />
+                    <ui:Label name="week-count" class="ui-stat-value" />
                 </ui:VisualElement>
-                <ui:VisualElement class="rc-tile rc-tile--mid">
-                    <ui:Label text="거리" class="rc-tile-label" />
-                    <ui:Label name="week-km" class="rc-tile-value" />
+                <ui:VisualElement class="ui-stat">
+                    <ui:Label text="거리" class="ui-stat-key" />
+                    <ui:Label name="week-km" class="ui-stat-value" />
                 </ui:VisualElement>
-                <ui:VisualElement class="rc-tile">
-                    <ui:Label text="인증" class="rc-tile-label" />
-                    <ui:Label name="week-verified" class="rc-tile-value" />
+                <ui:VisualElement class="ui-stat">
+                    <ui:Label text="인증" class="ui-stat-key" />
+                    <ui:Label name="week-verified" class="ui-stat-value" />
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement name="list" />
-            <ui:Label name="month-empty" class="fr-hint" />
-            <ui:Button name="more" text="더 보기" class="btn btn-ghost fr-more" />
+            <ui:Label name="month-empty" class="ui-text ui-c2 rc-month-empty" />
+            <ui:Button name="more" text="더 보기" class="btn btn-ghost rc-more" />
         </ui:ScrollView>
 
-        <!-- F-02 기록 없음 -->
-        <ui:VisualElement name="empty" class="fr-scroll">
-            <ui:VisualElement class="rc-illust">
-                <ui:VisualElement class="rc-illust-image" />
+        <!-- F-02 기록 없음: 유리 칸 300 안 기다리는 포즈 270, 가운데 글, 아래 버튼 -->
+        <ui:VisualElement name="empty" class="rc-empty">
+            <ui:VisualElement class="rc-empty-body">
+                <ui:VisualElement class="ui-ill rc-illust">
+                    <ui:VisualElement class="rc-illust-image" />
+                </ui:VisualElement>
+                <ui:Label name="empty-title" class="ui-heading rc-center rc-empty-title" />
+                <ui:Label name="empty-body" class="ui-text ui-c2 rc-center rc-empty-text" />
             </ui:VisualElement>
-            <ui:Label name="empty-title" class="fr-big rc-center rc-empty-title" />
-            <ui:Label name="empty-body" class="fr-lead rc-center" />
-            <ui:VisualElement class="fr-spacer" />
-            <ui:Button name="start" class="btn btn-primary" />
+            <ui:VisualElement class="ui-foot rr-foot">
+                <ui:Button name="start" class="btn btn-primary" />
+            </ui:VisualElement>
         </ui:VisualElement>
 
         <!-- 공통 상태(계획 0056): 처음 받는 동안 스켈레톤, 실패하면 여기에 -->
