@@ -1,19 +1,17 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- H-09 속도 재보정(계획 0049, Figma 610:2595): 마지막 보정·보정 속도, 다시 보정하기 → 보정 흐름(계획 0023) -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+    <!-- H-09 속도 재보정(계획 0049, Figma 610:2595): 마지막 보정·보정 속도, 다시 보정하기 → 보정 흐름(계획 0023).
+         모양은 상준 우주 디자인 미리보기(계획 0068, js/views/my.js recal): 값 표 카드 + 러닝머신 그림 + 아래 버튼 -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
     <Style src="project://database/Assets/Scrun/App/Resources/UI/My.uss" />
-    <ui:VisualElement class="onb fr my">
-        <ui:VisualElement class="nav-bar">
-            <ui:VisualElement class="nav-side">
-                <ui:Button name="back" class="nav-back" />
-            </ui:VisualElement>
-            <ui:Label text="속도 재보정" class="nav-title" />
-            <ui:VisualElement class="nav-side nav-side--right" />
+    <ui:VisualElement class="fr my ui-screen">
+        <ui:VisualElement class="ui-nav">
+            <ui:Button name="back" class="ui-nav-act ui-nav-back" />
+            <ui:Label text="속도 재보정" class="ui-nav-title" />
+            <ui:VisualElement class="fr-nav-space" />
         </ui:VisualElement>
-        <ui:ScrollView name="scroll" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+        <ui:ScrollView name="scroll" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ui-scroll">
             <ui:VisualElement name="content" />
         </ui:ScrollView>
+        <ui:VisualElement name="foot" class="ui-foot" />
     </ui:VisualElement>
 </ui:UXML>

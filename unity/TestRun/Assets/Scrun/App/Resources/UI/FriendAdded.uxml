@@ -1,22 +1,25 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- G-07 친구 추가 완료(계획 0044, Figma 608:2114). 뒤로 가기 없음: "친구 보기"(또는 Esc)로 친구 탭 첫 화면 -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+    <!-- G-07 친구 추가 완료(계획 0044, Figma 608:2114). 뒤로 가기 없음: "친구 보기"(또는 Esc)로 친구 탭 첫 화면.
+         모양은 상준 우주 디자인 미리보기(계획 0068, js/views/friends.js friendAdded): 머리 96 + 아래 초록 체크, 가운데 글 -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
-    <ui:VisualElement class="onb fr">
-        <ui:VisualElement class="nav-bar">
-            <ui:VisualElement class="nav-side" />
-            <ui:Label text="친구 추가" class="nav-title" />
-            <ui:VisualElement class="nav-side nav-side--right" />
+    <ui:VisualElement class="fr ui-screen">
+        <ui:VisualElement class="ui-nav">
+            <ui:VisualElement class="fr-nav-space" />
+            <ui:Label text="친구 추가" class="ui-nav-title" />
+            <ui:VisualElement class="fr-nav-space" />
         </ui:VisualElement>
-        <ui:VisualElement class="onb-scroll fr-done">
-            <ui:VisualElement name="head" />
-            <ui:VisualElement class="fr-done-check">
-                <ui:VisualElement class="fr-done-check-icon" />
+        <ui:VisualElement class="ui-body fr-done">
+            <ui:VisualElement class="fr-done-av">
+                <ui:VisualElement name="head" />
+                <ui:VisualElement class="fr-done-check" picking-mode="Ignore">
+                    <ui:VisualElement class="fr-done-check-icon" picking-mode="Ignore" />
+                </ui:VisualElement>
             </ui:VisualElement>
-            <ui:Label name="title" class="onb-title fr-center" />
-            <ui:Label text="이제 서로의 러닝 피드를 볼 수 있고, 달리는 중이면 같이 달릴 수 있어요" class="onb-lead fr-center" />
+            <ui:Label name="title" class="ui-title ui-center fr-done-title" />
+            <ui:Label text="이제 서로의 러닝 피드를 볼 수 있고,&#10;달리는 중이면 같이 달릴 수 있어요" class="ui-text ui-c2 ui-center fr-done-lead" />
         </ui:VisualElement>
-        <ui:Button name="done" text="친구 보기" class="btn btn-primary btn-fig" />
+        <ui:VisualElement class="ui-foot">
+            <ui:Button name="done" text="친구 보기" class="btn btn-primary" />
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

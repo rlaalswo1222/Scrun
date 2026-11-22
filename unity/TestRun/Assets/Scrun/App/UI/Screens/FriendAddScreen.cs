@@ -83,6 +83,8 @@ namespace Scrun.App
             title.text = typing ? "코드를 입력해 주세요" : "친구를 추가해요";
             lead.text = typing ? $"친구에게 받은 {FriendText.CodeLength}자리 코드예요" : "내 친구 코드를 공유하거나, 받은 코드를 입력하세요";
             codeCard.SetVisible(!typing);
+            codeBox.EnableInClassList("fr-field--big", !string.IsNullOrEmpty(input.value)); // 적은 코드는 크게(미리보기 .inp.big)
+            codeBox.EnableInClassList("fr-field--alone", typing); // 위 제목·내 코드 칸이 접히면 설명과 사이 24
             inputTitle.SetVisible(!typing);
             bool ready = FriendText.NormalizeCode(input.value) != null;
             submit.EnableInClassList("btn-primary", ready);

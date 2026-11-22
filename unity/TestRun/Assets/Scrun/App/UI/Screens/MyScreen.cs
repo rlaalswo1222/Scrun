@@ -11,7 +11,7 @@ namespace Scrun.App
     public sealed class MyScreen : AppScreen
     {
         Label name, levelChip, marksChip, next, statDistance, statVerified, statLevel;
-        VisualElement head, menu;
+        VisualElement head, menu, set;
         Label calibrationSub, methodValue;
         Me me;
         Progress progress;
@@ -31,6 +31,7 @@ namespace Scrun.App
             statVerified = Q<Label>("stat-verified");
             statLevel = Q<Label>("stat-level");
             head = Q<VisualElement>("head");
+            set = Q<VisualElement>("set");
             menu = Q<VisualElement>("menu");
             Q<Button>("profile").clicked += () => { if (me != null && CanPush) Nav.Push(new ProfileEditScreen(me)); };
             state = new StateView(Q<VisualElement>("state"), SkeletonKind.Profile, "내 정보를 불러오지 못했어요",
@@ -129,6 +130,7 @@ namespace Scrun.App
             statDistance.text = MyText.Km(p?.XpM ?? 0);
             statVerified.text = MyText.Count(p?.VerifiedCount ?? 0);
             statLevel.text = MyText.Level(p?.Level ?? 1);
+            MyParts.SetOutfit(set, p?.OutfitStage ?? 1);
         }
     }
 
@@ -146,8 +148,22 @@ namespace Scrun.App
             if (sub != null) text.Add(Label(sub, "my-row-sub"));
             row.Add(text);
             if (value != null) row.Add(Label(value, "my-row-value"));
-            if (chevron && onTap != null) row.Add(Label("›", "my-row-chevron"));
+            if (chevron && onTap != null)
+            {
+                var chev = new VisualElement { pickingMode = PickingMode.Ignore };
+                chev.AddToClassList("ui-chev"); // 흰 선 꺾쇠(Space.uss)
+                chev.AddToClassList("my-row-chevron");
+                row.Add(chev);
+            }
             return row;
+        }
+
+        // 러닝복 그림(우주 디자인, My.uss .my-set--N). 단계 1–6
+        public static void SetOutfit(VisualElement art, int stage)
+        {
+            if (art == null) return;
+            int s = Math.Max(1, Math.Min(MyText.LevelStartKm.Length, stage));
+            for (int i = 1; i <= MyText.LevelStartKm.Length; i++) art.EnableInClassList("my-set--" + i, i == s);
         }
 
         // 켜기·끄기 줄. locked면 스위치를 흐리게 하고 누르면 onLocked("준비 중")
