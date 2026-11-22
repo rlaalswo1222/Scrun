@@ -25,6 +25,7 @@ namespace Scrun.App
             Q<Button>("back").clicked += () => Leave(onBack);
             Q<Button>("later").clicked += Later;
             Q<Button>("settings").clicked += () => Native.Permissions.OpenSettings();
+            UiMotion.StatusIn(Q<VisualElement>("status"), shake: true); // 상태 3D가 튀어 들어와 한 번 흔들림(미리보기 st3d shake)
         }
 
         protected internal override void OnShow()

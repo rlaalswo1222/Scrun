@@ -397,8 +397,9 @@ namespace Scrun.App
     // A-13의 원형 타이머: 단계가 지나는 만큼 원이 채워진다
     sealed class TimerRing : VisualElement
     {
-        static readonly Color Track = new Color(1f, 1f, 1f, 0.2f);
-        static readonly Color Fill = new Color(0.843f, 0.969f, 0.357f); // #D7F75B
+        // 미리보기 calib(계획 0068): 바탕 고리 bg/surface, 채움 brand/accent(App.uss 토큰과 같은 값)
+        static readonly Color Track = new Color32(16, 26, 51, 255);
+        static readonly Color Fill = new Color32(61, 217, 255, 255);
         float progress;
 
         public float Progress

@@ -1,17 +1,19 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- A-07 권한 안내(계획 0025, 모양은 우주 시안 885:134 계획 0061). 줄 4개는 코드가 Onboarding.AskOrder 순서로 채움.
-         "권한 설정하기"는 4개를 차례로 묻는다. 뒤로 가기는 시안엔 없지만 자리를 둠(흐름 맨 아래라 코드가 숨김) -->
+    <!-- A-07 권한 안내(계획 0025, 모양은 미리보기 perms 계획 0068). 줄 4개는 코드가 Onboarding.AskOrder 순서로 채움.
+         "권한 설정하기"는 4개를 차례로 묻는다. 뒤로 가기는 자리만(흐름 맨 아래라 코드가 숨김) -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingSpace.uss" />
-    <ui:VisualElement class="sp">
-        <ui:VisualElement class="sp-top">
-            <ui:Button name="back" text="‹" class="sp-pill sp-back" />
-            <ui:VisualElement />
+    <ui:VisualElement class="ob ui-screen">
+        <ui:VisualElement class="ui-nav">
+            <ui:Button name="back" class="ui-nav-act ui-nav-back" />
+            <ui:VisualElement class="ob-nav-space" />
         </ui:VisualElement>
-        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="spacer">
-            <ui:Label text="측정을 위해&#10;권한이 필요해요" class="sp-title perm-title" />
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ui-scroll">
+            <ui:Label text="측정을 위해&#10;권한이 필요해요" class="ui-title ob-title" />
             <ui:VisualElement name="rows" class="perm-list" />
         </ui:ScrollView>
-        <ui:Button name="allow" text="권한 설정하기" class="sp-cta cta-gap" />
-        <ui:Button name="later" text="지금은 건너뛰기 (러닝 전에 필요해요)" class="sp-ghost" />
+        <ui:VisualElement class="ui-foot">
+            <ui:Button name="allow" text="권한 설정하기" class="btn btn-primary" />
+            <ui:Button name="later" text="지금은 건너뛰기 (러닝 전에 필요해요)" class="btn btn-ghost ob-next" />
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

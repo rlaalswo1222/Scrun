@@ -1,18 +1,15 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- A-17 온보딩 완료(계획 0031, 모양은 우주 시안 886:229 계획 0061). 빛줄기·받침대·캐릭터는 한 그림(DoneScene) -->
+    <!-- A-17 온보딩 완료(계획 0031, 모양은 미리보기 onboardDone 계획 0068): 축하 바탕, 제목·설명, 엄지 든 우주인, 보정 안내 카드, 홈으로 -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingSpace.uss" />
-    <ui:VisualElement class="sp">
-        <ui:VisualElement name="fit" class="sp-fit">
-            <ui:VisualElement class="sp-art art-done">
-                <ui:VisualElement class="sp-img img-done" />
-                <ui:Label text="준비 끝!" class="done-title" />
+    <ui:VisualElement class="ob ui-screen">
+        <ui:Label text="준비 끝!" class="ui-title done-title" />
+        <ui:Label text="이제 첫 러닝을 시작해 볼까요?" class="ui-text done-lead" />
+        <ui:VisualElement name="art" class="ob-done-art" picking-mode="Ignore" />
+        <ui:VisualElement class="ui-foot">
+            <ui:VisualElement class="ui-card done-info ob-foot-card">
+                <ui:Label text="첫 러닝 전에 속도 보정이 필요해요 (약 3분)" class="done-info-text" />
             </ui:VisualElement>
+            <ui:Button name="home" text="홈으로" class="btn btn-primary" />
         </ui:VisualElement>
-        <ui:Label text="이제 첫 러닝을 시작해 볼까요?" class="sp-lead done-lead" />
-        <ui:VisualElement class="sp-card done-info">
-            <ui:VisualElement class="done-dot" />
-            <ui:Label text="첫 러닝 전에 속도 보정이 필요해요 (약 3분)" class="done-info-text" />
-        </ui:VisualElement>
-        <ui:Button name="home" text="홈으로" class="sp-cta cta-gap" />
     </ui:VisualElement>
 </ui:UXML>

@@ -104,7 +104,7 @@ namespace Scrun.App
         {
             var check = new VisualElement();
             check.AddToClassList("check");
-            var mark = new Label("✓");
+            var mark = new VisualElement { pickingMode = PickingMode.Ignore }; // 흰 체크 선 아이콘(OnboardingSpace.uss)
             mark.AddToClassList("check-mark");
             check.Add(mark);
             return check;

@@ -16,7 +16,10 @@ namespace Scrun.App
             {
                 var live = Ignore(new VisualElement());
                 live.AddToClassList("cl-live");
-                live.Add(UiExtensions.Text("LIVE", "bc-live"));
+                var tag = Part("bc-live"); // 미리보기 .chip.live: 점 + LIVE
+                tag.Add(Part("bc-live-dot"));
+                tag.Add(UiExtensions.Text("LIVE", "bc-live-text"));
+                live.Add(tag);
                 live.Add(UiExtensions.Text(CourseText.LiveCount(runners), "cl-live-count"));
                 thumb.Add(live);
             }

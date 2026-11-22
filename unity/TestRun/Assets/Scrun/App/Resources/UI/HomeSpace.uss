@@ -1,6 +1,7 @@
-/* 계획 0062: 우주 시안 홈·코스(Figma "스크런 우주 디자인" > B · 홈 825:571, C · 달리기 준비 825:727, 작업 중 시안).
-   B-01–B-04 홈, C-01 코스 선택, C-02 코스 상세, C-05 목록 실패. 바탕은 app-root--home·app-root--course-detail(App.uss).
-   그림은 unity/tools/space_home_assets.py → UI/Images/Space/. 좌표·크기는 Figma 393×852(pt). 버튼의 단단한 그림자(edge 6)는 아래 테두리 */
+/* 홈 B-01–B-04, 코스 C-01 목록·C-02 상세·C-05 목록 실패(계획 0062 → 0068). 모양은 상준 미리보기 js/views/home.js(home·courses·course)와
+   ui.css(.lvcard·.hero-card·.card·.chip.live·.stat·.pills). 공통 부품은 Space.uss(ui-*)·App.uss(btn), 값은 App.uss 토큰만.
+   바탕은 app-root--home·app-root--course-detail(App.uss). 그림: 홈 행성(HomeHero·HomeHeroShort, 0062 Figma), 목표 달성 행성(HomeHeroDone)·기쁜 포즈(PoseJoy),
+   코스 그림(CourseThumb·CourseHero), 구간 행성(Zone1–5), 레벨 얼굴(FaceLv1–6) */
 
 .bc {
     flex-grow: 1;
@@ -20,61 +21,101 @@
 }
 
 /* ---- 공통 부품 ---- */
+/* 유리 카드(미리보기 .card): 별이 비치는 흰빛, 위 가장자리 1px 빛 */
 .bc .bc-card {
     border-width: 1px;
-    border-color: #56668F;
-    background-color: #223259;
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    border-radius: 20px;
+    background-color: var(--glass-fill);
+    transition-property: scale, background-color;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
 }
 
-/* 파란 버튼(face #2f6fe4, edge #1b3f8f 6) */
+.bc .bc-card:hover {
+    background-color: var(--glass-fill);
+}
+
+.bc .bc-card:active {
+    background-color: var(--glass-pressed);
+    scale: 0.98 0.98;
+}
+
+/* 주 버튼(App.uss .btn-primary와 같은 모양: 54 + 아래 두께 6, 모서리 20) */
 .bc .bc-cta {
-    height: 64px;
-    margin: 16px 0 0 0;
+    height: 60px;
+    margin: 12px 0 0 0;
     padding: 0;
     border-width: 0;
+    border-color: var(--brand-primary-edge);
     border-bottom-width: 6px;
+    border-bottom-color: var(--brand-primary-edge);
     border-radius: 20px;
-    border-bottom-color: #1B3F8F;
-    background-color: #2F6FE4;
-    color: #FFFFFF;
+    background-color: var(--brand-primary);
+    color: var(--text-on-brand);
     font-size: 18px;
     flex-shrink: 0;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+    transition-property: translate, background-color, border-bottom-width;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
 }
 
-.bc .bc-cta:hover,
-.bc .bc-cta:active { background-color: #2F6FE4; }
-.bc .bc-cta:disabled { opacity: 0.5; }
+.bc .bc-cta:hover {
+    background-color: var(--brand-primary);
+}
 
-/* 어두운 버튼(B-02 "이번 주 목표 정하기", C-05 "다시 불러오기") */
+.bc .bc-cta:active {
+    background-color: var(--brand-primary-pressed);
+    border-bottom-width: 2px;
+    translate: 0 4px;
+}
+
+.bc .bc-cta:disabled {
+    background-color: var(--glass-control);
+    border-bottom-color: rgba(0, 0, 0, 0);
+    color: var(--text-disabled);
+    translate: 0 0;
+}
+
+/* 보조 버튼(미리보기 .btn.secondary: 유리 컨트롤, 54) — B-02 "이번 주 목표 정하기" */
 .bc .bc-ghost {
-    height: 58px;
-    margin: 12px 0 0 0;
+    height: 54px;
+    margin: 16px 0 0 0;
     padding: 0;
-    border-width: 1px;
+    border-width: 0;
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
     border-radius: 20px;
-    border-color: #56668F;
-    background-color: #223259;
-    color: #F4F6FB;
+    background-color: var(--glass-control);
+    color: var(--text-primary);
     font-size: 18px;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+    transition-property: scale, background-color;
+    transition-duration: 0.15s;
 }
 
-.bc .bc-ghost:hover,
-.bc .bc-ghost:active { background-color: #223259; }
+.bc .bc-ghost:hover {
+    background-color: var(--glass-control);
+}
+
+.bc .bc-ghost:active {
+    background-color: var(--glass-pressed);
+    scale: 0.96 0.96;
+}
 
 .bc .bc-title {
     font-size: 28px;
-    letter-spacing: -0.56px;
-    color: #F4F6FB;
+    color: var(--text-primary);
     white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 .bc .bc-sub {
-    margin-top: 4px;
+    margin-top: 8px;
     font-size: 16px;
-    color: #CDD5EA;
+    color: var(--text-secondary);
     white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
@@ -82,54 +123,68 @@
 .bc .bc-section {
     margin-top: 24px;
     font-size: 18px;
-    color: #F4F6FB;
+    color: var(--text-primary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
-/* LIVE 태그(#3dd9ff, 글자 #05070f Bold 12) */
+/* LIVE 칩(미리보기 .chip.live: 하늘색, 글자 on-accent Bold 12, 앞에 점 6, 사이 6). 칩 = 점 + 글자를 가진 줄
+   (Label 안에 자식을 넣으면 글자 폭을 안 재서 칩이 줄어듦 → 감싸는 칸으로) */
 .bc .bc-live {
-    height: 22px;
-    padding: 0 8px;
-    border-radius: 11px;
-    background-color: #3DD9FF;
-    color: #05070F;
+    flex-direction: row;
+    align-items: center;
+    height: 28px;
+    padding: 0 12px;
+    flex-shrink: 0;
+    border-radius: 14px;
+    background-color: var(--brand-accent);
+}
+
+.bc-live-dot {
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    border-radius: 3px;
+    background-color: var(--text-on-accent);
+}
+
+.bc .bc-live-text {
+    color: var(--text-on-accent);
     font-size: 12px;
-    -unity-text-align: middle-center;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
-/* 얼굴(동그라미 안, 바탕 #12305a) */
+/* 얼굴(동그라미 안, bg/subtle). 레벨 얼굴은 hs-face--N, 다른 사람은 기본 얼굴 */
 .bc-face {
-    background-color: #12305A;
+    background-color: var(--bg-subtle);
     background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/Face.png");
     -unity-background-scale-mode: scale-and-crop;
 }
 
-.bc-chevron {
-    font-size: 26px;
-    color: #7F8DB5;
-}
+.hs-face--1 { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/FaceLv1.png"); }
+.hs-face--2 { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/FaceLv2.png"); }
+.hs-face--3 { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/FaceLv3.png"); }
+.hs-face--4 { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/FaceLv4.png"); }
+.hs-face--5 { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/FaceLv5.png"); }
+.hs-face--6 { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/FaceLv6.png"); }
 
-/* ---- B 홈: 프로필 카드(→ H-04) ---- */
+/* ---- B 홈: 레벨 카드(미리보기 .lvcard: 안쪽 12·16, 얼굴 46, → H-04) ---- */
 .hs-profile {
     -unity-text-align: middle-left; /* 버튼 기본 가운데 정렬이 안쪽 글자로 물려 내려가지 않게 */
     flex-direction: row;
     align-items: center;
-    height: 86px;
     margin: 0;
-    padding: 0 16px;
-    border-radius: 20px;
+    padding: 12px 16px;
 }
 
-.hs-profile:hover,
-.hs-profile:active { background-color: #223259; }
-
+/* 얼굴 렌더를 미리보기 .av처럼 확대(138.9%, 위 21.4%)해 얼굴만 */
 .hs-portrait {
-    width: 44px;
-    height: 44px;
-    border-radius: 22px;
-    border-width: 2px;
-    border-color: #FFFFFF;
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    border-radius: 23px;
+    background-size: 139% 139%;
+    background-position-x: center;
+    background-position-y: 21%;
 }
 
 .hs-profile-text {
@@ -138,103 +193,140 @@
     margin-left: 12px;
 }
 
-.hs-name-row { flex-direction: row; align-items: center; }
+.hs-name-row {
+    flex-direction: row;
+    align-items: center;
+}
 
 .bc .hs-name {
     font-size: 16px;
-    color: #F4F6FB;
+    color: var(--text-primary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 
+/* Lv 칩(유리 칩, 높이 22, Bold) */
 .bc .hs-lv {
-    height: 24px;
+    height: 22px;
     margin-left: 8px;
     padding: 0 8px;
-    border-width: 1px;
-    border-radius: 12px;
-    border-color: #56668F;
-    background-color: #223259;
-    color: #F4F6FB;
+    border-radius: 11px;
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
+    background-color: var(--glass-control);
+    color: var(--text-primary);
     font-size: 12px;
     -unity-text-align: middle-center;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 .bc .hs-level-line {
-    margin-top: 4px;
+    margin-top: 2px;
     font-size: 12px;
-    color: #CDD5EA;
+    color: var(--text-secondary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
 .hs-level-track {
     height: 6px;
-    margin-top: 4px;
+    margin-top: 8px;
     border-radius: 3px;
-    background-color: rgba(255, 255, 255, 0.35);
+    background-color: var(--bg-track);
+    overflow: hidden;
 }
 
 .hs-level-fill {
     height: 6px;
+    min-width: 4%;
     border-radius: 3px;
-    background-color: #3DD9FF;
+    background-color: var(--reward-xp);
 }
 
-.bc .hs-headline { margin-top: 24px; }
+.bc .hs-headline {
+    margin-top: 28px;
+}
 
-/* 위 카드: 내 행성 그림(HomeHero, 목표 없음은 HomeHeroShort) + 왼쪽 위 이번 주 진행 */
+/* 내 행성 카드(미리보기 .hero-card: 높이 230, 모서리 28, 유리 + 그림), 목표 없음 160, 목표 달성은 캐릭터 없는 행성 + 기쁜 포즈 */
 .hs-hero {
     height: 230px;
-    margin-top: 16px;
+    margin-top: 20px;
     padding: 16px;
+    overflow: hidden;
     border-width: 1px;
     border-radius: 28px;
-    border-color: #56668F;
-    background-color: #223259;
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-fill);
     background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/HomeHero.png");
     -unity-background-scale-mode: scale-and-crop;
 }
 
 .hs-hero--short {
-    height: 150px;
+    height: 160px;
     background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/HomeHeroShort.png");
 }
 
-.hs-ring-row { flex-direction: row; align-items: center; height: 32px; }
+.hs-hero--done {
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/HomeHeroDone.png");
+}
 
-.mini-ring { width: 32px; height: 32px; }
+.hs-joy {
+    display: none;
+    position: absolute;
+    left: 150px;
+    top: 18px;
+    width: 110px;
+    height: 150px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/PoseJoy.png");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.hs-hero--done .hs-joy {
+    display: flex;
+}
+
+/* 왼쪽 위 이번 주: 고리 32 · 이번 주 · 2/3 · 회(사이 8) */
+.hs-ring-row {
+    flex-direction: row;
+    align-items: center;
+    height: 32px;
+}
+
+.mini-ring {
+    width: 32px;
+    height: 32px;
+}
 
 .bc .hs-week {
-    margin: 4px 0 0 8px;
+    margin-left: 8px;
     font-size: 12px;
-    color: #CDD5EA;
+    color: var(--text-secondary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
 .bc .hs-count {
-    margin-left: 6px;
-    font-size: 24px;
-    color: #F4F6FB;
+    margin-left: 8px;
+    font-size: 22px;
+    color: var(--text-primary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset");
 }
 
-.bc .hs-times { margin-left: 6px; }
-
-/* 친구 줄(지금 달리는 친구 → G-03, 친구 없음 → G-05) */
+/* 친구 줄(미리보기 .card.tap.rowx: 안쪽 12·16, → G-03 / 친구 없음 → G-05) */
 .hs-friend {
     -unity-text-align: middle-left;
     flex-direction: row;
     align-items: center;
-    height: 64px;
-    margin: 8px 0 0 0;
-    padding: 0 12px 0 16px;
-    border-radius: 16px;
+    min-height: 64px;
+    margin: 12px 0 0 0;
+    padding: 12px 16px;
 }
 
-.hs-friend:hover,
-.hs-friend:active { background-color: #223259; }
-
-.hs-avatars { flex-direction: row; width: 50px; height: 28px; margin-right: 12px; }
+/* 얼굴 둘(28, 겹침 8, 바탕색 테 2) */
+.hs-avatars {
+    flex-direction: row;
+    width: 48px;
+    height: 28px;
+    margin-right: 12px;
+}
 
 .hs-avatar {
     position: absolute;
@@ -242,76 +334,94 @@
     width: 28px;
     height: 28px;
     border-radius: 14px;
-    border-width: 1.6px;
-    border-color: #223259;
+    border-width: 2px;
+    border-color: var(--bg-app);
 }
 
-.hs-avatar--2 { left: 22px; }
+.hs-avatar--2 {
+    left: 20px;
+}
 
-.hs-friend-text { flex-grow: 1; flex-shrink: 1; }
+.hs-friend-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
 
 .bc .hs-friend-title {
     font-size: 16px;
-    color: #F4F6FB;
+    color: var(--text-primary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 
 .bc .hs-friend-sub {
     font-size: 12px;
-    color: rgba(205, 213, 234, 0.7);
+    color: var(--text-secondary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.hs-friend .bc-live { margin-right: 8px; }
+.hs-friend .bc-live {
+    margin: 0 8px 0 12px;
+}
 
-/* ---- C-01 코스 선택 ---- */
-.bc .cl-title { margin-top: 4px; }
+/* ---- C-01 코스 목록 ---- */
+.bc .cl-title {
+    margin-top: 12px;
+}
 
 .bc .cl-sub {
-    margin-top: 4px;
-    font-size: 14px;
-    color: #CDD5EA;
+    margin-top: 8px;
+    font-size: 16px;
+    color: var(--text-secondary);
+    white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.cl-chips { flex-direction: row; height: 44px; margin-top: 8px; align-items: center; }
-
-.bc .cl-chip {
-    height: 35px;
-    margin: 0 10px 0 0;
-    padding: 0 14px;
-    border-width: 1px;
-    border-radius: 18px;
-    border-color: #56668F;
-    background-color: #223259;
-    color: #F4F6FB;
-    font-size: 14px;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+/* 알약(미리보기 .pills: 36, 사이 8, 위아래 16) */
+.cl-chips {
+    flex-direction: row;
+    margin: 16px 0 0 0;
+    align-items: center;
 }
 
-.bc .cl-chip:hover,
-.bc .cl-chip:active { background-color: #223259; }
+.bc .cl-chip {
+    height: 36px;
+    margin: 0 8px 0 0;
+    padding: 0 14px;
+    border-width: 0;
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
+    border-radius: 18px;
+    background-color: var(--glass-control);
+    color: var(--text-primary);
+    font-size: 14px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    transition-property: scale, background-color;
+    transition-duration: 0.15s;
+}
+
+.bc .cl-chip:hover {
+    background-color: var(--glass-control);
+}
+
+.bc .cl-chip:active {
+    scale: 0.96 0.96;
+}
 
 .bc .cl-chip--active,
 .bc .cl-chip--active:hover,
 .bc .cl-chip--active:active {
-    border-width: 0;
-    background-color: #2F6FE4;
-    color: #FFFFFF;
+    border-top-width: 0;
+    background-color: var(--brand-primary);
+    color: var(--text-on-brand);
 }
 
-/* 코스 카드 353×236: 그림 136(CourseThumb) + 정보 100 */
-.cl-card {
+/* 코스 카드(유리, 안쪽 여백 없음): 그림 136 + 정보(안쪽 14·16·16, 사이 8). 카드 사이 16 */
+.bc .cl-card {
     -unity-text-align: upper-left;
-    height: 236px;
-    margin: 12px 0 4px 0;
+    margin: 16px 0 0 0;
     padding: 0;
-    border-radius: 20px;
     overflow: hidden;
 }
-
-.cl-card:hover,
-.cl-card:active { background-color: #223259; }
 
 .cl-thumb {
     height: 136px;
@@ -319,64 +429,90 @@
     -unity-background-scale-mode: scale-and-crop;
 }
 
+/* 그림 왼쪽 위: LIVE + 지금 N명(어두운 HUD 칩) */
 .cl-live {
     position: absolute;
-    left: 8px;
-    top: 8px;
+    left: 12px;
+    top: 12px;
     flex-direction: row;
     align-items: center;
-    height: 30px;
-    padding: 0 10px 0 6px;
-    border-radius: 15px;
-    background-color: rgba(10, 16, 32, 0.75);
 }
 
 .bc .cl-live-count {
-    margin-left: 10px;
+    height: 28px;
+    margin-left: 6px;
+    padding: 0 12px;
+    border-radius: 14px;
+    background-color: var(--hud-card);
+    color: var(--hud-text);
     font-size: 12px;
-    color: #FFFFFF;
+    -unity-text-align: middle-center;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.cl-info { flex-grow: 1; padding: 14px 18px 0 18px; }
+.cl-info {
+    padding: 14px 16px 16px 16px;
+}
 
-.cl-name-row { flex-direction: row; align-items: flex-start; }
+.cl-name-row {
+    flex-direction: row;
+    align-items: center;
+}
 
-.cl-name-text { flex-grow: 1; flex-shrink: 1; }
+.cl-name-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
 
 .bc .cl-name {
     font-size: 22px;
-    color: #F4F6FB;
+    color: var(--text-primary);
+    white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 .bc .cl-meta {
-    margin-top: 2px;
-    font-size: 12px;
-    color: #CDD5EA;
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.cl-runners { flex-direction: row; align-items: center; height: 26px; }
+/* 달리는 사람 얼굴(28, 겹침 8, 바탕색 테 2) + "+N" */
+.cl-runners {
+    flex-direction: row;
+    align-items: center;
+    height: 28px;
+    margin-left: 8px;
+}
 
 .cl-runner-face {
-    width: 26px;
-    height: 26px;
-    border-radius: 13px;
+    width: 28px;
+    height: 28px;
     margin-left: -8px;
-    border-width: 1.4px;
-    border-color: #FFFFFF;
+    border-radius: 14px;
+    border-width: 2px;
+    border-color: var(--bg-app);
 }
 
 .bc .cl-more {
     margin-left: 4px;
-    font-size: 14px;
-    color: #CDD5EA;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    font-size: 12px;
+    color: var(--text-secondary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.cl-zones { flex-direction: row; margin-top: 8px; }
-.cl-zone { width: 22px; height: 22px; margin-right: 8px; -unity-background-scale-mode: scale-to-fit; }
+.cl-zones {
+    flex-direction: row;
+    margin-top: 8px;
+}
+
+.cl-zone {
+    width: 22px;
+    height: 22px;
+    margin-right: 6px;
+    -unity-background-scale-mode: scale-to-fit;
+}
 
 .zone-1 { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/Zone1.png"); }
 .zone-2 { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/Zone2.png"); }
@@ -384,28 +520,40 @@
 .zone-4 { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/Zone4.png"); }
 .zone-5 { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/Zone5.png"); }
 
-/* 기록 상세에서 고스트로 들어왔을 때만 보이는 뒤로(코스 상세와 같은 동그라미) */
+/* 동그란 뒤로(미리보기 .circ-btn: 44, 어두운 HUD 유리 + 흰 화살표). 코스 목록은 기록 상세에서 고스트로 왔을 때만 */
 .bc .bc-back {
     width: 44px;
     height: 44px;
     margin: 0 0 8px 0;
-    padding: 0 0 4px 0;
-    border-width: 1px;
+    padding: 0;
+    border-width: 0;
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
     border-radius: 22px;
-    border-color: #56668F;
-    background-color: #223259;
-    color: #A9B4D3;
-    font-size: 28px;
-    -unity-text-align: middle-center;
+    background-color: var(--hud-card);
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/chevron-left-line.svg");
+    -unity-background-image-tint-color: var(--hud-text);
+    -unity-background-scale-mode: scale-to-fit;
+    background-size: 24px 24px;
+    color: rgba(0, 0, 0, 0);
+    font-size: 1px;
 }
 
-.bc .bc-back:hover,
-.bc .bc-back:active { background-color: #223259; }
+.bc .bc-back:hover {
+    background-color: var(--hud-card);
+}
+
+.bc .bc-back:active {
+    background-color: var(--hud-card);
+    scale: 0.96 0.96;
+}
 
 /* ---- C-02 코스 상세 ---- */
-.cd-content { padding: 0 0 16px 0; }
+.cd-content {
+    padding: 0 0 16px 0;
+}
 
-/* 맨 위 코스 그림(Figma 0–420, 아래는 #10164a로 흐려짐). 화면은 상태 표시줄 아래에서 시작해 그림도 54부터 → 366, 글은 Figma 372(= 318)부터 그림 위에 */
+/* 맨 위 코스 그림(미리보기 위 400 → 아래로 바탕색에 녹아듦, 그림 아래쪽이 이미 바탕색). 글은 그림 위 262부터 */
 .cd-hero {
     position: absolute;
     left: 0;
@@ -416,122 +564,157 @@
     -unity-background-scale-mode: scale-and-crop;
 }
 
-.cd-body { margin-top: 318px; padding: 0 20px; }
+.cd-body {
+    margin-top: 262px;
+    padding: 0 20px;
+}
 
-.cd-live-row { flex-direction: row; align-items: center; }
+.cd-live-row {
+    flex-direction: row;
+    align-items: center;
+}
 
 .bc .cd-live-text {
-    margin-left: 10px;
+    margin-left: 8px;
     font-size: 14px;
-    color: #F4F6FB;
+    color: var(--text-primary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 
-.bc .cd-live-text--alone { margin-left: 0; }
+.bc .cd-live-text--alone {
+    margin-left: 0;
+}
 
-.bc .cd-title { margin-top: 6px; }
+.bc .cd-title {
+    margin-top: 8px;
+}
 
 .bc .cd-desc {
-    margin-top: 6px;
+    margin-top: 8px;
     font-size: 14px;
-    color: #CDD5EA;
+    color: var(--text-secondary);
     white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.cd-zones { flex-direction: row; justify-content: space-between; margin-top: 16px; }
-.cd-zone { width: 70px; align-items: center; }
-.cd-zone-icon { width: 40px; height: 40px; -unity-background-scale-mode: scale-to-fit; }
+/* 구간 행성 5개(36 + 이름 12, 양 끝 맞춤) */
+.cd-zones {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 16px;
+}
+
+.cd-zone {
+    width: 60px;
+    align-items: center;
+}
+
+.cd-zone-icon {
+    width: 36px;
+    height: 36px;
+    -unity-background-scale-mode: scale-to-fit;
+}
 
 .bc .cd-zone-label {
     margin-top: 4px;
     font-size: 12px;
-    color: #CDD5EA;
+    color: var(--text-secondary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.cd-stats { flex-direction: row; margin-top: 18px; }
+/* 통계 칸 3개(미리보기 .stats·.stat: 사이 12, 안쪽 12·14, 모서리 16) */
+.cd-stats {
+    flex-direction: row;
+    margin-top: 20px;
+}
 
-.cd-stat {
+.bc .cd-stat {
     flex-grow: 1;
     flex-basis: 0;
-    height: 74px;
     padding: 12px 14px;
     border-radius: 16px;
 }
 
-.cd-stat--next { margin-left: 10px; }
+.bc .cd-stat:active {
+    background-color: var(--glass-fill);
+    scale: 1 1;
+}
+
+.cd-stat--next {
+    margin-left: 12px;
+}
 
 .bc .cd-stat-label {
     font-size: 12px;
-    color: #CDD5EA;
+    color: var(--text-secondary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.cd-stat-value-row { flex-direction: row; align-items: flex-end; margin-top: 4px; }
+.cd-stat-value-row {
+    flex-direction: row;
+    align-items: flex-end;
+    margin-top: 4px;
+}
 
 .bc .cd-stat-value {
-    font-size: 22px;
-    color: #F4F6FB;
+    font-size: 24px;
+    color: var(--text-primary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset");
 }
 
 .bc .cd-stat-unit {
     margin: 0 0 3px 2px;
-    font-size: 13px;
-    color: #F4F6FB;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    font-size: 14px;
+    color: var(--text-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
-.cd-footer { padding: 0 20px 12px 20px; }
+/* 아래: 안내 12 tertiary + 맵 입장(미리보기 .foot: 위 12, 아래 26, 사이 12) */
+.cd-footer {
+    padding: 12px 20px 26px 20px;
+}
 
 .bc .cd-note {
     font-size: 12px;
-    color: #CDD5EA;
+    color: var(--text-tertiary);
     -unity-text-align: middle-center;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.bc .cd-footer .bc-cta { margin-top: 8px; }
+.bc .cd-footer .bc-cta {
+    margin-top: 12px;
+}
 
 .bc .cd-back {
     position: absolute;
-    left: 16px;
+    left: 20px;
     top: 4px;
 }
 
-/* ---- 공통 상태(StateView, States.uss)를 어두운 바탕에(C-05: 아이콘 없이 제목·설명·어두운 버튼) ---- */
-.bc .state-icon { display: none; }
-
+/* ---- 공통 상태(StateView, States.uss)를 이 화면들에서(미리보기 C-05: 포즈 그림 + 18 제목 + 14 설명 + 보조 버튼) ---- */
 .bc .state-title {
-    margin-top: 0;
+    margin-top: 16px;
     font-size: 18px;
-    color: #F4F6FB;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 .bc .state-body {
     margin-top: 8px;
     font-size: 14px;
-    color: #CDD5EA;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
 .bc .state-action,
-.bc .state-alt {
-    width: 200px;
+.bc .state-action:hover {
     height: 54px;
-    align-self: center;
-    border-width: 1px;
-    border-radius: 20px;
-    border-color: #56668F;
-    background-color: #223259;
-    color: #F4F6FB;
+    border-width: 0;
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
+    background-color: var(--glass-control);
+    color: var(--text-primary);
 }
 
-.bc .skeleton-card,
-.bc .skeleton-bar,
-.bc .skeleton-dot,
-.bc .skeleton-hero {
-    background-color: rgba(34, 50, 89, 0.8);
+.bc .state-action:active {
+    background-color: var(--glass-pressed);
+    border-bottom-width: 0;
+    translate: 0 0;
+    scale: 0.96 0.96;
 }

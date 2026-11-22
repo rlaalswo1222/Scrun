@@ -1,12 +1,12 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- C-01 코스 선택(모양은 우주 시안 825:731 계획 0062). 홈 탭에서 쌓이는 화면이라 뒤로 가기 대신 아래 탭 "홈"을 다시 누르면 홈으로.
+    <!-- C-01 코스 선택(모양은 상준 미리보기 courses 계획 0068). 홈 탭에서 쌓이는 화면이라 뒤로 가기 대신 아래 탭 "홈"을 다시 누르면 홈으로.
          카드는 서버 코스(GET /v1/courses)로 채움(CourseListScreen). 카드 그림·구간 행성 5개는 시안 그대로(모든 코스 같음, 계획 0062 정할 것 2) -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/HomeSpace.uss" />
     <ui:VisualElement class="bc">
         <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="bc-scroll">
             <ui:VisualElement class="bc-page">
                 <!-- 기록 상세 "이 기록으로 고스트 달리기"로 기록 탭에 쌓였을 때만 보임(계획 0053) -->
-                <ui:Button name="back" text="‹" class="bc-back" />
+                <ui:Button name="back" class="bc-back" />
                 <ui:Label text="어디서 달릴까요?" class="bc-title cl-title" />
                 <ui:Label name="lead" text="코스를 고르면 같은 코스의 러너들과 함께 달려요" class="cl-sub" />
                 <ui:VisualElement class="cl-chips">

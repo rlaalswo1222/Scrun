@@ -18,7 +18,7 @@
     --text-on-brand: rgb(255, 255, 255);
     --text-on-accent: rgb(5, 7, 15);
     --text-on-status: rgb(5, 7, 15);
-    --text-on-kakao: rgba(0, 0, 0, 0.85);
+    --text-on-kakao: rgb(38, 34, 0);               /* 검정 85%를 카카오 노랑 위에 미리 섞은 색(선형 섞기면 반투명 검정이 회색으로 뜸) */
     --text-brand: rgb(125, 184, 255);
     --text-brand-strong: rgb(164, 210, 255);
     --text-success: rgb(61, 220, 151);
@@ -81,7 +81,7 @@
     --glass-pressed: rgba(255, 255, 255, 0.04);    /* (.14) */
     --glass-well: rgba(5, 7, 15, 0.58);            /* 입력칸 홈(.45) */
     --glass-divider: rgba(255, 255, 255, 0.02);    /* (.08) */
-    --glass-sheet: rgba(16, 26, 51, 0.96);         /* 시트·대화상자(Figma .82 + 흐림 → 흐림이 없어 진하게) */
+    --glass-sheet: rgb(16, 26, 51);                /* 시트·대화상자(Figma .82 + 흐림 24 → 흐림이 없어 불투명. 선형 섞기라 .96이어도 뒤 흰 글자가 22% 회색으로 비쳤음, 계획 0068 I) */
 
     /* ---- 옛 이름(밝은 와이어프레임 11/10) → 새 토큰. 화면을 옮기면서 하나씩 없앤다 ---- */
     --color-bg: rgba(0, 0, 0, 0);                  /* 바탕은 app-root 그림(BgBase)이 칠함 */
@@ -460,6 +460,7 @@
 }
 
 .btn-primary:disabled {
+    border-color: rgba(0, 0, 0, 0);       /* 둥근 아래 모서리에 두께 색이 비치지 않게 테 전부 */
     border-bottom-color: rgba(0, 0, 0, 0);
 }
 
@@ -626,7 +627,8 @@
     padding: var(--space-6) 0;
 }
 
-/* 로딩·오류 덮개(미리보기 .scrim·.dlg) */
+/* 로딩·오류 덮개(미리보기 .scrim·.dlg, I 예외 계획 0068): 어두운 덮개 + 가운데 유리 대화상자(최대 420, 모서리 28, 안쪽 24).
+   제목 22·설명 16 가운데, 버튼은 고스트 + 주 버튼 한 줄(미리보기 .row-btns) */
 .overlay {
     position: absolute;
     left: 0;
@@ -646,6 +648,7 @@
 .loading-text {
     font-size: 16px;
     color: var(--text-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
     padding: 12px 20px;
     border-radius: 22px;
     border-top-width: 1px;
@@ -655,6 +658,7 @@
 
 .dialog {
     width: 86%;
+    max-width: 420px;
     padding: var(--space-6);
     border-radius: 28px;
     border-width: 1px;
@@ -664,33 +668,39 @@
 }
 
 .dialog-title {
-    font-size: 18px;
+    font-size: 22px;
     color: var(--text-primary);
+    -unity-text-align: upper-center;
+    white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 .dialog-body {
-    font-size: 15px;
+    font-size: 16px;
     color: var(--text-secondary);
+    -unity-text-align: upper-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
     white-space: normal;
-    margin-top: var(--space-2);
+    margin-top: 14px;
 }
 
 .dialog-id {
     font-size: 11px;
     color: var(--text-tertiary);
+    -unity-text-align: upper-center;
     margin-top: var(--space-2);
 }
 
 .dialog-buttons {
     flex-direction: row;
-    margin-top: var(--space-2);
+    align-items: flex-start;
+    margin-top: 16px;
 }
 
 .dialog-buttons > .btn {
     flex-grow: 1;
     flex-basis: 0;
-    margin: 0 var(--space-2) 0 0;
+    margin: 0 12px 0 0;
 }
 
 .dialog-buttons > .btn-primary {

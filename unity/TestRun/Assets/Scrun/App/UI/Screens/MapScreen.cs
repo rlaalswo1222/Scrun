@@ -974,6 +974,12 @@ namespace Scrun.App
             if (listener != null) listener.enabled = true;
         }
 
-        void SetProgress(float p) => progress.style.width = Length.Percent(Mathf.Clamp01(p) * 100f);
+        void SetProgress(float p)
+        {
+            float pct = Mathf.Clamp01(p) * 100f;
+            progress.style.width = Length.Percent(pct);
+            var rocket = Root.Q<VisualElement>("rocket"); // 로켓 코 끝 = 채워진 끝(미리보기 I-10, Map.uxml)
+            if (rocket != null) rocket.style.left = Length.Percent(pct);
+        }
     }
 }

@@ -105,7 +105,7 @@ namespace Scrun.App
             state.Clear();
             title.text = course.Name;
             description.text = course.Description ?? "";
-            liveTag.SetVisible(course.RunnersNow > 0);
+            liveTag.parent.SetVisible(course.RunnersNow > 0); // LIVE 칩(점 + 글자를 감싼 칸, 계획 0068)
             liveText.EnableInClassList("cd-live-text--alone", course.RunnersNow <= 0); // LIVE가 없으면 왼쪽 여백 없이
             liveText.text = CourseText.RunningNow(course.RunnersNow);
             runners.text = System.Math.Max(0, course.RunnersNow).ToString();

@@ -10,6 +10,8 @@ namespace Scrun.App
         public const string RootClass = "app-root--space";
         public const string HomeRootClass = "app-root--home";                  // B·C 시안(계획 0062): 홈·코스 목록
         public const string CourseDetailRootClass = "app-root--course-detail"; // C-02: 위 420이 맨 위 코스 그림 색
+        public const string LoginRootClass = "app-root--login";                // A-05·A-19 로그인 바탕(미리보기 bg_login, 계획 0068)
+        public const string CelebrateRootClass = "app-root--celebrate";        // A-17 완료·보상 축하 바탕(bg_celebrate)
 
         public static void Fit(VisualElement fit)
         {

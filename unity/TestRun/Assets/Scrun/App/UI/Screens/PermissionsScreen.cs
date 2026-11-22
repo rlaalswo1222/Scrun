@@ -76,7 +76,7 @@ namespace Scrun.App
         {
             var info = OnboardingText.Permission(kind);
             var row = new VisualElement();
-            row.AddToClassList("sp-card");
+            row.AddToClassList("ui-card"); // 유리 카드(Space.uss, 계획 0068)
             row.AddToClassList("perm-row");
             var icon = new VisualElement();
             icon.AddToClassList("perm-icon");
@@ -99,6 +99,7 @@ namespace Scrun.App
             if (!chips.TryGetValue(kind, out var c)) return;
             c.chip.text = OnboardingText.Chip(c.required, status);
             c.chip.EnableInClassList("perm-chip--ok", status == PermissionStatus.Granted);
+            c.chip.EnableInClassList("perm-chip--denied", status == PermissionStatus.Denied || status == PermissionStatus.Restricted); // 꺼짐: 노란 칩
             c.chip.EnableInClassList("perm-chip--off", status != PermissionStatus.Granted && (!c.required || status != PermissionStatus.NotDetermined));
         }
 

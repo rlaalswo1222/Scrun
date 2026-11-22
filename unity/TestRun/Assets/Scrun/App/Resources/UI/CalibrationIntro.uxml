@@ -1,20 +1,25 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- A-11 속도 보정 안내(첫 러닝 전·재보정, 세로). 모양은 우주 시안 886:25(계획 0061), 문구·속도 칩은 실제 사다리(CalibrationCopy) -->
+    <!-- A-11 속도 보정 안내(첫 러닝 전·재보정, 세로). 모양은 미리보기 calibIntro(계획 0068), 문구·속도 칩은 실제 사다리(CalibrationCopy) -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingSpace.uss" />
-    <ui:VisualElement class="sp">
-        <ui:VisualElement name="fit" class="sp-fit">
-            <ui:VisualElement class="sp-art art-calib">
-                <ui:VisualElement class="sp-img img-calib" />
+    <ui:VisualElement class="ob ui-screen">
+        <ui:VisualElement class="ui-nav">
+            <ui:Button name="back" class="ui-nav-act ui-nav-back" />
+            <ui:VisualElement class="ob-nav-space" />
+        </ui:VisualElement>
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ui-scroll">
+            <ui:Label name="title" class="ui-title ob-title" />
+            <ui:Label name="lead" class="ui-text ob-lead" />
+            <ui:VisualElement class="ui-ill ob-ill ob-ill--short" picking-mode="Ignore">
+                <ui:VisualElement class="ob-ill-img ob-treadmill" />
             </ui:VisualElement>
+            <ui:VisualElement class="ui-card quest">
+                <ui:VisualElement name="steps" />
+                <ui:VisualElement name="speeds" class="quest-chips" />
+            </ui:VisualElement>
+            <ui:Label name="note" class="calib-note" />
+        </ui:ScrollView>
+        <ui:VisualElement class="ui-foot">
+            <ui:Button name="start" class="btn btn-primary" />
         </ui:VisualElement>
-        <ui:Label name="title" class="sp-title sp-center" />
-        <ui:Label name="lead" class="sp-lead calib-lead" />
-        <ui:VisualElement class="sp-card quest">
-            <ui:VisualElement name="steps" />
-            <ui:VisualElement name="speeds" class="quest-chips" />
-        </ui:VisualElement>
-        <ui:Label name="note" class="sp-caption" />
-        <ui:Button name="start" class="sp-cta cta-gap" />
-        <ui:Button name="back" text="‹" class="sp-pill sp-back calib-top" />
     </ui:VisualElement>
 </ui:UXML>
