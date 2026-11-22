@@ -1,37 +1,40 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <!-- G-05 친구 추가 · G-06 코드 입력 중 · G-08 코드 오류(계획 0044, Figma 608:2028·2079·2152).
-         칸을 누르면(G-06) 제목이 바뀌고 내 코드 칸이 접힘. 오류는 칸 아래 빨간 글자(케이스별 문구는 FriendText.AddError) -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+         칸을 누르면(G-06) 제목이 바뀌고 내 코드 칸이 접힘. 오류는 칸 아래 빨간 글자(케이스별 문구는 FriendText.AddError).
+         모양은 상준 우주 디자인 미리보기(계획 0068, js/views/friends.js addFriend) -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
-    <ui:VisualElement class="onb fr">
-        <ui:VisualElement class="nav-bar">
-            <ui:VisualElement class="nav-side">
-                <ui:Button name="back" class="nav-back" />
-            </ui:VisualElement>
-            <ui:Label text="친구 추가" class="nav-title" />
-            <ui:VisualElement class="nav-side nav-side--right" />
+    <ui:VisualElement class="fr ui-screen">
+        <ui:VisualElement class="ui-nav">
+            <ui:Button name="back" class="ui-nav-act ui-nav-back" />
+            <ui:Label text="친구 추가" class="ui-nav-title" />
+            <ui:VisualElement class="fr-nav-space" />
         </ui:VisualElement>
-        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
-            <ui:Label name="title" text="친구를 추가해요" class="onb-title" />
-            <ui:Label name="lead" text="내 친구 코드를 공유하거나, 받은 코드를 입력하세요" class="onb-lead" />
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ui-scroll">
+            <ui:Label name="title" text="친구를 추가해요" class="ui-title fr-head-title" />
+            <ui:Label name="lead" text="내 친구 코드를 공유하거나, 받은 코드를 입력하세요" class="ui-text ui-c2 fr-lead" />
 
-            <ui:VisualElement name="my-code-card" class="fr-code-card">
-                <ui:Label text="내 친구 코드" class="fr-code-label" />
-                <ui:Label name="my-code" text="········" class="fr-code" />
+            <ui:VisualElement name="my-code-card" class="ui-card fr-code-card">
+                <ui:Label text="내 친구 코드" class="ui-sm ui-c2" />
+                <ui:Label name="my-code" text="········" class="ui-display fr-code" />
                 <ui:VisualElement class="fr-code-buttons">
-                    <ui:Button name="copy" text="복사" class="fr-small-btn" />
-                    <ui:Button name="share" text="공유" class="fr-small-btn fr-small-btn--next" />
+                    <ui:Button name="copy" class="fr-small-btn">
+                        <ui:VisualElement class="fr-btn-icon fr-btn-icon--copy" picking-mode="Ignore" />
+                        <ui:Label text="복사" class="fr-small-btn-text" picking-mode="Ignore" />
+                    </ui:Button>
+                    <ui:Button name="share" class="fr-small-btn fr-small-btn--next">
+                        <ui:VisualElement class="fr-btn-icon fr-btn-icon--share" picking-mode="Ignore" />
+                        <ui:Label text="공유" class="fr-small-btn-text" picking-mode="Ignore" />
+                    </ui:Button>
                 </ui:VisualElement>
-                <ui:Label name="code-notice" class="fr-notice" />
+                <ui:Label name="code-notice" class="ui-cap ui-cb fr-notice" />
             </ui:VisualElement>
 
-            <ui:Label name="input-title" text="친구 코드 입력" class="fr-section" />
-            <ui:VisualElement name="code-box" class="fig-field">
+            <ui:Label name="input-title" text="친구 코드 입력" class="ui-sub fr-input-title" />
+            <ui:VisualElement name="code-box" class="fig-field fr-field">
                 <ui:TextField name="code" />
             </ui:VisualElement>
             <ui:Label name="error" class="fr-error" />
-            <ui:Button name="submit" text="친구 추가" class="btn btn-soft btn-fig" />
+            <ui:Button name="submit" text="친구 추가" class="btn btn-soft fr-submit" />
         </ui:ScrollView>
     </ui:VisualElement>
 </ui:UXML>

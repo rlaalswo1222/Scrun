@@ -96,20 +96,19 @@ namespace Scrun.App
             return card;
         }
 
-        // G-09 최근 러닝 줄(Record Row)
+        // G-09 최근 러닝 카드(Record Row): 날짜 / 거리 + 인증 칩 / 시간·페이스(우주 디자인 미리보기 friendProfile)
         public static VisualElement RecordRow(FriendRun r)
         {
             var row = new VisualElement();
             row.AddToClassList("fr-record");
-            var text = new VisualElement { pickingMode = PickingMode.Ignore };
-            text.AddToClassList("fr-row-text");
-            text.style.marginLeft = 0;
-            text.Add(UiExtensions.Text(FriendText.RunDate(r.StartedAt), "fr-record-date"));
-            text.Add(UiExtensions.Text(FriendText.Km(r.DistanceM), "fr-record-km"));
-            text.Add(UiExtensions.Text(FriendText.RunDetail(r), "fr-sub"));
-            row.Add(text);
+            row.Add(UiExtensions.Text(FriendText.RunDate(r.StartedAt), "fr-record-date"));
+            var line = new VisualElement { pickingMode = PickingMode.Ignore };
+            line.AddToClassList("fr-record-line");
+            line.Add(UiExtensions.Text(FriendText.Km(r.DistanceM), "fr-record-km"));
             var chip = VerificationChip(r.Verification);
-            if (chip != null) row.Add(chip);
+            if (chip != null) line.Add(chip);
+            row.Add(line);
+            row.Add(UiExtensions.Text(FriendText.RunDetail(r), "fr-sub"));
             return row;
         }
 

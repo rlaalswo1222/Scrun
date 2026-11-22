@@ -1,12 +1,13 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <!-- G-01·G-02·G-04 친구 탭(계획 0044, Figma 608:1675·1772·1969). 위: 지금 달리는 친구(실시간), 아래: 친구 피드.
-         친구가 0명이면 G-04 빈 상태. 줄·카드는 FriendsScreen이 코드로(FriendParts) -->
+         친구가 0명이면 G-04 빈 상태. 줄·카드는 FriendsScreen이 코드로(FriendParts).
+         모양은 상준 우주 디자인 미리보기(계획 0068, js/views/friends.js friends) -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
-    <ui:VisualElement class="fr fr-page">
-        <ui:VisualElement class="fr-header">
-            <ui:Label text="친구" class="fr-title" />
-            <ui:VisualElement class="fr-header-actions">
-                <ui:Button name="manage" text="관리" class="fr-text-btn" />
+    <ui:VisualElement class="fr ui-screen">
+        <ui:VisualElement class="ui-row ui-row--between fr-header">
+            <ui:Label text="친구" class="ui-title" />
+            <ui:VisualElement class="ui-row">
+                <ui:Button name="manage" text="관리" class="ui-nav-act ui-nav-act--text fr-manage" />
                 <ui:Button name="add" class="fr-round-add">
                     <ui:VisualElement class="fr-plus" picking-mode="Ignore" />
                 </ui:Button>
@@ -14,30 +15,34 @@
         </ui:VisualElement>
 
         <!-- 친구가 있을 때(G-01·G-02) -->
-        <ui:ScrollView name="scroll" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="fr-scroll">
+        <ui:ScrollView name="scroll" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ui-scroll fr-scroll">
             <ui:Label name="pull" class="fr-pull" />
-            <ui:Label name="running-title" text="지금 달리는 친구" class="fr-section" />
+            <ui:Label name="running-title" text="지금 달리는 친구" class="ui-sub fr-section fr-section--first" />
             <ui:VisualElement name="running-list" />
             <!-- G-02 -->
-            <ui:VisualElement name="running-empty" class="fr-empty-card">
-                <ui:Label text="지금 달리는 친구가 없어요" class="fr-empty-title" />
-                <ui:Label text="친구가 달리기 시작하면 여기에 표시돼요" class="fr-empty-body" />
+            <ui:VisualElement name="running-empty" class="ui-card fr-empty-card">
+                <ui:Label text="지금 달리는 친구가 없어요" class="ui-text-strong ui-center" />
+                <ui:Label text="친구가 달리기 시작하면 여기에 표시돼요" class="ui-sm ui-c2 ui-center" />
             </ui:VisualElement>
-            <ui:Label text="친구 피드" class="fr-section" />
+            <ui:Label text="친구 피드" class="ui-sub fr-section" />
             <ui:VisualElement name="feed-list" />
-            <ui:Label name="feed-empty" text="아직 친구들이 공유한 러닝이 없어요" class="fr-hint" />
+            <ui:Label name="feed-empty" text="아직 친구들이 공유한 러닝이 없어요" class="ui-sm ui-c3 fr-hint" />
             <ui:Button name="feed-more" text="더 보기" class="btn btn-ghost fr-more" />
         </ui:ScrollView>
 
-        <!-- G-04 친구 없음 -->
-        <ui:VisualElement name="no-friends" class="fr-scroll">
-            <ui:VisualElement class="fr-illust">
-                <ui:VisualElement class="fr-illust-icon" />
+        <!-- G-04 친구 없음: 유리 칸 300 안 러닝복 캐릭터 둘, 가운데 글, 아래 버튼 -->
+        <ui:VisualElement name="no-friends" class="fr-none">
+            <ui:VisualElement class="ui-body">
+                <ui:VisualElement class="ui-ill fr-illust">
+                    <ui:VisualElement class="fr-illust-char fr-illust-char--a" picking-mode="Ignore" />
+                    <ui:VisualElement class="fr-illust-char fr-illust-char--b" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:Label text="함께 달릴 친구를 추가해 보세요" class="ui-heading ui-center fr-none-title" />
+                <ui:Label text="친구가 달리고 있으면 바로 같이 달릴 수 있고,&#10;서로의 인증된 러닝도 볼 수 있어요" class="ui-text ui-c2 ui-center fr-none-lead" />
             </ui:VisualElement>
-            <ui:Label text="함께 달릴 친구를 추가해 보세요" class="fr-big" />
-            <ui:Label text="친구가 달리고 있으면 바로 같이 달릴 수 있고,&#10;서로의 인증된 러닝도 볼 수 있어요" class="fr-lead" />
-            <ui:VisualElement class="fr-spacer" />
-            <ui:Button name="add-first" text="친구 추가하기" class="btn btn-primary" />
+            <ui:VisualElement class="ui-foot fr-foot">
+                <ui:Button name="add-first" text="친구 추가하기" class="btn btn-primary" />
+            </ui:VisualElement>
         </ui:VisualElement>
 
         <!-- 공통 상태(계획 0056): 처음 받는 동안 스켈레톤, 실패하면 여기에 -->
