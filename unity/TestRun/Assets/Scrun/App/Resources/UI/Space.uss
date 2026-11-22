@@ -1,0 +1,490 @@
+/* 공통 부품(계획 0068): 상준 미리보기 css/ui.css(= Figma UI Kit)를 USS로. 값은 App.uss 토큰만 쓴다.
+   이름은 미리보기 클래스에 ui- 를 붙임(옛 화면 클래스와 안 겹치게): .card → .ui-card, .t-title → .ui-title.
+   USS에 없는 것: 흐림(backdrop-filter)·그라데이션·그림자·글로우 → 반투명 채움 + 위 가장자리 1px 빛, 그림으로.
+   움직임(화면 넘김·튀기·숫자 올리기)은 C#(ScreenTransitions·UiMotion), 누름 반응은 여기 transition */
+
+/* ---------- 화면 틀 ---------- */
+.ui-screen {
+    flex-grow: 1;
+}
+
+/* 본문: 좌우 20 */
+.ui-body {
+    flex-grow: 1;
+    padding: 0 20px;
+}
+
+.ui-scroll {
+    flex-grow: 1;
+}
+
+.ui-scroll .unity-scroll-view__content-container { /* Unity 6 ScrollView 구조에 맞게 자손 선택자로 */
+    padding: 0 20px 24px 20px;
+}
+
+/* 아래 버튼 자리: 위 12, 아래 26(홈 바는 SafeArea) */
+.ui-foot {
+    flex-shrink: 0;
+    padding: 12px 20px 26px 20px;
+}
+
+.ui-spacer {
+    flex-grow: 1;
+}
+
+/* 내비 바: 높이 48, 가운데 제목(18 Bold), 양쪽 44 버튼 */
+.ui-nav {
+    height: 48px;
+    flex-shrink: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 12px;
+}
+
+.ui-nav-title {
+    position: absolute;
+    left: 60px;
+    right: 60px;
+    -unity-text-align: middle-center;
+    font-size: 18px;
+    color: var(--text-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ui-nav-act {
+    min-width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0 8px;
+    border-width: 0;
+    border-radius: 12px;
+    background-color: rgba(0, 0, 0, 0);
+    color: var(--text-primary);
+    -unity-background-image-tint-color: var(--text-primary);
+    -unity-background-scale-mode: scale-to-fit;
+    background-size: 24px 24px;
+}
+
+.ui-nav-act:hover {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.ui-nav-act:active {
+    background-color: var(--glass-pressed);
+}
+
+.ui-nav-act--text {
+    font-size: 14px;
+    color: var(--text-brand);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+}
+
+.ui-nav-back {
+    width: 44px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/chevron-left-line.svg"); /* 흰 선(색은 tint) */
+}
+
+/* ---------- 글자 ---------- */
+.ui-display { font-size: 36px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset"); color: var(--text-primary); }
+.ui-title { font-size: 28px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset"); color: var(--text-primary); white-space: normal; }
+.ui-heading { font-size: 22px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset"); color: var(--text-primary); white-space: normal; }
+.ui-sub { font-size: 18px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset"); color: var(--text-primary); white-space: normal; }
+.ui-text { font-size: 16px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset"); color: var(--text-primary); white-space: normal; }
+.ui-text-strong { font-size: 16px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset"); color: var(--text-primary); white-space: normal; }
+.ui-sm { font-size: 14px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset"); color: var(--text-primary); white-space: normal; }
+.ui-sm-strong { font-size: 14px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset"); color: var(--text-primary); white-space: normal; }
+.ui-cap { font-size: 12px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset"); color: var(--text-primary); white-space: normal; }
+.ui-micro { font-size: 11px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset"); color: var(--text-primary); }
+.ui-stat-num { font-size: 24px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset"); color: var(--text-primary); }
+.ui-num { font-size: 44px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset"); color: var(--text-primary); }
+.ui-num-xl { font-size: 56px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset"); color: var(--text-primary); }
+.ui-unit { font-size: 16px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset"); color: var(--text-secondary); margin-left: 4px; }
+.ui-note { font-size: 13px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset"); color: var(--text-tertiary); white-space: normal; }
+.ui-sec-label { font-size: 14px; -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset"); color: var(--text-tertiary); margin: 8px 0 8px 0; }
+
+.ui-c2 { color: var(--text-secondary); }
+.ui-c3 { color: var(--text-tertiary); }
+.ui-cb { color: var(--text-brand); }
+.ui-ca { color: var(--brand-accent); }
+.ui-cs { color: var(--text-success); }
+.ui-cw { color: var(--text-warn); }
+.ui-ce { color: var(--text-error); }
+.ui-center { -unity-text-align: upper-center; }
+
+/* 제목 묶음(미리보기 .head): 위 12, 제목과 설명 사이 8 */
+.ui-head {
+    margin-top: 12px;
+}
+
+.ui-head > .ui-text {
+    margin-top: 8px;
+    color: var(--text-secondary);
+}
+
+/* ---------- 줄 맞춤 ---------- */
+.ui-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.ui-row--between {
+    justify-content: space-between;
+}
+
+.ui-grow {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.ui-gap-8 { margin-top: 8px; }
+.ui-gap-12 { margin-top: 12px; }
+.ui-gap-16 { margin-top: 16px; }
+.ui-gap-24 { margin-top: 24px; }
+.ui-gap-32 { margin-top: 32px; }
+
+/* ---------- 카드(유리): 별이 비치는 흰빛, 위 가장자리에만 빛 ---------- */
+.ui-card {
+    padding: 16px;
+    border-radius: 20px;
+    border-width: 1px;
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-fill);
+}
+
+.ui-card--tap {
+    transition-property: scale, background-color;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
+}
+
+.ui-card--tap:active {
+    scale: 0.98 0.98;
+    background-color: var(--glass-pressed);
+}
+
+.ui-card--flat {
+    border-color: rgba(0, 0, 0, 0);
+    border-top-color: var(--glass-edge);
+}
+
+.ui-card--warn {
+    border-color: rgba(0, 0, 0, 0);
+    border-top-color: var(--glass-control-edge);
+    background-color: var(--status-warn-bg);
+}
+
+.ui-card--error {
+    border-color: rgba(0, 0, 0, 0);
+    border-top-color: var(--glass-control-edge);
+    background-color: var(--status-error-bg);
+}
+
+.ui-card--info {
+    border-color: rgba(0, 0, 0, 0);
+    border-top-color: var(--glass-control-edge);
+    background-color: var(--status-info-bg);
+}
+
+.ui-card--sel {
+    border-width: 2px;
+    border-color: var(--border-focus);
+}
+
+/* 카드 사이 12 */
+.ui-stack > * {
+    margin-top: 12px;
+}
+
+.ui-stack > .ui-first {
+    margin-top: 0;
+}
+
+/* 목록 줄(카드 안): 높이 60, 사이 구분선 */
+.ui-li {
+    flex-direction: row;
+    align-items: center;
+    min-height: 60px;
+    padding: 8px 0;
+    border-top-width: 1px;
+    border-top-color: var(--glass-divider);
+}
+
+.ui-li--first {
+    border-top-width: 0;
+}
+
+.ui-li--tap:active {
+    background-color: var(--glass-pressed);
+}
+
+.ui-chev {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/chevron-right-line.svg");
+    -unity-background-image-tint-color: var(--icon-muted);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* 통계 칸 3개(미리보기 .stats·.stat) */
+.ui-stats {
+    flex-direction: row;
+}
+
+.ui-stat {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-left: 12px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border-width: 1px;
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-fill);
+}
+
+.ui-stat--first {
+    margin-left: 0;
+}
+
+.ui-stat-key {
+    font-size: 12px;
+    color: var(--text-secondary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.ui-stat-value {
+    margin-top: 4px;
+    font-size: 24px;
+    color: var(--text-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset");
+}
+
+/* 그림 칸·사진 */
+.ui-ill {
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 20px;
+    border-width: 1px;
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-fill);
+}
+
+.ui-img {
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.ui-photo {
+    overflow: hidden;
+    border-radius: 20px;
+    border-width: 1px;
+    border-color: var(--glass-stroke);
+    background-color: var(--brand-night);
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+/* ---------- 칩(상태)·알약(고르기) ---------- */
+.ui-chip {
+    flex-direction: row;
+    align-items: center;
+    align-self: flex-start;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 14px;   /* 999px는 Unity에서 타원이 됨 → 높이의 반 */
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
+    background-color: var(--glass-control);
+    color: var(--text-primary);
+    font-size: 12px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+    -unity-text-align: middle-center;
+}
+
+.ui-chip--active { border-top-width: 0; background-color: var(--brand-primary); color: var(--text-on-brand); }
+.ui-chip--success { border-top-width: 0; background-color: var(--status-success-bg); color: var(--text-success); }
+.ui-chip--warn { border-top-width: 0; background-color: var(--status-warn-bg); color: var(--text-warn); }
+.ui-chip--error { border-top-width: 0; background-color: var(--status-error-bg); color: var(--text-error); }
+.ui-chip--gray { border-width: 1px; border-color: var(--border-strong); background-color: var(--bg-muted); color: var(--text-secondary); }
+
+.ui-chip--live {
+    border-top-width: 0;
+    background-color: var(--brand-accent);
+    color: var(--text-on-accent);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.ui-chip--small {
+    height: 22px;
+    border-radius: 11px;
+    padding: 0 8px;
+    font-size: 11px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.ui-pills {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.ui-pill {
+    height: 36px;
+    margin: 0 8px 0 0;
+    padding: 0 14px;
+    border-width: 0;
+    border-radius: 18px;
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
+    background-color: var(--glass-control);
+    color: var(--text-primary);
+    font-size: 14px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    transition-property: scale, background-color;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
+}
+
+.ui-pill:hover {
+    background-color: var(--glass-control);
+}
+
+.ui-pill:active {
+    scale: 0.96 0.96;
+}
+
+.ui-pill--on,
+.ui-pill--on:hover {
+    border-top-width: 0;
+    background-color: var(--brand-primary);
+    color: var(--text-on-brand);
+}
+
+/* ---------- 아이콘 원·상태 원 ---------- */
+.ui-icirc {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 22px;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-subtle);
+    -unity-background-image-tint-color: var(--icon-brand);
+    -unity-background-scale-mode: scale-to-fit;
+    background-size: 24px 24px;
+}
+
+/* 큰 상태 표시: 점토 3D 오브젝트 그림(미리보기 st3d, 132). 들어올 때 튐·흔들림·둥실은 UiMotion */
+.ui-st3d {
+    width: 132px;
+    height: 132px;
+    align-self: center;
+    margin: -22px 0 -29px 0;   /* 그림 둘레 여백만큼 당김(크기 × .17, .22) */
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.ui-num-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    background-color: var(--brand-primary);
+    color: var(--text-on-brand);
+    font-size: 12px;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+    -unity-text-align: middle-center;
+}
+
+/* 아바타(얼굴 렌더) */
+.ui-av {
+    flex-shrink: 0;
+    border-radius: 14px;
+    background-color: var(--bg-subtle);
+    -unity-background-scale-mode: scale-and-crop;
+    -unity-text-align: middle-center;
+    color: var(--text-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.ui-av--28 { width: 28px; height: 28px; border-radius: 14px; font-size: 12px; }
+.ui-av--40 { width: 40px; height: 40px; border-radius: 20px; font-size: 16px; }
+.ui-av--46 { width: 46px; height: 46px; border-radius: 23px; font-size: 18px; }
+.ui-av--56 { width: 56px; height: 56px; border-radius: 28px; font-size: 22px; }
+.ui-av--96 { width: 96px; height: 96px; border-radius: 48px; font-size: 36px; }
+
+/* 진행 막대(레벨·목표) */
+.ui-bar {
+    height: 6px;
+    border-radius: 3px;
+    background-color: var(--bg-track);
+    overflow: hidden;
+}
+
+.ui-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background-color: var(--reward-xp);
+}
+
+/* ---------- 시트·대화상자 ---------- */
+.ui-scrim {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-overlay);
+}
+
+.ui-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 86%;
+    padding: 12px 20px 34px 20px;
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    border-top-width: 1px;
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-sheet);
+}
+
+.ui-sheet-handle {
+    width: 36px;
+    height: 5px;
+    align-self: center;
+    margin-bottom: 12px;
+    border-radius: 3px;
+    background-color: var(--glass-edge);
+}
+
+/* ---------- 입력·체크 ---------- */
+.ui-check {
+    flex-direction: row;
+    align-items: center;
+    min-height: 44px;
+}
+
+.ui-check-box {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    border-width: 1.5px;
+    border-color: var(--border-strong);
+    -unity-background-image-tint-color: rgba(0, 0, 0, 0);
+    -unity-background-scale-mode: scale-to-fit;
+    background-size: 16px 16px;
+}
+
+.ui-check--on .ui-check-box {
+    border-width: 0;
+    background-color: var(--brand-primary);
+    -unity-background-image-tint-color: var(--text-on-brand);
+}

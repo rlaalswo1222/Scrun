@@ -22,7 +22,7 @@
 .course .setup-title {
     font-size: var(--font-size-title);
     letter-spacing: -0.56px;
-    color: var(--color-surface);
+    color: var(--color-on-color);
     white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
@@ -88,7 +88,7 @@
 
 .course .setup-foot-note {
     font-size: var(--font-size-body-sm);
-    color: var(--color-surface);
+    color: var(--color-on-color);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
@@ -302,7 +302,7 @@
     height: 24px;
     border-radius: 12px;
     background-color: var(--color-primary);
-    color: var(--color-surface);
+    color: var(--color-on-color);
     font-size: var(--font-size-caption);
     -unity-text-align: middle-center;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
@@ -336,7 +336,7 @@
     border-radius: 6px;
     border-color: rgba(255, 255, 255, 0.85);
     background-color: rgba(0, 0, 0, 0);
-    -unity-background-image-tint-color: var(--color-surface);
+    -unity-background-image-tint-color: var(--color-on-color);
 }
 
 .skip-toggle:checked .unity-toggle__checkmark {
@@ -347,7 +347,7 @@
 .course .skip-toggle .unity-toggle__text {
     margin-left: var(--space-2);
     font-size: var(--font-size-body-sm);
-    color: var(--color-surface);
+    color: var(--color-on-color);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 

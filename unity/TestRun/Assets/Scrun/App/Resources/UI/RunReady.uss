@@ -196,7 +196,7 @@
 .course .count-number {
     margin-top: var(--space-2);
     font-size: 120px;
-    color: var(--color-surface);
+    color: var(--color-on-color);
     -unity-text-align: middle-center;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
@@ -204,7 +204,7 @@
 .course .count-lead {
     margin-top: var(--space-2);
     font-size: var(--font-size-body);
-    color: var(--color-surface);
+    color: var(--color-on-color);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 

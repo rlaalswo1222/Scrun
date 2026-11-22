@@ -33,7 +33,7 @@
 .rc-month--on:hover,
 .rc-month--on:active {
     background-color: var(--color-primary);
-    color: var(--color-surface);
+    color: var(--color-on-color);
 }
 
 /* ---- 이번 주 요약 3칸(파란 칸) ---- */
@@ -64,7 +64,7 @@
 .rc .rc-tile-value {
     margin-top: 4px;
     font-size: var(--font-size-sub);
-    color: var(--color-surface);
+    color: var(--color-on-color);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 

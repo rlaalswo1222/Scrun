@@ -113,6 +113,12 @@ namespace Scrun.App.Editor
             foreach (var name in new[] { "HomeHero", "HomeHeroShort", "CourseThumb", "CourseHero", "Face", "Zone1", "Zone2", "Zone3",
                                          "Zone4", "Zone5", "DockHome", "DockFriends", "DockRecords", "DockMe" })
                 SetImage($"{ImageDir}/Space/{name}.png", uncompressed: false);
+            // 우주 디자인 전체(계획 0068, 상준 미리보기 img/): 바탕 넷은 무압축(2배), 탭 키 아이콘은 고품질 압축
+            foreach (var name in new[] { "BgBase", "BgHome", "BgCelebrate", "BgLogin" })
+                SetImage($"{ImageDir}/Space/{name}.png", uncompressed: true);
+            foreach (var tab in new[] { "Home", "Friends", "Records", "My" })
+                foreach (var state in new[] { "Idle", "Active" })
+                    SetImage($"{ImageDir}/Space/Tab{tab}{state}.png", uncompressed: false);
         }
 
         static void SetImage(string path, bool uncompressed)

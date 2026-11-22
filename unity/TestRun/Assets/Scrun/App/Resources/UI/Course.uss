@@ -28,7 +28,7 @@
 .chip--active:hover,
 .chip--active:active {
     background-color: var(--color-primary);
-    color: var(--color-surface);
+    color: var(--color-on-color);
 }
 
 /* Chip/Live: 지금 달리는 중 */
@@ -338,7 +338,7 @@
 
 .course .map-course-label {
     font-size: var(--font-size-caption);
-    color: var(--color-surface);
+    color: var(--color-on-color);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 
@@ -415,7 +415,7 @@
 .course .map-loading-title {
     font-size: var(--font-size-title);
     letter-spacing: -0.56px;
-    color: var(--color-surface);
+    color: var(--color-on-color);
     -unity-text-align: middle-center;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }

@@ -1,27 +1,36 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <!-- 앱 전체 틀: 화면 자리(screen-host) + 아래 탭 4개 + 로딩·오류 덮개(Feedback). AppRoot가 띄우고 Navigator가 화면을 바꾼다 -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/App.uss" />
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/Space.uss" />
     <ui:VisualElement name="app-root" class="app-root">
         <ui:VisualElement name="safe-area" class="safe-area">
             <ui:VisualElement name="screen-host" class="screen-host" />
-            <!-- 아래 탭: 우주 시안 Game/Dock(계획 0062, 떠 있는 막대 + 고른 탭은 솟은 받침). 홈·친구·기록·마이 순서.
-                 tab-bar 아래 여백은 SafeArea가 홈 바만큼 넣고, 막대·탭은 안쪽 dock에 -->
+            <!-- 아래 탭: C 콕핏(11/22 확정, Figma Game/Dock 865:3772, 계획 0068). 계기판 패널(눈금·나사 4개) 위 키캡 4개, 홈·친구·기록·마이 순서.
+                 고른 키는 Navigator가 붙이는 선택 클래스로 LED 켜짐·파란 선. tab-bar 아래 여백은 SafeArea가 홈 바만큼 넣음 -->
             <ui:VisualElement name="tab-bar" class="tab-bar">
-              <ui:VisualElement class="dock">
-                <ui:VisualElement class="dock-bar" picking-mode="Ignore" />
+              <ui:VisualElement class="cockpit">
+                <ui:VisualElement name="cockpit-ruler" class="cockpit-ruler" picking-mode="Ignore" />
+                <ui:VisualElement class="cockpit-screw" style="left: 9px; top: 9px;" picking-mode="Ignore" />
+                <ui:VisualElement class="cockpit-screw" style="right: 9px; top: 9px;" picking-mode="Ignore" />
+                <ui:VisualElement class="cockpit-screw" style="left: 9px; bottom: 9px;" picking-mode="Ignore" />
+                <ui:VisualElement class="cockpit-screw" style="right: 9px; bottom: 9px;" picking-mode="Ignore" />
                 <ui:Button name="tab-home" class="tab">
+                    <ui:VisualElement class="tab-led" picking-mode="Ignore" />
                     <ui:VisualElement class="tab-icon tab-icon--home" picking-mode="Ignore" />
                     <ui:Label text="홈" class="tab-label" picking-mode="Ignore" />
                 </ui:Button>
                 <ui:Button name="tab-friends" class="tab">
+                    <ui:VisualElement class="tab-led" picking-mode="Ignore" />
                     <ui:VisualElement class="tab-icon tab-icon--friends" picking-mode="Ignore" />
                     <ui:Label text="친구" class="tab-label" picking-mode="Ignore" />
                 </ui:Button>
                 <ui:Button name="tab-records" class="tab">
+                    <ui:VisualElement class="tab-led" picking-mode="Ignore" />
                     <ui:VisualElement class="tab-icon tab-icon--records" picking-mode="Ignore" />
                     <ui:Label text="기록" class="tab-label" picking-mode="Ignore" />
                 </ui:Button>
                 <ui:Button name="tab-me" class="tab">
+                    <ui:VisualElement class="tab-led" picking-mode="Ignore" />
                     <ui:VisualElement class="tab-icon tab-icon--me" picking-mode="Ignore" />
                     <ui:Label text="마이" class="tab-label" picking-mode="Ignore" />
                 </ui:Button>

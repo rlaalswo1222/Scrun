@@ -243,7 +243,7 @@
     height: 22px;
     border-radius: 11px;
     background-color: var(--color-primary);
-    color: var(--color-surface);
+    color: var(--color-on-color);
     font-size: var(--font-size-caption);
     -unity-text-align: middle-center;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");

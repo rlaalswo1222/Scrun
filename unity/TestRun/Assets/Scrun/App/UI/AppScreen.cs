@@ -14,6 +14,9 @@ namespace Scrun.App
         public VisualElement Root { get; private set; }
         public Navigator Nav { get; private set; }
 
+        // Navigator가 보이게 했는지(화면 넘김 중에는 숨긴 화면도 잠깐 그려지므로 display 대신 이것으로 판단)
+        internal bool NavShown { get; set; }
+
         // Resources 기준 UXML 경로(확장자 없이)
         protected abstract string Uxml { get; }
 
