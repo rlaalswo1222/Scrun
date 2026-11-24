@@ -23,7 +23,7 @@ namespace Scrun
 
         void Awake() => Apply();
 
-        // 레벨 모름(null)이나 범위 밖이면 Lv.1(기본 러닝복). Lv.6 넘는 레벨도 엘리트 그대로(BL-34 ⑥ 배지 프레임으로만 구분)
+        // 레벨 모름(null)이나 1 미만이면 Lv.1(기본 러닝복). Lv.6 넘는 레벨은 엘리트 그대로(BL-34 ⑥ 배지 프레임으로만 구분)
         public void SetLevel(int? serverLevel) => Level = serverLevel ?? MinLevel;
 
         void Apply()
