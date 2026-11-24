@@ -166,8 +166,30 @@ namespace Scrun
             // 입장 위치로 옮기기 전(MapLaunchApplier가 한 프레임 뒤에 옮김)의 자리를 알리지 않게
             if (!MapLaunch.Applied.IsCompleted) return;
             RunLink.ReportPlayer(me.Distance, me.SpeedKmh, lap);
+            DressPlayer();
             SyncRemotes(me.Distance, lap);
             SyncGhost();
+        }
+
+        bool playerDressed;
+
+        // 러닝복(계획 0067): 내 단계를 받으면 내 몸·고스트(내 지난 기록)에 한 번 입힘. 그 뒤로는 안 바꿈(BL-34 ④, 레벨업은 다음 입장부터).
+        // 받기 전·못 받음은 장면 기본(Lv.1). 달리기가 먼저 시작됐으면 이번 입장은 Lv.1 그대로(달리는 중 갈아입지 않게).
+        // 섬 Y Bot에는 AvatarOutfit이 없어 아무 일 없음
+        void DressPlayer()
+        {
+            if (playerDressed) return;
+            if (RunLink.Moving) { playerDressed = true; return; }
+            if (RunLink.MyOutfitStage is not int stage) return;
+            playerDressed = true;
+            Dress(player.runner.gameObject, stage);
+            if (ghostTag != null) Dress(ghostTag.gameObject, stage);
+        }
+
+        static void Dress(GameObject body, int? stage)
+        {
+            var outfit = body.GetComponentInChildren<AvatarOutfit>(true);
+            if (outfit != null) outfit.SetLevel(stage);
         }
 
         RunnerTag ghostTag;   // 섬의 고스트 몸(꺼 둠)
@@ -193,6 +215,8 @@ namespace Scrun
                 ghostTag.runner.Driven = true;
                 ghostTag.displayName = GhostText.Name;
                 foreach (var r in go.GetComponentsInChildren<Renderer>(true)) r.enabled = true;
+                // 위에서 옷 6벌이 다 켜졌으니 한 벌만 남김(새 아바타만). 내 몸과 같은 옷(달리기 전에 못 받았으면 둘 다 Lv.1)
+                Dress(go, playerDressed ? player.runner.GetComponentInChildren<AvatarOutfit>(true)?.Level : null);
             }
             if (!go.activeSelf) go.SetActive(true);
             ghostSpeed.kmh = pose.Value.SpeedKmh;
@@ -273,8 +297,11 @@ namespace Scrun
             tag.crowd = false;
             tag.displayName = r.DisplayName; // 봇이어도 kind는 Remote: Bot은 섬 봇(품질 단계·순간이동 도구가 건드림)
             tag.color = color;
+            // 러닝복(계획 0067): 그 사람 레벨(서버가 들어올 때 같이 줌, 6 넘으면 엘리트), 봇은 Lv.1. 꺼진 채 입혀서 켜지는 첫 프레임부터 한 벌만
+            Dress(go, r.Level);
+            var body = new RemoteBody { runner = rc, speed = speed };
             // 셔츠 색 칠하기는 섬 Y Bot(단색 재질)만. 새 아바타는 색표 그림 하나라 칠하면 얼굴·신발까지 물듦 → 이름표 색만
-            if (go.GetComponentInChildren<AvatarGaitDriver>(true) != null) { go.SetActive(true); return new RemoteBody { runner = rc, speed = speed }; }
+            if (go.GetComponentInChildren<AvatarGaitDriver>(true) != null) { go.SetActive(true); return body; }
             block ??= new MaterialPropertyBlock();
             foreach (var smr in go.GetComponentsInChildren<Renderer>(true))
             {
@@ -283,7 +310,7 @@ namespace Scrun
                 smr.SetPropertyBlock(block);
             }
             go.SetActive(true);
-            return new RemoteBody { runner = rc, speed = speed };
+            return body;
         }
 
         void OnDestroy()

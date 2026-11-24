@@ -233,6 +233,20 @@ namespace Scrun.App
             }
         }
 
+        // 내 러닝복(계획 0067): 내 아바타·고스트가 입을 단계(마이 화면과 같은 outfitStage). 실패해도 입장은 계속(섬이 Lv.1 그대로)
+        async void LoadMyOutfit()
+        {
+            try
+            {
+                var p = await Api.Users.ProgressAsync();
+                if (!leaving && RunLink.Active) RunLink.MyOutfitStage = p.OutfitStage;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[러닝복] 내 레벨을 못 받음 → 기본 러닝복: " + e.Message);
+            }
+        }
+
         async Task EnterAndLoad()
         {
             MapEntry entry;
@@ -262,6 +276,7 @@ namespace Scrun.App
             MapLaunch.Store(entry);
             string sceneName = MapLaunch.SceneOf(entry.CourseId);
             JoinRoom(entry); // 섬을 불러오는 동안 붙어서, 맵이 열릴 때 다른 러너가 이미 보이게
+            LoadMyOutfit();  // JoinRoom(RunLink.Begin이 값을 비움) 뒤에. 섬을 불러오는 동안 받음
 
             sceneLoading = true;
             try
