@@ -302,7 +302,7 @@
 - 구간 하늘·조명·안개는 `SpaceLoopAtmosphere`가 내 러너 거리로 경계 100m에서 섞고, `SpaceLoopStreamer`가 지금 구간 ± 150m만 켠다. 1–5 = 구간 이동, [ ] = ±100m(`SpaceLoopDevKeys`)
 - 아바타는 새 아바타 v8 + v9 걷기 4·달리기 7(`Scripts/AvatarGaitDriver`, 6.2 km/h 위 달리기·5.4 km/h 아래 걷기). 섬 Y Bot은 `RunnerAnimator` 그대로 — 둘 다 러너 속도만 읽어서 앱 코드는 어느 쪽인지 모름
 - **앱에서 열기(11/21, 계획 0066)**: 서버 코스 `crs_space_loop`(3,000 m)를 고르면 `MapLaunch.SceneOf`가 `SpaceLoop`을, 그 밖 코스는 `Island01`을 겹쳐 연다. 장면 파일은 안 고치고 불러올 때 `SpaceLoopAppSetup`이 붙임: 러너에 플레이어 표식, 다른 사람·고스트 몸 원본(플레이어 러너 복제, 고스트는 `App/Resources/RunnerGhost.mat` 반투명), `ScrunQuality`, 개발 키·키보드 속도·아바타 상태 글자 끄기. `AppRunBridge`·`MapLaunchApplier`는 `RouteTrack` 대신 `Track` 공통(경로 고르기는 섬만). 다른 사람 셔츠 색 칠하기는 Y Bot만(새 아바타는 색표 그림 하나라 이름표 색만). 저사양 단계에서는 호수 반사 카메라를 끔
-- 러닝복 6세트(11/21, 계획 0067): 아바타 v10 + `AvatarOutfit`(레벨 1–6 → `Outfit_L*` 하나만 켬, 재질 하나). 우주 맵 개발 키 O로 단계 바꾸기, 확인 장면 `Experiments/AvatarGait/OutfitLineup.unity`
+- 러닝복 6세트(11/21, 계획 0067): 아바타 v10 + `AvatarOutfit`(레벨 1–6 → `Outfit_L*` 하나만 켬, 재질 하나). 우주 맵 개발 키 O로 단계 바꾸기, 확인 장면 `Experiments/AvatarGait/OutfitLineup.unity`. 앱에서는 `AppRunBridge`가 입힘: 내 몸·고스트 = `RunLink.MyLevel`(맵 입장 때 받음), 다른 러너 = `RemoteRunner.Level`, 러닝 중엔 안 바꿈. 몸 렌더러를 한꺼번에 켜는 코드를 새로 쓰면 그 뒤에 `AvatarOutfit.SetLevel`로 한 벌만 남길 것
 - 큰 파일(메쉬두 키트·구간 메시 147MB)은 `python unity/tools/spaceloop_fetch.py`로 받는다(README "처음 받았을 때" 3번)
 - 작업 기록·측정(맥 에디터): `docs/unity/space_loop.md`. 아이폰 실측은 아직 0회
 

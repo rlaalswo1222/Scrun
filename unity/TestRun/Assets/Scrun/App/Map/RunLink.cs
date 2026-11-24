@@ -12,6 +12,9 @@ namespace Scrun.App
         public static bool Active { get; private set; }  // 앱 맵 화면이 섬을 쓰는 중
         public static bool Moving { get; set; }          // 달리는 중(카운트다운 뒤). 꺼져 있으면 내 아바타 속도 0
         public static IRunTogether Together { get; private set; } // 같은 맵의 다른 러너(없으면 null)
+        // 내 레벨(서버 /users/me/progress, 계획 0067). 맵 입장마다 새로 받음, 받기 전·실패면 null → 섬이 Lv.1 러닝복.
+        // 섬은 처음 알게 된 값으로 한 번만 입힘(러닝 중에 옷이 바뀌지 않게, BL-34 ④)
+        public static int? MyLevel { get; set; }
 
         // ---- 섬 → 앱 (섬이 매 프레임 씀) ----
         public static bool IslandReady { get; private set; }
@@ -56,6 +59,7 @@ namespace Scrun.App
             Active = false;
             Moving = false;
             Together = null;
+            MyLevel = null;
             IslandReady = false;
             PlayerDistanceM = 0f;
             PlayerSpeedKmh = 0f;

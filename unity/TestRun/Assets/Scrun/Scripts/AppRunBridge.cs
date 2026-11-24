@@ -166,8 +166,28 @@ namespace Scrun
             // 입장 위치로 옮기기 전(MapLaunchApplier가 한 프레임 뒤에 옮김)의 자리를 알리지 않게
             if (!MapLaunch.Applied.IsCompleted) return;
             RunLink.ReportPlayer(me.Distance, me.SpeedKmh, lap);
+            DressPlayer();
             SyncRemotes(me.Distance, lap);
             SyncGhost();
+        }
+
+        bool playerDressed;
+
+        // 러닝복(계획 0067): 내 레벨을 받으면 내 몸·고스트(내 지난 기록)에 한 번 입힘. 그 뒤로는 안 바꿈(BL-34 ④, 레벨업은 다음 입장부터).
+        // 받기 전·못 받음은 장면 기본(Lv.1). 섬 Y Bot에는 AvatarOutfit이 없어 아무 일 없음
+        void DressPlayer()
+        {
+            if (playerDressed || RunLink.MyLevel is not int lv) return;
+            playerDressed = true;
+            Dress(player.runner.gameObject, lv);
+            if (ghostTag != null) Dress(ghostTag.gameObject, lv);
+        }
+
+        static AvatarOutfit Dress(GameObject body, int? level)
+        {
+            var outfit = body.GetComponentInChildren<AvatarOutfit>(true);
+            if (outfit != null) outfit.SetLevel(level);
+            return outfit;
         }
 
         RunnerTag ghostTag;   // 섬의 고스트 몸(꺼 둠)
@@ -193,6 +213,7 @@ namespace Scrun
                 ghostTag.runner.Driven = true;
                 ghostTag.displayName = GhostText.Name;
                 foreach (var r in go.GetComponentsInChildren<Renderer>(true)) r.enabled = true;
+                Dress(go, RunLink.MyLevel); // 위에서 옷 6벌이 다 켜졌으니 한 벌만 남김(새 아바타만)
             }
             if (!go.activeSelf) go.SetActive(true);
             ghostSpeed.kmh = pose.Value.SpeedKmh;
@@ -214,6 +235,12 @@ namespace Scrun
                     if (r.IsBot && !shownBots.Contains(r.UserId)) continue; // 저사양: 가까운 봇만 그림(간격 카드엔 다 나옴)
                     seen.Add(r.UserId);
                     if (!bodies.TryGetValue(r.UserId, out var body)) bodies[r.UserId] = body = Spawn(r);
+                    // 레벨이 몸을 만든 뒤에 왔으면 그때 한 번(서버는 들어올 때 레벨을 주므로 보통은 Spawn에서 끝남)
+                    if (body.outfit != null && body.level == null && r.Level != null)
+                    {
+                        body.outfit.SetLevel(r.Level);
+                        body.level = r.Level;
+                    }
                     // 내 누적 거리 근처로 펴서 놓음(이름표 간격 계산이 내 거리와 같은 기준이 되게)
                     float d = myDistance + LoopMath.Delta(myLap, r.PositionAt(now), lap);
                     if (d < 0f) d += lap;
@@ -273,8 +300,10 @@ namespace Scrun
             tag.crowd = false;
             tag.displayName = r.DisplayName; // 봇이어도 kind는 Remote: Bot은 섬 봇(품질 단계·순간이동 도구가 건드림)
             tag.color = color;
+            // 러닝복(계획 0067): 그 사람 레벨, 봇·모름은 Lv.1. 꺼진 채 입혀서 켜지는 첫 프레임부터 한 벌만
+            var body = new RemoteBody { runner = rc, speed = speed, outfit = Dress(go, r.Level), level = r.Level };
             // 셔츠 색 칠하기는 섬 Y Bot(단색 재질)만. 새 아바타는 색표 그림 하나라 칠하면 얼굴·신발까지 물듦 → 이름표 색만
-            if (go.GetComponentInChildren<AvatarGaitDriver>(true) != null) { go.SetActive(true); return new RemoteBody { runner = rc, speed = speed }; }
+            if (go.GetComponentInChildren<AvatarGaitDriver>(true) != null) { go.SetActive(true); return body; }
             block ??= new MaterialPropertyBlock();
             foreach (var smr in go.GetComponentsInChildren<Renderer>(true))
             {
@@ -283,7 +312,7 @@ namespace Scrun
                 smr.SetPropertyBlock(block);
             }
             go.SetActive(true);
-            return new RemoteBody { runner = rc, speed = speed };
+            return body;
         }
 
         void OnDestroy()
@@ -300,10 +329,12 @@ namespace Scrun
             return null;
         }
 
-        struct RemoteBody
+        sealed class RemoteBody
         {
             public RunnerController runner;
             public FixedSpeed speed;
+            public AvatarOutfit outfit; // 새 아바타만(섬 Y Bot은 null)
+            public int? level;          // 입힌 레벨(모르고 입혔으면 null → 나중에 알면 한 번 더)
         }
 
         // 달리기 전엔 0(카운트다운 전에 아바타가 먼저 가지 않게)
