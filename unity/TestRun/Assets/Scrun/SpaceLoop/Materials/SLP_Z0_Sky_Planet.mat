@@ -26,18 +26,18 @@ Material:
     m_Ints: []
     m_Floats:
     - _AtmoStrength: 1
-    - _BandFreq: 6
+    - _BandFreq: 2.5
     - _Brightness: 1.25
     - _Detail: 0.45
     - _FrontLight: 1.2
     - _Haze: 0.18
     - _Night: 0.35
-    - _Turb: 0.7
-    - _UseTint: 0
+    - _Turb: 1.5
+    - _UseTint: 1
     m_Colors:
     - _AtmoColor: {r: 0.7490196, g: 0.84705883, b: 1, a: 1}
     - _HazeColor: {r: 0.7882353, g: 0.84705883, b: 0.9411765, a: 1}
-    - _TintA: {r: 0.19999996, g: 0.39999998, b: 0.7, a: 1}
-    - _TintB: {r: 0.9, g: 0.93, b: 0.96999997, a: 1}
+    - _TintA: {r: 0.94, g: 0.58, b: 0.44, a: 1}
+    - _TintB: {r: 1, g: 0.9, b: 0.82, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

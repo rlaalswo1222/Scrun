@@ -25,13 +25,13 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Alpha: 0.45
-    - _Bands: 70
-    - _Brightness: 1
-    - _RIn: 1.3499999
-    - _ROut: 2.2
+    - _Alpha: 0.9
+    - _Bands: 5
+    - _Brightness: 1.5
+    - _RIn: 1.62
+    - _ROut: 1.8
     m_Colors:
-    - _ColA: {r: 0.9411765, g: 0.8862745, b: 0.8, a: 1}
-    - _ColB: {r: 0.78431374, g: 0.7058824, b: 0.6039216, a: 1}
+    - _ColA: {r: 0.8, g: 0.96, b: 1, a: 1}
+    - _ColB: {r: 0.24, g: 0.85, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
