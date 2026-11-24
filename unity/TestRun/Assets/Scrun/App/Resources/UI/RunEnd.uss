@@ -100,7 +100,7 @@
     top: 28px;
     font-size: var(--font-size-title);
     letter-spacing: -0.56px;
-    color: var(--color-surface);
+    color: var(--color-on-color);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
@@ -173,7 +173,7 @@
 
 .course .end-warn-mark {
     font-size: 26px;
-    color: var(--color-surface);
+    color: var(--color-on-color);
     -unity-text-align: middle-center;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
@@ -198,7 +198,7 @@
 .course .end-goal-time {
     margin-top: 22px;
     font-size: var(--font-size-heading);
-    color: var(--color-surface);
+    color: var(--color-on-color);
     -unity-text-align: middle-center;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }

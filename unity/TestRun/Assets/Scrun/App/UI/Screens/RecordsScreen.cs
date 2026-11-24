@@ -224,24 +224,22 @@ namespace Scrun.App
             monthEmpty.SetVisible(shown.Count == 0);
         }
 
-        // F-01 카드: 날짜 · 큰 거리 · "시간 · 평균 페이스" + 인증 칩(완료 초록·미인증 주황·대기 회색)
+        // F-01 카드(미리보기 records.js): 날짜 / 큰 거리 + 인증 칩(완료 초록·미인증 주황·대기 유리) / "시간 · 평균 페이스"
         Button Card(RunSummary r)
         {
             var run = r;
             var card = new Button(() => Open(run)) { name = "run-" + r.RunId };
-            card.AddToClassList("fr-record");
             card.AddToClassList("rc-card");
-            var text = new VisualElement { pickingMode = PickingMode.Ignore };
-            text.AddToClassList("fr-row-text");
-            text.style.marginLeft = 0;
-            text.Add(UiExtensions.Text(FriendText.RunDate(r.StartedAt), "fr-record-date"));
-            text.Add(UiExtensions.Text(FriendText.Km(r.DistanceM), "fr-record-km"));
-            text.Add(UiExtensions.Text(RecordsText.CardDetail(r), "fr-sub"));
-            card.Add(text);
+            card.Add(UiExtensions.Text(FriendText.RunDate(r.StartedAt), "fr-record-date"));
+            var row = new VisualElement { pickingMode = PickingMode.Ignore };
+            row.AddToClassList("rc-card-row");
+            row.Add(UiExtensions.Text(FriendText.Km(r.DistanceM), "fr-record-km"));
             var (label, verified) = RunResultText.Chip(r.Verification);
             var chip = FriendParts.Chip(label, verified ? FriendParts.ChipKind.Success : FriendParts.ChipKind.Gray);
             chip.EnableInClassList("rr-chip--warn", RunResultText.ChipWarn(r.Verification));
-            card.Add(chip);
+            row.Add(chip);
+            card.Add(row);
+            card.Add(UiExtensions.Text(RecordsText.CardDetail(r), "rc-card-detail"));
             return card;
         }
 

@@ -103,9 +103,8 @@ namespace Scrun.App.Editor
             // 우주 시안 온보딩(계획 0061, unity/tools/space_onboarding_assets.py): 바탕은 그라데이션이라 무압축(2배 크기로 줄여 둠),
             // 장면·아이콘은 투명 배경 렌더라 고품질 압축
             SetImage($"{ImageDir}/Space/SpaceBg.png", uncompressed: true);
-            foreach (var name in new[] { "IntroRun", "IntroTogether", "IntroRecordStage", "GoalFlag", "LoginLogo", "LoginPlanet",
-                                         "CalibHero", "DoneScene", "PermMotion", "PermHeadphones", "PermCamera", "PermBell",
-                                         "KakaoSymbol", "PlanetSky" })
+            // (소개 A-02–A-04 그림·깃발·완료 장면·보정 그림·권한 3D 아이콘은 계획 0068에서 미리보기 모양으로 바꾸며 지움)
+            foreach (var name in new[] { "LoginLogo", "LoginPlanet", "KakaoSymbol" })
                 SetImage($"{ImageDir}/Space/{name}.png", uncompressed: false);
             // 우주 시안 홈·코스(계획 0062, unity/tools/space_home_assets.py): 바탕 둘은 무압축(2배), 나머지는 고품질 압축
             foreach (var name in new[] { "HomeBg", "CourseDetailBg" })
@@ -113,6 +112,29 @@ namespace Scrun.App.Editor
             foreach (var name in new[] { "HomeHero", "HomeHeroShort", "CourseThumb", "CourseHero", "Face", "Zone1", "Zone2", "Zone3",
                                          "Zone4", "Zone5", "DockHome", "DockFriends", "DockRecords", "DockMe" })
                 SetImage($"{ImageDir}/Space/{name}.png", uncompressed: false);
+            // 우주 디자인 전체(계획 0068, Figma 원본): 바탕 넷은 무압축(2배), 탭 키 아이콘은 고품질 압축
+            foreach (var name in new[] { "BgBase", "BgHome", "BgCelebrate", "BgLogin" })
+                SetImage($"{ImageDir}/Space/{name}.png", uncompressed: true);
+            foreach (var tab in new[] { "Home", "Friends", "Records", "My" })
+                foreach (var state in new[] { "Idle", "Active" })
+                    SetImage($"{ImageDir}/Space/Tab{tab}{state}.png", uncompressed: false);
+            // E 인증·결과, F 기록(계획 0068, Figma 원본): 계기판 사진 둘(미리보기처럼 위 30% 기준으로
+            // 잘라 둠)·상태 3D·인증 메달·포즈 셋. 모두 고품질 압축
+            foreach (var name in new[] { "ConsoleSample", "ConsoleGlare", "StatusWarn", "StatusErr", "StatusCamera", "BadgeVerified",
+                                         "PoseSad", "PosePuzzled", "PoseWait" })
+                SetImage($"{ImageDir}/Space/{name}.png", uncompressed: false);
+            // G 친구·H 마이(계획 0068, Figma 원본): 러닝복 전신 set_lv1–6(캐릭터만 잘라 높이 432), 레벨 얼굴 Set face Lv.1–6(128),
+            // 러닝머신 안내(guide_treadmill). 투명 배경이라 고품질 압축
+            foreach (var name in new[] { "SetLv1", "SetLv2", "SetLv3", "SetLv4", "SetLv5", "SetLv6",
+                                         "FaceLv1", "FaceLv2", "FaceLv3", "FaceLv4", "FaceLv5", "FaceLv6", "GuideTreadmill" })
+                SetImage($"{ImageDir}/Space/{name}.png", uncompressed: false);
+            // A 온보딩·B 홈·C 코스·I 예외(계획 0068): 상태 3D 셋·기쁜 포즈는 Figma 원본, 나머지는 미리보기 webp를 PNG로 바꾼 임시 그림
+            // (이어폰 안내 GuideEarbuds, 준비 끝 우주인 AstroReady, 로켓 우주인 AstroRocket, 흐린 맵 하늘 MapSkyBlur, 목표 달성 행성 HomeHeroDone →
+            // Figma 원본으로 바꿀 것). 흐린 하늘은 그라데이션이라 무압축, 나머지는 투명 배경이라 고품질 압축
+            foreach (var name in new[] { "StatusOk", "StatusSensor", "StatusCrowd", "PoseJoy",
+                                         "GuideEarbuds", "AstroReady", "AstroRocket", "HomeHeroDone" })
+                SetImage($"{ImageDir}/Space/{name}.png", uncompressed: false);
+            SetImage($"{ImageDir}/Space/MapSkyBlur.png", uncompressed: true);
         }
 
         static void SetImage(string path, bool uncompressed)

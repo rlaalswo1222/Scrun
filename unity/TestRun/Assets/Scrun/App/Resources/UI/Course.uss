@@ -28,7 +28,7 @@
 .chip--active:hover,
 .chip--active:active {
     background-color: var(--color-primary);
-    color: var(--color-surface);
+    color: var(--color-on-color);
 }
 
 /* Chip/Live: 지금 달리는 중 */
@@ -338,7 +338,7 @@
 
 .course .map-course-label {
     font-size: var(--font-size-caption);
-    color: var(--color-surface);
+    color: var(--color-on-color);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 
@@ -399,7 +399,8 @@
     display: none;
 }
 
-/* I-10 맵 로딩 */
+/* I-10 맵 로딩(미리보기 mapLoading, 계획 0068): 흐린 맵 하늘(미리 흐린 그림 MapSkyBlur, 덮개는 그림 색을 곱해 어둡게) +
+   제목 22 + 설명 14 + 막대 320×8(bg/surface, 채움 brand/accent) + 로켓 탄 우주인 150×116(코 끝이 채워진 끝) */
 .map-loading {
     position: absolute;
     left: 0;
@@ -407,24 +408,24 @@
     right: 0;
     bottom: 0;
     align-items: center;
-    justify-content: center;
-    padding-bottom: 60px;
-    background-color: var(--color-night);
+    padding-top: 92px;
+    background-color: var(--bg-app);
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/MapSkyBlur.png");
+    -unity-background-scale-mode: scale-and-crop;
+    -unity-background-image-tint-color: rgb(84, 92, 115);
 }
 
 .course .map-loading-title {
-    font-size: var(--font-size-title);
-    letter-spacing: -0.56px;
-    color: var(--color-surface);
+    font-size: 22px;
+    color: var(--text-primary);
     -unity-text-align: middle-center;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 .course .map-loading-lead {
-    margin-top: 14px;
-    font-size: var(--font-size-body);
-    letter-spacing: -0.16px;
-    color: rgba(255, 255, 255, 0.81);
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
     -unity-text-align: middle-center;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
@@ -432,9 +433,9 @@
 .map-progress {
     width: 320px;
     height: 8px;
-    margin-top: 30px;
+    margin-top: 36px;
     border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.25);
+    background-color: var(--bg-surface);
     overflow: hidden;
 }
 
@@ -442,10 +443,28 @@
     width: 0;
     height: 100%;
     border-radius: 4px;
-    background-color: var(--color-lime);
+    background-color: var(--brand-accent);
 }
 
-/* I-11 입장 실패: 어둡게 덮고 가운데 카드 */
+/* 로켓 자리: 막대와 같은 폭. 로켓 왼쪽 = 채운 만큼(MapScreen.SetProgress), 그림 폭만큼 왼쪽으로 당겨 코 끝을 맞춤 */
+.map-rocket-lane {
+    width: 320px;
+    height: 116px;
+    margin-top: 14px;
+}
+
+.map-rocket {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 150px;
+    height: 116px;
+    margin-left: -150px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/AstroRocket.png");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* I-11 입장 실패(미리보기 mapFull): 흐린 맵 하늘 위 가운데 유리 대화상자(440, 모서리 28, 안쪽 24, 사이 16) */
 .map-dim {
     position: absolute;
     left: 0;
@@ -454,47 +473,45 @@
     bottom: 0;
     align-items: center;
     justify-content: center;
-    background-color: var(--color-night-dim);
+    background-color: var(--bg-app);
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/MapSkyBlur.png");
+    -unity-background-scale-mode: scale-and-crop;
+    -unity-background-image-tint-color: rgb(84, 92, 115);
 }
 
 .map-card {
     width: 440px;
-    padding: var(--space-6);
-    border-radius: var(--space-6);
-    background-color: rgba(255, 255, 255, 0.95);
+    padding: 24px;
+    border-radius: 28px;
+    border-width: 1px;
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-sheet);
     align-items: center;
 }
 
+/* 사람들 상태 3D(st3d 120, 그림 둘레 여백만큼 당김) */
 .map-card-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: 26px;
-    background-color: var(--color-muted);
-    align-items: center;
-    justify-content: center;
-}
-
-.map-card-icon-img {
-    width: 26px;
-    height: 26px;
-    background-image: url("project://database/Assets/Scrun/App/UI/Icons/icon-map.svg");
+    width: 120px;
+    height: 120px;
+    margin: -20px 0 -10px 0;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/StatusCrowd.png");
+    -unity-background-scale-mode: scale-to-fit;
 }
 
 .course .map-card-title {
-    margin-top: 10px;
-    font-size: var(--font-size-heading);
-    letter-spacing: -0.44px;
-    color: var(--color-text);
+    margin-top: 16px;
+    font-size: 22px;
+    color: var(--text-primary);
     -unity-text-align: middle-center;
     white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 .course .map-card-body {
-    margin-top: 10px;
-    font-size: var(--font-size-body-sm);
-    letter-spacing: -0.07px;
-    color: var(--color-body);
+    margin-top: 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
     -unity-text-align: middle-center;
     white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
@@ -503,7 +520,8 @@
 .map-card-buttons {
     flex-direction: row;
     align-self: stretch;
-    margin-top: 10px;
+    align-items: flex-start;
+    margin-top: 16px;
 }
 
 .map-card-buttons > .btn {
@@ -514,5 +532,5 @@
 
 /* "다시 입장하기"(없는 코스면 숨김) 앞 간격 */
 .map-card-buttons > .btn-primary {
-    margin-left: 10px;
+    margin-left: 12px;
 }

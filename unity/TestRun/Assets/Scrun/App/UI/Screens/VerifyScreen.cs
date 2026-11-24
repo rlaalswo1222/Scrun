@@ -29,6 +29,7 @@ namespace Scrun.App
         VisualElement resultIcon, resultBody;
         Image photo;               // 사진 미리보기. E-04 칸과 E-05b 칸 사이를 옮겨 다님(Add가 옮김)
         VisualElement confirmPhotoBox, readPhotoBox;
+        VerifyStep? shownResult;   // 상태 그림 움직임(튐·흔들림)을 이미 보인 결과 단계(다시 그려도 한 번만)
 
         public VerifyScreen(string runId, RunStatsBody sensor, Action<bool> onDone)
         {
@@ -363,7 +364,7 @@ namespace Scrun.App
             SetEnabled(!busy);
             // 카메라(Swift가 위를 덮음)·미인증 저장 중에는 직전 화면을 그대로 둠(버튼만 잠금)
             if (s == VerifyStep.Camera || s == VerifyStep.Saving || s == VerifyStep.Done) return;
-            guide.SetVisible(s == VerifyStep.Guide);
+            guide.SetVisible(s == VerifyStep.Guide || s == VerifyStep.ConfirmLeave); // 나가기 확인은 안내 위 아래 시트(미리보기 E-16)
             leave.SetVisible(s == VerifyStep.ConfirmLeave);
             confirm.SetVisible(s == VerifyStep.Confirm);
             // 확인을 보내는 동안은 E-05 대신 E-05b를 잠근 채로(버튼만 잠김)
@@ -423,6 +424,7 @@ namespace Scrun.App
                 _ => "사진을 보내지 못했어요. 다시 보내 주세요.",
             };
             if (isResult) RenderResult(s);
+            else shownResult = null;
         }
 
         void SetEnabled(bool on)
@@ -436,6 +438,7 @@ namespace Scrun.App
             resultBody.Clear();
             resultIcon.ClearClassList();
             resultIcon.AddToClassList("verify-icon");
+            resultTitle.EnableInClassList("vf-result-title--big", s == VerifyStep.Verified || s == VerifyStep.NoCamera);
             UpdateChip();
             secondary.SetVisible(true);
             switch (s)
@@ -447,6 +450,7 @@ namespace Scrun.App
                     break;
                 case VerifyStep.Unreadable:
                     Head("verify-icon--warn", "숫자를 읽지 못했어요", "다시 한번 촬영해 주세요");
+                    resultBody.Add(Picture("ui-photo", "vf-glare")); // 반사로 가려진 예시(미리보기 E-07)
                     resultBody.Add(Tips("화면 반사가 없는 각도로 찍어요", "계기판 전체가 프레임 안에 들어오게 해요", "손떨림 없이 가까이에서 찍어요"));
                     Buttons(flow.CanRetake ? $"다시 촬영 (남은 {r?.RetakesLeft ?? 0}번)" : "확인", flow.CanRetake ? "미인증으로 저장" : null);
                     break;
@@ -459,20 +463,34 @@ namespace Scrun.App
                     Buttons(flow.CanRetake ? $"다시 촬영 (남은 {r?.RetakesLeft ?? 0}번)" : "확인", flow.CanRetake ? "미인증으로 저장" : null);
                     break;
                 case VerifyStep.Unsupported:
-                    Head("verify-icon--warn", "이 계기판은\n자동으로 읽을 수 없어요", "아날로그 계기판이거나 숫자가 표시되지 않는 기종이에요");
+                    Head("verify-icon--warn", "이 계기판은\n자동으로 읽을 수 없어요", "아날로그 계기판이거나\n숫자가 표시되지 않는 기종이에요");
                     resultBody.Add(Character());
                     Buttons(flow.CanRetake ? "미인증으로 저장" : "확인", flow.CanRetake ? $"다시 촬영 (남은 {r?.RetakesLeft ?? 0}번)" : null);
                     break;
                 case VerifyStep.TimeOver:
-                    Head("verify-icon--clock", "촬영 시간이 지났어요", "제한 시간 안에 촬영하지 못해 미인증 기록으로 저장돼요");
+                    Head("verify-icon--clock", "촬영 시간이 지났어요", "제한 시간 안에 촬영하지 못해\n미인증 기록으로 저장돼요");
                     Buttons(flow.Saved ? "확인" : "미인증으로 저장", null);
                     break;
                 case VerifyStep.NoCamera:
-                    Head("verify-icon--camera", "카메라 권한이 필요해요", "계기판을 촬영해야 기록을 인증할 수 있어요 (갤러리 사진은 사용할 수 없어요)");
+                    Head("verify-icon--camera", "카메라 권한이 필요해요", "계기판을 촬영해야 기록을 인증할 수 있어요\n(갤러리 사진은 사용할 수 없어요)");
                     resultBody.Add(Steps("설정 앱을 열어요", "SCRUN을 선택해요", "카메라를 켜요"));
                     Buttons("설정 열기", "미인증으로 저장");
                     break;
             }
+            Animate(s);
+        }
+
+        // 결과 단계에 처음 들어올 때만: 상태 그림이 튀어 들어오고(경고·오류는 한 번 흔들림) 둥실, 인증 완료는 글·값이 아래에서 올라옴(미리보기 st3d·rise)
+        void Animate(VerifyStep s)
+        {
+            if (shownResult == s) return;
+            shownResult = s;
+            if (s == VerifyStep.TimeOver) UiMotion.Float(resultIcon);
+            else UiMotion.StatusIn(resultIcon, shake: s != VerifyStep.Verified);
+            if (s != VerifyStep.Verified) return;
+            UiMotion.Rise(resultTitle);
+            UiMotion.Rise(resultLead);
+            UiMotion.Rise(resultBody, 450);
         }
 
         // 다시 찍기 화면(E-07·08·09)의 남은 시간 칩
@@ -502,20 +520,21 @@ namespace Scrun.App
         static VisualElement Stats(RunStatsBody console)
         {
             var row = new VisualElement();
-            row.AddToClassList("verify-stats");
-            row.Add(Stat("계기판 거리", console == null ? "-" : FormatKm(console.DistanceM)));
-            var second = Stat("계기판 시간", console == null ? "-" : FormatTime(console.DurationS));
-            second.AddToClassList("verify-stat--second");
-            row.Add(second);
+            row.AddToClassList("ui-stats");
+            row.AddToClassList("vf-stats");
+            var first = Stat("계기판 거리", console == null ? "-" : FormatKm(console.DistanceM));
+            first.AddToClassList("ui-stat--first");
+            row.Add(first);
+            row.Add(Stat("계기판 시간", console == null ? "-" : FormatTime(console.DurationS)));
             return row;
         }
 
         static VisualElement Stat(string label, string value)
         {
             var card = new VisualElement();
-            card.AddToClassList("verify-stat");
-            card.Add(UiExtensions.Text(label, "verify-stat-label"));
-            card.Add(UiExtensions.Text(value, "verify-stat-value"));
+            card.AddToClassList("ui-stat");
+            card.Add(UiExtensions.Text(label, "ui-stat-key"));
+            card.Add(UiExtensions.Text(value, "ui-stat-value"));
             return card;
         }
 
@@ -523,8 +542,10 @@ namespace Scrun.App
         static VisualElement Table(VerificationResult r)
         {
             var t = new VisualElement();
-            t.AddToClassList("verify-table");
-            t.Add(Row("항목", "센서 추정", "계기판", "차이", "verify-row--head"));
+            t.AddToClassList("ui-card");
+            t.AddToClassList("vf-table");
+            t.Add(Row("항목", "센서 추정", "계기판", "차이", "vf-row--head"));
+            bool firstRow = true;
             foreach (var c in r?.Comparison ?? new List<ComparisonRow>())
             {
                 bool dist = c.Item == "distance";
@@ -532,7 +553,10 @@ namespace Scrun.App
                 string consoleText = c.Console == null ? "-" : dist ? FormatKm((int)c.Console) : FormatTime((int)c.Console);
                 string diff = c.Console == null ? "-" : dist ? FormatKm(Math.Abs((int)c.Console - (int)c.Sensor))
                                                               : FormatDiffSec(Math.Abs((int)c.Console - (int)c.Sensor));
-                t.Add(Row(dist ? "거리" : "시간", sensorText, consoleText, diff, c.Ok ? null : "verify-row--bad"));
+                var row = Row(dist ? "거리" : "시간", sensorText, consoleText, diff, c.Ok ? null : "vf-row--bad");
+                if (firstRow) row.AddToClassList("vf-row--first"); // 머리 바로 아래 줄은 구분선 없음(USS에 :first-child가 없음)
+                firstRow = false;
+                t.Add(row);
             }
             return t;
         }
@@ -540,11 +564,12 @@ namespace Scrun.App
         static VisualElement Row(string a, string b, string c, string d, string cls)
         {
             var row = new VisualElement();
-            row.AddToClassList("verify-row");
+            row.AddToClassList("vf-row");
             if (cls != null) row.AddToClassList(cls);
-            foreach (var s in new[] { a, b, c }) row.Add(UiExtensions.Text(s, "verify-cell"));
-            var diff = UiExtensions.Text(d, "verify-cell");
-            diff.AddToClassList("verify-cell--diff");
+            foreach (var s in new[] { a, b, c }) row.Add(UiExtensions.Text(s, "vf-cell"));
+            row[0].AddToClassList("vf-cell--item");
+            var diff = UiExtensions.Text(d, "vf-cell");
+            diff.AddToClassList("vf-cell--diff");
             row.Add(diff);
             return row;
         }
@@ -552,24 +577,34 @@ namespace Scrun.App
         static VisualElement Notice()
         {
             var box = new VisualElement();
-            box.AddToClassList("verify-notice");
-            box.Add(UiExtensions.Text("미인증으로 저장하면", "verify-notice-title"));
-            box.Add(UiExtensions.Text("기록은 남지만 주간 목표와 인증 마크에는 반영되지 않아요.", "verify-notice-text"));
+            box.AddToClassList("ui-card");
+            box.AddToClassList("ui-card--warn");
+            box.AddToClassList("vf-notice");
+            var title = UiExtensions.Text("미인증으로 저장하면", "ui-sm-strong");
+            title.AddToClassList("ui-cw");
+            box.Add(title);
+            var text = UiExtensions.Text("기록은 남지만\n주간 목표와 인증 마크에는 반영되지 않아요.", "ui-sm");
+            text.AddToClassList("vf-notice-text");
+            box.Add(text);
             return box;
         }
 
         static VisualElement Tips(params string[] lines)
         {
             var box = new VisualElement();
-            box.AddToClassList("verify-tips");
+            box.AddToClassList("ui-card");
+            box.AddToClassList("vf-tips");
             foreach (var l in lines)
             {
                 var row = new VisualElement();
-                row.AddToClassList("verify-tip");
+                row.AddToClassList("vf-tip");
+                if (box.childCount == 0) row.AddToClassList("vf-tip--first");
                 var check = new VisualElement();
-                check.AddToClassList("verify-check");
+                check.AddToClassList("vf-check");
                 row.Add(check);
-                row.Add(UiExtensions.Text(l, "verify-tip-text"));
+                var text = UiExtensions.Text(l, "ui-sm");
+                text.AddToClassList("vf-tip-text");
+                row.Add(text);
                 box.Add(row);
             }
             return box;
@@ -578,27 +613,35 @@ namespace Scrun.App
         static VisualElement Steps(params string[] lines)
         {
             var box = new VisualElement();
-            box.AddToClassList("steps");
+            box.AddToClassList("ui-card");
+            box.AddToClassList("vf-steps");
             for (int i = 0; i < lines.Length; i++)
             {
                 var row = new VisualElement();
-                row.AddToClassList("step");
-                if (i > 0) row.AddToClassList("step--next");
-                row.Add(UiExtensions.Text((i + 1).ToString(), "step-num"));
-                row.Add(UiExtensions.Text(lines[i], "step-text"));
+                row.AddToClassList("vf-step");
+                if (i > 0) row.AddToClassList("vf-step--next");
+                row.Add(UiExtensions.Text((i + 1).ToString(), "ui-num-badge"));
+                var text = UiExtensions.Text(lines[i], "ui-text");
+                text.AddToClassList("vf-step-text");
+                row.Add(text);
                 box.Add(row);
             }
             return box;
         }
 
+        // E-09: 유리 칸 안 갸웃하는 포즈(미리보기 pose_puzzled)
         static VisualElement Character()
         {
-            var box = new VisualElement();
-            box.AddToClassList("verify-character-box");
-            var img = new VisualElement();
-            img.AddToClassList("verify-character");
-            box.Add(img);
+            var box = Picture("ui-ill", "vf-ill");
+            box.Add(Picture("vf-pose"));
             return box;
+        }
+
+        static VisualElement Picture(params string[] classes)
+        {
+            var el = new VisualElement { pickingMode = PickingMode.Ignore };
+            foreach (var c in classes) el.AddToClassList(c);
+            return el;
         }
 
         // 달리기 HUD·결과와 같은 글자(10 m 아래 버림, 로케일과 무관하게 점)

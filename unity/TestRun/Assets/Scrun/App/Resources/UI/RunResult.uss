@@ -1,80 +1,105 @@
-/* 운동 결과(E-12·E-14)·인증 후 반영(E-11)·레벨업(E-13)(계획 0051). Figma "SCRUN" > 스크런 와이어 프레임 E 섹션(11/18 화면을 보고 맞춤).
-   카드는 마이 탭(My.uss)과 같은 흰 바탕·테두리·모서리 20, 큰 제목·칩·시트·머리는 Friends.uss(.fr …). 상준이 Figma와 나란히 놓고 다듬음 */
+/* 운동 결과(E-12·E-14)·기록 상세(F-03·F-04)·인증 후 반영(E-11)·레벨업(E-13)·종료 요약(E-01)·대조 시트(E-15)(계획 0051·0053·0057).
+   우주 디자인(계획 0068): 상준 미리보기 js/views/verify.js(result·reflected·levelUp·summary·compareSheet)·records.js(recordDetail)를 옮김.
+   공통 부품(ui-card·ui-stats·ui-nav·글자 단계)은 Space.uss, 여기는 이 화면들만의 자리와, 코드가 만드는 칩·머리·시트(FriendParts)의 모양.
+   이 USS는 이 화면들(RunResult·RunRewards·RunRecovered·Records)에만 붙음. 색은 App.uss 토큰만.
+   USS에 없는 것: 유리 흐림·카드 그림자·글로우(고른 러닝복 카드 빛) → 반투명 + 테두리, 레벨업 색종이 → 빠짐 */
 
-.rr .unity-label {
+/* 글자 기본 여백 없앰. 한 클래스라 아래 규칙이 덮을 수 있음 */
+.unity-label {
     margin: 0;
     padding: 0;
 }
 
-.rr-card {
-    margin-top: var(--space-3);
-    padding: 16px;
-    border-width: 1px;
-    border-color: var(--color-line);
-    border-radius: 20px;
-    background-color: var(--color-surface);
+.rr .ui-chip {
+    padding: 0 12px;
+    border-radius: 14px;    /* 999는 Unity가 가로·세로 반지름을 따로 줄여 타원이 됨 → 높이의 반 */
 }
 
-.rr-card-head {
+/* 공통 부품 보충(Space.uss의 .ui-scroll 안쪽 여백 선택자가 Unity 6 ScrollView 구조(뷰포트가 바로 아래 자식이 아님)에 안 맞아 여기서 채움,
+   뒤로 아이콘 nav-back.svg는 어두운 선이라 색을 입혀도 어두움 → 흰 선 아이콘) */
+.ui-scroll .unity-scroll-view__content-container {
+    padding: 0 20px 24px 20px;
+}
+
+.ui-nav-back {
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/chevron-left-line.svg");
+}
+
+/* 내비 바 양쪽 칸(뒤로·닫기가 숨어도 제목이 가운데) */
+.rr-nav-side {
     flex-direction: row;
-    justify-content: space-between;
     align-items: center;
+    min-width: 44px;
+    height: 44px;
 }
 
-.rr .rr-card-title {
-    font-size: var(--font-size-body);
-    color: var(--color-text);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+.rr-nav-side--right {
+    justify-content: flex-end;
 }
 
-.rr .rr-label {
-    font-size: var(--font-size-caption);
-    color: var(--color-muted);
+.rr-content {
+    flex-grow: 1;
 }
 
-.rr .rr-sub {
-    font-size: var(--font-size-caption);
-    color: var(--color-body);
+/* 아래 버튼: 사이 12(미리보기 .foot gap) */
+.rr-foot {
+    padding-top: 0;
 }
 
-.rr .rr-accent {
-    font-size: var(--font-size-body-sm);
-    color: var(--color-primary);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+.rr-foot > .btn {
+    margin: 12px 0 0 0;
 }
 
-.rr .rr-small {
-    font-size: var(--font-size-caption);
+/* 카드끼리 사이 12 */
+.rr-stats,
+.rr-graph-card,
+.rr-share,
+.rr-note,
+.rr-link {
+    margin-top: 12px;
 }
+
+/* ---- 칩(코드가 FriendParts.Chip으로 만듦): 유리 · 인증 완료 초록 · 미인증 주황(미리보기 .chip) ---- */
+.fr-chip {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 14px;
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
+    background-color: var(--glass-control);
+}
+
+.fr-chip-text {
+    font-size: 12px;
+    color: var(--text-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.fr-chip--success,
+.rr-chip--warn {
+    border-top-width: 0;
+}
+
+.fr-chip--success { background-color: var(--status-success-bg); }
+.fr-chip--success > .fr-chip-text { color: var(--text-success); }
+.rr-chip--warn { background-color: var(--status-warn-bg); }
+.rr-chip--warn > .fr-chip-text { color: var(--text-warn); }
 
 /* ---- E-12 위: 날짜 + 인증 칩 ---- */
 .rr-top {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: var(--space-2);
+    margin-top: 4px;
 }
 
-.rr .rr-date {
-    font-size: var(--font-size-body-sm);
-    color: var(--color-body);
-}
-
-/* 미인증·인증 대기 칩(노랑, E-14) */
-.rr-chip--warn {
-    background-color: rgba(255, 176, 32, 0.18);
-}
-
-.rr .rr-chip--warn .fr-chip-text {
-    color: #B26A00;
-}
-
-/* ---- 거리 + 함께 달린 러너 ---- */
+/* ---- 거리(60) + 함께 달린 러너 ---- */
 .rr-hero {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 16px;
+    margin-top: 12px;
+    padding: 20px;
 }
 
 .rr-distance {
@@ -83,17 +108,13 @@
     flex-shrink: 1;
 }
 
-.rr .rr-km {
-    font-size: 52px;
-    color: var(--color-primary);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+.rr-km {
+    font-size: 60px;
 }
 
-.rr .rr-unit {
-    margin: 0 0 10px 6px;
-    font-size: var(--font-size-body);
-    color: var(--color-body);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+.rr-unit {
+    margin: 0 0 9px 4px;
+    font-size: 18px;
 }
 
 .rr-companions {
@@ -104,12 +125,25 @@
 
 .rr-heads {
     flex-direction: row;
-    margin: 6px 0 4px 0;
+    margin: 8px 0;
 }
 
-.rr-heads > .fr-head {
+/* 함께 달린 러너 머리(FriendParts.Head): 바탕색 테두리로 겹침 */
+.fr-head {
+    width: 28px;
+    height: 28px;
+    border-radius: 14px;
     border-width: 2px;
-    border-color: var(--color-surface);
+    border-color: var(--bg-app);
+    background-color: var(--bg-subtle);
+    align-items: center;
+    justify-content: center;
+}
+
+.fr-head-mark {
+    font-size: 13px;
+    color: var(--text-brand);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 /* 두 번째 머리부터 겹침(UI Toolkit은 :first-child를 몰라서 코드가 붙임) */
@@ -117,231 +151,333 @@
     margin-left: -8px;
 }
 
-.rr .rr-companion-line {
-    font-size: var(--font-size-caption);
-    color: var(--color-text);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
-}
-
-/* ---- 시간·평균 페이스·목표 ---- */
-.rr-stats {
-    flex-direction: row;
-}
-
-.rr-stat {
-    flex-grow: 1;
-    flex-basis: 0;
-    padding: 12px 14px;
-}
-
-.rr-stat--mid {
-    margin-left: var(--space-2);
-    margin-right: var(--space-2);
-}
-
-/* E-01 "오늘의 러닝" 카드 안 세 칸(테두리 없이, 계획 0057) */
-.rr-stat--plain {
-    padding: 14px 0 0 0;
-}
-
-.rr .rr-stat-value {
-    margin-top: 4px;
-    font-size: var(--font-size-sub);
-    color: var(--color-text);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+.rr-companion-line {
+    -unity-text-align: upper-center;
 }
 
 /* ---- 속도 변화 ---- */
-.rr-graph {
-    height: 64px;
-    margin-top: 8px;
+.rr-graph-card {
+    padding: 12px 16px;
 }
 
-/* ---- 친구 피드에 공유 ---- */
+.rr-graph {
+    height: 64px;
+    margin-top: 6px;
+}
+
+/* ---- 친구 피드에 공유(카드 전체가 버튼) ---- */
 .rr-share {
     flex-direction: row;
     align-items: center;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 0;
     -unity-text-align: upper-left;
 }
 
 .rr-share:hover,
 .rr-share:active {
-    border-color: var(--color-line);
-    background-color: var(--color-surface);
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-fill);
 }
 
-.rr-share-text {
-    flex-grow: 1;
-    flex-shrink: 1;
+/* 토글(미리보기 .tg 51×31) */
+.my-switch {
+    width: 51px;
+    height: 31px;
+    flex-shrink: 0;
+    margin-left: 12px;
+    border-radius: 16px;
+    background-color: var(--bg-track);
+    transition-property: background-color;
+    transition-duration: 0.15s;
 }
 
-.rr .rr-share-title {
-    font-size: var(--font-size-body);
-    color: var(--color-text);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
-}
-
-.rr .rr-share-sub {
-    margin-top: 2px;
-    font-size: var(--font-size-caption);
-    color: var(--color-muted);
-}
-
-/* ---- 미인증·오프라인 안내(E-14 노랑 상자) ---- */
-.rr .rr-note {
-    margin-top: var(--space-3);
-    padding: 12px 14px;
+.my-knob {
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 27px;
+    height: 27px;
     border-radius: 14px;
-    background-color: rgba(255, 176, 32, 0.14);
-    font-size: var(--font-size-caption);
-    color: #8A5600;
+    background-color: var(--bg-inverse);
+    transition-property: translate;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
+}
+
+.my-switch--on {
+    background-color: var(--brand-primary);
+}
+
+.my-switch--on > .my-knob {
+    translate: 20px 0;
+}
+
+/* ---- 미인증·오프라인 안내(주황 유리) ---- */
+.rr-note {
+    padding: 16px;    /* 글자 여백 없앰(.unity-label)이 ui-card 여백을 덮어서 다시 */
     white-space: normal;
 }
 
-/* ---- 대조 자세히(E-15) ---- */
+/* ---- 대조 자세히(E-15): 누르는 카드 + › ---- */
 .rr-link {
     flex-direction: row;
     align-items: center;
-    margin-top: var(--space-3);
-    padding: 14px 16px;
-    border-width: 0;
-    border-radius: 16px;
-    background-color: var(--color-primary-tint);
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 0;
     -unity-text-align: middle-left;
 }
 
-.rr-link:hover,
-.rr-link:active {
-    background-color: var(--color-primary-tint);
+.rr-link:hover {
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-fill);
 }
 
-.rr .rr-link-text {
-    flex-grow: 1;
-    font-size: var(--font-size-body-sm);
-    color: var(--color-primary);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+.rr-chev {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/chevron-right-line.svg");
+    -unity-background-image-tint-color: var(--icon-muted);
+    -unity-background-scale-mode: scale-to-fit;
 }
 
-.rr .rr-link-chevron {
-    font-size: var(--font-size-sub);
-    color: var(--color-primary);
+/* ---- E-15 시트(FriendParts.Sheet): 유리 시트, 사이 16, 표는 카드 ---- */
+.fr-dim {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    justify-content: flex-end;
+    background-color: var(--bg-overlay);
 }
 
-.rr-home {
-    margin-top: var(--space-5);
-    margin-bottom: 0;
+.fr-sheet {
+    padding: 12px 20px 34px 20px;
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    border-top-width: 1px;
+    border-top-color: var(--glass-edge);
+    background-color: var(--bg-surface);    /* glass/sheet(.94)는 흐림 없이 뒤가 비쳐 같은 색 불투명으로 */
 }
 
-.rr-records {
-    margin-top: var(--space-2);
+.fr-grabber {
+    align-self: center;
+    width: 36px;
+    height: 5px;
+    border-radius: 3px;
+    background-color: var(--glass-edge);
 }
 
-/* E-15 시트 표 */
+.fr-sheet-title {
+    margin-top: 12px;
+    font-size: 18px;
+    color: var(--text-primary);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+}
+
+.fr-sheet-info {
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.fr-sheet > .btn {
+    margin: 16px 0 0 0;
+}
+
+.rr-compare {
+    margin-top: 16px;
+    padding: 8px 12px;
+}
+
 .rr-compare-row {
     flex-direction: row;
-    padding: 10px 2px;
-    border-bottom-width: 1px;
-    border-color: var(--color-line);
+    align-items: center;
+    padding: 10px 6px;
+    border-top-width: 1px;
+    border-top-color: var(--glass-divider);
+}
+
+.rr-compare-row--head,
+.rr-compare-row--first {
+    border-top-width: 0;
 }
 
 .rr-compare-row--head {
-    padding-top: 4px;
+    padding: 6px;
 }
 
-.fr .rr-compare-cell {
+.rr-compare-cell {
     flex-grow: 1;
     flex-basis: 0;
-    margin: 0;
-    font-size: var(--font-size-body-sm);
-    color: var(--color-text);
+    font-size: 14px;
+    color: var(--text-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.fr .rr-compare-row--head .rr-compare-cell {
-    font-size: var(--font-size-caption);
-    color: var(--color-muted);
+.rr-compare-cell--item {
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 
-/* ---- E-11 주간 목표 점 ---- */
+.rr-compare-row--head > .rr-compare-cell {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+/* ---- E-01 종료 요약(복구한 러닝): 위 48, 큰 거리 72 카드(가운데), 세 칸, 카메라 경고 카드 ---- */
+.rr-summary-card {
+    align-items: center;
+    margin-top: 24px;
+    padding: 20px;
+}
+
+.rr-summary-card > .rr-distance {
+    margin-top: 4px;
+}
+
+.rr-summary-km {
+    font-size: 72px;
+}
+
+.rr-summary-unit {
+    margin: 0 0 12px 4px;
+    font-size: 20px;
+}
+
+/* 카메라 아이콘은 글자 칸의 바탕 그림으로(라벨에 자식을 넣으면 글자 높이를 못 잼) */
+.rr-warning {
+    margin-top: 12px;
+    padding: 16px 16px 16px 52px;
+    white-space: normal;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/camera-line.svg");
+    background-position-x: left 16px;
+    background-position-y: top 16px;
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+    -unity-background-image-tint-color: var(--text-brand);
+}
+
+/* ---- E-11 인증 후 반영: 카드 셋(사이 12), 머리 줄(제목 + 칩·강조 글) ---- */
+.rr-rewards-title {
+    margin-top: 0;
+}
+
+.rr-rewards-cards {
+    margin-top: 20px;
+}
+
+.rr-rewards-card {
+    margin-top: 12px;
+}
+
+.rr-rewards-card--first {
+    margin-top: 0;
+}
+
+.rr-card-head {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* 주간 목표 동그라미 30(한 것은 하늘색 + 체크, 남은 것은 어두운 홈) */
 .rr-dots {
     flex-direction: row;
     margin-top: 12px;
 }
 
 .rr-dot {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     margin-right: 8px;
-    border-radius: 14px;
-    background-color: var(--color-line);
+    border-radius: 15px;
+    border-width: 1px;
+    border-color: var(--glass-control);
+    background-color: var(--glass-well);
     align-items: center;
     justify-content: center;
 }
 
 .rr-dot--done {
-    background-color: var(--color-lime);
+    border-width: 0;
+    background-color: var(--brand-accent);
 }
 
-.rr .rr-dot-mark {
-    font-size: var(--font-size-body-sm);
-    color: var(--color-text);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+.rr-dot-check {
+    width: 16px;
+    height: 16px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/check-line.svg");
+    -unity-background-image-tint-color: var(--text-on-accent);
+    -unity-background-scale-mode: scale-to-fit;
 }
 
-/* ---- E-11 러닝복 전후 ---- */
+/* 러닝복 전 → 후(얼굴 56, 지금 것은 고른 카드) */
 .rr-outfits {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    margin-top: 12px;
+    margin: 16px 0;
 }
 
 .rr-outfit {
-    width: 110px;
-    padding: 10px;
     align-items: center;
-    border-width: 1px;
-    border-color: var(--color-line);
-    border-radius: 16px;
-    background-color: var(--color-primary-tint);
 }
 
 .rr-outfit--now {
-    border-width: 2px;
-    border-color: var(--color-primary);
+    padding: 12px;
 }
 
 .rr-outfit-img {
     width: 56px;
-    height: 72px;
-    background-image: url("project://database/Assets/Scrun/App/UI/Images/CharacterRun.png");
+    height: 56px;
+    border-radius: 28px;
+    background-color: var(--bg-subtle);
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/Face.png");
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.rr-outfit-name {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    -unity-text-align: upper-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.rr-outfit--now > .rr-outfit-name {
+    color: var(--text-primary);
+}
+
+.rr-arrow {
+    width: 24px;
+    height: 24px;
+    margin: 0 16px;
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/arrow-right-line.svg");
+    -unity-background-image-tint-color: var(--text-primary);
     -unity-background-scale-mode: scale-to-fit;
-}
-
-.rr .rr-outfit-name {
-    margin-top: 6px;
-    font-size: var(--font-size-caption);
-    color: var(--color-text);
-    -unity-text-align: middle-center;
-    white-space: normal;
-}
-
-.rr .rr-outfit-arrow {
-    margin: 0 12px;
-    font-size: var(--font-size-sub);
-    color: var(--color-primary);
 }
 
 .rr-xp-row {
     flex-direction: row;
     justify-content: space-between;
-    margin-top: 12px;
+    margin-top: 8px;
 }
 
 .rr-bar {
     height: 8px;
     margin-top: 8px;
     border-radius: 4px;
-    background-color: var(--color-line);
+    background-color: var(--bg-track);
     overflow: hidden;
 }
 
@@ -349,18 +485,18 @@
     height: 100%;
     width: 0;
     border-radius: 4px;
-    background-color: var(--color-primary);
+    background-color: var(--reward-xp);
 }
 
-.rr .rr-impact {
-    margin-top: 10px;
-    font-size: var(--font-size-body-sm);
-    color: var(--color-text);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
-    white-space: normal;
+.rr-impact {
+    margin-top: 12px;
 }
 
-/* ---- E-13 레벨업(풀스크린, 파란 바탕) ---- */
+.rr-impact-next {
+    margin-top: 2px;
+}
+
+/* ---- E-13 레벨업(덮개: 축하 바탕은 앱 바탕이 칠하고, 뒤 카드는 코드가 숨김) ---- */
 .rr-levelup {
     position: absolute;
     left: 0;
@@ -368,21 +504,24 @@
     right: 0;
     bottom: 0;
     align-items: center;
-    padding: 64px 24px 32px 24px;
-    background-color: var(--color-primary);
+    padding-top: 20px;
     opacity: 0;
     transition-property: opacity;
-    transition-duration: 0.35s;
+    transition-duration: 0.25s;
 }
 
 .rr-levelup--in {
     opacity: 1;
 }
 
-.rr .rr-levelup-title {
-    font-size: 36px;
-    color: #FFFFFF;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+.rr-levelup-body {
+    flex-grow: 1;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.rr-levelup-title {
+    font-size: 44px;
 }
 
 .rr-levelup-levels {
@@ -391,78 +530,67 @@
     margin-top: 12px;
 }
 
-.rr .rr-levelup-chip {
-    padding: 4px 12px;
-    border-radius: 12px;
-    background-color: rgba(255, 255, 255, 0.2);
-    font-size: var(--font-size-body-sm);
-    color: #FFFFFF;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+.rr-levelup-chip {
+    height: 36px;
+    border-radius: 18px;
+    padding: 0 16px;
+    font-size: 15px;
 }
 
-.rr .rr-levelup-chip--now {
-    background-color: var(--color-lime);
-    color: var(--color-text);
+.rr-levelup-arrow {
+    margin: 0 12px;
 }
 
-.rr .rr-levelup-arrow {
-    margin: 0 10px;
-    color: #FFFFFF;
+/* 캐릭터 뒤 동그라미 둘(280 · 210) */
+.rr-levelup-stage {
+    width: 300px;
+    height: 300px;
+    margin-top: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.rr-levelup-halo {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    width: 280px;
+    height: 280px;
+    border-radius: 140px;
+    background-color: rgba(255, 255, 255, 0.025); /* Figma .1, 선형 섞기(App.uss 유리 주석) */
+}
+
+.rr-levelup-halo--inner {
+    left: 45px;
+    top: 45px;
+    width: 210px;
+    height: 210px;
+    border-radius: 105px;
+    background-color: rgba(255, 255, 255, 0.045); /* Figma .16 */
 }
 
 .rr-levelup-char {
-    width: 180px;
-    height: 220px;
-    margin-top: 20px;
+    width: 200px;
+    height: 280px;
     background-image: url("project://database/Assets/Scrun/App/UI/Images/CharacterRun.png");
     -unity-background-scale-mode: scale-to-fit;
-    scale: 0.85 0.85;
-    transition-property: scale;
-    transition-duration: 0.5s;
-    transition-timing-function: ease-out-back;
 }
 
-.rr-levelup--in .rr-levelup-char {
-    scale: 1 1;
+.rr-levelup-lead {
+    margin-top: 0;
 }
 
-.rr .rr-levelup-outfit {
-    margin-top: 16px;
-    font-size: var(--font-size-heading);
-    color: #FFFFFF;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
-}
-
-.rr .rr-levelup-lead {
-    margin-top: 4px;
-    font-size: var(--font-size-body-sm);
-    color: rgba(255, 255, 255, 0.85);
-}
-
-.rr .rr-levelup-xp {
-    margin-top: 16px;
-    font-size: var(--font-size-caption);
-    color: rgba(255, 255, 255, 0.85);
-}
-
-.rr .rr-levelup-impact {
+.rr-levelup-xp {
     margin-top: 12px;
-    padding: 10px 14px;
-    border-radius: 14px;
-    background-color: rgba(255, 255, 255, 0.16);
-    font-size: var(--font-size-body-sm);
-    color: #FFFFFF;
-    white-space: normal;
+    -unity-text-align: upper-center;
 }
 
-.rr-levelup-btn {
+.rr-levelup-impact {
     align-self: stretch;
-    margin-top: auto;
-    background-color: #FFFFFF;
-    color: var(--color-primary);
+    margin-top: 12px;
+    padding: 12px 16px;
 }
 
-.rr-levelup-btn:hover,
-.rr-levelup-btn:active {
-    background-color: #FFFFFF;
+.rr-levelup-foot {
+    align-self: stretch;
 }

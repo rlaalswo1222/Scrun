@@ -1,5 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- A-12–A-15 보정(가로) + 다시·도움·멈춤 카드(Figma에 없음). 패널은 코드가 상태에 따라 보이고 숨김. 문구는 CalibrationCopy -->
+    <!-- A-12–A-15 보정(가로) + 다시·도움·멈춤 카드. 모양은 상준 미리보기 calib(계획 0068): 흐린 맵 하늘 + 어두운 덮개 위에
+         왼쪽 안내·오른쪽 타이머 고리, 카드는 유리 대화상자. 패널은 코드가 상태에 따라 보이고 숨김. 문구는 CalibrationCopy -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Calibration.uss" />
     <ui:VisualElement class="calib">
         <!-- 위: 단계 막대·단계 번호·취소 -->
@@ -24,13 +25,18 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
-        <!-- A-12 거치 확인 -->
-        <ui:VisualElement name="mount" class="calib-dim">
-            <ui:VisualElement class="calib-card calib-card--wide">
-                <ui:Label name="mount-title" class="calib-card-title" />
-                <ui:Label name="mount-body" class="calib-card-body" />
-                <ui:Button name="mount-ok" class="btn btn-primary" />
-                <ui:Button name="mount-cancel" class="btn btn-secondary calib-btn-tight" />
+        <!-- A-12 거치 확인: 왼쪽 글·버튼, 오른쪽 러닝머신 안내 그림 -->
+        <ui:VisualElement name="mount" class="calib-dim calib-dim--clear">
+            <ui:VisualElement class="calib-card calib-card--mount">
+                <ui:VisualElement class="calib-mount-text">
+                    <ui:Label name="mount-title" class="calib-card-title calib-left" />
+                    <ui:Label name="mount-body" class="calib-card-body calib-left" />
+                    <ui:Button name="mount-ok" class="btn btn-primary calib-mount-ok" />
+                    <ui:Button name="mount-cancel" class="btn btn-ghost calib-btn-tight" />
+                </ui:VisualElement>
+                <ui:VisualElement class="calib-mount-ill" picking-mode="Ignore">
+                    <ui:VisualElement class="calib-mount-img" />
+                </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
 
@@ -40,27 +46,27 @@
                 <ui:Label name="card-icon" class="calib-card-icon" />
                 <ui:Label name="card-title" class="calib-card-title" />
                 <ui:Label name="card-body" class="calib-card-body" />
-                <ui:Label name="card-chip" class="calib-chip" />
-                <ui:VisualElement name="card-buttons" class="dialog-buttons">
-                    <ui:Button name="card-secondary" class="btn btn-secondary" />
+                <ui:Label name="card-chip" class="calib-chip calib-chip--glass" />
+                <ui:VisualElement name="card-buttons" class="dialog-buttons calib-buttons">
+                    <ui:Button name="card-secondary" class="btn btn-ghost" />
                     <ui:Button name="card-primary" class="btn btn-primary" />
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
 
         <!-- A-15 완료 -->
-        <ui:VisualElement name="done" class="calib-dim">
-            <ui:VisualElement class="calib-card calib-card--wide">
-                <ui:Label text="✓" class="calib-card-icon calib-card-icon--ok" />
+        <ui:VisualElement name="done" class="calib-dim calib-dim--clear">
+            <ui:VisualElement class="calib-card calib-card--done">
+                <ui:Label class="calib-card-icon calib-card-icon--ok" />
                 <ui:Label name="done-title" class="calib-card-title" />
                 <ui:VisualElement name="done-speeds" class="calib-chips" />
                 <ui:VisualElement class="calib-chips">
                     <ui:Label name="sensor-label" class="calib-chip-label" />
-                    <ui:Label name="sensor-phone" class="calib-chip calib-chip--blue" />
+                    <ui:Label name="sensor-phone" class="calib-chip calib-chip--glass" />
                     <ui:Label name="sensor-air" class="calib-chip" />
                 </ui:VisualElement>
-                <ui:Label name="save-note" class="hint-text" />
-                <ui:Button name="done-next" class="btn btn-primary" />
+                <ui:Label name="save-note" class="calib-note" />
+                <ui:Button name="done-next" class="btn btn-primary calib-done-next" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

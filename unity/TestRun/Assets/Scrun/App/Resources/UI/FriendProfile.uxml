@@ -1,27 +1,23 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <!-- G-09 친구 프로필(계획 0044, Figma 608:2189). 머리·이름·칩(달리는 중·인증 마크·레벨) → 같이 달리기 → 최근 러닝.
-         더보기 → 친구 삭제(G-11 시트). 안 달리면 버튼을 끄고 "지금은 달리고 있지 않아요" -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
+         더보기 → 친구 삭제(G-11 시트). 안 달리면 버튼을 끄고 "지금은 달리고 있지 않아요".
+         모양은 상준 우주 디자인 미리보기(계획 0068, js/views/friends.js friendProfile) -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
-    <ui:VisualElement class="onb fr">
-        <ui:VisualElement class="nav-bar">
-            <ui:VisualElement class="nav-side">
-                <ui:Button name="back" class="nav-back" />
-            </ui:VisualElement>
-            <ui:Label text="친구" class="nav-title" />
-            <ui:VisualElement class="nav-side nav-side--right">
-                <ui:Button name="more" text="더보기" class="nav-action" />
-            </ui:VisualElement>
+    <ui:VisualElement class="fr ui-screen">
+        <ui:VisualElement class="ui-nav">
+            <ui:Button name="back" class="ui-nav-act ui-nav-back" />
+            <ui:Label text="친구" class="ui-nav-title" />
+            <ui:Button name="more" text="더보기" class="ui-nav-act ui-nav-act--text" />
         </ui:VisualElement>
-        <ui:ScrollView name="content" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+        <ui:ScrollView name="content" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ui-scroll">
             <ui:VisualElement name="head" class="fr-profile-head" />
-            <ui:Label name="name" class="fr-profile-name fr-center" />
+            <ui:Label name="name" class="ui-title ui-center fr-profile-name" />
             <ui:VisualElement name="chips" class="fr-chip-row" />
             <ui:Button name="run-together" text="같이 달리기" class="btn btn-primary fr-profile-btn" />
-            <ui:Label name="not-running" text="지금은 달리고 있지 않아요" class="fr-caption" />
-            <ui:Label text="최근 러닝" class="fr-section" />
+            <ui:Label name="not-running" text="지금은 달리고 있지 않아요" class="ui-sm ui-c3 ui-center fr-caption" />
+            <ui:Label text="최근 러닝" class="ui-sub fr-section" />
             <ui:VisualElement name="runs" />
-            <ui:Label name="runs-empty" text="아직 공유한 러닝이 없어요" class="fr-hint" />
+            <ui:Label name="runs-empty" text="아직 공유한 러닝이 없어요" class="ui-sm ui-c3 fr-hint" />
         </ui:ScrollView>
         <!-- 공통 상태(계획 0056): 첫 로딩 스켈레톤·불러오기 실패·더 이상 친구가 아님 -->
         <ui:VisualElement name="state" />

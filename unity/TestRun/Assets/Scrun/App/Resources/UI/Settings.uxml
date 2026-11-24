@@ -1,18 +1,15 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- H-10 설정(계획 0049, Figma 610:2647): 알림·공개·연결·데이터 줄은 SettingsScreen이 코드로, 아래 로그아웃·계정 삭제 -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+    <!-- H-10 설정(계획 0049, Figma 610:2647): 알림·공개·연결·데이터 줄은 SettingsScreen이 코드로, 아래 로그아웃·계정 삭제.
+         모양은 상준 우주 디자인 미리보기(계획 0068, js/views/my.js settings) -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
     <Style src="project://database/Assets/Scrun/App/Resources/UI/My.uss" />
-    <ui:VisualElement class="onb fr my">
-        <ui:VisualElement class="nav-bar">
-            <ui:VisualElement class="nav-side">
-                <ui:Button name="back" class="nav-back" />
-            </ui:VisualElement>
-            <ui:Label text="설정" class="nav-title" />
-            <ui:VisualElement class="nav-side nav-side--right" />
+    <ui:VisualElement class="fr my ui-screen">
+        <ui:VisualElement class="ui-nav">
+            <ui:Button name="back" class="ui-nav-act ui-nav-back" />
+            <ui:Label text="설정" class="ui-nav-title" />
+            <ui:VisualElement class="fr-nav-space" />
         </ui:VisualElement>
-        <ui:ScrollView name="scroll" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+        <ui:ScrollView name="scroll" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ui-scroll">
             <ui:VisualElement name="content" />
         </ui:ScrollView>
     </ui:VisualElement>

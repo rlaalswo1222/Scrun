@@ -26,12 +26,12 @@ namespace Scrun.App
         public bool Failed => failed;
         protected override string Uxml => failed ? "UI/LoginFailed" : "UI/Login";
         public override bool HidesTabBar => true;
-        public override string RootClass => failed ? null : SpaceArt.RootClass; // A-05만 우주 시안(계획 0061)
+        public override string RootClass => SpaceArt.LoginRootClass; // A-05·A-19 로그인 바탕(미리보기 bg_login, 계획 0068)
 
         protected override void OnCreate()
         {
             kakao = Q<Button>("kakao");
-            if (!failed) SpaceArt.Fit(Q<VisualElement>("fit"));
+            SpaceArt.Fit(Q<VisualElement>("fit")); // 로고·행성 그림을 남는 높이에 맞게(A-05·A-19 같은 모양)
             kakao.clicked += Login;
             var dev = Root.Q<Button>("dev-native"); // A-05에만
             if (dev != null)

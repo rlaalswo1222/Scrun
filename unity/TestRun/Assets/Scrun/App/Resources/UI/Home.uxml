@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- 홈 B-01–B-04(계획 0057, 모양은 우주 시안 B · 홈 825:571 계획 0062). 프로필 카드(→ H-04) → 큰 문구 → 내 행성 카드(이번 주 진행, 목표 있으면 → H-07)
+    <!-- 홈 B-01–B-04(계획 0057, 모양은 상준 미리보기 home 계획 0068). 프로필 카드(→ H-04) → 큰 문구 → 내 행성 카드(이번 주 진행, 목표 있으면 → H-07)
          → (B-02) 이번 주 목표 정하기 → 달리기 시작 → 지금 달리는 친구(없으면 친구 추가).
          상태 고르기·글자는 HomeText, 채우기는 HomeScreen(GET /v1/home 한 번). 처음 불러오는 동안·실패는 공통 칸 state(계획 0056), 큰 버튼은 그때도 동작.
          I-04 복구 안내창(RecoveryPrompt)도 이 화면 위에 뜬다(모양은 Home.uss) -->
@@ -17,7 +17,7 @@
                 <ui:VisualElement name="top-part">
                     <!-- 프로필 카드: 얼굴·이름·Lv·러닝복·다음 레벨까지·막대. 누르면 H-04 -->
                     <ui:Button name="level" class="bc-card hs-profile">
-                        <ui:VisualElement class="bc-face hs-portrait" picking-mode="Ignore" />
+                        <ui:VisualElement name="portrait" class="bc-face hs-portrait" picking-mode="Ignore" />
                         <ui:VisualElement class="hs-profile-text" picking-mode="Ignore">
                             <ui:VisualElement class="hs-name-row" picking-mode="Ignore">
                                 <ui:Label name="name" class="hs-name" picking-mode="Ignore" />
@@ -35,6 +35,8 @@
 
                     <!-- 내 행성 카드: 왼쪽 위 이번 주 진행(목표가 있을 때). 목표가 있으면 누르면 H-07 -->
                     <ui:VisualElement name="top-card" class="hs-hero">
+                        <!-- 목표 달성(B-03): 캐릭터 없는 행성 위 기쁜 포즈(홈 목표 달성 클래스일 때만) -->
+                        <ui:VisualElement name="joy" class="hs-joy" picking-mode="Ignore" />
                         <ui:VisualElement name="count-row" class="hs-ring-row" picking-mode="Ignore">
                             <ui:VisualElement name="ring-slot" picking-mode="Ignore" />
                             <ui:Label text="이번 주" class="hs-week" picking-mode="Ignore" />
@@ -59,8 +61,11 @@
                             <ui:Label name="friends-names" class="hs-friend-title" picking-mode="Ignore" />
                             <ui:Label name="friends-count" class="hs-friend-sub" picking-mode="Ignore" />
                         </ui:VisualElement>
-                        <ui:Label text="LIVE" class="bc-live" picking-mode="Ignore" />
-                        <ui:Label text="›" class="bc-chevron" picking-mode="Ignore" />
+                        <ui:VisualElement class="bc-live" picking-mode="Ignore">
+                            <ui:VisualElement class="bc-live-dot" picking-mode="Ignore" />
+                            <ui:Label text="LIVE" class="bc-live-text" picking-mode="Ignore" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="ui-chev" picking-mode="Ignore" />
                     </ui:Button>
                     <!-- 달리는 친구 0명: 친구 추가(→ G-05), B-04 시안 -->
                     <ui:Button name="friends-empty" class="bc-card hs-friend">
@@ -68,7 +73,7 @@
                             <ui:Label name="friends-empty-title" class="hs-friend-title" picking-mode="Ignore" />
                             <ui:Label name="friends-empty-body" class="hs-friend-sub" picking-mode="Ignore" />
                         </ui:VisualElement>
-                        <ui:Label text="›" class="bc-chevron" picking-mode="Ignore" />
+                        <ui:VisualElement class="ui-chev" picking-mode="Ignore" />
                     </ui:Button>
                 </ui:VisualElement>
             </ui:VisualElement>

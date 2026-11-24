@@ -1,38 +1,34 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- I-05 모션 및 피트니스 권한 거부(Figma). 설정 앱에서 켜고 돌아오면 저절로 다음으로 -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
-    <ui:VisualElement class="onb">
-        <ui:VisualElement class="nav-bar">
-            <ui:VisualElement class="nav-side">
-                <ui:Button name="back" class="nav-back" />
-            </ui:VisualElement>
-            <ui:Label text="모션 및 피트니스 권한 거부" class="nav-title" />
-            <ui:VisualElement class="nav-side nav-side--right" />
+    <!-- I-05 모션 및 피트니스 권한 거부(모양은 미리보기 errors.js permDenied, 계획 0068). 설정 앱에서 켜고 돌아오면 저절로 다음으로 -->
+    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingSpace.uss" />
+    <ui:VisualElement class="ob ui-screen">
+        <ui:VisualElement class="ui-nav">
+            <ui:Button name="back" class="ui-nav-act ui-nav-back" />
+            <ui:Label text="모션 및 피트니스 권한 거부" class="ui-nav-title" />
+            <ui:VisualElement class="ob-nav-space" />
         </ui:VisualElement>
-        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
-            <ui:VisualElement class="denied-head">
-                <ui:VisualElement class="denied-icon-box">
-                    <ui:VisualElement class="denied-icon" />
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ui-scroll">
+            <ui:VisualElement name="status" class="ui-st3d ob-st3d" picking-mode="Ignore" />
+            <ui:Label text="모션 및 피트니스 권한이&#10;필요해요" class="ui-title ob-denied-title" />
+            <ui:Label text="걸음과 발 충격으로 속도를 추정해 아바타를 움직여요" class="ui-text ob-denied-lead" />
+            <ui:VisualElement class="ui-card ob-steps-card">
+                <ui:VisualElement class="ob-step">
+                    <ui:Label text="1" class="ob-step-num" />
+                    <ui:Label text="설정 앱을 열어요" class="ob-step-text" />
                 </ui:VisualElement>
-                <ui:Label text="모션 및 피트니스 권한이&#10;필요해요" class="denied-title" />
-                <ui:Label text="걸음과 발 충격으로 속도를 추정해 아바타를 움직여요" class="denied-lead" />
-            </ui:VisualElement>
-            <ui:VisualElement class="steps">
-                <ui:VisualElement class="step">
-                    <ui:Label text="1" class="step-num" />
-                    <ui:Label text="설정 앱을 열어요" class="step-text" />
+                <ui:VisualElement class="ob-step ob-step--next">
+                    <ui:Label text="2" class="ob-step-num" />
+                    <ui:Label text="SCRUN을 선택해요" class="ob-step-text" />
                 </ui:VisualElement>
-                <ui:VisualElement class="step step--next">
-                    <ui:Label text="2" class="step-num" />
-                    <ui:Label text="SCRUN을 선택해요" class="step-text" />
-                </ui:VisualElement>
-                <ui:VisualElement class="step step--next">
-                    <ui:Label text="3" class="step-num" />
-                    <ui:Label text="모션 및 피트니스를 켜요" class="step-text" />
+                <ui:VisualElement class="ob-step ob-step--next">
+                    <ui:Label text="3" class="ob-step-num" />
+                    <ui:Label text="모션 및 피트니스를 켜요" class="ob-step-text" />
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:ScrollView>
-        <ui:Button name="settings" text="설정 열기" class="btn btn-primary" />
-        <ui:Button name="later" text="나중에" class="btn btn-ghost" />
+        <ui:VisualElement class="ui-foot">
+            <ui:Button name="settings" text="설정 열기" class="btn btn-primary" />
+            <ui:Button name="later" text="나중에" class="btn btn-ghost ob-next" />
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

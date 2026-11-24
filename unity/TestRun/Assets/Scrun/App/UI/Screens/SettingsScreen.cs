@@ -58,6 +58,7 @@ namespace Scrun.App
             var delete = new Button(AskDelete) { text = "계정 삭제", name = "delete-account" };
             delete.AddToClassList("my-foot-btn");
             foot.Add(logout);
+            foot.Add(UiExtensions.Text("·", "my-foot-dot")); // 미리보기 settings: 로그아웃 · 계정 삭제
             foot.Add(delete);
             content.Add(foot);
 

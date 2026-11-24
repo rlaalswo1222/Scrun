@@ -27,6 +27,12 @@ namespace Scrun.App
         // 맨 위 화면이 바뀔 때마다(가로·세로, 탭 바 표시를 여기서 맞춤)
         public event Action<AppScreen> Changed;
 
+        // 화면 넘김 움직임(계획 0068). null이면 바로 바뀜(테스트·처음 상태). AppRoot가 붙인다
+        public ScreenTransitions Transitions { get; set; }
+
+        // 탭 바에 보이는 순서(왼쪽 → 오른쪽). 탭 넘김 방향을 정함
+        static readonly AppTab[] TabOrder = { AppTab.Home, AppTab.Friends, AppTab.Records, AppTab.Me };
+
         List<AppScreen> Stack => flow ?? (tabStacks.TryGetValue(CurrentTab, out var s) ? s : null);
 
         // tabBar 안의 버튼 이름: tab-home, tab-records, tab-friends, tab-me
@@ -50,10 +56,11 @@ namespace Scrun.App
         {
             var prev = Current;
             Create(first);
-            Hide(prev);
+            var motion = MotionBetween(prev, first, NavMotion.Fade);
+            Hide(prev, motion);
             DestroyAll();
             flow = new List<AppScreen> { first };
-            ShowTop();
+            ShowTop(motion);
         }
 
         // 흐름을 끝내고 탭으로(예: 가입이 끝나면 홈)
@@ -61,14 +68,15 @@ namespace Scrun.App
         {
             var prev = Current; // 만들기 전에 잡는다(처음엔 새로 만든 탭 화면이 '지금 화면'으로 보이므로)
             EnsureTab(tab);
-            Hide(prev);
+            var motion = MotionBetween(prev, TopOf(tab), NavMotion.Fade);
+            Hide(prev, motion);
             if (flow != null)
             {
                 foreach (var s in flow) Destroy(s);
                 flow = null;
             }
             SetTab(tab);
-            ShowTop();
+            ShowTop(motion);
         }
 
         // 탭 버튼. 지금 탭을 다시 누르면 그 탭의 첫 화면으로
@@ -81,10 +89,13 @@ namespace Scrun.App
                 return;
             }
             var prev = Current;
+            var from = CurrentTab;
             EnsureTab(tab);
-            Hide(prev);
+            var motion = MotionBetween(prev, TopOf(tab),
+                Array.IndexOf(TabOrder, tab) > Array.IndexOf(TabOrder, from) ? NavMotion.TabRight : NavMotion.TabLeft);
+            Hide(prev, motion);
             SetTab(tab);
-            ShowTop();
+            ShowTop(motion);
         }
 
         public void Push(AppScreen screen)
@@ -92,9 +103,10 @@ namespace Scrun.App
             var stack = Stack ?? throw new InvalidOperationException("StartFlow나 ShowTabs를 먼저 부르세요.");
             var prev = Current;
             Create(screen);
-            Hide(prev);
+            var motion = MotionBetween(prev, screen, NavMotion.Push);
+            Hide(prev, motion);
             stack.Add(screen);
-            ShowTop();
+            ShowTop(motion);
         }
 
         // 뒤로 갈 화면이 있는지(지금 화면이 맨 아래가 아님). 화면이 뒤로 버튼을 숨길지 정할 때
@@ -105,11 +117,12 @@ namespace Scrun.App
         {
             var stack = Stack;
             if (stack == null || stack.Count <= 1) return false;
-            HideCurrent();
             var top = stack[stack.Count - 1];
+            var motion = MotionBetween(top, stack[stack.Count - 2], NavMotion.Back);
+            Hide(top, motion);
             stack.RemoveAt(stack.Count - 1);
             Destroy(top);
-            ShowTop();
+            ShowTop(motion);
             return true;
         }
 
@@ -118,13 +131,14 @@ namespace Scrun.App
         {
             var stack = Stack;
             if (stack == null || stack.Count <= 1) return;
-            HideCurrent();
+            var motion = MotionBetween(Current, stack[0], NavMotion.Back);
+            Hide(Current, motion);
             for (int i = stack.Count - 1; i >= 1; i--)
             {
                 Destroy(stack[i]);
                 stack.RemoveAt(i);
             }
-            ShowTop();
+            ShowTop(motion);
         }
 
         // 지금 탭에 쌓인 화면(예: 결과 화면들)을 정리하고 tab의 첫 화면으로. tab에 전에 쌓아 둔 화면도 정리한다.
@@ -132,12 +146,14 @@ namespace Scrun.App
         public void ShowTabRoot(AppTab tab)
         {
             if (!InTabs) return;
-            Hide(Current);
-            TrimToRoot(CurrentTab);
+            var prev = Current;
             EnsureTab(tab);
+            var motion = MotionBetween(prev, tabStacks[tab][0], NavMotion.Fade);
+            Hide(prev, motion);
+            TrimToRoot(CurrentTab);
             TrimToRoot(tab);
             SetTab(tab);
-            ShowTop();
+            ShowTop(motion);
         }
 
         void TrimToRoot(AppTab tab)
@@ -153,7 +169,7 @@ namespace Scrun.App
         // 앱 화면을 끌 때: 지금 화면을 숨기고 전부 정리
         public void Dispose()
         {
-            HideCurrent();
+            Hide(Current, NavMotion.None);
             DestroyAll();
             Changed = null;
         }
@@ -177,23 +193,41 @@ namespace Scrun.App
         {
             s.Create(this); // 실패하면 여기서 예외 → 지금 화면은 그대로
             s.Root.style.display = DisplayStyle.None;
+            s.NavShown = false;
             host.Add(s.Root);
         }
 
-        void HideCurrent() => Hide(Current);
-
-        static void Hide(AppScreen s)
+        // 화면 로직은 바로 숨김(OnHide), 보이는 것은 움직임이 끝난 뒤 display: none
+        void Hide(AppScreen s, NavMotion motion)
         {
-            if (s == null || s.Root.style.display == DisplayStyle.None) return; // 이미 숨겨졌거나 아직 안 보인 화면
-            s.Root.style.display = DisplayStyle.None;
+            if (s == null || !s.NavShown) return; // 이미 숨겨졌거나 아직 안 보인 화면
+            s.NavShown = false;
+            var root = s.Root;
+            if (Transitions == null) root.style.display = DisplayStyle.None;
+            else Transitions.Leave(root, motion, () => { if (!s.NavShown) root.style.display = DisplayStyle.None; });
             s.OnHide();
         }
 
-        void ShowTop()
+        // 가로 화면(맵)으로 오가거나 처음 띄울 때는 회전·첫 화면이라 움직이지 않음(흐려짐만)
+        static NavMotion MotionBetween(AppScreen from, AppScreen to, NavMotion wanted)
+        {
+            if (from == null || to == null) return NavMotion.Fade;
+            if (from.Landscape || to.Landscape || from.ShowsWorld || to.ShowsWorld) return NavMotion.None;
+            return wanted;
+        }
+
+        AppScreen TopOf(AppTab tab) =>
+            tabStacks.TryGetValue(tab, out var s) && s.Count > 0 ? s[s.Count - 1] : null;
+
+        void ShowTop(NavMotion motion = NavMotion.None)
         {
             var cur = Current;
             if (cur == null) return;
+            cur.NavShown = true;
             cur.Root.style.display = DisplayStyle.Flex;
+            cur.Root.BringToFront(); // 들어오는 화면이 나가는 화면 위(뒤로 갈 때는 나가는 화면이 위에서 밀려나야 하므로 아래)
+            if (motion == NavMotion.Back) cur.Root.SendToBack();
+            Transitions?.Enter(cur.Root, motion);
             tabBar.style.display = InTabs && !cur.HidesTabBar ? DisplayStyle.Flex : DisplayStyle.None;
             cur.OnShow();
             // OnShow 안에서 다른 화면으로 넘어갔으면 그쪽이 이미 알렸으므로 옛 화면으로 다시 알리지 않는다
@@ -208,10 +242,10 @@ namespace Scrun.App
             flow = null;
         }
 
-        static void Destroy(AppScreen s)
+        void Destroy(AppScreen s)
         {
             s.OnDestroy();
-            s.Root.RemoveFromHierarchy();
+            if (Transitions == null || !Transitions.RemoveWhenDone(s.Root)) s.Root.RemoveFromHierarchy(); // 나가는 중이면 끝난 뒤 뗌
         }
     }
 }

@@ -1,38 +1,40 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <!-- H-01 마이 메인(계획 0049, Figma 610:1894). 프로필 카드(누르면 H-11)·누적 거리·인증·레벨, 메뉴는 MyScreen이 코드로 -->
+    <!-- H-01 마이 메인(계획 0049, Figma 610:1894). 프로필 카드(누르면 H-11)·누적 거리·인증·레벨, 메뉴는 MyScreen이 코드로.
+         모양은 상준 우주 디자인 미리보기(계획 0068, js/views/my.js my): 카드 오른쪽에 지금 러닝복 캐릭터, 세 칸은 ui-stats -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
     <Style src="project://database/Assets/Scrun/App/Resources/UI/My.uss" />
-    <ui:VisualElement class="fr fr-page my">
-        <ui:VisualElement class="fr-header">
-            <ui:Label text="마이" class="fr-title" />
+    <ui:VisualElement class="fr my ui-screen">
+        <ui:VisualElement class="ui-row ui-row--between fr-header my-header">
+            <ui:Label text="마이" class="ui-title" />
         </ui:VisualElement>
-        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="fr-scroll">
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ui-scroll">
             <!-- 공통 상태(계획 0056): 프로필·숫자를 처음 받는 동안 스켈레톤, 실패하면 여기에. 메뉴(설정·로그아웃)는 그대로 씀 -->
             <ui:VisualElement name="state" />
             <ui:Button name="profile" class="my-profile">
-                <ui:VisualElement name="head" picking-mode="Ignore" />
+                <ui:VisualElement name="set" class="my-profile-set my-set--1" picking-mode="Ignore" />
+                <ui:VisualElement name="head" class="my-profile-head" picking-mode="Ignore" />
                 <ui:VisualElement class="my-profile-text" picking-mode="Ignore">
-                    <ui:Label name="name" class="my-name" picking-mode="Ignore" />
+                    <ui:Label name="name" class="ui-heading my-name" picking-mode="Ignore" />
                     <ui:VisualElement class="my-badges" picking-mode="Ignore">
-                        <ui:Label name="level-chip" class="my-chip" picking-mode="Ignore" />
+                        <ui:Label name="level-chip" class="my-chip my-chip--level" picking-mode="Ignore" />
                         <ui:Label name="marks-chip" class="my-chip" picking-mode="Ignore" />
                     </ui:VisualElement>
-                    <ui:Label name="next" class="my-next" picking-mode="Ignore" />
+                    <ui:Label name="next" class="ui-sm my-next" picking-mode="Ignore" />
                 </ui:VisualElement>
-                <ui:Label text="›" class="my-row-chevron" picking-mode="Ignore" />
+                <ui:VisualElement class="ui-chev my-profile-chev" picking-mode="Ignore" />
             </ui:Button>
-            <ui:VisualElement name="stats" class="my-stats">
-                <ui:VisualElement class="my-stat">
-                    <ui:Label name="stat-distance" class="my-stat-value" />
-                    <ui:Label text="누적 거리" class="my-stat-label" />
+            <ui:VisualElement name="stats" class="ui-stats my-stats">
+                <ui:VisualElement class="ui-stat ui-stat--first">
+                    <ui:Label text="누적 거리" class="ui-stat-key" />
+                    <ui:Label name="stat-distance" class="ui-stat-value" />
                 </ui:VisualElement>
-                <ui:VisualElement class="my-stat">
-                    <ui:Label name="stat-verified" class="my-stat-value" />
-                    <ui:Label text="인증" class="my-stat-label" />
+                <ui:VisualElement class="ui-stat">
+                    <ui:Label text="인증" class="ui-stat-key" />
+                    <ui:Label name="stat-verified" class="ui-stat-value" />
                 </ui:VisualElement>
-                <ui:VisualElement class="my-stat">
-                    <ui:Label name="stat-level" class="my-stat-value" />
-                    <ui:Label text="레벨" class="my-stat-label" />
+                <ui:VisualElement class="ui-stat">
+                    <ui:Label text="레벨" class="ui-stat-key" />
+                    <ui:Label name="stat-level" class="ui-stat-value" />
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement name="menu" class="my-group" />

@@ -1,82 +1,83 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <!-- E-12 운동 결과·E-14 미인증(계획 0051, Figma 607:1673·699:2563). 날짜·인증 칩 → 거리·함께 달린 러너 → 시간·페이스·목표 →
          속도 변화 → 친구 피드에 공유 → (미인증 안내) → 대조 자세히(E-15 시트) → 홈으로·기록 보기.
-         기록 상세(F-03·F-04, 계획 0053)도 이 화면: 위는 ‹ 기록 상세, 아래는 "이 기록으로 고스트 달리기"(홈으로·기록 보기·닫기 숨김) -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/My.uss" />
+         기록 상세(F-03·F-04, 계획 0053)도 이 화면: 위는 ‹ 기록 상세, 아래는 "이 기록으로 고스트 달리기"(홈으로·기록 보기·닫기 숨김).
+         모양은 상준 우주 디자인 미리보기(계획 0068, js/views/verify.js result·records.js recordDetail) -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/RunResult.uss" />
-    <ui:VisualElement class="onb fr my rr">
-        <ui:VisualElement class="nav-bar">
-            <ui:VisualElement class="nav-side">
-                <ui:Button name="back" class="nav-back" />
+    <ui:VisualElement class="rr ui-screen">
+        <ui:VisualElement class="ui-nav">
+            <ui:VisualElement class="rr-nav-side">
+                <ui:Button name="back" class="ui-nav-act ui-nav-back" />
             </ui:VisualElement>
-            <ui:Label name="title" text="운동 결과" class="nav-title" />
-            <ui:VisualElement class="nav-side nav-side--right">
-                <ui:Button name="close" text="닫기" class="nav-action" />
+            <ui:Label name="title" text="운동 결과" class="ui-nav-title" />
+            <ui:VisualElement class="rr-nav-side rr-nav-side--right">
+                <ui:Button name="close" text="닫기" class="ui-nav-act ui-nav-act--text" />
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:ScrollView name="content" mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
-            <ui:VisualElement class="rr-top">
-                <ui:Label name="date" class="rr-date" />
-                <ui:VisualElement name="chip" class="fr-chip">
-                    <ui:Label name="chip-text" class="fr-chip-text" />
+        <ui:VisualElement name="content" class="rr-content">
+            <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ui-scroll">
+                <ui:VisualElement class="ui-row ui-row--between rr-top">
+                    <ui:Label name="date" class="ui-sm ui-c2" />
+                    <ui:VisualElement name="chip" class="fr-chip">
+                        <ui:Label name="chip-text" class="fr-chip-text" />
+                    </ui:VisualElement>
                 </ui:VisualElement>
+
+                <ui:VisualElement class="ui-card rr-hero">
+                    <ui:VisualElement class="rr-distance">
+                        <ui:Label name="km" class="ui-num-xl rr-km" />
+                        <ui:Label name="unit" class="ui-unit rr-unit" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="companions" class="rr-companions">
+                        <ui:Label text="함께 달린 러너" class="ui-cap ui-c2" />
+                        <ui:VisualElement name="companion-heads" class="rr-heads" />
+                        <ui:Label name="companion-line" class="ui-sm-strong rr-companion-line" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="ui-stats rr-stats">
+                    <ui:VisualElement class="ui-stat ui-stat--first">
+                        <ui:Label text="시간" class="ui-stat-key" />
+                        <ui:Label name="time" class="ui-stat-value" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="ui-stat">
+                        <ui:Label text="평균 페이스" class="ui-stat-key" />
+                        <ui:Label name="pace" class="ui-stat-value" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="ui-stat">
+                        <ui:Label text="목표" class="ui-stat-key" />
+                        <ui:Label name="goal" class="ui-stat-value" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement name="graph-card" class="ui-card rr-graph-card">
+                    <ui:Label text="속도 변화" class="ui-sm-strong ui-c2" />
+                    <ui:VisualElement name="graph" class="rr-graph" />
+                </ui:VisualElement>
+
+                <ui:Button name="share" class="ui-card rr-share">
+                    <ui:VisualElement class="ui-grow" picking-mode="Ignore">
+                        <ui:Label text="친구 피드에 공유" class="ui-text-strong" picking-mode="Ignore" />
+                        <ui:Label name="share-sub" class="ui-cap ui-c2" picking-mode="Ignore" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="share-switch" class="my-switch" picking-mode="Ignore">
+                        <ui:VisualElement class="my-knob" picking-mode="Ignore" />
+                    </ui:VisualElement>
+                </ui:Button>
+
+                <ui:Label name="note" class="ui-card ui-card--warn ui-sm rr-note" />
+
+                <ui:Button name="compare" class="ui-card ui-card--tap rr-link">
+                    <ui:Label text="센서·계기판 대조 자세히 보기" class="ui-sm-strong ui-grow" picking-mode="Ignore" />
+                    <ui:VisualElement class="rr-chev" picking-mode="Ignore" />
+                </ui:Button>
+            </ui:ScrollView>
+            <ui:VisualElement class="ui-foot rr-foot">
+                <ui:Button name="home" text="홈으로" class="btn btn-primary" />
+                <ui:Button name="records" text="기록 보기" class="btn btn-ghost" />
+                <ui:Button name="ghost" class="btn btn-primary" />
             </ui:VisualElement>
-
-            <ui:VisualElement class="rr-card rr-hero">
-                <ui:VisualElement class="rr-distance">
-                    <ui:Label name="km" class="rr-km" />
-                    <ui:Label name="unit" class="rr-unit" />
-                </ui:VisualElement>
-                <ui:VisualElement name="companions" class="rr-companions">
-                    <ui:Label text="함께 달린 러너" class="rr-label" />
-                    <ui:VisualElement name="companion-heads" class="rr-heads" />
-                    <ui:Label name="companion-line" class="rr-companion-line" />
-                </ui:VisualElement>
-            </ui:VisualElement>
-
-            <ui:VisualElement class="rr-stats">
-                <ui:VisualElement class="rr-card rr-stat">
-                    <ui:Label text="시간" class="rr-label" />
-                    <ui:Label name="time" class="rr-stat-value" />
-                </ui:VisualElement>
-                <ui:VisualElement class="rr-card rr-stat rr-stat--mid">
-                    <ui:Label text="평균 페이스" class="rr-label" />
-                    <ui:Label name="pace" class="rr-stat-value" />
-                </ui:VisualElement>
-                <ui:VisualElement class="rr-card rr-stat">
-                    <ui:Label text="목표" class="rr-label" />
-                    <ui:Label name="goal" class="rr-stat-value" />
-                </ui:VisualElement>
-            </ui:VisualElement>
-
-            <ui:VisualElement name="graph-card" class="rr-card">
-                <ui:Label text="속도 변화" class="rr-label" />
-                <ui:VisualElement name="graph" class="rr-graph" />
-            </ui:VisualElement>
-
-            <ui:Button name="share" class="rr-card rr-share">
-                <ui:VisualElement class="rr-share-text" picking-mode="Ignore">
-                    <ui:Label text="친구 피드에 공유" class="rr-share-title" picking-mode="Ignore" />
-                    <ui:Label name="share-sub" class="rr-share-sub" picking-mode="Ignore" />
-                </ui:VisualElement>
-                <ui:VisualElement name="share-switch" class="my-switch" picking-mode="Ignore">
-                    <ui:VisualElement class="my-knob" picking-mode="Ignore" />
-                </ui:VisualElement>
-            </ui:Button>
-
-            <ui:Label name="note" class="rr-note" />
-
-            <ui:Button name="compare" class="rr-link">
-                <ui:Label text="센서·계기판 대조 자세히 보기" class="rr-link-text" picking-mode="Ignore" />
-                <ui:Label text="›" class="rr-link-chevron" picking-mode="Ignore" />
-            </ui:Button>
-
-            <ui:Button name="home" text="홈으로" class="btn btn-primary rr-home" />
-            <ui:Button name="records" text="기록 보기" class="btn btn-ghost rr-records" />
-            <ui:Button name="ghost" class="btn btn-primary rr-home" />
-        </ui:ScrollView>
+        </ui:VisualElement>
         <!-- 공통 상태(계획 0056): 첫 로딩 스켈레톤·불러오기 실패 -->
         <ui:VisualElement name="state" />
     </ui:VisualElement>

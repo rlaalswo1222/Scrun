@@ -5,7 +5,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace Scrun
 {
-    // 기기 성능에 맞춘 품질 단계. 휴대폰은 러닝머신 거치대 위에서 오래 켜 두므로 발열·배터리를 우선한다.
+    // 기기 성능에 맞춘 품질 단계(섬은 장면에 있음, 우주 루프는 SpaceLoopAppSetup이 불러올 때 붙임). 휴대폰은 러닝머신 거치대 위에서 오래 켜 두므로 발열·배터리를 우선한다.
     //  High(PC): 제한 없음, MSAA 4x / Medium(일반 폰): 30fps, 렌더 배율 0.85, 그림자 40m, 식생 거리 60%, 풀 50%, MSAA 4x
     //  Low(저사양 폰): 30fps, 렌더 배율 0.7, 그림자 25m(식생 그림자 없음), 식생 거리 45%, 풀 30%, 블룸 끔, MSAA 2x
     // URP 에셋 값은 실행 중 바꾸면 에디터에선 에셋 파일이 바뀌므로, 에셋 변경은 실제 기기(플레이어)에서만 한다.
@@ -43,6 +43,10 @@ namespace Scrun
             RunLink.LowerQuality = LowerOneStep;
             RunLink.CanLowerQuality = () => Current != Tier.Low;
             SaveGlobals();
+            // 코드로 붙은 경우(우주 루프, 계획 0066)는 연결된 볼륨이 없음 → 같은 씬의 전역 볼륨(저사양 블룸 끄기용)
+            if (postVolume == null)
+                foreach (var v in FindObjectsByType<Volume>())
+                    if (v.isGlobal && v.gameObject.scene == gameObject.scene) { postVolume = v; break; }
             var tier = force != Tier.Auto ? force : Detect();
             Apply(tier);
             Screen.sleepTimeout = SleepTimeout.NeverSleep;   // 달리는 동안 화면 꺼짐 방지

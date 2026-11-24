@@ -4,21 +4,22 @@
          달리는 동안 HUD(RunHud.uxml), 멈춤·끝(RunEnd.uxml, D-17–D-22) -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
     <ui:VisualElement class="course map-screen" picking-mode="Ignore">
-        <!-- I-10 맵 로딩 -->
+        <!-- I-10 맵 로딩(미리보기 mapLoading, 계획 0068): 흐린 맵 하늘 + 제목·설명 + 진행 막대, 로켓 탄 우주인이 막대 끝을 따라 날아감(MapScreen.SetProgress) -->
         <ui:VisualElement name="map-loading" class="map-loading">
             <ui:Label text="코스를 불러오는 중이에요" class="map-loading-title" />
             <ui:Label text="3D 맵과 함께 달릴 러너를 준비하고 있어요" class="map-loading-lead" />
             <ui:VisualElement class="map-progress">
                 <ui:VisualElement name="progress" class="map-progress-fill" />
             </ui:VisualElement>
+            <ui:VisualElement class="map-rocket-lane" picking-mode="Ignore">
+                <ui:VisualElement name="rocket" class="map-rocket" picking-mode="Ignore" />
+            </ui:VisualElement>
         </ui:VisualElement>
 
-        <!-- I-11 맵 입장 실패(가득 참·없는 코스) -->
+        <!-- I-11 맵 입장 실패(가득 참·없는 코스, 미리보기 mapFull): 흐린 맵 하늘 위 유리 대화상자 + 사람들 상태 3D -->
         <ui:VisualElement name="unavailable" class="map-dim">
             <ui:VisualElement class="map-card">
-                <ui:VisualElement class="map-card-icon">
-                    <ui:VisualElement class="map-card-icon-img" />
-                </ui:VisualElement>
+                <ui:VisualElement class="map-card-icon" picking-mode="Ignore" />
                 <ui:Label name="unavailable-title" class="map-card-title" />
                 <ui:Label name="unavailable-body" class="map-card-body" />
                 <ui:VisualElement class="map-card-buttons">

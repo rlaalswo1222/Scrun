@@ -1,22 +1,20 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <!-- G-10 친구 관리(계획 0044, Figma 608:2254). "친구 N/50명", 줄 오른쪽 삭제(또는 왼쪽으로 밀기) → G-11 시트.
-         줄을 누르면 프로필(G-09), 아래 "친구 추가"(G-05) -->
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/Onboarding.uss" />
-    <Style src="project://database/Assets/Scrun/App/Resources/UI/OnboardingFig.uss" />
+         줄을 누르면 프로필(G-09), 아래 "친구 추가"(G-05). 모양은 상준 우주 디자인 미리보기(계획 0068, js/views/friends.js manageFriends) -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Friends.uss" />
-    <ui:VisualElement class="onb fr">
-        <ui:VisualElement class="nav-bar">
-            <ui:VisualElement class="nav-side">
-                <ui:Button name="back" class="nav-back" />
-            </ui:VisualElement>
-            <ui:Label name="nav-title" text="친구" class="nav-title" />
-            <ui:VisualElement class="nav-side nav-side--right" />
+    <ui:VisualElement class="fr ui-screen">
+        <ui:VisualElement class="ui-nav">
+            <ui:Button name="back" class="ui-nav-act ui-nav-back" />
+            <ui:Label name="nav-title" text="친구" class="ui-nav-title" />
+            <ui:VisualElement class="fr-nav-space" />
         </ui:VisualElement>
-        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="onb-scroll">
+        <ui:ScrollView mode="Vertical" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" class="ui-scroll">
             <!-- 공통 상태(계획 0056): 첫 로딩 스켈레톤·불러오기 실패·빈 목록 -->
             <ui:VisualElement name="state" />
-            <ui:VisualElement name="list" />
+            <ui:VisualElement name="list" class="fr-manage-list" />
         </ui:ScrollView>
-        <ui:Button name="add" text="친구 추가" class="btn btn-soft btn-fig" />
+        <ui:VisualElement class="ui-foot">
+            <ui:Button name="add" text="친구 추가" class="btn btn-secondary" />
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

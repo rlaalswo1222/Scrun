@@ -28,6 +28,7 @@ namespace Scrun.App
         bool landscape;
         bool orientationApplied;
         string rootClass; // 지금 app-root에 붙어 있는 화면 배경 클래스(AppScreen.RootClass)
+        AppTab? lastTab;  // 탭 키 움직임: 지난번에 고른 탭(처음엔 null)
         // 안전 영역을 마지막으로 맞춘 조건(화면 크기·안전 영역·패널 크기·탭 바 보임 중 하나라도 바뀌면 다시)
         Rect lastSafe;
         Vector2Int lastScreen;
@@ -61,8 +62,10 @@ namespace Scrun.App
             safeArea = root.Q("safe-area");
             appRoot = root.Q("app-root");
             tabBar = root.Q("tab-bar");
-            Nav = new Navigator(root.Q("screen-host"), tabBar, TabRoot);
+            Nav = new Navigator(root.Q("screen-host"), tabBar, TabRoot) { Transitions = new ScreenTransitions() };
             Nav.Changed += OnScreenChanged;
+            lastTab = null;
+            BuildCockpitRuler(root.Q("cockpit-ruler"));
             orientationApplied = false;
             rootClass = null;
             lastPanelSize = default;
@@ -93,15 +96,12 @@ namespace Scrun.App
         }
 
         // 스플래시 다음: 로그인됨 → 권한 안내(모션을 아직 안 물어봤으면, 계획 0025)·주간 목표(가입 직후) 또는 홈,
-        // 로그인 없음 → 이 기기에서 처음이면 서비스 소개(A-02–A-04, 계획 0031), 아니면 로그인
-        internal static void AfterSplash(Navigator nav, bool loggedIn) => AfterSplash(nav, loggedIn, Onboarding.IntroSeen);
-
-        internal static void AfterSplash(Navigator nav, bool loggedIn, bool introSeen)
+        // 로그인 없음 → 로그인(A-05). 서비스 소개(A-02–A-04)는 Figma에서 지워 앱에서도 뺌(계획 0068 정할 것 2)
+        internal static void AfterSplash(Navigator nav, bool loggedIn)
         {
-            switch (Onboarding.AfterSplash(loggedIn, introSeen))
+            switch (Onboarding.AfterSplash(loggedIn))
             {
                 case StartStep.Onboarding: Onboarding.Begin(nav); break;
-                case StartStep.Intro: nav.StartFlow(new IntroScreen()); break;
                 default: nav.StartFlow(new LoginScreen()); break;
             }
         }
@@ -143,8 +143,41 @@ namespace Scrun.App
             _ => new MyScreen(), // H-01(계획 0049)
         };
 
+        // 콕핏 탭 바 위 눈금(8pt 간격 1pt 선, 미리보기 fx.css .tb-ruler)
+        static void BuildCockpitRuler(VisualElement ruler)
+        {
+            if (ruler == null) return;
+            ruler.RegisterCallback<GeometryChangedEvent>(e =>
+            {
+                int n = Mathf.Max(2, Mathf.FloorToInt(e.newRect.width / 8f) + 1);
+                if (ruler.childCount == n) return;
+                ruler.Clear();
+                for (int i = 0; i < n; i++)
+                {
+                    var tick = new VisualElement { pickingMode = PickingMode.Ignore };
+                    tick.AddToClassList("cockpit-tick");
+                    ruler.Add(tick);
+                }
+            });
+        }
+
+        // 탭을 고르면 그 키 아이콘이 통 튀고 LED가 두 번 깜빡이며 켜짐(Notion 디자인 스펙 7.11)
+        void AnimateTab()
+        {
+            if (Nav == null || !Nav.InTabs || tabBar == null) return;
+            var tab = Nav.CurrentTab;
+            if (lastTab == tab) return;
+            bool first = lastTab == null;
+            lastTab = tab;
+            if (first) return; // 앱을 막 열었을 때는 가만히
+            var key = tabBar.Q<Button>("tab-" + tab.ToString().ToLowerInvariant());
+            UiMotion.Pop(key?.Q(className: "tab-icon"));
+            UiMotion.Flick(key?.Q(className: "tab-led"));
+        }
+
         void OnScreenChanged(AppScreen screen)
         {
+            AnimateTab();
             Feedback.HideError(); // 오류창은 그 화면 것 → 화면이 바뀌면 닫음(다시 시도가 사라진 화면을 부르지 않게)
             appRoot?.EnableInClassList("app-root--world", screen.ShowsWorld); // 맵: 앱 배경을 투명하게
             if (appRoot != null && screen.RootClass != rootClass) // 스플래시 그라데이션처럼 노치·홈 바까지 칠하는 배경

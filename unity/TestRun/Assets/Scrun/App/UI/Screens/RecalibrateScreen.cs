@@ -20,14 +20,19 @@ namespace Scrun.App
             Q<Button>("back").clicked += () => { if (Nav.Current == this) Nav.Pop(); };
             var content = Q<VisualElement>("content");
             var head = new VisualElement();
-            head.AddToClassList("head");
-            head.Add(UiExtensions.Text("속도를 다시 맞춰요", "onb-title"));                                       // Figma H-09
-            head.Add(UiExtensions.Text(MyText.RecalibrateBody, "onb-lead"));
+            var title = UiExtensions.Text("속도를 다시 맞춰요", "ui-title");                                       // Figma H-09
+            title.AddToClassList("my-head-title");
+            head.Add(title);
+            var lead = UiExtensions.Text(MyText.RecalibrateBody, "ui-text");
+            lead.AddToClassList("ui-c2");
+            lead.AddToClassList("my-lead");
+            head.Add(lead);
             content.Add(head);
 
             var stateHost = new VisualElement { name = "state" };
             content.Add(stateHost);
             var group = MyParts.Group(content);
+            group.AddToClassList("my-group--kv"); // 값 표(미리보기 recal)
             var lastRow = MyParts.Row("마지막 보정", null, "", null, chevron: false);
             last = lastRow.Q<Label>(className: "my-row-value");
             last.name = "last";
@@ -40,11 +45,19 @@ namespace Scrun.App
             // 공통 상태(계획 0056): 처음 받는 동안 값 칸 대신 스켈레톤, 실패하면 그 자리에. "다시 보정하기"는 그대로 씀
             state = new StateView(stateHost, SkeletonKind.Rows, "보정 기록을 불러오지 못했어요", group);
 
+            // 러닝머신 그림(미리보기 img/guide_treadmill의 임시 그림) + 아래 버튼 자리(미리보기 .foot)
+            var ill = new VisualElement { pickingMode = PickingMode.Ignore };
+            ill.AddToClassList("ui-ill");
+            ill.AddToClassList("my-recal-ill");
+            var art = new VisualElement { pickingMode = PickingMode.Ignore };
+            art.AddToClassList("my-recal-art");
+            ill.Add(art);
+            content.Add(ill);
+
             var start = new Button(() => { if (Nav.Current == this) Nav.Push(new CalibrationIntroScreen()); }) { text = "다시 보정하기", name = "start" };
             start.AddToClassList("btn");
             start.AddToClassList("btn-primary");
-            start.style.marginTop = 24;
-            content.Add(start);
+            Q<VisualElement>("foot").Add(start);
             Show(null);
         }
 

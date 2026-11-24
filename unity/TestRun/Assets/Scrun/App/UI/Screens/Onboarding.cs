@@ -21,8 +21,7 @@ namespace Scrun.App
     public enum StartStep
     {
         Onboarding, // 로그인됨 → Onboarding.Begin
-        Intro,      // 로그인 없고 이 기기에서 소개를 안 봄 → A-02–A-04
-        Login,      // 로그인 없음 → A-05
+        Login,      // 로그인 없음 → A-05(서비스 소개 A-02–A-04는 Figma에서 지워 앱에서도 뺌, 계획 0068 정할 것 2)
     }
 
     // Onboarding.Begin이 보여 줄 곳
@@ -41,7 +40,6 @@ namespace Scrun.App
     public static class Onboarding
     {
         const string DoneKey = "scrun.onboarding.done";
-        const string IntroKey = "scrun.intro.seen";             // 서비스 소개(A-02–A-04)를 이 기기에서 봤는지
         const string GoalPendingKey = "scrun.onboarding.goal";  // 가입 직후라 주간 목표·완료가 남았는지
 
         // A-07 "권한 설정하기"가 묻는 순서(Figma: 4개를 한 번에, 계획 0025 정한 것 1)
@@ -67,24 +65,14 @@ namespace Scrun.App
             _ => MotionGate.Blocked,
         };
 
-        // 스플래시 다음(계획 0030·0031): 로그인됨 → 온보딩·홈, 처음 켠 기기 → 소개, 아니면 로그인
-        public static StartStep AfterSplash(bool loggedIn, bool introSeen) =>
-            loggedIn ? StartStep.Onboarding : introSeen ? StartStep.Login : StartStep.Intro;
+        // 스플래시 다음(계획 0030·0031·0068): 로그인됨 → 온보딩·홈, 아니면 로그인
+        public static StartStep AfterSplash(bool loggedIn) => loggedIn ? StartStep.Onboarding : StartStep.Login;
 
         // 권한·이어폰을 안 끝냈으면 A-07부터, 끝냈고 가입 직후면 A-16부터, 아니면 홈
         public static OnboardingStep Step(bool done, bool goalPending) =>
             NeedsOnboarding(done) ? OnboardingStep.Permissions
             : goalPending ? OnboardingStep.WeeklyGoal
             : OnboardingStep.Home;
-
-        public static bool IntroSeen => PlayerPrefs.GetInt(IntroKey, 0) == 1;
-
-        // 소개를 끝까지 보거나 건너뜀 → 다음부터는 로그인부터
-        public static void MarkIntroSeen()
-        {
-            PlayerPrefs.SetInt(IntroKey, 1);
-            PlayerPrefs.Save();
-        }
 
         // 가입이 끝났을 때(newUser)·로그인된 채 앱을 켰을 때·기존 회원 로그인: 권한 안내부터, 주간 목표부터 또는 바로 홈
         public static void Begin(Navigator nav, bool newUser = false)

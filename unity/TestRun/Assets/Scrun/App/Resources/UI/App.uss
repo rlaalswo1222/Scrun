@@ -1,31 +1,116 @@
-/* 앱 공통 스타일. 색·글자 값은 Figma "SCRUN" > 스크런 와이어 프레임 > UI Kit(상준) 기준(11/10).
-   화면별 모양은 화면 UXML 옆에 따로 USS를 두고, 색·크기는 이 변수를 쓴다. USS는 그림자·흐림·줄 높이가 없어 그건 뺐다. */
+/* 앱 공통 스타일. 11/23부터 상준 "스크런 우주 디자인"(계획 0068): 아래 토큰은 미리보기 css/tokens.css(= Figma SCRUN Color·Space 모드,
+   SCRUN Layout, SCRUN Motion 변수)를 이름 그대로 옮긴 것. 값을 바꿀 땐 Figma 변수 → 미리보기 → 여기 순서.
+   옛 이름(--color-*)은 화면 USS들이 쓰고 있어서 새 토큰을 가리키게 남겨 둠(화면을 옮길 때마다 새 이름으로 바꾼다).
+   공통 부품(ui-*)은 Space.uss. USS는 그림자·흐림·그라데이션·줄 높이가 없어 그건 테두리·반투명·그림으로 대신한다. */
 :root {
-    --color-bg: #F3F8FF;            /* sky/50 */
-    --color-surface: #FFFFFF;       /* white */
-    --color-surface-2: #EEF2F9;     /* surface (회색 칩) */
-    --color-text: #172036;          /* ink */
-    --color-body: #4A5468;          /* body */
-    --color-muted: #8A93A6;         /* mute */
-    --color-primary: #2F6FE4;       /* sky/700 */
-    --color-primary-soft: #DCEBFE;  /* sky/100 */
-    --color-line: #E3EAF6;          /* line */
-    --color-lime: #D8FF3E;          /* lime (지금 달리는 중·진행) */
-    --color-night: #0F1B3D;         /* 가로 맵 화면 바탕 */
-    --color-night-dim: rgba(15, 27, 61, 0.5);     /* 맵 위를 어둡게 덮기(I-11) */
-    --color-primary-tint: rgba(47, 111, 228, 0.08); /* 파란 안내 바탕 */
-    --color-glass-dark: rgba(17, 24, 39, 0.72);    /* 흐린 맵 위 동그란 버튼(D-01 X, D-05·D-06 뒤로) */
-    --color-success: #1E8F5A;       /* Chip/Success 글자 */
-    --color-success-soft: rgba(43, 182, 115, 0.14); /* Chip/Success 바탕 */
-    --color-warn: #FFB020;          /* warn(권한 거부 아이콘 바탕) */
+    /* ---- SCRUN Color (Space 모드) ---- */
+    --bg-app: rgb(10, 16, 32);
+    --bg-surface: rgb(16, 26, 51);
+    --bg-subtle: rgb(22, 33, 63);
+    --bg-muted: rgb(34, 50, 89);
+    --bg-inverse: rgb(244, 246, 251);
+    --bg-overlay: rgba(11, 16, 32, 0.85);          /* Figma .7 (아래 "선형 섞기") */
+    --text-primary: rgb(244, 246, 251);
+    --text-secondary: rgb(205, 213, 234);
+    --text-tertiary: rgb(169, 180, 211);
+    --text-disabled: rgb(86, 102, 143);
+    --text-inverse: rgb(10, 16, 32);
+    --text-on-brand: rgb(255, 255, 255);
+    --text-on-accent: rgb(5, 7, 15);
+    --text-on-status: rgb(5, 7, 15);
+    --text-on-kakao: rgb(38, 34, 0);               /* 검정 85%를 카카오 노랑 위에 미리 섞은 색(선형 섞기면 반투명 검정이 회색으로 뜸) */
+    --text-brand: rgb(125, 184, 255);
+    --text-brand-strong: rgb(164, 210, 255);
+    --text-success: rgb(61, 220, 151);
+    --text-warn: rgb(255, 184, 77);
+    --text-error: rgb(255, 123, 123);
+    --border-default: rgb(34, 50, 89);
+    --border-subtle: rgb(22, 33, 63);
+    --border-strong: rgb(51, 69, 122);
+    --border-focus: rgb(125, 184, 255);
+    --border-error: rgb(255, 123, 123);
+    --icon-default: rgb(169, 180, 211);
+    --icon-muted: rgb(127, 141, 181);
+    --icon-brand: rgb(125, 184, 255);
+    --brand-primary: rgb(47, 111, 228);
+    --brand-primary-pressed: rgb(36, 89, 188);
+    --brand-primary-subtle: rgb(18, 48, 90);
+    --brand-primary-edge: rgb(27, 63, 143);
+    --brand-primary-highlight: rgb(156, 200, 253);
+    --brand-accent: rgb(61, 217, 255);
+    --brand-accent-subtle: rgb(15, 42, 51);
+    --brand-night: rgb(5, 7, 15);
+    --brand-kakao: rgb(254, 229, 0);
+    --brand-action: rgb(255, 132, 77);
+    --brand-action-pressed: rgb(217, 100, 58);
+    --status-success-bg: rgb(15, 46, 38);
+    --status-success-solid: rgb(61, 220, 151);
+    --status-warn-bg: rgb(51, 39, 15);
+    --status-warn-solid: rgb(255, 184, 77);
+    --status-error-bg: rgb(58, 22, 32);
+    --status-error-bg-pressed: rgb(82, 34, 43);
+    --status-error-solid: rgb(255, 123, 123);
+    --status-info-bg: rgb(18, 48, 90);
+    --status-info-solid: rgb(60, 157, 255);
+    --hud-card: rgba(11, 16, 32, 0.87);            /* Figma .7 */
+    --hud-text: rgb(255, 255, 255);
+    --hud-text-secondary: rgba(255, 255, 255, 0.9);
+    --hud-track: rgba(255, 255, 255, 0.35);
+    --hud-progress: rgb(61, 217, 255);
+    --reward-xp: rgb(61, 217, 255);
+    --bg-track: rgb(51, 69, 122);
+    --surface-plate: rgb(34, 50, 89);
+    --surface-plate-edge: rgb(10, 16, 32);
+    --surface-plate-highlight: rgb(86, 102, 143);
+    --surface-plate-pressed: rgb(59, 74, 108);
+    --surface-soft: rgb(215, 235, 232);
+    --zone-sky: rgb(255, 200, 107);
+    --zone-mars: rgb(255, 122, 77);
+    --zone-forest: rgb(62, 224, 176);
+    --zone-ice: rgb(111, 227, 255);
+    --zone-moon: rgb(201, 209, 224);
+    /* 유리 패널(11/23): 흐림은 USS에 없어 반투명 채움 + 위 가장자리 1px 빛으로.
+       선형 섞기: 이 프로젝트는 Linear 색 공간이라 UI Toolkit이 반투명 색을 선형으로 섞는다 → Figma(sRGB 섞기) 알파를 그대로 쓰면
+       흰 유리는 훨씬 밝은 회색, 어두운 덮개는 약하게 나옴(11/23 측정: 흰 .08 → rgb(81,84,93), Figma는 rgb(35,44,67)).
+       그래서 어두운 남색 바탕 위에서 Figma와 같은 색이 나오는 알파로 바꿔 둠(괄호 안이 Figma 값). PanelSettings.forceGammaRendering은 효과 없었음 */
+    --glass-fill: rgba(255, 255, 255, 0.014);      /* 카드(Figma .09 → .035 그라데이션 가운데 .06) */
+    --glass-edge: rgba(255, 255, 255, 0.065);      /* 위 가장자리 빛(.2) */
+    --glass-stroke: rgba(255, 255, 255, 0.014);    /* 1pt 안쪽 테(.06) */
+    --glass-control: rgba(255, 255, 255, 0.02);    /* 카드 안 버튼·칩·알약(.08) */
+    --glass-control-edge: rgba(255, 255, 255, 0.033); /* (.12) */
+    --glass-pressed: rgba(255, 255, 255, 0.04);    /* (.14) */
+    --glass-well: rgba(5, 7, 15, 0.58);            /* 입력칸 홈(.45) */
+    --glass-divider: rgba(255, 255, 255, 0.02);    /* (.08) */
+    --glass-sheet: rgb(16, 26, 51);                /* 시트·대화상자(Figma .82 + 흐림 24 → 흐림이 없어 불투명. 선형 섞기라 .96이어도 뒤 흰 글자가 22% 회색으로 비쳤음, 계획 0068 I) */
 
-    --font-size-title: 28px;        /* App/Title */
-    --font-size-heading: 22px;      /* App/Heading */
-    --font-size-sub: 18px;          /* App/Subheading */
-    --font-size-body: 16px;         /* App/Body */
-    --font-size-body-sm: 14px;      /* App/BodySm */
-    --font-size-caption: 12px;      /* App/Caption */
-    --font-size-tab: 12px;
+    /* ---- 옛 이름(밝은 와이어프레임 11/10) → 새 토큰. 화면을 옮기면서 하나씩 없앤다 ---- */
+    --color-bg: rgba(0, 0, 0, 0);                  /* 바탕은 app-root 그림(BgBase)이 칠함 */
+    --color-surface: rgba(255, 255, 255, 0.014);   /* 흰 카드 → 유리(= --glass-fill) */
+    --color-surface-2: rgba(255, 255, 255, 0.02);  /* 회색 칩 → 유리 컨트롤(= --glass-control) */
+    --color-on-color: rgb(255, 255, 255);          /* 색 바탕 위 흰 글자(옛 화면이 --color-surface를 글자색으로 쓰던 곳) */
+    --color-text: rgb(244, 246, 251);
+    --color-body: rgb(205, 213, 234);
+    --color-muted: rgb(169, 180, 211);
+    --color-primary: rgb(47, 111, 228);
+    --color-primary-soft: rgb(18, 48, 90);
+    --color-line: rgba(255, 255, 255, 0.02);
+    --color-lime: rgb(61, 217, 255);               /* 지금 달리는 중·진행 = brand/accent */
+    --color-night: rgb(10, 16, 32);
+    --color-night-dim: rgba(11, 16, 32, 0.85);
+    --color-primary-tint: rgba(47, 111, 228, 0.06);
+    --color-glass-dark: rgba(11, 16, 32, 0.87);
+    --color-success: rgb(61, 220, 151);
+    --color-success-soft: rgb(15, 46, 38);
+    --color-warn: rgb(255, 184, 77);
+    --color-error: rgb(255, 123, 123);
+
+    --font-size-title: 28px;        /* t-title */
+    --font-size-heading: 22px;      /* t-heading */
+    --font-size-sub: 18px;          /* t-sub */
+    --font-size-body: 16px;         /* t-body */
+    --font-size-body-sm: 14px;      /* t-sm */
+    --font-size-caption: 12px;      /* t-cap */
+    --font-size-tab: 11px;
 
     --space-2: 8px;
     --space-3: 12px;
@@ -33,44 +118,52 @@
     --space-5: 20px;
     --space-6: 24px;
 
+    color: var(--text-primary);
 }
 
+/* 바탕: 기본(bg_base). 화면이 RootClass로 홈·축하·로그인 바탕을 고름. 노치·홈 바까지 칠함 */
 .app-root {
     flex-grow: 1;
-    background-color: var(--color-bg);
+    background-color: var(--bg-app);
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/BgBase.png");
+    -unity-background-scale-mode: scale-and-crop;
 }
 
-/* 맵처럼 뒤의 3D가 보여야 하는 화면(AppScreen.ShowsWorld): 앱 배경을 투명하게 */
+/* 맵처럼 뒤의 3D가 보여야 하는 화면(AppScreen.ShowsWorld): 앱 배경을 투명하게. 맵 위 카드는 어두운 유리(밝은 맵 위 글자 대비) */
 .app-root--world {
     background-color: rgba(0, 0, 0, 0);
+    background-image: none;
+    --color-surface: rgba(16, 26, 51, 0.92);
+    --glass-fill: rgba(16, 26, 51, 0.92);
 }
 
-/* 스플래시(A-01, 계획 0030, AppScreen.RootClass): 위 #2F6FE4(sky/700) → 아래 #9CC8FD. USS에 그라데이션이 없어
-   세로 그라데이션 그림(4×512)을 늘려 깐다. app-root에 칠해 노치·홈 바 여백까지(화면 USS 규칙은 app-root에 안 닿아 여기 둠) */
+/* 스플래시(A-01, 계획 0030, AppScreen.RootClass) */
 .app-root--splash {
-    background-color: var(--color-primary); /* 그림을 못 불러와도 위쪽 색. 아이폰 실행 화면 색(AppSceneBuilder.LaunchColor)도 이 값 */
+    background-color: var(--color-primary); /* 아이폰 실행 화면 색(AppSceneBuilder.LaunchColor)도 이 값 */
     background-image: url("project://database/Assets/Scrun/App/UI/Images/SplashGradient.png");
     -unity-background-scale-mode: stretch-to-fill;
 }
 
-/* 우주 시안 홈·코스(계획 0062): 파란 그라데이션 + 성운 빛 + 별. 코스 상세는 위 420이 #10164a(맨 위 코스 그림이 그 색으로 흐려짐) */
 .app-root--home {
-    background-color: #1E2D7A;
-    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/HomeBg.png");
-    -unity-background-scale-mode: scale-and-crop;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/BgHome.png");
+}
+
+.app-root--celebrate {
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/BgCelebrate.png");
+}
+
+.app-root--login {
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/BgLogin.png");
 }
 
 .app-root--course-detail {
     background-color: #10164A;
     background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/CourseDetailBg.png");
-    -unity-background-scale-mode: scale-and-crop;
 }
 
-/* 우주 시안 온보딩(계획 0061): 남색 그라데이션 + 흐린 빛 + 별(Figma 880:49를 그림으로). 노치·홈 바까지 */
+/* 우주 시안 온보딩(계획 0061) 바탕 → 기본 바탕과 같게(0068) */
 .app-root--space {
-    background-color: #13253A;
-    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/SpaceBg.png");
-    -unity-background-scale-mode: scale-and-crop;
+    background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/BgBase.png");
 }
 
 .safe-area {
@@ -93,13 +186,13 @@
 
 .screen {
     flex-grow: 1;
-    padding: var(--space-6) var(--space-4) 0 var(--space-4);
+    padding: var(--space-6) 20px 0 20px;
 }
 
 .screen-title {
     font-size: var(--font-size-title);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
-    color: var(--color-text);
+    color: var(--text-primary);
     margin-bottom: var(--space-4);
 }
 
@@ -109,148 +202,277 @@
 
 .body-text {
     font-size: var(--font-size-body);
-    color: var(--color-body);
+    color: var(--text-secondary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
     white-space: normal;
 }
 
-/* 아래 탭(UI Kit Tab Bar): 아이콘 24 + 글자 12, 고른 탭은 파란 아이콘·굵은 글자.
-   높이는 탭 버튼이 정하고, 홈 바 여백은 SafeArea가 탭 바 아래 padding으로 더한다(배경이 화면 끝까지, 11/10 아이폰) */
-/* ---- 아래 탭: 우주 시안 Game/Dock(계획 0062, Figma B·C 825:571). 위 24는 고른 탭 받침이 솟는 자리, 막대는 그 아래 72 ---- */
+/* ---- 아래 탭: C 콕핏(11/22 확정, Figma Game/Dock 865:3772, 미리보기 fx.css). 계기판 패널 위 키캡 4개 ----
+   패널 높이 84, 모서리 28, 1pt 바깥 선. 키캡 54(아래 두께 4), 고른 키는 2pt 눌린 채 파란 2pt 선 + LED 켜짐.
+   글로우·그라데이션·나사 홈은 USS가 못 그려 단색·테두리로. 탭 바 아래 여백은 SafeArea가 홈 바만큼 더함 */
 .tab-bar {
     background-color: rgba(0, 0, 0, 0);
 }
 
-.dock {
+.cockpit {
     flex-direction: row;
-    height: 96px;
-    margin: 0 16px 4px 16px;
+    height: 84px;
+    margin: 0 16px 8px 16px;
+    padding: 18px 8px 12px 8px;    /* 키 사이 8 = 키마다 좌우 4 */
+    border-radius: 28px;
+    border-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.16);
+    border-left-color: var(--surface-plate-edge);
+    border-right-color: var(--surface-plate-edge);
+    border-bottom-width: 3px;
+    border-bottom-color: var(--surface-plate-edge);
+    background-color: rgb(25, 38, 70);  /* surface/plate → bg/surface 그라데이션의 가운데 */
+    overflow: hidden;
 }
 
-.dock-bar {
+.cockpit-screw {
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 24px;
-    bottom: 0;
-    border-width: 1px;
-    border-radius: 28px;
-    border-color: #56668F;
-    background-color: #101A33;
+    width: 7px;
+    height: 7px;
+    border-radius: 4px;
+    background-color: var(--text-tertiary);
+}
+
+.cockpit-ruler {
+    position: absolute;
+    left: 26px;
+    right: 26px;
+    top: 3px;
+    height: 4px;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.cockpit-tick {
+    width: 1px;
+    height: 4px;
+    background-color: rgba(244, 246, 251, 0.22);
 }
 
 .tab {
     flex-grow: 1;
     flex-basis: 0;
-    height: 96px;
+    height: 54px;
+    margin: 0 4px;
+    padding: 8px 0 0 0;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    margin: 0;
-    padding: 34px 0 0 0;
-    border-width: 0;
-    border-radius: 0;
-    background-color: rgba(0, 0, 0, 0);
+    align-self: flex-end;
+    border-radius: 16px;
+    border-width: 1px;
+    border-color: var(--border-strong);
+    border-top-color: rgba(255, 255, 255, 0.14);
+    border-bottom-width: 4px;
+    border-bottom-color: var(--surface-plate-edge);
+    background-color: var(--surface-plate);
+    overflow: visible;
+    transition-property: translate, border-bottom-width;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-out;
 }
 
 /* :hover는 터치 화면에서 마지막으로 누른 탭에 남으므로 색을 안 바꿈(11/10 아이폰) */
-.tab:hover,
+.tab:hover {
+    background-color: var(--surface-plate);
+}
+
+/* 누르는 동안 3pt 눌림, 두께 1 */
 .tab:active {
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--surface-plate);
+    translate: 0 3px;
+    border-bottom-width: 1px;
+}
+
+/* 고른 키: 2pt 눌린 채 2pt 파란 선(안쪽 빛은 반투명 파랑 바탕으로) */
+.tab--selected {
+    translate: 0 2px;
+    border-width: 2px;
+    border-bottom-width: 2px;
+    border-color: var(--brand-primary);
+    background-color: rgb(32, 56, 112);
+}
+
+.tab--selected:hover,
+.tab--selected:active {
+    background-color: rgb(32, 56, 112);
+}
+
+.tab-led {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    width: 16px;
+    height: 4px;
+    margin-left: -8px;
+    border-radius: 2px;
+    background-color: var(--surface-plate-edge);
+}
+
+.tab--selected .tab-led {
+    top: -15px;
+    background-color: var(--brand-primary-highlight);
 }
 
 .tab-icon {
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     -unity-background-scale-mode: scale-to-fit;
+    transition-property: scale;
+    transition-duration: 0.1s;
 }
 
-/* 고른 탭: 받침(60, #223259) 위로 솟고 아이콘 44 */
-.tab--selected {
-    padding-top: 0;
+.tab:active .tab-icon {
+    scale: 0.86 0.86;
 }
 
-.tab--selected .tab-icon {
-    width: 60px;
-    height: 60px;
-    border-width: 1px;
-    border-radius: 30px;
-    border-color: #56668F;
-    background-color: #223259;
-    background-size: 44px 44px;
-}
-
-.tab-icon--home { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/DockHome.png"); }
-.tab-icon--friends { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/DockFriends.png"); }
-.tab-icon--records { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/DockRecords.png"); }
-.tab-icon--me { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/DockMe.png"); }
+.tab-icon--home { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/TabHomeIdle.png"); }
+.tab-icon--friends { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/TabFriendsIdle.png"); }
+.tab-icon--records { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/TabRecordsIdle.png"); }
+.tab-icon--me { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/TabMyIdle.png"); }
+.tab--selected .tab-icon--home { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/TabHomeActive.png"); }
+.tab--selected .tab-icon--friends { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/TabFriendsActive.png"); }
+.tab--selected .tab-icon--records { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/TabRecordsActive.png"); }
+.tab--selected .tab-icon--me { background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/TabMyActive.png"); }
 
 .tab-label {
-    margin: 4px 0 0 0;
+    margin: 2px 0 0 0;
     padding: 0;
     font-size: 11px;
-    color: #CDD5EA;
+    color: var(--text-secondary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 
 .tab--selected .tab-label {
-    margin-top: 6px;
-    font-size: 14px;
-    color: #F4F6FB;
+    color: var(--text-primary);
 }
 
-/* ---- 공통 부품(UI Kit Button: 높이 54, 모서리 16, App/Button 17 SemiBold) ---- */
+/* ---- 버튼(미리보기 ui.css .btn): 높이 54, 모서리 20, 18 Bold. 주 버튼은 아래 단단한 두께 6(누르면 4 내려감) ---- */
 .btn {
     height: 54px;
     margin: var(--space-4) 0 var(--space-4) 0;
+    padding: 0 16px;
     border-width: 0;
-    border-radius: 16px;
+    border-radius: 20px;
+    font-size: 18px;
+    color: var(--text-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+    transition-property: translate, scale, background-color, border-bottom-width;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
+}
+
+.btn-primary {
+    height: 60px;                 /* 54 + 아래 두께 6 */
+    border-color: var(--brand-primary-edge); /* 둥근 아래 모서리에서 옆 테 색(기본 검정)이 비치지 않게 */
+    border-bottom-width: 6px;
+    border-bottom-color: var(--brand-primary-edge);
+    background-color: var(--brand-primary);
+    color: var(--text-on-brand);
+}
+
+.btn-primary:hover {
+    background-color: var(--brand-primary);
+}
+
+.btn-primary:active {
+    background-color: var(--brand-primary-pressed);
+    border-bottom-width: 2px;
+    translate: 0 4px;
+}
+
+.btn-secondary {
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
+    background-color: var(--glass-control);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background-color: var(--glass-control);
+}
+
+.btn-secondary:active {
+    background-color: var(--glass-pressed);
+    scale: 0.96 0.96;
+}
+
+/* 고스트: 바탕 없이 글자만, 누르면 유리 */
+.btn-ghost {
+    background-color: rgba(0, 0, 0, 0);
+    color: var(--text-secondary);
+}
+
+.btn-ghost:hover {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.btn-ghost:active {
+    background-color: var(--glass-pressed);
+    scale: 0.96 0.96;
+}
+
+.btn-danger {
+    background-color: var(--status-error-bg);
+    color: var(--text-error);
+}
+
+.btn-danger:hover {
+    background-color: var(--status-error-bg);
+}
+
+.btn-danger:active {
+    background-color: var(--status-error-bg-pressed);
+    scale: 0.96 0.96;
+}
+
+/* 카카오 로그인 버튼: 카카오 디자인 가이드(배경 #FEE500, 글자 검정 85%, 높이 56, 모서리 12) */
+.btn-kakao {
+    height: 56px;
+    border-radius: 12px;
+    background-color: var(--brand-kakao);
+    color: var(--text-on-kakao);
     font-size: 17px;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 
-.btn-primary {
-    background-color: var(--color-primary);
-    color: #FFFFFF;
+.btn-kakao:hover {
+    background-color: var(--brand-kakao);
 }
 
-/* 기본 테마의 hover·active 회색을 막음(UI Kit에 눌림 색이 없음) */
-.btn-primary:hover,
-.btn-primary:active {
-    background-color: var(--color-primary);
+.btn-kakao:active {
+    background-color: var(--brand-kakao);
+    scale: 0.96 0.96;
 }
 
-.btn-secondary {
-    background-color: var(--color-line);
-    color: var(--color-text);
-}
-
-/* Button/Ghost: 테두리만 */
-.btn-ghost {
-    background-color: rgba(0, 0, 0, 0);
-    border-width: 1.5px;
-    border-color: var(--color-line);
-    color: var(--color-body);
-}
-
-.btn-ghost:hover,
-.btn-ghost:active {
-    background-color: rgba(0, 0, 0, 0);
-}
-
-/* 카카오 로그인 버튼: 카카오 디자인 가이드 색(배경 #FEE500, 글자 검정 85%) */
-.btn-kakao {
-    background-color: #FEE500;
-    color: rgba(0, 0, 0, 0.85);
-}
-
+/* 비활성: 유리 바탕 + 흐린 글자, 두께 없음(주 버튼은 두께 자리를 투명하게 남겨 높이가 안 바뀜) */
 .btn:disabled {
-    opacity: 0.4;
+    background-color: var(--glass-control);
+    color: var(--text-disabled);
+    opacity: 1;
+    translate: 0 0;
+    scale: 1 1;
 }
 
+.btn-primary:disabled {
+    border-color: rgba(0, 0, 0, 0);       /* 둥근 아래 모서리에 두께 색이 비치지 않게 테 전부 */
+    border-bottom-color: rgba(0, 0, 0, 0);
+}
+
+.btn-ghost:disabled {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/* 내비 바(미리보기 .nav): 높이 48, 뒤로 44 */
 .top-bar {
     flex-direction: row;
-    height: 44px;
+    align-items: center;
+    height: 48px;
     margin-top: -16px;
     margin-left: -8px;
 }
@@ -260,55 +482,75 @@
     height: 44px;
     font-size: 28px;
     border-width: 0;
+    border-radius: 12px;
     background-color: rgba(0, 0, 0, 0);
-    color: var(--color-text);
+    color: var(--text-primary);
+    -unity-background-image-tint-color: var(--text-primary);
+}
+
+.back-button:hover {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.back-button:active {
+    background-color: var(--glass-pressed);
 }
 
 .field-label {
-    font-size: 15px;
-    color: var(--color-text);
+    font-size: 14px;
+    color: var(--text-secondary);
     margin-top: var(--space-4);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
 .hint-text {
     font-size: 13px;
-    color: var(--color-muted);
+    color: var(--text-tertiary);
     white-space: normal;
     margin-top: 2px;
 }
 
 .status-text {
     font-size: 13px;
-    color: var(--color-primary);
+    color: var(--text-brand);
     white-space: normal;
     min-height: 18px;
     margin-top: 4px;
 }
 
 .error-text {
-    color: #D93025;
+    color: var(--text-error);
 }
 
 .notice-text {
     font-size: 14px;
-    color: #D93025;
+    color: var(--text-error);
     -unity-text-align: middle-center;
     white-space: normal;
 }
 
+/* 입력칸(미리보기 .inp): 높이 56, 모서리 16, 어두운 홈 + 옅은 테, 고르면 파란 테 */
 .input {
     margin: var(--space-2) 0 0 0;
 }
 
 .input > .unity-text-field__input {
-    height: 48px;
-    font-size: 17px;
-    padding: 0 12px;
-    border-radius: 10px;
-    border-color: var(--color-line);
-    background-color: var(--color-surface);
-    color: var(--color-text);
+    height: 56px;
+    font-size: 16px;
+    padding: 0 16px;
+    border-radius: 16px;
+    border-width: 1px;
+    border-color: var(--glass-control);
+    background-color: var(--glass-well);
+    color: var(--text-primary);
+    --unity-cursor-color: var(--brand-accent);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+}
+
+.input:focus > .unity-text-field__input,
+.input > .unity-text-field__input:focus {
+    border-width: 1.5px;
+    border-color: var(--border-focus);
 }
 
 .field-row {
@@ -321,7 +563,7 @@
     margin-right: var(--space-2);
 }
 
-.field-col:last-child {
+.field-col--last {
     margin-right: 0;
 }
 
@@ -339,13 +581,13 @@
 
 .login-logo {
     font-size: 44px;
-    color: var(--color-text);
+    color: var(--text-primary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 .login-lead {
     font-size: 16px;
-    color: var(--color-muted);
+    color: var(--text-secondary);
     margin-top: var(--space-2);
 }
 
@@ -353,7 +595,7 @@
 .terms-all {
     padding: var(--space-4) 0;
     border-bottom-width: 1px;
-    border-bottom-color: var(--color-line);
+    border-bottom-color: var(--glass-divider);
     font-size: 17px;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
@@ -372,8 +614,12 @@
 .link-button {
     border-width: 0;
     background-color: rgba(0, 0, 0, 0);
-    color: var(--color-muted);
+    color: var(--text-tertiary);
     font-size: 14px;
+}
+
+.link-button:hover {
+    background-color: rgba(0, 0, 0, 0);
 }
 
 .empty-state {
@@ -381,67 +627,82 @@
     padding: var(--space-6) 0;
 }
 
-/* 로딩·오류 덮개 */
+/* 로딩·오류 덮개(미리보기 .scrim·.dlg, I 예외 계획 0068): 어두운 덮개 + 가운데 유리 대화상자(최대 420, 모서리 28, 안쪽 24).
+   제목 22·설명 16 가운데, 버튼은 고스트 + 주 버튼 한 줄(미리보기 .row-btns) */
 .overlay {
     position: absolute;
     left: 0;
     top: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.35);
+    background-color: var(--bg-overlay);
     justify-content: center;
     align-items: center;
     display: none;
 }
 
 .overlay-loading {
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(11, 16, 32, 0.58);
 }
 
 .loading-text {
     font-size: 16px;
-    color: var(--color-text);
+    color: var(--text-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
     padding: 12px 20px;
-    border-radius: 12px;
-    background-color: var(--color-surface);
+    border-radius: 22px;
+    border-top-width: 1px;
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-sheet);
 }
 
 .dialog {
     width: 86%;
-    padding: var(--space-6) var(--space-4) var(--space-2) var(--space-4);
-    border-radius: 16px;
-    background-color: var(--color-surface);
+    max-width: 420px;
+    padding: var(--space-6);
+    border-radius: 28px;
+    border-width: 1px;
+    border-color: var(--glass-stroke);
+    border-top-color: var(--glass-edge);
+    background-color: var(--glass-sheet);
 }
 
 .dialog-title {
-    font-size: 19px;
-    color: var(--color-text);
+    font-size: 22px;
+    color: var(--text-primary);
+    -unity-text-align: upper-center;
+    white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 .dialog-body {
-    font-size: 15px;
-    color: var(--color-text);
+    font-size: 16px;
+    color: var(--text-secondary);
+    -unity-text-align: upper-center;
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
     white-space: normal;
-    margin-top: var(--space-2);
+    margin-top: 14px;
 }
 
 .dialog-id {
     font-size: 11px;
-    color: var(--color-muted);
+    color: var(--text-tertiary);
+    -unity-text-align: upper-center;
     margin-top: var(--space-2);
 }
 
 .dialog-buttons {
     flex-direction: row;
+    align-items: flex-start;
+    margin-top: 16px;
 }
 
 .dialog-buttons > .btn {
     flex-grow: 1;
     flex-basis: 0;
-    margin-right: var(--space-2);
+    margin: 0 12px 0 0;
 }
 
-.dialog-buttons > .btn:last-child {
+.dialog-buttons > .btn-primary {
     margin-right: 0;
 }

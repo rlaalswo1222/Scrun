@@ -1,47 +1,32 @@
-/* 주간 목표 현황(H-07)·변경 시트(H-08), 계획 0054. Figma "SCRUN" > 스크런 와이어 프레임 H 섹션 기준(11/18 읽음).
-   Nav Bar는 Onboarding.uss, 시트·칩은 Friends.uss. USS에 없는 것: 카드 그라데이션 → 파랑 한 색 */
+/* 주간 목표 현황(H-07)·변경 시트(H-08), 계획 0054. 우주 디자인(계획 0068): 상준 미리보기 js/views/my.js weekly·changeSheet를 옮김.
+   공통 부품(ui-nav·ui-card·글자 단계)은 Space.uss, 시트·칩은 Friends.uss. 이 USS는 홈(Home.uxml, 목표 정하기 시트)에도 붙으므로 .wg 아래로만.
+   USS에 없는 것: 카드 흐림·그림자, 동그라미 안쪽 테 그림자 → 반투명 + 1px 테 */
 
 .wg .unity-label {
     margin: 0;
     padding: 0;
 }
 
-/* ---- 이번 주 카드(파랑) ---- */
+/* ---- 이번 주 카드: "이번 주" / 2 / 3회 / 동그라미 30 ---- */
 .wg-week {
-    margin-top: var(--space-3);
-    padding: 20px 24px;
-    border-radius: 24px;
-    background-color: var(--color-primary);
-}
-
-.wg .wg-week-label {
-    font-size: var(--font-size-caption);
-    color: rgba(255, 255, 255, 0.85);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+    margin-top: 4px;
+    padding: 20px;
 }
 
 .wg-week-count {
     flex-direction: row;
     align-items: flex-end;
-    margin-top: 6px;
-}
-
-.wg .wg-done {
-    font-size: 52px;
-    color: var(--color-surface);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+    margin-top: 4px;
 }
 
 .wg .wg-of {
-    margin: 0 0 10px 8px;
-    font-size: var(--font-size-sub);
-    color: rgba(255, 255, 255, 0.9);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    margin: 0 0 6px 4px;
 }
 
 .wg-dots {
     flex-direction: row;
-    margin-top: var(--space-2);
+    flex-wrap: wrap;
+    margin-top: 12px;
 }
 
 .wg-dot {
@@ -49,74 +34,50 @@
     height: 30px;
     margin-right: 8px;
     border-radius: 15px;
-    background-color: rgba(255, 255, 255, 0.3);
-    align-items: center;
-    justify-content: center;
+    border-width: 1px;
+    border-color: var(--glass-control);
+    background-color: var(--glass-well);
 }
 
+/* 한 번: 하늘색 + 체크(흰 선 아이콘을 어둡게) */
 .wg-dot--done {
-    background-color: var(--color-lime);
+    border-width: 0;
+    background-color: var(--brand-accent);
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/check-line.svg");
+    background-size: 16px 16px;
+    background-repeat: no-repeat;
+    background-position-x: center;
+    background-position-y: center;
+    -unity-background-image-tint-color: var(--text-on-accent);
 }
 
 .wg .wg-dot-mark {
-    font-size: var(--font-size-body-sm);
-    color: var(--color-text);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+    display: none;
 }
 
 .wg .wg-next {
-    margin-top: var(--space-3);
-    font-size: var(--font-size-body-sm);
-    color: var(--color-surface);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    margin-top: 12px;
 }
 
-/* ---- 흰 카드(목표 없음·최근 8주) ---- */
+/* ---- 목표 없음·최근 8주 카드 ---- */
 .wg-card {
-    margin-top: var(--space-3);
-    padding: 18px 20px;
-    border-width: 1px;
-    border-color: var(--color-line);
-    border-radius: 20px;
-    background-color: var(--color-surface);
+    margin-top: 12px;
 }
 
 .wg-empty {
-    align-items: center;
-    padding: 28px 20px;
-}
-
-.wg .wg-empty-title {
-    font-size: var(--font-size-sub);
-    color: var(--color-text);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+    margin-top: 4px;
 }
 
 .wg .wg-empty-body {
-    margin-top: 6px;
-    font-size: var(--font-size-body-sm);
-    color: var(--color-body);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+    margin-top: 4px;
 }
 
-.wg-bars-head {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.wg .wg-bars-title {
-    font-size: var(--font-size-body);
-    color: var(--color-text);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
-}
-
-/* 막대 8칸: 같은 너비(1/8), 바닥 맞춤, 아래 이름. 이력이 적어도 "이번"은 늘 오른쪽 끝(Figma H-07) */
+/* 막대 8칸(높이 120): 같은 너비(1/8), 바닥 맞춤, 아래 이름. 이력이 적어도 "이번"은 늘 오른쪽 끝 */
 .wg-bars {
     flex-direction: row;
     justify-content: flex-end;
-    height: 110px;
-    margin-top: var(--space-4);
+    height: 120px;
+    margin-top: 16px;
 }
 
 .wg-bar-col {
@@ -133,43 +94,46 @@
     justify-content: flex-end;
 }
 
+/* 미달성 = 진한 남색, 달성 = 파랑 + 위에 흰 체크, 이번 주 = 하늘색 */
 .wg-bar {
-    width: 26px;
+    width: 28px;
+    min-height: 8px;
     border-radius: 6px;
-    background-color: var(--color-primary-soft);
+    background-color: var(--bg-muted);
 }
 
 .wg-bar--achieved {
-    background-color: var(--color-primary);
+    background-color: var(--brand-primary);
+    background-image: url("project://database/Assets/Scrun/App/UI/Icons/check-line.svg");
+    background-size: 20px 20px;
+    background-repeat: no-repeat;
+    background-position-x: center;
+    background-position-y: top 4px;
+    -unity-background-image-tint-color: var(--text-on-brand);
 }
 
 .wg-bar--current {
-    background-color: var(--color-lime);
+    background-color: var(--brand-accent);
 }
 
 .wg .wg-bar-label {
-    margin-top: 6px;
-    font-size: var(--font-size-caption);
-    color: var(--color-muted);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
 }
 
 .wg .wg-legend {
-    margin-top: var(--space-3);
-    font-size: var(--font-size-caption);
-    color: var(--color-muted);
-    white-space: normal;
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
+    margin-top: 12px;
 }
 
-.wg-action {
-    flex-shrink: 0;
-    margin: var(--space-3) var(--space-5) var(--space-4) var(--space-5);
+.wg .ui-foot > .btn {
+    margin: 0;
 }
 
-/* ---- H-08 변경 시트 ---- */
+/* ---- H-08 시트(미리보기 changeSheet): 제목 가운데 / − 숫자 56 + 회 + / 동그란 1–7(40) / 안내 / 저장·취소 ---- */
 .wg .wg-sheet-title {
-    margin-top: var(--space-3);
+    margin-top: 12px;
     -unity-text-align: upper-center;
 }
 
@@ -177,7 +141,7 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    margin-top: var(--space-4);
+    margin-top: 16px;
 }
 
 .wg-step {
@@ -186,16 +150,24 @@
     margin: 0;
     padding: 0;
     border-width: 0;
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
     border-radius: 22px;
-    background-color: var(--color-primary-soft);
+    background-color: var(--glass-control);
     font-size: 24px;
-    color: var(--color-primary);
+    color: var(--text-primary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+    transition-property: scale, background-color;
+    transition-duration: 0.15s;
 }
 
-.wg-step:hover,
+.wg-step:hover {
+    background-color: var(--glass-control);
+}
+
 .wg-step:active {
-    background-color: var(--color-primary-soft);
+    scale: 0.96 0.96;
+    background-color: var(--glass-pressed);
 }
 
 .wg-step:disabled {
@@ -205,63 +177,76 @@
 .wg-step-value {
     flex-direction: row;
     align-items: flex-end;
-    width: 110px;
+    width: 120px;
     justify-content: center;
 }
 
 .wg .wg-step-number {
-    font-size: 48px;
-    color: var(--color-primary);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
+    font-size: 56px;
+    color: var(--text-primary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-ExtraBold.asset");
 }
 
 .wg .wg-step-unit {
     margin: 0 0 8px 4px;
-    font-size: var(--font-size-body);
-    color: var(--color-text);
-    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    font-size: 18px;
+    color: var(--text-secondary);
+    -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Bold.asset");
 }
 
 .wg-chips {
     flex-direction: row;
-    justify-content: center;
-    margin-top: var(--space-3);
+    justify-content: space-between;
+    margin-top: 16px;
 }
 
+/* 동그란 알약(미리보기 .pill.round 40) */
 .wg-chip {
-    min-width: 34px;
-    height: 30px;
-    margin: 0 3px;
-    padding: 0 10px;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
     border-width: 0;
-    border-radius: 15px;
-    background-color: var(--color-primary-soft);
-    font-size: var(--font-size-caption);
-    color: #2459BC;
+    border-top-width: 1px;
+    border-top-color: var(--glass-control-edge);
+    border-radius: 20px;
+    background-color: var(--glass-control);
+    font-size: 15px;
+    color: var(--text-primary);
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-SemiBold.asset");
+    transition-property: scale, background-color;
+    transition-duration: 0.15s;
 }
 
-.wg-chip:hover,
+.wg-chip:hover {
+    background-color: var(--glass-control);
+}
+
 .wg-chip:active {
-    background-color: var(--color-primary-soft);
+    scale: 0.96 0.96;
 }
 
 .wg-chip--on,
 .wg-chip--on:hover,
 .wg-chip--on:active {
-    background-color: var(--color-primary);
-    color: var(--color-surface);
+    border-top-width: 0;
+    background-color: var(--brand-primary);
+    color: var(--text-on-brand);
 }
 
 .wg .wg-sheet-note {
-    margin: var(--space-3) 0 var(--space-2) 0;
-    font-size: var(--font-size-body-sm);
-    color: var(--color-body);
+    margin-top: 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
     -unity-text-align: upper-center;
     white-space: normal;
     -unity-font-definition: url("project://database/Assets/Scrun/App/UI/Fonts/Pretendard-Medium.asset");
 }
 
-.wg-sheet-button {
-    margin-top: var(--space-2);
+.wg .wg-sheet-button {
+    margin-top: 16px;
+}
+
+.wg .btn-ghost.wg-sheet-button {
+    margin-top: 8px;
 }
