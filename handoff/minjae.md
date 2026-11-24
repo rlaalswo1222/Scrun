@@ -3,12 +3,13 @@
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만 하고 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/api/`, `docs/adr/`, `docs/plans/`)에, Claude 작업 요령(Figma·에디터·노션·HTML·Windows 줄바꿈)은 `docs/claude_howto.md`에 있다. 옛 전체본: `docs/log/HANDOFF_minjae_20261119.md`(11/19 밤 정리 전: 그날 PR별 자세한 기록·지난 팀원 전달 전부), `_20261118.md`(11/18 정리 전, 끝난 머지·결정의 자세한 기록)
 
 ## 지금 (11/23)
-- **develop beeec50(11/23, #130까지)**. 열린 PR: #131 계획 0068 문서, #126 0063·0066 후속 문서, #119·이 인수인계. 오라클 배포 끝(11/23, `crs_space_loop`)
+- **develop beeec50(11/23, #130까지)**. 열린 PR: #131 계획 0068 문서, #126 0063·0066 후속 문서, #119·이 인수인계(셋 다 민재 머지 결정만 남음), **상준 #124 새 아바타 러닝복 6세트(계획 0067)·#125 고리 행성 고침(ADR-0013) → 민재 리뷰 아직**. 오라클 배포 끝(11/23, `crs_space_loop`)
 - **계획 0068 우주 디자인 전체 끝**(#127 기반·#128 E·F·#129 G·H·#130 A·B·C·I): 상준 미리보기(https://scrun-prototype.vercel.app)대로 D 러닝 HUD를 뺀 모든 화면. 토큰 `App.uss`(미리보기 이름 그대로), 공통 부품 `Space.uss`(`ui-*`), 콕핏 탭 바, 화면 넘김 `ScreenTransitions`, 소개 A-02–A-04 뺌(스플래시 → 로그인), 그림 전부 Figma 원본. EditMode 542. 화면 묶음은 하위 에이전트가 만들고 이 세션이 캡처로 검토
   - **선형 섞기 주의**: Linear 색 공간이라 반투명은 Figma 알파를 그대로 쓰면 안 됨(`App.uss` 유리 주석, `docs/unity/unity_map.md`)
   - **다음**: 아이폰 실기기 확인(맥: 화면 넘김 손맛, 진짜 카메라 사진 칸, 작은 화면 스크롤, 콕핏 탭 바), D 러닝 HUD(새 계획), "동작 줄이기" 네이티브 한 줄, 상준에게 문구 차이표(계획 0068 진행)·스플래시 뺄지·E-15 "허용 오차(5%)"는 실제 15%
   - Figma는 **Windows Chrome**(Claude 확장 연결 `Browser 1`, Figma 로그인됨)으로. 맥 Chrome도 연결돼 있으면 `select_browser`
 - **계기판 인증 실사용 2회(11/21, `data/runs/20261121-verify/`, 아직 커밋 안 함)**: 걷는 속도(4–5 km/h)에서 센서가 계기판보다 10–20% 빠름 → 120 m 기록이 −17.5%로 미인증. 가설: 걷기 속도대 과대 추정. 다음 = 헬스장 4·5·6 km/h 각 1분 비교 + 거리 최소 여유(10 m 표시 단위) 계획(사용자 승인 전)
+- 로컬 서버 8001(세션 백그라운드)은 세션을 닫으면 꺼짐 → 에디터로 확인할 땐 `backend`에서 다시 띄우기
 - 작업 트리에 이 세션이 만들지 않은 변경: `SpaceLoop/Materials/SL_SpaceSky.mat`, `ProjectSettings/QualitySettings.asset`(Unity가 Play 중 바꾼 것으로 보임, 커밋 안 함 → 확인 뒤 되돌리기)
 
 ## 지난 (11/21)
