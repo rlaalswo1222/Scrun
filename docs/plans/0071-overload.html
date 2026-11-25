@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>몰려도 멈추지 않는 서버</title>
+<style>
+:root {
+  --bg: #fbfaf7; --surface: #ffffff; --ink: #1d232b; --muted: #5d6673; --line: #e3e0d8;
+  --accent: #1f6feb; --good: #1a7f37; --warn: #9a6700; --bad: #c62828; --chip: #f1efe9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171c; --surface: #1b2027; --ink: #e8eaed; --muted: #a2abb7; --line: #2c333d;
+    --accent: #6ea8fe; --good: #56d364; --warn: #e3b341; --bad: #ff7b72; --chip: #232a33;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171c; --surface: #1b2027; --ink: #e8eaed; --muted: #a2abb7; --line: #2c333d;
+  --accent: #6ea8fe; --good: #56d364; --warn: #e3b341; --bad: #ff7b72; --chip: #232a33;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 -apple-system, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif; }
+main { max-width: 920px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 26px; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 36px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.lead { color: var(--muted); margin: 0 0 18px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 12px 0; }
+.rec { border-left: 4px solid var(--accent); }
+.table-wrap { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--surface); }
+th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; font-size: 14.5px; }
+th { background: var(--chip); font-weight: 600; }
+svg { width: 100%; height: auto; display: block; margin: 8px 0; }
+svg text { fill: var(--ink); font-size: 13px; font-family: inherit; }
+svg .sub { fill: var(--muted); font-size: 11.5px; }
+svg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+svg .hot { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+svg .badbox { fill: var(--surface); stroke: var(--bad); stroke-width: 2; }
+svg .goodbox { fill: var(--surface); stroke: var(--good); stroke-width: 2; }
+svg .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; marker-end: url(#ah); }
+svg .barrow { stroke: var(--bad); stroke-width: 1.8; fill: none; marker-end: url(#ahb); }
+svg .dot { fill: var(--accent); }
+svg .dotbad { fill: var(--bad); }
+svg .dotgood { fill: var(--good); }
+code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
+small, .src { color: var(--muted); font-size: 13.5px; }
+a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+<h1>몰려도 멈추지 않는 서버</h1>
+<p class="lead">계획 0071 설명. 2026-11-25 부하 시험(계획 0070)에서 본 멈춤이 왜 생기고 어떻게 막는지, 처음 듣는 말(연결 풀·세마포어·백프레셔·큐·프로세스)을 식당에 빗대어.</p>
+
+<div class="card rec">
+<b>한 줄 요약</b><br>
+지금 서버는 주문을 무한히 받아 주방(스레드 40)과 화구(DB 연결 15)가 서로 기다리다 멈춘다. <b>입구에서 번호표를 화구 수만큼만 주고</b>(세마포어), 번호표를 못 받으면 <b>바로 "잠시 뒤 다시"</b>(503)라고 말하면, 받은 손님은 제때 받고 폭주가 끝나면 바로 정상으로 돌아온다.
+</div>
+
+<h2>1. 식당으로 본 서버</h2>
+<div class="table-wrap"><table>
+<tr><th>서버</th><th>식당</th><th>우리 값</th></tr>
+<tr><td>요청</td><td>손님 주문</td><td>앱 화면 하나 열 때 8개쯤</td></tr>
+<tr><td>스레드</td><td>요리사</td><td>최대 40명(FastAPI 기본)</td></tr>
+<tr><td>DB 연결(연결 풀)</td><td>화구 — 미리 켜 두고 빌려 쓰고 돌려줌</td><td>5 + 바쁠 때 10 = 최대 15개, 못 받으면 30초까지 기다림</td></tr>
+<tr><td>프로세스</td><td>지점 — 요리사·화구·수첩이 따로</td><td>1개(CPU 2코어 중 한 코어만 씀)</td></tr>
+<tr><td>Caddy</td><td>입구 안내원</td><td>운영 서버 맨 앞(HTTPS)</td></tr>
+</table></div>
+
+<h2>2. 왜 멈췄나 — 서로 기다리기(교착)</h2>
+<p>요청 하나는 여러 단계(로그인 확인 → 본 처리)를 거치는데, <b>단계마다 요리사를 새로 배정</b>받는다. 첫 단계에서 화구를 잡으면 요청이 끝날 때까지 쥐고 있다.</p>
+<svg viewBox="0 0 880 250" role="img" aria-label="스레드와 연결이 서로 기다리는 그림">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="color:var(--muted)"/></marker>
+    <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c62828"/></marker>
+  </defs>
+  <rect class="badbox" x="20" y="30" width="330" height="190" rx="10"/>
+  <text x="36" y="56">요리사(스레드) 40명 — 전부 줄 섬</text>
+  <text class="sub" x="36" y="76">"화구 나면 쓸게요" (최대 30초)</text>
+  <g>
+    <circle class="dotbad" cx="50" cy="105" r="7"/><circle class="dotbad" cx="75" cy="105" r="7"/><circle class="dotbad" cx="100" cy="105" r="7"/><circle class="dotbad" cx="125" cy="105" r="7"/><circle class="dotbad" cx="150" cy="105" r="7"/><circle class="dotbad" cx="175" cy="105" r="7"/><circle class="dotbad" cx="200" cy="105" r="7"/><circle class="dotbad" cx="225" cy="105" r="7"/><circle class="dotbad" cx="250" cy="105" r="7"/><circle class="dotbad" cx="275" cy="105" r="7"/>
+    <circle class="dotbad" cx="50" cy="130" r="7"/><circle class="dotbad" cx="75" cy="130" r="7"/><circle class="dotbad" cx="100" cy="130" r="7"/><circle class="dotbad" cx="125" cy="130" r="7"/><circle class="dotbad" cx="150" cy="130" r="7"/><circle class="dotbad" cx="175" cy="130" r="7"/><circle class="dotbad" cx="200" cy="130" r="7"/><circle class="dotbad" cx="225" cy="130" r="7"/><circle class="dotbad" cx="250" cy="130" r="7"/><circle class="dotbad" cx="275" cy="130" r="7"/>
+  </g>
+  <text class="sub" x="36" y="170">… 40명 모두 화구를 기다리느라</text>
+  <text class="sub" x="36" y="188">다른 주문의 다음 단계를 맡을 수 없음</text>
+  <rect class="badbox" x="530" y="30" width="330" height="190" rx="10"/>
+  <text x="546" y="56">화구(DB 연결) 15개 — 전부 쥐고 있음</text>
+  <text class="sub" x="546" y="76">쥔 주문은 "다음 단계 요리사"를 기다림</text>
+  <g>
+    <rect x="560" y="95" width="26" height="22" rx="4" class="box"/><rect x="595" y="95" width="26" height="22" rx="4" class="box"/><rect x="630" y="95" width="26" height="22" rx="4" class="box"/><rect x="665" y="95" width="26" height="22" rx="4" class="box"/><rect x="700" y="95" width="26" height="22" rx="4" class="box"/>
+    <rect x="560" y="125" width="26" height="22" rx="4" class="box"/><rect x="595" y="125" width="26" height="22" rx="4" class="box"/><rect x="630" y="125" width="26" height="22" rx="4" class="box"/><rect x="665" y="125" width="26" height="22" rx="4" class="box"/><rect x="700" y="125" width="26" height="22" rx="4" class="box"/>
+    <rect x="560" y="155" width="26" height="22" rx="4" class="box"/><rect x="595" y="155" width="26" height="22" rx="4" class="box"/><rect x="630" y="155" width="26" height="22" rx="4" class="box"/><rect x="665" y="155" width="26" height="22" rx="4" class="box"/><rect x="700" y="155" width="26" height="22" rx="4" class="box"/>
+  </g>
+  <path class="barrow" d="M352,95 C430,70 450,70 528,95"/>
+  <text x="378" y="66">화구 줘</text>
+  <path class="barrow" d="M528,175 C450,205 430,205 352,175"/>
+  <text x="372" y="222">다음 단계 요리사 줘</text>
+</svg>
+<p>둘 다 상대를 기다리다 <b>30초 뒤 포기</b>(500). 손님이 이미 떠난 주문도 끝까지 만들어서, 폭주가 끝나도 <b>8분 넘게</b> 밀린 주문을 처리했다(S1 200명 뒤 50명 시험 두 번 실패). 11/25 #138로 "첫 단계부터 화구 잡기"는 없앴지만, 요리사(40) &gt; 화구(15)인 구조는 남아 한 번은 재현됐다.</p>
+
+<h2>3. 막는 법 ① 입구 번호표 — 비동기 세마포어</h2>
+<svg viewBox="0 0 880 210" role="img" aria-label="번호표를 받은 요청만 주방에 들어가는 그림">
+  <rect class="box" x="20" y="40" width="210" height="140" rx="10"/>
+  <text x="36" y="66">입구 의자(비동기 대기)</text>
+  <text class="sub" x="36" y="86">요리사·화구를 안 잡고 기다림</text>
+  <circle class="dot" cx="50" cy="120" r="7"/><circle class="dot" cx="75" cy="120" r="7"/><circle class="dot" cx="100" cy="120" r="7"/><circle class="dot" cx="125" cy="120" r="7"/><circle class="dot" cx="150" cy="120" r="7"/>
+  <text class="sub" x="36" y="160">W초 넘게 기다리면 → 4번</text>
+  <rect class="hot" x="300" y="70" width="150" height="80" rx="10"/>
+  <text x="318" y="100">번호표 N장</text>
+  <text class="sub" x="318" y="122">예: 12장(화구 15 중</text>
+  <text class="sub" x="318" y="138">실시간 몫 3 빼고)</text>
+  <rect class="goodbox" x="520" y="40" width="340" height="140" rx="10"/>
+  <text x="536" y="66">주방 — 안에는 늘 N개 이하</text>
+  <text class="sub" x="536" y="86">주문 수 ≤ 화구 수 → 화구를 못 받아 줄 서는 요리사가 없음</text>
+  <circle class="dotgood" cx="560" cy="125" r="7"/><circle class="dotgood" cx="585" cy="125" r="7"/><circle class="dotgood" cx="610" cy="125" r="7"/><circle class="dotgood" cx="635" cy="125" r="7"/><circle class="dotgood" cx="660" cy="125" r="7"/><circle class="dotgood" cx="685" cy="125" r="7"/>
+  <text class="sub" x="536" y="160">나갈 때 번호표 반납 → 입구 다음 손님</text>
+  <path class="arrow" d="M232,110 L298,110"/>
+  <path class="arrow" d="M452,110 L518,110"/>
+</svg>
+<p><b>세마포어</b> = 동시에 들어갈 수 있는 수를 정한 번호표 묶음. <b>비동기</b> = 기다리는 동안 아무 자원(스레드·연결)도 쥐지 않음(파이썬 <code>asyncio.Semaphore</code>). 주방 안 주문 수가 화구 수를 넘지 않으니 <b>교착이 구조적으로 안 생긴다</b>.</p>
+
+<h2>4. 막는 법 ② 빨리 거절 — 백프레셔</h2>
+<div class="table-wrap"><table>
+<tr><th></th><th>지금</th><th>바꾸면</th></tr>
+<tr><td>주방이 꽉 찼을 때</td><td>주문을 계속 받음 → 다들 30초 기다리다 500</td><td>입구에서 W초(예: 2초) 안에 번호표를 못 받으면 <b>바로 503 + "1초 뒤 다시"</b>(<code>Retry-After</code>)</td></tr>
+<tr><td>손님이 떠난 주문</td><td>끝까지 만듦 → 회복 8분</td><td>기다리는 동안 연결이 끊겼으면 <b>버림</b></td></tr>
+<tr><td>폭주가 끝나면</td><td>밀린 주문 처리하느라 몇 분</td><td>몇 초 안에 정상(판정: 30초 안)</td></tr>
+</table></div>
+<p><b>백프레셔</b> = 뒤쪽(주방)이 감당 못 할 때 앞쪽(손님)에게 "지금은 못 받아요"라고 압력을 되돌려 주는 것. 받은 주문을 제때 처리하는 게 모든 주문을 늦게 처리하는 것보다 낫다. 앱은 이미 서버 오류를 "다시 시도" 화면으로 보여 준다.</p>
+
+<h2>5. 다음 계획에서 쓸 말 — 접수와 처리 분리, 큐(0072 OCR)</h2>
+<svg viewBox="0 0 880 190" role="img" aria-label="사진을 맡기면 번호표를 주고 일꾼이 순서대로 처리하는 그림">
+  <rect class="box" x="20" y="50" width="170" height="90" rx="10"/>
+  <text x="36" y="80">앱: 사진 3장</text>
+  <text class="sub" x="36" y="100">→ 바로 "접수됨 #17"</text>
+  <text class="sub" x="36" y="118">1–2초마다 "다 됐나요?"</text>
+  <rect class="hot" x="270" y="35" width="300" height="120" rx="10"/>
+  <text x="286" y="62">대기 명단(큐) = DB 표 verification_jobs</text>
+  <text class="sub" x="286" y="84">#15 처리 중 · #16 대기 · #17 대기</text>
+  <text class="sub" x="286" y="104">재시작해도 남음, 새로 띄울 프로그램 없음</text>
+  <text class="sub" x="286" y="124">일꾼: 대기 중 가장 오래된 하나를</text>
+  <text class="sub" x="286" y="140">FOR UPDATE SKIP LOCKED로 집어 감</text>
+  <rect class="goodbox" x="650" y="50" width="210" height="90" rx="10"/>
+  <text x="666" y="80">OCR 일꾼 2명</text>
+  <text class="sub" x="666" y="100">순서대로 읽고 결과를 표에</text>
+  <text class="sub" x="666" y="118">아무도 돌려보내지 않음</text>
+  <path class="arrow" d="M192,95 L268,95"/>
+  <path class="arrow" d="M572,95 L648,95"/>
+</svg>
+<p>지금은 카운터에서 12초 서서 기다리고, 직원이 2명이라 동시 4명이면 절반을 돌려보낸다(503, S4). <b>세탁소 번호표</b>처럼 맡기면 번호를 주고 순서대로 처리한다. <b>SKIP LOCKED</b> = "다른 일꾼이 잡은 줄은 건너뛰기"라 두 일꾼이 같은 사진을 읽지 않는다.</p>
+
+<h2>6. 다다음 계획에서 쓸 말 — 프로세스와 실시간 분리(0073)</h2>
+<svg viewBox="0 0 880 230" role="img" aria-label="프로세스마다 수첩이 따로라 실시간을 한 프로세스로 모으는 그림">
+  <text x="20" y="22">그냥 2개로 늘리면</text>
+  <rect class="badbox" x="20" y="34" width="190" height="70" rx="10"/><text x="34" y="60">프로세스 1</text><text class="sub" x="34" y="80">수첩: "A 400m"</text>
+  <rect class="badbox" x="230" y="34" width="190" height="70" rx="10"/><text x="244" y="60">프로세스 2</text><text class="sub" x="244" y="80">수첩: "B 420m"</text>
+  <text class="sub" x="20" y="126">같은 맵인데 A 화면엔 B가, B 화면엔 A가 없음</text>
+  <text x="470" y="22">실시간만 따로 두면(추천)</text>
+  <rect class="box" x="470" y="40" width="110" height="60" rx="10"/><text x="486" y="66">Caddy</text><text class="sub" x="486" y="86">입구 안내원</text>
+  <rect class="goodbox" x="640" y="34" width="220" height="56" rx="10"/><text x="654" y="58">실시간 프로세스 1개</text><text class="sub" x="654" y="76">/v1/realtime · 수첩 하나 → 다 보임</text>
+  <rect class="goodbox" x="640" y="110" width="220" height="70" rx="10"/><text x="654" y="134">일반 API 프로세스 2개</text><text class="sub" x="654" y="152">그 밖의 /v1/… · DB만 봄</text><text class="sub" x="654" y="168">→ 어디로 가도 같음, 2코어 다 씀</text>
+  <path class="arrow" d="M582,62 L638,62"/>
+  <path class="arrow" d="M582,80 C610,110 615,140 638,145"/>
+</svg>
+<p><b>프로세스</b>마다 기억(메모리)이 따로다. 일반 API는 매번 DB에서 읽어 늘려도 되지만, 실시간 방 상태는 프로세스의 수첩(파이썬 변수)에 있어 나누면 서로 안 보인다. 실시간만 한 프로세스에 모으면 수첩이 하나라 <b>Redis 없이</b> 된다(서버를 여러 대로 늘릴 때 Redis가 필요).</p>
+
+<h2>참고 (공식 문서)</h2>
+<ul class="src">
+<li><a href="https://docs.sqlalchemy.org/en/20/core/pooling.html">SQLAlchemy — Connection Pooling</a></li>
+<li><a href="https://docs.python.org/3/library/asyncio-sync.html#asyncio.Semaphore">Python — asyncio.Semaphore</a></li>
+<li><a href="https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE">PostgreSQL — SELECT … FOR UPDATE SKIP LOCKED</a></li>
+<li><a href="https://www.uvicorn.org/deployment/">Uvicorn — Deployment(workers)</a>, <a href="https://caddyserver.com/docs/caddyfile/directives/reverse_proxy">Caddy — reverse_proxy</a></li>
+<li>측정: <a href="../perf/README.md">docs/perf/README.md</a>(계획 0070 기준선)</li>
+</ul>
+</main>
+</body>
+</html>
