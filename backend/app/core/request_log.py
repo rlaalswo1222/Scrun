@@ -4,7 +4,7 @@
      "db_n": 3, "db_ms": 8.1, "pool_ms": 0.2}
 
 - ms: 미들웨어에 들어와서 응답 머리가 나갈 때까지(네트워크 왕복은 빠짐). 스트리밍 본문을 내보내는 시간·그동안의 쿼리는 빠짐
-- db_n·db_ms: 그 안에서 DB에 보낸 쿼리 수·시간(실패한 쿼리 포함). pool_ms: 연결 풀에서 연결을 받기까지 기다린 시간(get_db)
+- db_n·db_ms: 그 안에서 DB에 보낸 쿼리 수·시간(실패한 쿼리 포함). pool_ms: 연결 풀에서 연결을 받기까지 기다린 시간(app/db/session.py의 풀이 잼)
 - path는 라우트 틀(`/v1/runs/{runId}`)이라 기록 ID·사용자 ID가 남지 않는다. 라우트에 안 맞은 요청은 "-"
 - 남기지 않는 것: WebSocket(/v1/realtime, HTTP 미들웨어를 안 지남), 헬스체크(헤더 X-Scrun-Probe: 1, compose healthcheck)
 - 서버 로그(운영은 journald)로 본다: `journalctl CONTAINER_NAME=scrun-api-1 --since … | grep '"path"'`

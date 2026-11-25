@@ -67,3 +67,19 @@ def test_failed_query_is_counted(test_db):
     finally:
         rl._request_stats.reset(token)
     assert stats.db_n == 2
+
+
+def test_pool_wait_is_measured_in_the_pool(test_db):
+    from sqlalchemy import create_engine
+
+    from app.db.session import _TimedQueuePool
+    engine = create_engine(test_db.engine.url, poolclass=_TimedQueuePool)
+    stats = rl._RequestStats()
+    token = rl._request_stats.set(stats)
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    finally:
+        rl._request_stats.reset(token)
+        engine.dispose()
+    assert stats.pool_ms > 0 and stats.db_n == 1
