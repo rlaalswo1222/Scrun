@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .core.config import settings
 from .core.envelope import (
     api_error_handler,
     http_error_handler,
@@ -19,6 +20,7 @@ from .core.envelope import (
 from .core.errors import ApiError
 from .core.kakao import close_client as close_kakao_client
 from .core.ocr import start_ocr, stop_ocr
+from .core.request_log import install_request_log, request_log_middleware
 from .realtime import router as realtime
 from .routers import auth, courses, events, friends, home, progress, runs, users, verification
 
@@ -41,6 +43,9 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="SCRUN API", version="0.1.0-stub", description=DESCRIPTION, lifespan=lifespan)
 
+if settings.request_log:   # 요청마다 처리 시간 한 줄(계획 0070). 요청 ID 미들웨어 안쪽이라 rid를 같이 남김
+    install_request_log()
+    app.middleware("http")(request_log_middleware)
 app.middleware("http")(request_id_middleware)
 app.add_exception_handler(ApiError, api_error_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
