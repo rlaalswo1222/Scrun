@@ -3,10 +3,10 @@
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만 하고 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/api/`, `docs/adr/`, `docs/plans/`)에, Claude 작업 요령(Figma·에디터·노션·HTML·Windows 줄바꿈)은 `docs/claude_howto.md`에 있다. 옛 전체본: `docs/log/HANDOFF_minjae_20261119.md`(11/19 밤 정리 전: 그날 PR별 자세한 기록·지난 팀원 전달 전부), `_20261118.md`(11/18 정리 전, 끝난 머지·결정의 자세한 기록)
 
 ## 지금 (11/26 새벽)
-- **계획 0071 "몰려도 멈추지 않게" 구현 끝, 측정 중(브랜치 `feat/admission-control` ffd9289, PR 아직 안 엶)**: 순수 ASGI 미들웨어 번호표(기본 12장, 2초 못 받으면 503 `BUSY` + `Retry-After: 1`), 요청 로그 `queue_ms`, 풀 기다림 30 → 5초(넘으면 503 `DB_BUSY`), 헬스체크 우회는 루프백만(Caddyfile이 `X-Scrun-Probe` 지움), 번호표 ≤ 연결 합계 15 검사. 테스트 450 통과. `/code-review` 두 갈래 반영(처음엔 BaseHTTPMiddleware라 응답 머리에서 번호표를 반납 → 세션 닫기 전에 다음 요청이 들어와 연결이 N을 넘던 버그)
-  - **측정(11/25 23:10쯤 시작, 약 90분)**: 집 PC(`192.168.0.2`, ffd9289)에 번호표 12장으로 S1 100명 5분 ×3, 200명 ×2 + 회복, S3 100명 ×3 → 10장·15장으로 100명·200명 + 회복 → 마지막에 12장으로 되돌림. 결과는 `data/perf/20261125/a12_*`·`a10_*`·`a15_*`(각 폴더 `server_stats.md`, 200명은 `recovery.txt` 끝줄 "회복까지 N초"). 기준선은 `docs/perf/README.md` "기준선 다시"(100명 p95 145.8 ms·182.6/초, 200명 실패 21.7%·회복 564초)
-  - **확인 방법(새 세션)**: `ls data/perf/20261125/ | grep "^a1"` → 폴더 12개(a12 8개, a10·a15 각 2개)가 다 있고 `a15_s1_v200_1/recovery.txt`에 "회복까지"가 있으면 끝. 진행 로그는 이 세션 백그라운드 출력이라 새 세션에선 못 봄(측정은 노트북 Git Bash의 `drive4.sh`, 스크래치패드라 git 밖). 노트북을 끄거나 VS Code를 닫으면 측정이 멈출 수 있음
-  - **끝나면**: ① 판정표 채우기(0071 "판정" 표, 503과 500 구분은 `server_stats.md`의 "503"·"그 밖 5xx" 칸) + 번호표 수 결정 + 그림 ② PR → 머지 → 오라클 배포(`update.sh develop`) + **`docker compose -f docker-compose.server.yml exec caddy caddy reload --config /etc/caddy/Caddyfile`**(Caddyfile 바뀜) → 운영 로그 `queue_ms` 확인 ③ 11/27 교수님 4차 보고서에 성능 결과(표 1–2개·그림, "집 PC 시험 서버·가짜 데이터" 명시)
+- **계획 0071 "몰려도 멈추지 않게" 구현·측정 끝, 판정 모두 통과(브랜치 `feat/admission-control`, PR 올림 → 머지·운영 배포 남음)**: 순수 ASGI 번호표 12장(2초 못 받으면 503 `BUSY` + `Retry-After: 1`), `queue_ms`, 풀 기다림 5초(넘으면 503 `DB_BUSY`), 헬스체크 우회는 루프백만(Caddyfile이 헤더 지움). 결과: **200명 실패 21.7% → 0%, 처리 12 → 185/초, 회복 564초 → 13–14초**, 100명 p95 +1.9%·처리량 −0.9%(10% 안), S3 100명 3번 성공 → `docs/perf/README.md`, 그림 `docs/perf/img/0071_before_after.png`
+  - 첫 측정은 멈춘 스크립트가 살아남아 겹쳐 무효(`data/perf/20261125/invalid_0071_overlap/`). 측정 스크립트에 겹침·번호표 확인을 넣고 다시 잼
+  - **배포 때**: `update.sh develop` 뒤 `docker compose -f docker-compose.server.yml exec caddy caddy reload --config /etc/caddy/Caddyfile`(Caddyfile 바뀜) → 운영 로그 `queue_ms` 확인
+  - 집 PC 시험 서버: `feat/admission-control` ffd9289, 번호표 12, 켜져 있음(안 쓸 땐 stop)
   - 리뷰에서 남긴 것: 앱 `VerifyScreen`이 503을 모두 "계기판을 읽는 곳이 바빠요"로 보여 줌 → `details.reason` BUSY·DB_BUSY면 일반 문구로(지환과), 실시간 몫 3은 보장이 아니라 여유(S3로 확인)
   - **운영 배포 위험**: 이미지 빌드가 OCR 모델을 modelscope.cn에서 받음 → 11/25 PC 빌드에서 DNS 실패 2번(다시 하면 됨). 막히면 운영 배포 실패 → 모델을 GitHub Release 등으로 옮기기(짧은 계획 먼저)
 

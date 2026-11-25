@@ -8,7 +8,7 @@ NAME="$1"; SCRIPT="$2"; shift 2
 PC="${PC:-admin@192.168.0.2}"; KEY="${KEY:-$HOME/.ssh/scrun_pc}"
 BASE="${BASE:-http://192.168.0.2:8000}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-OUT="$ROOT/data/perf/$(date +%Y%m%d)/$NAME"; mkdir -p "$OUT"
+OUT="$ROOT/data/perf/${PERF_DATE:-$(date +%Y%m%d)}/$NAME"; mkdir -p "$OUT"   # PERF_DATE: 자정을 넘겨도 같은 폴더
 PERF='cd /d C:\Users\admin\scrun\backend\perf && docker compose -f docker-compose.perf.yml --env-file .env.perf'
 FLAG='C:\Users\admin\scrun-perf-stop.flag'
 pc() { ssh -i "$KEY" -o LogLevel=ERROR "$PC" "$@" 2>&1 | grep -v -E "post-quantum|store now|upgraded" || true; }

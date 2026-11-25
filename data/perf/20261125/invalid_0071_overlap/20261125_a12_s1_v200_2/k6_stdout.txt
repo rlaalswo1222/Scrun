@@ -1,0 +1,22 @@
+time="2026-11-25T23:33:04+09:00" level=warning msg="Request Failed" error="Post \"http://192.168.0.2:8000/v1/auth/kakao\": EOF"
+time="2026-11-25T23:33:04+09:00" level=warning msg="Request Failed" error="Post \"http://192.168.0.2:8000/v1/auth/kakao\": EOF"
+time="2026-11-25T23:33:04+09:00" level=warning msg="Request Failed" error="Post \"http://192.168.0.2:8000/v1/auth/kakao\": EOF"
+time="2026-11-25T23:33:04+09:00" level=warning msg="Request Failed" error="Post \"http://192.168.0.2:8000/v1/auth/kakao\": EOF"
+time="2026-11-25T23:33:05+09:00" level=warning msg="Request Failed" error="Post \"http://192.168.0.2:8000/v1/auth/kakao\": EOF"
+time="2026-11-25T23:33:05+09:00" level=warning msg="Request Failed" error="Post \"http://192.168.0.2:8000/v1/auth/kakao\": EOF"
+time="2026-11-25T23:33:05+09:00" level=warning msg="Request Failed" error="Post \"http://192.168.0.2:8000/v1/auth/kakao\": EOF"
+time="2026-11-25T23:33:05+09:00" level=warning msg="Request Failed" error="Post \"http://192.168.0.2:8000/v1/auth/kakao\": EOF"
+time="2026-11-25T23:33:05+09:00" level=warning msg="Request Failed" error="Post \"http://192.168.0.2:8000/v1/auth/kakao\": EOF"
+time="2026-11-25T23:33:05+09:00" level=warning msg="Request Failed" error="Post \"http://192.168.0.2:8000/v1/auth/kakao\": EOF"
+time="2026-11-25T23:33:05+09:00" level=warning msg="Request Failed" error="Post \"http://192.168.0.2:8000/v1/auth/kakao\": EOF"
+S1 앱 켜기 VUS=200 USERS=10000 반복 6139
+login            p50 145.4  p95 628.2  p99 661.6 ms
+me               p50 1034.6  p95 1179.5  p99 1218.7 ms
+home             p50 1070.9  p95 1218.5  p99 1257.1 ms
+runs_active      p50 1038.5  p95 1181.8  p99 1220.4 ms
+runs             p50 1046.0  p95 1190.3  p99 1227.1 ms
+friends          p50 1054.2  p95 1202.8  p99 1239.7 ms
+friends_running  p50 1038.4  p95 1186.5  p99 1218.7 ms
+feed             p50 1055.1  p95 1201.3  p99 1236.7 ms
+progress         p50 1045.4  p95 1194.4  p99 1227.5 ms
+실패율 0.02%  초당 요청 142.3

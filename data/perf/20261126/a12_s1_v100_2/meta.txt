@@ -1,0 +1,5 @@
+이름: a12_s1_v100_2
+시각: 2026-11-26T00:25:37+09:00
+스크립트: backend/perf/k6/s1_open_app.js -e VUS=100 -e USERS=10000 -e DURATION=5m
+서버 커밋: ffd9289 Fix: 번호표를 응답·세션 정리 뒤 반납(0071 리뷰)
+데이터: 10000 users, 1000000 runs, 3364212 samples, 2420 MB
