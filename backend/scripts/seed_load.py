@@ -15,6 +15,7 @@ k6는 kakaoAccessToken `k_{kakao_base + i}`(i = 0 … users−1)로 이 계정�
 import argparse
 import random
 import time
+from collections.abc import Iterator
 from datetime import date, datetime, timedelta, timezone
 
 import psycopg
@@ -28,6 +29,7 @@ _ULID = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 COURSES = ("crs_space_loop", "crs_island_tour", "crs_lake_loop", "crs_forest_run", "crs_coast_run")
 NICK_PREFIX = "부하"
 SAMPLE_CHUNK_S = 60   # 앱이 60초마다 올림(계획 0037, Api.PutSamplesAsync)
+CHUNK_USERS = 200     # 기록을 이만큼의 사람씩 묶어 넣음
 
 
 class Seeder:
@@ -70,7 +72,8 @@ def wipe(cur) -> None:
     cur.execute("TRUNCATE users CASCADE")
 
 
-def build(args) -> dict[str, list[tuple]]:
+def build(args) -> Iterator[tuple[str, list[tuple]]]:
+    """(표, 행 묶음)을 외래 키 순서로 내보낸다. 기록은 사람 CHUNK_USERS명씩 묶어 메모리를 작게(100만 기록 = 컨테이너 3 GB 안)."""
     rng = random.Random(args.seed)
     anchor = datetime.combine(args.anchor, datetime.min.time(), tzinfo=timezone.utc)
     s = Seeder(rng, anchor)
@@ -110,9 +113,15 @@ def build(args) -> dict[str, list[tuple]]:
             degree[i] += 1
             degree[j] += 1
     rows["friendships"] = [(a, b, anchor - timedelta(days=200)) for a, b in sorted(pairs)]
+    for table in ("users", "auth_identities", "user_agreements", "calibrations", "friendships"):
+        yield table, rows.pop(table)
 
     run_no = 0
     for i, uid in enumerate(user_ids):
+        if i and i % CHUNK_USERS == 0:
+            for table in ("runs", "run_samples", "verifications"):
+                yield table, rows[table]
+                rows[table] = []
         xp_m = verified = 0
         for _ in range(args.runs_per_user):
             run_no += 1
@@ -154,7 +163,8 @@ def build(args) -> dict[str, list[tuple]]:
                     rows["run_samples"].append((rid, float(off), 1.0, [round(kmh + rng.uniform(-0.4, 0.4), 2) for _ in range(n)]))
         level = growth.level_of(xp_m)
         rows["user_progress"].append((uid, xp_m, level, growth.outfit_of(level), verified, anchor))
-    return rows
+    for table in ("runs", "run_samples", "verifications", "user_progress"):
+        yield table, rows[table]
 
 
 COLUMNS = {
@@ -200,21 +210,22 @@ def main() -> None:
         elif cur.execute("SELECT 1 FROM users WHERE nickname LIKE %s LIMIT 1", (NICK_PREFIX + "%",)).fetchone():
             raise SystemExit("이미 시드 데이터가 있습니다. --wipe로 지우고 다시 넣으세요.")
 
-        rows = build(a)
-        t_build = time.perf_counter()
-        for table, (cols, types) in COLUMNS.items():
+        counts: dict[str, int] = {}
+        for table, batch in build(a):
+            cols, types = COLUMNS[table]
             with cur.copy(f"COPY {table} ({cols}) FROM STDIN") as cp:
                 if types:
                     cp.set_types(types)
-                for row in rows[table]:
+                for row in batch:
                     cp.write_row(row)
+            counts[table] = counts.get(table, 0) + len(batch)
         conn.commit()
+        t_copy = time.perf_counter()
         cur.execute("ANALYZE")
         size = cur.execute("SELECT pg_size_pretty(pg_database_size(current_database()))").fetchone()[0]
 
-    counts = ", ".join(f"{t} {len(r):,}" for t, r in rows.items())
-    print(f"넣음: {counts}")
-    print(f"만들기 {t_build - t0:.1f}초, 넣기 {time.perf_counter() - t_build:.1f}초, DB 크기 {size}")
+    print("넣음: " + ", ".join(f"{t} {n:,}" for t, n in counts.items()))
+    print(f"만들기·넣기 {t_copy - t0:.1f}초, ANALYZE {time.perf_counter() - t_copy:.1f}초, DB 크기 {size}")
 
 
 if __name__ == "__main__":
