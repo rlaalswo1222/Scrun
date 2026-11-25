@@ -8,7 +8,8 @@
 - db_n·db_ms: 그 안에서 DB에 보낸 쿼리 수·시간(실패한 쿼리 포함). pool_ms: 연결 풀에서 연결을 받기까지 기다린 시간(app/db/session.py의 풀이 잼)
 - queue_ms: 입구 번호표를 기다린 시간(app/core/admission.py, 계획 0071). 못 받아 503이면 path는 "-"(라우팅 전)
 - path는 라우트 틀(`/v1/runs/{runId}`)이라 기록 ID·사용자 ID가 남지 않는다. 라우트에 안 맞은 요청은 "-"
-- 남기지 않는 것: WebSocket(/v1/realtime, HTTP 미들웨어를 안 지남), 컨테이너 안 헬스체크(루프백 + X-Scrun-Probe: 1, is_local_probe)
+- 남기지 않는 것: WebSocket(/v1/realtime, HTTP 미들웨어를 안 지남), 컨테이너 안 헬스체크(루프백 + X-Scrun-Probe: 1, is_local_probe),
+  서비스끼리 부르는 내부 API(/internal/*, is_internal, 계획 0073)
 - 서버 로그(운영은 journald)로 본다: `journalctl CONTAINER_NAME=scrun-api-1 --since … | grep '"path"'`
 - 끄기: 환경 변수 REQUEST_LOG=0
 """
@@ -27,6 +28,15 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 log = logging.getLogger("scrun.request")
 PROBE_HEADER = b"x-scrun-probe"
 LOOPBACK = {"127.0.0.1", "::1"}
+
+
+INTERNAL_PATH = "/internal/"
+
+
+def is_internal(scope) -> bool:
+    """서비스끼리 부르는 내부 API(허브, app/realtime/internal.py, 계획 0073). 번호표·요청 로그 밖: 일반 API 요청 하나가 그 안에서
+    부르므로 줄을 또 서면 정원 검사가 시간 초과로 503이 되고, 로그엔 같은 요청이 두 번 남는다. 밖에선 Caddy가 막고 비밀 머리도 봄"""
+    return scope.get("path", "").startswith(INTERNAL_PATH)
 
 
 def is_local_probe(scope) -> bool:
@@ -150,7 +160,7 @@ class RequestContextMiddleware:
         rid = "req_" + uuid.uuid4().hex[:12]
         scope.setdefault("state", {})["request_id"] = rid
         rid_header = (REQUEST_ID_HEADER, rid.encode("ascii"))
-        stats = _RequestStats() if self.log_requests and not is_local_probe(scope) else None
+        stats = _RequestStats() if self.log_requests and not (is_local_probe(scope) or is_internal(scope)) else None
         started = False
 
         async def send_with_id(message: Message) -> None:

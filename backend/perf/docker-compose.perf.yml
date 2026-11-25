@@ -39,7 +39,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET을 .env.perf에}
       KAKAO_MODE: fake
       VERIFY_OCR_TIMEOUT_S: 15
-      ADMISSION_LIMIT: ${ADMISSION_LIMIT:-12}   # 계획 0071: 번호표 수(프로세스마다)
+      ADMISSION_LIMIT: ${ADMISSION_LIMIT:-6}   # 번호표 수(프로세스마다, 계획 0071). api 2개 × 6 = 12(0073 측정, 운영과 같음)
       ADMISSION_WAIT_S: ${ADMISSION_WAIT_S:-2}
       OCR_ENGINE: none
       REALTIME_URL: http://realtime:8000
@@ -49,8 +49,6 @@ services:
     mem_limit: 3g
     depends_on:
       db:
-        condition: service_healthy
-      realtime:
         condition: service_healthy
     healthcheck: &app_health
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen(u.Request('http://localhost:8000/v1/agreements', headers={'X-Scrun-Probe': '1'}), timeout=3)"]
@@ -65,6 +63,7 @@ services:
     environment:
       <<: *app_env
       REALTIME_URL: ""
+      ADMISSION_LIMIT: 12
     cpuset: "0,1"
     mem_limit: 1g
     depends_on:
@@ -78,12 +77,11 @@ services:
     environment:
       <<: *app_env
       OCR_ENGINE: onnx
+      ADMISSION_LIMIT: 12
     cpuset: "0,1"
     mem_limit: 3g
     depends_on:
       db:
-        condition: service_healthy
-      realtime:
         condition: service_healthy
     healthcheck: *app_health
 
@@ -96,13 +94,13 @@ services:
     volumes:
       - ../deploy/Caddyfile:/etc/caddy/Caddyfile:ro
     cpuset: "0,1"
-    depends_on:
+    depends_on: # api만 건강하면 뜸. realtime·ocr이 안 떠도 그 경로만 502이고 나머지 API는 됨(계획 0073 리뷰)
       api:
         condition: service_healthy
       realtime:
-        condition: service_healthy
+        condition: service_started
       ocr:
-        condition: service_healthy
+        condition: service_started
 
 volumes:
   pgdata:

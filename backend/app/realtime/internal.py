@@ -12,9 +12,9 @@ from fastapi.responses import JSONResponse, Response
 
 from ..core.config import settings
 from .hub import hub
-from .link import INTERNAL_HEADER, internal_token
+from .link import INTERNAL_HEADER, INTERNAL_PREFIX, internal_token
 
-router = APIRouter(prefix="/internal/hub", include_in_schema=False)
+router = APIRouter(prefix=INTERNAL_PREFIX.rstrip("/"), include_in_schema=False)
 _TOKEN = internal_token(settings.jwt_secret)
 
 
@@ -23,15 +23,15 @@ def _companion(c) -> dict:
 
 
 OPS = {
-    "present_user_ids": lambda a: {"ids": sorted(hub.present_user_ids())},
-    "running_positions": lambda a: {"positions": hub.running_positions(a["course_id"], a.get("except_user"))},
-    "in_map": lambda a: {"where": hub.in_map(a["user_id"])},
-    "running_now": lambda a: {"running": {uid: {"course_id": r.course_id, "run_m": r.run_m, "kmh": r.kmh}
-                                          for uid, r in hub.running_now(a["user_ids"]).items()}},
-    "companions": lambda a: {"companions": [_companion(c) for c in hub.companions(a["user_id"], a["run_id"])]},
-    "start_tracking": lambda a: hub.start_tracking(a["user_id"], a["run_id"]) or {},
-    "stop_tracking": lambda a: hub.stop_tracking(a["user_id"], a["run_id"]) or {},
-    "forget_user": lambda a: hub.forget_user(a["user_id"]) or {},
+    "present_user_ids": lambda args: {"ids": sorted(hub.present_user_ids())},
+    "running_positions": lambda args: {"positions": hub.running_positions(args["course_id"], args.get("except_user"))},
+    "in_map": lambda args: {"where": hub.in_map(args["user_id"])},
+    "running_now": lambda args: {"running": {uid: {"course_id": r.course_id, "run_m": r.run_m, "kmh": r.kmh}
+                                          for uid, r in hub.running_now(args["user_ids"]).items()}},
+    "companions": lambda args: {"companions": [_companion(c) for c in hub.companions(args["user_id"], args["run_id"])]},
+    "start_tracking": lambda args: hub.start_tracking(args["user_id"], args["run_id"]) or {},
+    "stop_tracking": lambda args: hub.stop_tracking(args["user_id"], args["run_id"]) or {},
+    "forget_user": lambda args: hub.forget_user(args["user_id"]) or {},
 }
 
 

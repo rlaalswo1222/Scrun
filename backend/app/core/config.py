@@ -60,8 +60,10 @@ class VerificationPolicy:
 
 @dataclass(frozen=True)
 class AdmissionPolicy:
-    """동시 처리 제한(계획 0071, app/core/admission.py). 번호표는 DB 연결 합계(db_pool_total) 중 실시간 WebSocket 몫 3을 뺀 12
-    (가설: 실시간은 입장·퇴장 때만 짧게 씀). 0071 측정으로 10·12·15를 비교해 정함. 0이면 끔. 연결 합계보다 크면 ConfigError
+    """동시 처리 제한(계획 0071, app/core/admission.py). 번호표·연결 풀은 프로세스마다. 기본 12는 한 프로세스일 때 DB 연결 15 중
+    실시간 몫 3을 뺀 값(0071 측정으로 정함). 일반 API를 프로세스 여러 개로 띄우면(계획 0073) 합계가 늘어 DB에 너무 몰리므로
+    compose에서 api는 프로세스당 6(2개 × 6 = 12, 0073 측정: 24면 200명 p95가 0.7초, 12면 0.5초)·realtime·ocr은 12로 준다.
+    합계·DB 연결 한도는 tests/test_config.py가 compose 파일로 확인. 0이면 끔. 연결 합계보다 크면 ConfigError
     (번호표가 연결보다 많으면 연결을 기다리는 요청이 다시 생김)."""
 
     limit: int = 12

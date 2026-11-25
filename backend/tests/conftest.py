@@ -28,12 +28,10 @@ def db_client(test_db):
 @pytest.fixture
 def remote_link(monkeypatch):
     """일반 API가 허브를 같은 프로세스가 아니라 내부 API(HTTP)로 부르게 바꿔 끼움(계획 0073, app/realtime/link.py).
-    내부 API는 같은 앱(테스트 클라이언트)에 붙어 있어, 실시간 프로세스를 따로 띄운 것과 같은 길을 지난다."""
-    import importlib
-
+    내부 API는 같은 앱(테스트 클라이언트)에 붙어 있어, 실시간 프로세스를 따로 띄운 것과 같은 길을 지난다.
+    라우터는 모두 link.hub_link로 부르므로 여기 한 곳만 바꾸면 된다(직접 부르면 test_realtime_link가 실패)."""
     from app.core.config import settings
-    from app.realtime.link import RemoteHub, internal_token
-    remote = RemoteHub("http://testserver", internal_token(settings.jwt_secret), client=TestClient(app))
-    for name in ("app.routers.courses", "app.routers.friends", "app.routers.runs", "app.core.accounts", "app.core.occupancy"):
-        monkeypatch.setattr(importlib.import_module(name), "hub_link", remote)
+    from app.realtime import link
+    remote = link.RemoteHub("http://testserver", link.internal_token(settings.jwt_secret), client=TestClient(app))
+    monkeypatch.setattr(link, "hub_link", remote)
     return remote

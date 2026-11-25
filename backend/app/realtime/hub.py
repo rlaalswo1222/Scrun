@@ -328,8 +328,9 @@ class Hub:
         return out
 
     # ---------- 입장·인원 API가 읽는 것 ----------
-    def present_user_ids(self) -> set[str]:
-        """어느 방이든 지금 붙어 있는 사람(끊긴 지 GRACE_S 안 포함). 어느 코스로 셀지는 자리(course_entries)가 정한다."""
+    def present_user_ids(self, strict: bool = False) -> set[str]:
+        """strict는 원격 허브(app/realtime/link.py)와 같은 모양을 맞추려고 받기만 함(같은 프로세스라 바쁠 일이 없음).
+        어느 방이든 지금 붙어 있는 사람(끊긴 지 GRACE_S 안 포함). 어느 코스로 셀지는 자리(course_entries)가 정한다."""
         with self._lock:
             self._sweep_locked()
             return set(self._where.keys())

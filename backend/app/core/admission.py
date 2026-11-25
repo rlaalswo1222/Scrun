@@ -7,6 +7,7 @@ HTTP 요청은 번호표(비동기 세마포어) N장 중 하나를 받아야 �
   풀의 나머지(풀 합계 − N)를 입장·퇴장 때 짧게 씀 — 몰리면 실시간이 그 몫을 넘을 수 있음(가설, S3로 확인)
 - W초 안에 못 받으면 바로 503 SERVICE_UNAVAILABLE(details.reason BUSY) + Retry-After: 1 → 받아 둔 요청이 W초치 넘게 쌓이지 않음
 - 컨테이너 안 헬스체크(루프백 + X-Scrun-Probe: 1)는 제한 밖: 몰려도 컨테이너가 죽은 것으로 보이지 않게. 밖에서 온 헤더는 무시
+- 내부 API(/internal/*, 계획 0073)도 제한 밖: 일반 API 요청이 이미 번호표를 쥐고 부르므로 두 번 줄 세우지 않음
 기다린 시간은 요청 로그 queue_ms(app/core/request_log.py). 설정 ADMISSION_LIMIT(0이면 끔)·ADMISSION_WAIT_S
 """
 import asyncio
@@ -19,7 +20,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from .config import settings
 from .envelope import error_response
 from .errors import ErrorCode
-from .request_log import add_queue_wait, is_local_probe
+from .request_log import add_queue_wait, is_internal, is_local_probe
 
 RETRY_AFTER_S = "1"
 
@@ -41,7 +42,7 @@ class AdmissionMiddleware:
         return gate
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or is_local_probe(scope):
+        if scope["type"] != "http" or is_local_probe(scope) or is_internal(scope):
             await self.app(scope, receive, send)
             return
         gate = self._gate()

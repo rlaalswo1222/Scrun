@@ -21,7 +21,7 @@ from ..core.security import current_user
 from ..db.models import Calibration, CourseEntry, User
 from ..db.models import Course as CourseRow
 from ..db.session import get_db
-from ..realtime.link import hub_link
+from ..realtime import link
 from ..realtime.router import map_id_of
 from ..schemas.course import Course, CourseDetail, MapEntry
 
@@ -105,7 +105,7 @@ def enter_course(db: Session, request: Request, user: User, course_id: str, rng:
     course = _active_course(db, course_id, lock=True)  # 같은 코스 입장은 여기서 한 줄로 선다(커밋까지)
     if not db.scalar(select(exists().where(Calibration.user_id == user.id))):
         raise ApiError(E.CALIBRATION_REQUIRED)
-    if count_present(db, [course.id], exclude_user_id=user.id)[course.id] >= course.max_runners_per_map:
+    if count_present(db, [course.id], exclude_user_id=user.id, strict=True)[course.id] >= course.max_runners_per_map:
         raise ApiError(E.COURSE_FULL)
     db.execute(insert(CourseEntry).values(user_id=user.id, course_id=course.id)
                .on_conflict_do_update(index_elements=[CourseEntry.user_id],
@@ -124,7 +124,7 @@ def enter_course(db: Session, request: Request, user: User, course_id: str, rng:
 
 
 def _entry_position(course: CourseRow, user_id: str, rng: random.Random) -> float:
-    runners = hub_link.running_positions(course.id, except_user=user_id)
+    runners = link.hub_link.running_positions(course.id, except_user=user_id)
     if not runners:
         return _on_lap(rng.uniform(0, course.length_m), course.length_m)
     ahead = rng.choice(sorted(runners))  # 정렬: 같은 시드면 같은 결과(예시 만들기)

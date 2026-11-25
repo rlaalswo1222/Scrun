@@ -11,7 +11,7 @@ cd backend
 cp .env.example .env                                            # 접속 정보·키. .env는 git에 안 올림
 ../.venv/Scripts/python -c "import secrets; print(secrets.token_urlsafe(48))"   # 나온 값을 .env의 JWT_SECRET=에
 docker compose up -d                                            # PostgreSQL(개발 DB scrun + 테스트 DB scrun_test)
-../.venv/Scripts/python -m alembic upgrade head                 # 테이블 21개 + 약관 목록 + 코스 4개
+../.venv/Scripts/python -m alembic upgrade head                 # 테이블 22개 + 약관 목록 + 코스
 ```
 `.env`에 `JWT_SECRET`이 없거나 32자 미만이면 서버가 시작하지 않는다(`ConfigError`). `KAKAO_MODE`를 안 적으면 `real`이고 `KAKAO_APP_ID`가 필요하다. 로컬 개발은 `.env.example`대로 `KAKAO_MODE=fake`. 테스트·예시 내보내기는 `.env` 없이도 돈다(임시 키 + 가짜 카카오, `app/testenv.py`).
 Docker Desktop이 켜져 있어야 한다. DB를 지우고 처음부터: `docker compose down -v` → 위 두 줄 다시.
@@ -51,16 +51,19 @@ http://localhost:8000/docs 에서 눌러 본다.
 ```
 app/
   main.py            앱 만들기, 오류 처리 연결, 라우터 묶기
-  core/              공통: envelope(응답 껍데기·오류 처리·requestId), errors(오류 코드 표), config(환경 변수 + 검사),
+  core/              공통: envelope(응답 껍데기·오류 처리), errors(오류 코드 표), config(환경 변수 + 검사),
                      envfile(.env 읽기·DB 주소만, 마이그레이션용),
                      tokens(access·가입용·refresh 토큰), sessions(refresh 토큰 수명: 재발급·재사용·기기·상한),
                      kakao(카카오 확인, 가짜/진짜), security(진짜 로그인 확인), auth(스텁 API용 로그인 확인), occupancy(코스별 지금 맵에 있는 사람 수, 세는 곳 한 곳),
-                     nickname(정규화·형식·금칙어·중복), model(camelCase),
+                     nickname(정규화·형식·금칙어·중복),
                      run_access(러닝 상태 이름·내 기록 찾기·인증 마감), ocr(계기판 사진 읽기 엔진 자리, 가짜/없음),
                      verification(센서-계기판 대조 판정, 순수 함수),
-                     request_log(요청마다 처리 시간·DB 쿼리 수 JSON 한 줄, 계획 0070, REQUEST_LOG=0이면 끔),
+                     request_log(요청 ID X-Request-Id + 요청마다 처리 시간·DB 쿼리 수 JSON 한 줄, 순수 ASGI, 계획 0070·0073, REQUEST_LOG=0이면 로그만 끔),
+                     attempts(틀린 친구 코드 횟수, DB), model(camelCase·시각 칸 UtcDatetime),
                      admission(동시 처리 번호표·빠른 503, 계획 0071, ADMISSION_LIMIT=0이면 끔)
-  db/                models(테이블 21개), session(DB 연결), ids(ULID), testing(테스트 DB로 바꿔 끼우기)
+  db/                models(테이블 22개), session(DB 연결), ids(ULID), testing(테스트 DB로 바꿔 끼우기)
+  realtime/          hub(방 상태, 메모리·한 프로세스), router(WebSocket /v1/realtime), link(일반 API가 허브를 부르는 곳: 같은 프로세스 또는
+                     REALTIME_URL로 HTTP, 서킷 브레이커), internal(허브 내부 API /internal/hub/*, 계획 0073)
   schemas/           요청·응답 모델(도메인별). Swagger의 Schemas
   routers/           API 주소(도메인별). auth.py, users.py의 닉네임 확인·내 정보·설정·보정값, courses.py, runs.py, verification.py, friends.py(같이 달리기 빼고)가 진짜, 나머지는 스텁
   testenv.py         테스트·예시 내보내기 전용 설정(임시 서명 키 + 가짜 카카오, app보다 먼저 부름)
@@ -72,7 +75,8 @@ scripts/             export_openapi(OpenAPI·예시), notion_pages(노션 본문
 tests/               test_contract(스텁 API 계약), test_auth(로그인·닉네임 진짜 흐름, 동시 요청 포함), test_courses(코스·맵 입장 진짜 흐름),
                      test_config(설정 검사), test_kakao(진짜 카카오 응답 처리), test_nickname(닉네임 규칙),
                      test_runs(러닝 시작·종료 진짜 흐름), test_verification(계기판 인증: 판정 경계·재촬영·마감·동시 요청),
-                     test_request_log(요청 로그: 경로 틀·헬스체크 제외·실패 쿼리), test_admission(번호표: 503·기다림·헬스체크·반납)
+                     test_request_log(요청 로그·요청 ID: 경로 틀·헬스체크 제외·실패 쿼리), test_admission(번호표: 503·기다림·헬스체크·반납),
+                     test_realtime_link(허브 내부 API·원격 허브·서킷 브레이커·바쁠 때 입장 503), test_link_*(허브를 거치는 기존 흐름을 원격 허브로 한 번 더)
 ```
 
 ## 테스트·내보내기 (DB가 떠 있어야 함)

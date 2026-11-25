@@ -3,6 +3,7 @@
 - 상태: **승인**
 - 날짜: 2026-11-10
 - 결정한 사람: 김민재
+- 갱신(2026-11-26, 계획 0073): 일반 API는 프로세스 여러 개로 늘리고 실시간(WebSocket + 방 상태)은 따로 한 프로세스에 둔다. 일반 API는 허브 내부 API(`/internal/hub/*`)로 묻고, Caddy가 `/v1/realtime`을 실시간 프로세스로 보낸다. 방 상태는 여전히 한 프로세스 메모리라 이 결정의 방향(우리 서버 WebSocket, Redis는 실시간 자체를 늘릴 때)은 그대로
 
 ## 배경
 같은 코스(= 맵 하나, 최대 20명)에 들어온 사람들의 폰이 서로의 상태를 계속 알아야 한다(BL-21 공동 맵, BL-23 페이스 봇). 전송 방식은 BL-25 스파이크로 미뤄 두었고(ADR-0002·0008 위험 항목), S3(11/12–13) "실시간 방 서버 기본"과 11/13 시연이 이 결정을 기다린다.
@@ -26,7 +27,7 @@ A. 공용 서버의 FastAPI 앱에 WebSocket 엔드포인트를 붙여 방(맵)�
 - 주고받는 양이 작다(계산: 한 사람 상태 약 80바이트 × 20명 × 1초 2번 = 폰 한 대가 받는 양 초당 약 3.2KB). Fusion의 강점을 쓸 데가 없다
 - 로그인 토큰·오류 규칙(`docs/api/README.md`)을 그대로 쓴다
 - 지연 실측(11/10, 민재 Windows 노트북 와이파이, TCP 연결 왕복 12–15회 중앙값): 오라클 싱가포르(우리 서버) **222ms**, AWS 싱가포르 96ms, AWS 서울 39ms. 10 km/h에서 0.22초면 약 0.6m(계산)라 보간으로 가릴 수 있다고 본다(가설, S3 실측으로 확인)
-- 앞단 Caddy는 WebSocket을 설정 없이 통과시킨다([Caddy reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)). 서버는 uvicorn 한 프로세스라 방 상태를 메모리에 둬도 된다(11/26 계획 0073: 일반 API는 프로세스 여러 개로 늘리고 실시간은 따로 한 프로세스, 일반 API는 허브 내부 API로 물음 → 방 상태는 여전히 한 프로세스 메모리)
+- 앞단 Caddy는 WebSocket을 설정 없이 통과시킨다([Caddy reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)). 서버는 uvicorn 한 프로세스라 방 상태를 메모리에 둬도 된다
 
 ## 결과와 위험
 - **지금 달리는 사람 수**(`runnersNow`)는 실시간 서버의 연결 수로 센다. 샘플을 올릴 때 `runs.updated_at`을 갱신하는 임시 방식은 실시간 서버가 생길 때까지만(`docs/api/README.md` "코스와 맵 인원")
