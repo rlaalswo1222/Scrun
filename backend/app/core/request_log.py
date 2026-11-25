@@ -1,10 +1,12 @@
 """요청마다 서버 안에서 걸린 시간을 JSON 한 줄로 남긴다(계획 0070 관측).
 
-    {"rid": "req_…", "method": "GET", "path": "/v1/runs/{runId}", "status": 200, "ms": 12.4, "db_n": 3, "db_ms": 8.1}
+    {"rid": "req_…", "method": "GET", "path": "/v1/runs/{runId}", "status": 200, "ms": 12.4,
+     "db_n": 3, "db_ms": 8.1, "pool_ms": 0.2}
 
-- ms: 미들웨어에 들어와서 응답 머리가 나갈 때까지(네트워크 왕복은 빠짐). db_n·db_ms: 그 안에서 DB에 보낸 쿼리 수·시간
+- ms: 미들웨어에 들어와서 응답 머리가 나갈 때까지(네트워크 왕복은 빠짐). 스트리밍 본문을 내보내는 시간·그동안의 쿼리는 빠짐
+- db_n·db_ms: 그 안에서 DB에 보낸 쿼리 수·시간(실패한 쿼리 포함). pool_ms: 연결 풀에서 연결을 받기까지 기다린 시간(get_db)
 - path는 라우트 틀(`/v1/runs/{runId}`)이라 기록 ID·사용자 ID가 남지 않는다. 라우트에 안 맞은 요청은 "-"
-- WebSocket(/v1/realtime)은 HTTP 미들웨어를 지나지 않아 남지 않는다
+- 남기지 않는 것: WebSocket(/v1/realtime, HTTP 미들웨어를 안 지남), 헬스체크(헤더 X-Scrun-Probe: 1, compose healthcheck)
 - 서버 로그(운영은 journald)로 본다: `journalctl CONTAINER_NAME=scrun-api-1 --since … | grep '"path"'`
 - 끄기: 환경 변수 REQUEST_LOG=0
 """
@@ -20,40 +22,60 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
 log = logging.getLogger("scrun.request")
+PROBE_HEADER = "x-scrun-probe"
 
 
-class _DbStats:
-    __slots__ = ("n", "ms")
+class _RequestStats:
+    __slots__ = ("started", "db_n", "db_ms", "pool_ms")
 
     def __init__(self) -> None:
-        self.n = 0
-        self.ms = 0.0
+        self.started = time.perf_counter()
+        self.db_n = 0
+        self.db_ms = 0.0
+        self.pool_ms = 0.0
+
+    def elapsed_ms(self) -> float:
+        return (time.perf_counter() - self.started) * 1000
 
 
-# 요청 하나의 DB 통계. 동기 라우터는 스레드풀에서 돌지만 컨텍스트가 복사되어 같은 객체를 가리킨다
-_current: ContextVar[Optional[_DbStats]] = ContextVar("scrun_request_db", default=None)
+# 지금 처리 중인 요청의 통계. 동기 라우터는 스레드풀에서 돌지만 컨텍스트가 복사되어 같은 객체를 가리킨다
+_request_stats: ContextVar[Optional[_RequestStats]] = ContextVar("scrun_request_stats", default=None)
 
 
 def _before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-    conn.info.setdefault("scrun_query_start", []).append(time.perf_counter())
+    if context is not None:
+        context._scrun_t0 = time.perf_counter()
+
+
+def _count_query(context) -> None:
+    t0 = getattr(context, "_scrun_t0", None)
+    stats = _request_stats.get()
+    if t0 is None or stats is None:
+        return
+    stats.db_n += 1
+    stats.db_ms += (time.perf_counter() - t0) * 1000
 
 
 def _after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-    starts = conn.info.get("scrun_query_start")
-    if not starts:
-        return
-    elapsed = (time.perf_counter() - starts.pop()) * 1000
-    stats = _current.get()
+    _count_query(context)
+
+
+def _handle_error(exception_context):
+    _count_query(exception_context.execution_context)   # 실패한 쿼리도 시간은 썼다
+
+
+def add_pool_wait(seconds: float) -> None:
+    stats = _request_stats.get()
     if stats is not None:
-        stats.n += 1
-        stats.ms += elapsed
+        stats.pool_ms += seconds * 1000
 
 
-def install() -> None:
+def install_request_log() -> None:
     """모든 엔진(운영·테스트)의 쿼리 시간을 잰다. 로그는 이 로거만 stdout으로(다른 로거 설정과 상관없이)."""
     if not event.contains(Engine, "before_cursor_execute", _before_cursor_execute):
         event.listen(Engine, "before_cursor_execute", _before_cursor_execute)
         event.listen(Engine, "after_cursor_execute", _after_cursor_execute)
+        event.listen(Engine, "handle_error", _handle_error)
     if not log.handlers:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(logging.Formatter("%(message)s"))
@@ -67,29 +89,31 @@ def _route_path(request: Request) -> str:
     return getattr(route, "path", None) or "-"
 
 
-def _emit(request: Request, status: int, started: float, stats: _DbStats) -> None:
+def _emit(request: Request, status: int, stats: _RequestStats) -> None:
     line = {
         "rid": getattr(request.state, "request_id", None),
         "method": request.method,
         "path": _route_path(request),
         "status": status,
-        "ms": round((time.perf_counter() - started) * 1000, 1),
-        "db_n": stats.n,
-        "db_ms": round(stats.ms, 1),
+        "ms": round(stats.elapsed_ms(), 1),
+        "db_n": stats.db_n,
+        "db_ms": round(stats.db_ms, 1),
+        "pool_ms": round(stats.pool_ms, 1),
     }
     log.info(json.dumps(line, ensure_ascii=False, separators=(",", ":")))
 
 
 async def request_log_middleware(request: Request, call_next):
-    started = time.perf_counter()
-    stats = _DbStats()
-    token = _current.set(stats)
+    if request.headers.get(PROBE_HEADER) == "1":   # 컨테이너 헬스체크(10초마다)는 기준선을 흐리므로 남기지 않음
+        return await call_next(request)
+    stats = _RequestStats()
+    token = _request_stats.set(stats)
     try:
         response = await call_next(request)
     except Exception:
-        _emit(request, 500, started, stats)   # 처리 못 한 예외는 바깥(ServerErrorMiddleware)이 500으로 바꿈
+        _emit(request, 500, stats)   # 처리 못 한 예외는 바깥(ServerErrorMiddleware)이 500으로 바꿈
         raise
     finally:
-        _current.reset(token)
-    _emit(request, response.status_code, started, stats)
+        _request_stats.reset(token)
+    _emit(request, response.status_code, stats)
     return response

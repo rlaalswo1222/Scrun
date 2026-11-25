@@ -21,4 +21,5 @@ def use_test_settings() -> None:
     os.environ["JWT_SECRET"] = secrets.token_urlsafe(48)
     os.environ["KAKAO_MODE"] = "fake"
     os.environ["BOT_FILL_TO"] = "0"  # 실시간 테스트는 사람만(봇은 test_realtime의 봇 테스트가 따로 켬)
+    os.environ["REQUEST_LOG"] = "1"  # 셸에 REQUEST_LOG=0이 있어도 요청 로그 테스트가 돌게
     _applied = True

@@ -191,6 +191,18 @@ class Settings:
     growth: GrowthPolicy = GrowthPolicy()
 
 
+SWITCH_VALUES = {"1": True, "0": False}
+
+
+def _load_switch(env: Mapping[str, str], name: str, default: bool) -> bool:
+    raw = env.get(name, "").strip()
+    if not raw:
+        return default
+    if raw not in SWITCH_VALUES:
+        raise ConfigError(f"{name}는 1 또는 0이어야 합니다(지금: {raw!r}).")
+    return SWITCH_VALUES[raw]
+
+
 def load_settings(env: Mapping[str, str]) -> Settings:
     jwt_secret = env.get("JWT_SECRET", "").strip()
     if not jwt_secret:
@@ -224,7 +236,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         kakao_app_id=kakao_app_id,
         kakao_admin_key=env.get("KAKAO_ADMIN_KEY", "").strip() or None,
         ocr_engine=ocr_engine,
-        request_log=env.get("REQUEST_LOG", "1").strip().lower() not in ("0", "false", "off", "no"),
+        request_log=_load_switch(env, "REQUEST_LOG", default=True),
         verification=load_verification(env),
         bots=load_bots(env),
         friends=load_friends(env),

@@ -3,7 +3,10 @@ import json
 import logging
 
 import pytest
+from sqlalchemy import text
+from sqlalchemy.exc import ProgrammingError
 
+from app.core import request_log as rl
 from app.core.request_log import log as request_log
 
 
@@ -29,7 +32,8 @@ def test_logs_route_template_status_and_db_queries(db_client, lines):
     assert r.status_code == 200
     (line,) = [x for x in lines if x["path"] == "/v1/agreements"]
     assert line["method"] == "GET" and line["status"] == 200
-    assert line["db_n"] >= 1 and line["db_ms"] >= 0 and line["ms"] >= line["db_ms"]
+    assert line["db_n"] >= 1 and line["db_ms"] >= 0 and line["pool_ms"] >= 0
+    assert line["ms"] >= line["db_ms"] + line["pool_ms"]
     assert line["rid"] == r.headers["X-Request-Id"]
 
 
@@ -44,3 +48,22 @@ def test_unmatched_path_and_no_db(db_client, lines):
     r = db_client.get("/nope")
     assert r.status_code == 404
     assert lines[-1]["path"] == "-" and lines[-1]["status"] == 404 and lines[-1]["db_n"] == 0
+
+
+def test_probe_header_is_not_logged(db_client, lines):
+    r = db_client.get("/v1/agreements", headers={"X-Scrun-Probe": "1"})   # compose 헬스체크
+    assert r.status_code == 200
+    assert lines == []
+
+
+def test_failed_query_is_counted(test_db):
+    stats = rl._RequestStats()
+    token = rl._request_stats.set(stats)
+    try:
+        with test_db.engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+            with pytest.raises(ProgrammingError):
+                conn.execute(text("SELECT * FROM no_such_table"))
+    finally:
+        rl._request_stats.reset(token)
+    assert stats.db_n == 2

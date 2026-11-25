@@ -57,7 +57,8 @@ app/
                      kakao(카카오 확인, 가짜/진짜), security(진짜 로그인 확인), auth(스텁 API용 로그인 확인), occupancy(코스별 지금 맵에 있는 사람 수, 세는 곳 한 곳),
                      nickname(정규화·형식·금칙어·중복), model(camelCase),
                      run_access(러닝 상태 이름·내 기록 찾기·인증 마감), ocr(계기판 사진 읽기 엔진 자리, 가짜/없음),
-                     verification(센서-계기판 대조 판정, 순수 함수)
+                     verification(센서-계기판 대조 판정, 순수 함수),
+                     request_log(요청마다 처리 시간·DB 쿼리 수 JSON 한 줄, 계획 0070, REQUEST_LOG=0이면 끔)
   db/                models(테이블 21개), session(DB 연결), ids(ULID), testing(테스트 DB로 바꿔 끼우기)
   schemas/           요청·응답 모델(도메인별). Swagger의 Schemas
   routers/           API 주소(도메인별). auth.py, users.py의 닉네임 확인·내 정보·설정·보정값, courses.py, runs.py, verification.py, friends.py(같이 달리기 빼고)가 진짜, 나머지는 스텁
@@ -69,7 +70,8 @@ scripts/             export_openapi(OpenAPI·예시), notion_pages(노션 본문
                      purge_refresh_tokens(만료 토큰 정리, 운영에서 하루 한 번)
 tests/               test_contract(스텁 API 계약), test_auth(로그인·닉네임 진짜 흐름, 동시 요청 포함), test_courses(코스·맵 입장 진짜 흐름),
                      test_config(설정 검사), test_kakao(진짜 카카오 응답 처리), test_nickname(닉네임 규칙),
-                     test_runs(러닝 시작·종료 진짜 흐름), test_verification(계기판 인증: 판정 경계·재촬영·마감·동시 요청)
+                     test_runs(러닝 시작·종료 진짜 흐름), test_verification(계기판 인증: 판정 경계·재촬영·마감·동시 요청),
+                     test_request_log(요청 로그: 경로 틀·헬스체크 제외·실패 쿼리)
 ```
 
 ## 테스트·내보내기 (DB가 떠 있어야 함)

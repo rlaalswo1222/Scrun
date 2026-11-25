@@ -79,3 +79,13 @@ def test_bot_policy_defaults_and_overrides():
 def test_bot_policy_rejects_bad_values(env, msg):
     with pytest.raises(ConfigError, match=msg):
         load_settings({"JWT_SECRET": GOOD_SECRET, "KAKAO_MODE": "fake", **env})
+
+
+def test_request_log_switch():
+    base = {"JWT_SECRET": GOOD_SECRET, "KAKAO_MODE": "fake"}
+    assert load_settings(base).request_log is True
+    assert load_settings({**base, "REQUEST_LOG": "0"}).request_log is False
+    assert load_settings({**base, "REQUEST_LOG": " 1 "}).request_log is True
+    for typo in ("fasle", "O", "off", "true"):   # 오타가 조용히 켜짐·꺼짐이 되지 않게
+        with pytest.raises(ConfigError):
+            load_settings({**base, "REQUEST_LOG": typo})

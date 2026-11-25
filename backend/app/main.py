@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .core.config import settings
 from .core.envelope import (
     api_error_handler,
     http_error_handler,
@@ -16,12 +17,10 @@ from .core.envelope import (
     unhandled_error_handler,
     validation_error_handler,
 )
-from .core.config import settings
 from .core.errors import ApiError
-from .core.request_log import install as install_request_log
-from .core.request_log import request_log_middleware
 from .core.kakao import close_client as close_kakao_client
 from .core.ocr import start_ocr, stop_ocr
+from .core.request_log import install_request_log, request_log_middleware
 from .realtime import router as realtime
 from .routers import auth, courses, events, friends, home, progress, runs, users, verification
 
