@@ -30,3 +30,4 @@
 
 ## 진행
 - 11/25 Windows(민재): 기본값 0.40, 테스트 경계 바꿈(`test_compare_edges` 40%·−40%·11/21형 −18.1%, 오차 초과 사진 d3600 → d5100·d2100, `test_growth` d3800 → d5100). pytest 436 통과·2 건너뜀. `.env.example`·`backend/README.md`·0038 줄 갱신. 운영은 develop 배포로 반영(compose가 `VERIFY_DISTANCE_TOLERANCE`를 넘기지 않아 `.env`만으로는 안 바뀜)
+- 11/25 #133 머지 → 오라클 `update.sh develop`(38103a5), 서버 안에서 `settings.verification.distance_tolerance` = 0.4 확인, `/v1/agreements` 200. 노션 Q-01·상준 미리보기 E-15 "허용 오차(5%)" 문구는 상준·지환에게 알림(남의 문서라 안 고침)
