@@ -10,6 +10,7 @@
 - BOT_FILL_TO·BOT_PACES_KMH: 페이스 봇(계획 0040). 없으면 아래 BotPolicy 기본값, BOT_FILL_TO=0이면 봇 없음
 - FRIEND_ADD_FAIL_LIMIT·FRIEND_ADD_FAIL_WINDOW_S: 틀린 친구 코드 제한(계획 0044). 없으면 아래 FriendPolicy 기본값
 - REQUEST_LOG: 요청마다 처리 시간·DB 쿼리 수를 한 줄씩(계획 0070). 기본 켜짐, 0이면 끔
+- ADMISSION_LIMIT·ADMISSION_WAIT_S: 동시 처리 번호표 수(0이면 끔)·기다리는 상한 초(계획 0071). DB_POOL_TIMEOUT_S: 연결 기다림 상한
 """
 import logging
 import os
@@ -57,6 +58,39 @@ class VerificationPolicy:
     ocr_timeout_s: float = 15.0
 
 
+@dataclass(frozen=True)
+class AdmissionPolicy:
+    """동시 처리 제한(계획 0071, app/core/admission.py). 번호표는 DB 연결 15개(풀 5 + 넘침 10) 중 실시간 WebSocket 몫 3을 뺀 12
+    (가설: 실시간은 입장·퇴장 때만 짧게 씀). 0071 측정으로 10·12·15를 비교해 정함. 0이면 끔."""
+
+    limit: int = 12
+    wait_s: float = 2.0            # 번호표를 이만큼 못 받으면 503. 받아 둔 요청이 쌓이는 상한
+    db_pool_timeout_s: float = 5.0  # 연결 풀 기다림 상한(SQLAlchemy 기본 30초). 번호표가 있으면 거의 안 기다림
+
+
+ADMISSION_ENV = (
+    ("ADMISSION_LIMIT", "limit", int, 0, 200),
+    ("ADMISSION_WAIT_S", "wait_s", float, 0.1, 30.0),
+    ("DB_POOL_TIMEOUT_S", "db_pool_timeout_s", float, 1.0, 60.0),
+)
+
+
+def _load_ranged(env: Mapping[str, str], table, policy_cls):
+    values = {}
+    for name, field, cast, lo, hi in table:
+        raw = env.get(name, "").strip()
+        if not raw:
+            continue
+        try:
+            v = cast(raw)
+        except ValueError:
+            raise ConfigError(f"{name}는 {'정수' if cast is int else '숫자'}여야 합니다(지금: {raw!r}).") from None
+        if not lo <= v <= hi:
+            raise ConfigError(f"{name}는 {lo}에서 {hi} 사이여야 합니다(지금: {v}).")
+        values[field] = v
+    return policy_cls(**values)
+
+
 # (환경 변수, 필드, 형, 최소, 최대). 시간 최소는 0 이하·최대는 0 이상이라 둘의 순서가 뒤집힐 수 없음
 VERIFY_ENV = (
     ("VERIFY_DISTANCE_TOLERANCE", "distance_tolerance", float, 0.01, 1.0),
@@ -70,19 +104,7 @@ VERIFY_ENV = (
 
 
 def load_verification(env: Mapping[str, str]) -> VerificationPolicy:
-    values = {}
-    for name, field, cast, lo, hi in VERIFY_ENV:
-        raw = env.get(name, "").strip()
-        if not raw:
-            continue
-        try:
-            v = cast(raw)
-        except ValueError:
-            raise ConfigError(f"{name}는 {'정수' if cast is int else '숫자'}여야 합니다(지금: {raw!r}).") from None
-        if not lo <= v <= hi:
-            raise ConfigError(f"{name}는 {lo}에서 {hi} 사이여야 합니다(지금: {v}).")
-        values[field] = v
-    return VerificationPolicy(**values)
+    return _load_ranged(env, VERIFY_ENV, VerificationPolicy)
 
 
 @dataclass(frozen=True)
@@ -185,6 +207,7 @@ class Settings:
     max_sessions_per_user: int = 5  # 살아 있는 로그인(기기) 수 상한
     ocr_engine: str = "none"
     request_log: bool = True  # 요청마다 처리 시간 한 줄(계획 0070, app/core/request_log.py). REQUEST_LOG=0이면 끔
+    admission: AdmissionPolicy = AdmissionPolicy()
     verification: VerificationPolicy = VerificationPolicy()
     bots: BotPolicy = BotPolicy()
     friends: FriendPolicy = FriendPolicy()
@@ -237,6 +260,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         kakao_admin_key=env.get("KAKAO_ADMIN_KEY", "").strip() or None,
         ocr_engine=ocr_engine,
         request_log=_load_switch(env, "REQUEST_LOG", default=True),
+        admission=_load_ranged(env, ADMISSION_ENV, AdmissionPolicy),
         verification=load_verification(env),
         bots=load_bots(env),
         friends=load_friends(env),

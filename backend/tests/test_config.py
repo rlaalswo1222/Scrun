@@ -89,3 +89,15 @@ def test_request_log_switch():
     for typo in ("fasle", "O", "off", "true"):   # 오타가 조용히 켜짐·꺼짐이 되지 않게
         with pytest.raises(ConfigError):
             load_settings({**base, "REQUEST_LOG": typo})
+
+
+def test_admission_settings():
+    base = {"JWT_SECRET": GOOD_SECRET, "KAKAO_MODE": "fake"}
+    a = load_settings(base).admission
+    assert (a.limit, a.wait_s, a.db_pool_timeout_s) == (12, 2.0, 5.0)
+    a = load_settings({**base, "ADMISSION_LIMIT": "0", "ADMISSION_WAIT_S": "0.5", "DB_POOL_TIMEOUT_S": "10"}).admission
+    assert (a.limit, a.wait_s, a.db_pool_timeout_s) == (0, 0.5, 10.0)
+    for name, bad in (("ADMISSION_LIMIT", "-1"), ("ADMISSION_LIMIT", "12.5"), ("ADMISSION_WAIT_S", "0"),
+                      ("ADMISSION_WAIT_S", "abc"), ("DB_POOL_TIMEOUT_S", "120")):
+        with pytest.raises(ConfigError):
+            load_settings({**base, name: bad})

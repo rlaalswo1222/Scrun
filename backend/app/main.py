@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .core.admission import admission
 from .core.config import settings
 from .core.envelope import (
     api_error_handler,
@@ -43,6 +44,9 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="SCRUN API", version="0.1.0-stub", description=DESCRIPTION, lifespan=lifespan)
 
+# 미들웨어는 나중에 붙인 것이 바깥: 요청 ID → 요청 로그 → 번호표(0071) → 라우터. 요청 로그가 번호표 기다림·503도 남김
+if settings.admission.limit:
+    app.middleware("http")(admission)
 if settings.request_log:   # 요청마다 처리 시간 한 줄(계획 0070). 요청 ID 미들웨어 안쪽이라 rid를 같이 남김
     install_request_log()
     app.middleware("http")(request_log_middleware)

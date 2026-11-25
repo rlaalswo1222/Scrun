@@ -33,6 +33,8 @@ services:
       KAKAO_MODE: fake
       OCR_ENGINE: onnx
       VERIFY_OCR_TIMEOUT_S: 15
+      ADMISSION_LIMIT: ${ADMISSION_LIMIT:-12}   # 계획 0071: 번호표 수 비교(.env.perf 또는 명령 앞에서 바꿈)
+      ADMISSION_WAIT_S: ${ADMISSION_WAIT_S:-2}
     ports:
       - "8000:8000"
     cpuset: "0,1"

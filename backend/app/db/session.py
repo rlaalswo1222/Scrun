@@ -26,7 +26,9 @@ class _TimedQueuePool(QueuePool):
             add_pool_wait(time.perf_counter() - t0)
 
 
-engine = create_engine(settings.database_url, pool_pre_ping=True, poolclass=_TimedQueuePool)
+# 연결 기다림 상한은 기본 30초 → 몇 초(계획 0071). 번호표(admission)가 연결 수 안으로 막아 평소엔 거의 안 기다림
+engine = create_engine(settings.database_url, pool_pre_ping=True, poolclass=_TimedQueuePool,
+                       pool_timeout=settings.admission.db_pool_timeout_s)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 

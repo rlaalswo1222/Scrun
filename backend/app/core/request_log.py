@@ -1,10 +1,11 @@
 """요청마다 서버 안에서 걸린 시간을 JSON 한 줄로 남긴다(계획 0070 관측).
 
     {"rid": "req_…", "method": "GET", "path": "/v1/runs/{runId}", "status": 200, "ms": 12.4,
-     "db_n": 3, "db_ms": 8.1, "pool_ms": 0.2}
+     "db_n": 3, "db_ms": 8.1, "pool_ms": 0.2, "queue_ms": 0.0}
 
 - ms: 미들웨어에 들어와서 응답 머리가 나갈 때까지(네트워크 왕복은 빠짐). 스트리밍 본문을 내보내는 시간·그동안의 쿼리는 빠짐
 - db_n·db_ms: 그 안에서 DB에 보낸 쿼리 수·시간(실패한 쿼리 포함). pool_ms: 연결 풀에서 연결을 받기까지 기다린 시간(app/db/session.py의 풀이 잼)
+- queue_ms: 입구 번호표를 기다린 시간(app/core/admission.py, 계획 0071). 못 받아 503이면 path는 "-"(라우팅 전)
 - path는 라우트 틀(`/v1/runs/{runId}`)이라 기록 ID·사용자 ID가 남지 않는다. 라우트에 안 맞은 요청은 "-"
 - 남기지 않는 것: WebSocket(/v1/realtime, HTTP 미들웨어를 안 지남), 헬스체크(헤더 X-Scrun-Probe: 1, compose healthcheck)
 - 서버 로그(운영은 journald)로 본다: `journalctl CONTAINER_NAME=scrun-api-1 --since … | grep '"path"'`
@@ -26,13 +27,14 @@ PROBE_HEADER = "x-scrun-probe"
 
 
 class _RequestStats:
-    __slots__ = ("started", "db_n", "db_ms", "pool_ms")
+    __slots__ = ("started", "db_n", "db_ms", "pool_ms", "queue_ms")
 
     def __init__(self) -> None:
         self.started = time.perf_counter()
         self.db_n = 0
         self.db_ms = 0.0
         self.pool_ms = 0.0
+        self.queue_ms = 0.0
 
     def elapsed_ms(self) -> float:
         return (time.perf_counter() - self.started) * 1000
@@ -70,6 +72,12 @@ def add_pool_wait(seconds: float) -> None:
         stats.pool_ms += seconds * 1000
 
 
+def add_queue_wait(seconds: float) -> None:
+    stats = _request_stats.get()
+    if stats is not None:
+        stats.queue_ms += seconds * 1000
+
+
 def install_request_log() -> None:
     """모든 엔진(운영·테스트)의 쿼리 시간을 잰다. 로그는 이 로거만 stdout으로(다른 로거 설정과 상관없이)."""
     if not event.contains(Engine, "before_cursor_execute", _before_cursor_execute):
@@ -99,6 +107,7 @@ def _emit(request: Request, status: int, stats: _RequestStats) -> None:
         "db_n": stats.db_n,
         "db_ms": round(stats.db_ms, 1),
         "pool_ms": round(stats.pool_ms, 1),
+        "queue_ms": round(stats.queue_ms, 1),
     }
     log.info(json.dumps(line, ensure_ascii=False, separators=(",", ":")))
 
