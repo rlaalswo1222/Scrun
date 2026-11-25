@@ -3,10 +3,11 @@
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만 하고 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/api/`, `docs/adr/`, `docs/plans/`)에, Claude 작업 요령(Figma·에디터·노션·HTML·Windows 줄바꿈)은 `docs/claude_howto.md`에 있다. 옛 전체본: `docs/log/HANDOFF_minjae_20261119.md`(11/19 밤 정리 전: 그날 PR별 자세한 기록·지난 팀원 전달 전부), `_20261118.md`(11/18 정리 전, 끝난 머지·결정의 자세한 기록)
 
 ## 지금 (11/26 새벽, 세션 끝)
-- **계획 0071 "몰려도 멈추지 않게" 구현·측정 끝, 판정 모두 통과(PR #141 → 머지·운영 배포: 이 인수인계가 들어간 머지 뒤 배포했으면 아래 "배포 확인", 못 했으면 그대로 남음)**: 순수 ASGI 번호표 12장(2초 못 받으면 503 `BUSY` + `Retry-After: 1`), `queue_ms`, 풀 기다림 5초(넘으면 503 `DB_BUSY`), 헬스체크 우회는 루프백만(Caddyfile이 헤더 지움). 결과: **200명 실패 21.7% → 0%, 처리 12 → 185/초, 회복 564초 → 13–14초**, 100명 p95 +1.9%·처리량 −0.9%(10% 안), S3 100명 3번 성공 → `docs/perf/README.md`, 그림 `docs/perf/img/0071_before_after.png`
+- **계획 0071 "몰려도 멈추지 않게" 구현·측정 끝, 판정 모두 통과(PR #141 머지, **오라클 배포 끝 170f2fc**: Caddy reload 함, 운영 로그 `queue_ms` 0.1 ms 확인, 설정 번호표 12)**: 순수 ASGI 번호표 12장(2초 못 받으면 503 `BUSY` + `Retry-After: 1`), `queue_ms`, 풀 기다림 5초(넘으면 503 `DB_BUSY`), 헬스체크 우회는 루프백만(Caddyfile이 헤더 지움). 결과: **200명 실패 21.7% → 0%, 처리 12 → 185/초, 회복 564초 → 13–14초**, 100명 p95 +1.9%·처리량 −0.9%(10% 안), S3 100명 3번 성공 → `docs/perf/README.md`, 그림 `docs/perf/img/0071_before_after.png`
   - 첫 측정은 멈춘 스크립트가 살아남아 겹쳐 무효(`data/perf/20261125/invalid_0071_overlap/`). 측정 스크립트에 겹침·번호표 확인을 넣고 다시 잼
   - **배포 때**: `update.sh develop` 뒤 `docker compose -f docker-compose.server.yml exec caddy caddy reload --config /etc/caddy/Caddyfile`(Caddyfile 바뀜) → 운영 로그 `queue_ms` 확인. **배포 확인**: `ssh … 'cd ~/scrun && git log --oneline -1'`이 #141 머지 커밋이고 `docker logs --tail 5 scrun-api-1 | grep queue_ms`가 찍히면 끝
-  - 11/26 새벽 GitHub API가 502·GraphQL 오류를 내 머지가 몇 번 실패함 → 새 세션에서 `gh pr view 141 --json state`로 먼저 확인
+  - 11/26 새벽 GitHub 일부 장애(502·GraphQL 오류)로 머지가 몇 번 실패했다가 됨
+  - **커밋 규칙**: 이번 세션 커밋 8개가 "한 커밋 한 문제"를 어김(문서 커밋에 compose·k6 코드, Feat에 Fix 섞음, `docs/git_convention.md`). 이미 develop이라 그대로 둠 → 앞으로 유형별로 나눠 커밋
   - 집 PC 시험 서버: `feat/admission-control` ffd9289, 번호표 12, 켜져 있음(안 쓸 땐 stop)
   - 리뷰에서 남긴 것: 앱 `VerifyScreen`이 503을 모두 "계기판을 읽는 곳이 바빠요"로 보여 줌 → `details.reason` BUSY·DB_BUSY면 일반 문구로(지환과), 실시간 몫 3은 보장이 아니라 여유(S3로 확인)
   - **운영 배포 위험**: 이미지 빌드가 OCR 모델을 modelscope.cn에서 받음 → 11/25 PC 빌드에서 DNS 실패 2번(다시 하면 됨). 막히면 운영 배포 실패 → 모델을 GitHub Release 등으로 옮기기(짧은 계획 먼저)
@@ -74,7 +75,7 @@
 - **로컬에만(커밋 안 함)**: `Lm_LampGlass.mat`(`_EMISSION` 빠짐 → 섬 등대 빛이 꺼짐, 커밋하지 말고 되돌릴지 결정), `.claude/settings.json`, 지환 실명 파일 2개(`data/runs/20261029-004604/note.md`·`docs/speed/airpods_flight.md`, 동의 전엔 커밋 안 함), 계획 0032 홈 초안(0057이 대신함 → 지워도 됨)·로컬 브랜치 `feat/home-figma`, 미팅 자료·`midterm_feedback.md`·중간발표 폴더(**git에 안 올림 = 민재 결정**), 연구 문서 2개, 와이어프레임 초안. 브랜치 `fix/dev-recalibrate`(PR 안 엶) → 올릴지 결정. 머지한 로컬·원격 브랜치 `feat/speed-stride-model`·`feat/space-onboarding`·`feat/space-home-course`는 지워도 됨
 
 ## 다음 (새 세션은 여기부터)
-- **11/26 이어서 (먼저)**: ① #141 머지·운영 배포·Caddy reload·`queue_ms` 확인(안 됐으면) ② **11/27 교수님 미팅 + 4차 보고서**: 성능 결과(`docs/perf/README.md` 0070 기준선·0071 전후 표, 그림 `0071_before_after.png`, "집 PC 시험 서버·가짜 데이터" 명시) ③ OCR 모델 받기 안정화(modelscope 의존, 짧은 계획) ④ 앱 인증 화면 503 `BUSY` 문구(지환) ⑤ 0072 OCR 비동기 큐 계획(지환) ⑥ 맵 정원 시뮬레이션(상준) ⑦ 아바타 걸음 수 계획(상준) ⑧ 로딩 개선 계획 ⑨ 실시간 `serverTime` 보정 ⑩ 지환·상준에게 인증 40% 알리기
+- **11/26 이어서 (먼저)**: ① (끝: #141 머지·배포) ② **11/27 교수님 미팅 + 4차 보고서**: 성능 결과(`docs/perf/README.md` 0070 기준선·0071 전후 표, 그림 `0071_before_after.png`, "집 PC 시험 서버·가짜 데이터" 명시) ③ OCR 모델 받기 안정화(modelscope 의존, 짧은 계획) ④ 앱 인증 화면 503 `BUSY` 문구(지환) ⑤ 0072 OCR 비동기 큐 계획(지환) ⑥ 맵 정원 시뮬레이션(상준) ⑦ 아바타 걸음 수 계획(상준) ⑧ 로딩 개선 계획 ⑨ 실시간 `serverTime` 보정 ⑩ 지환·상준에게 인증 40% 알리기
 - **11/20 낮 팀 카톡 결정**
   - **맵·아바타가 화면보다 먼저**(민재). **상준이 맵 + 아바타를 같이 맡음**(가진 아바타를 Blender에서 다듬어 맵에 넣고 맵 최적화까지, 나누면 일이 커져서). 상준이 폰 실기기로 테스트·최적화 평가 뒤 **오늘(11/20) 안에 민재에게 넘김** → 민재가 앱에서 실제 실행해 **성능 측정**
   - 맵은 **1개, 안에 테마 5개**. 시연은 하나만 보여 주면 됨. 실사 영상 3D 복원은 안 함(최하위)
