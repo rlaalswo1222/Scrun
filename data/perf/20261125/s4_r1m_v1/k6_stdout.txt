@@ -1,0 +1,15 @@
+S4 계기판 인증 VUS=1 반복 41
+login            p50 15.7  p95 15.7  p99 15.7 ms  ()
+entry            p50 18.7  p95 29.1  p99 150.2 ms  ()
+run_start        p50 11.0  p95 18.8  p99 41.7 ms  ()
+finish           p50 11.4  p95 15.3  p99 16.3 ms  ()
+photo            p50 1102.8  p95 1604.4  p99 1658.4 ms  ()
+photo_outcome{outcome:CONFIRM_REQUIRED} {"count":41,"rate":0.44748983762584577}
+photo_outcome{outcome:RETAKE_REQUIRED} {"count":0,"rate":0}
+photo_outcome{outcome:UNVERIFIED} {"count":0,"rate":0}
+photo_outcome{outcome:VERIFIED} {"count":0,"rate":0}
+photo_outcome{outcome:HTTP_503} {"count":0,"rate":0}
+photo_outcome{outcome:HTTP_400} {"count":0,"rate":0}
+photo_outcome{outcome:HTTP_409} {"count":0,"rate":0}
+photo_outcome{outcome:HTTP_500} {"count":0,"rate":0}
+실패율 0.00%  초당 요청 1.8

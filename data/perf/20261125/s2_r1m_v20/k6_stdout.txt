@@ -1,0 +1,8 @@
+S2 달리기 한 번 VUS=20 SAMPLES=5 반복 619
+login            p50 12.5  p95 20.2  p99 20.9 ms  ()
+entry            p50 10.5  p95 17.5  p99 23.9 ms  ()
+run_start        p50 10.9  p95 17.7  p99 24.1 ms  ()
+samples          p50 9.8  p95 16.9  p99 26.6 ms  ()
+finish           p50 11.7  p95 20.9  p99 28.3 ms  ()
+skip             p50 12.9  p95 21.7  p99 28.2 ms  ()
+실패율 0.00%  초당 요청 34.5

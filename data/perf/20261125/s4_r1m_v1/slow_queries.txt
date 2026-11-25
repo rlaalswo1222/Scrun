@@ -1,0 +1,10 @@
+9.6 ms | 41 calls | 0.23 ms avg | INSERT INTO runs (id, user_id, client_run_id, course_id, map_instance_id, goal_type, goal_value, status, started_at, shared) VALUES ($1::VARCHAR, $2::VARCHAR, $
+7.0 ms | 246 calls | 0.03 ms avg | SELECT users.id, users.nickname, users.height_cm, users.weight_kg, users.timezone, users.friend_code, users.feed_share_default, users.updated_at, users.created_
+5.6 ms | 41 calls | 0.14 ms avg | INSERT INTO verifications (id, run_id, method, read_distance_m, read_duration_s, status, reason, comparison, photo_hashes, confirmed) VALUES ($1::VARCHAR, $2::V
+4.3 ms | 82 calls | 0.05 ms avg | SELECT verifications.id, verifications.run_id, verifications.method, verifications.read_distance_m, verifications.read_duration_s, verifications.status, verific
+3.7 ms | 41 calls | 0.09 ms avg | UPDATE runs SET status=$1::VARCHAR, ended_at=$2::TIMESTAMP WITH TIME ZONE, sensor_distance_m=$3::INTEGER, sensor_duration_s=$4::INTEGER, official_source=$5::VAR
+3.1 ms | 82 calls | 0.04 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+2.6 ms | 41 calls | 0.06 ms avg | INSERT INTO course_entries (user_id, course_id) VALUES ($1::VARCHAR, $2::VARCHAR) ON CONFLICT (user_id) DO UPDATE SET course_id = $3::VARCHAR, entered_at = now(
+2.6 ms | 82 calls | 0.03 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+1.9 ms | 41 calls | 0.05 ms avg | UPDATE runs SET status=$1::VARCHAR, unverified_reason=$2::VARCHAR, updated_at=now() WHERE runs.status = $3::VARCHAR AND coalesce(runs.verification_deadline, run
+1.9 ms | 82 calls | 0.02 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende

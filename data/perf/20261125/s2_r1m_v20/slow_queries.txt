@@ -1,0 +1,10 @@
+270.4 ms | 3095 calls | 0.09 ms avg | INSERT INTO run_samples (run_id, offset_s, interval_s, speeds_kmh) VALUES ($1::VARCHAR, $2, $3, $4::REAL[]) ON CONFLICT (run_id, offset_s) DO UPDATE SET interva
+242.8 ms | 3095 calls | 0.08 ms avg | UPDATE runs SET updated_at=now() WHERE runs.id = $1::VARCHAR
+168.5 ms | 5571 calls | 0.03 ms avg | SELECT users.id, users.nickname, users.height_cm, users.weight_kg, users.timezone, users.friend_code, users.feed_share_default, users.updated_at, users.created_
+147.9 ms | 4333 calls | 0.03 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+90.8 ms | 619 calls | 0.15 ms avg | INSERT INTO runs (id, user_id, client_run_id, course_id, map_instance_id, goal_type, goal_value, status, started_at, shared) VALUES ($1::VARCHAR, $2::VARCHAR, $
+75.7 ms | 4333 calls | 0.02 ms avg | SELECT $2 FROM ONLY "public"."runs" x WHERE "id" OPERATOR(pg_catalog.=) $1 FOR KEY SHARE OF x
+54.2 ms | 619 calls | 0.09 ms avg | INSERT INTO verifications (id, run_id, method, read_distance_m, read_duration_s, status, reason, comparison, photo_hashes, confirmed) VALUES ($1::VARCHAR, $2::V
+50.4 ms | 619 calls | 0.08 ms avg | UPDATE runs SET status=$1::VARCHAR, unverified_reason=$2::VARCHAR, updated_at=now() WHERE runs.id = $3::VARCHAR
+50.0 ms | 619 calls | 0.08 ms avg | UPDATE runs SET status=$1::VARCHAR, ended_at=$2::TIMESTAMP WITH TIME ZONE, sensor_distance_m=$3::INTEGER, sensor_duration_s=$4::INTEGER, official_source=$5::VAR
+39.5 ms | 619 calls | 0.06 ms avg | INSERT INTO run_rewards (run_id, xp_before_m, xp_after_m, level_before, level_after, outfit_stage_after, impacts_unlocked, weekly_counted, status, weekly_done_c

@@ -1,0 +1,5 @@
+이름: smoke_runner
+시각: 2026-11-25T18:23:24+09:00
+스크립트: backend/perf/k6/s1_open_app.js -e VUS=5 -e USERS=10 -e DURATION=15s
+서버 커밋: ff7d050 Feat: 부하 시험 가짜 데이터 seed_load·k6 S1 앱 켜기(계획 0070)
+데이터: 10 users, 1000 runs, 34361 samples, 24 MB
