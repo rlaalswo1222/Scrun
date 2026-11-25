@@ -60,12 +60,19 @@ class VerificationPolicy:
 
 @dataclass(frozen=True)
 class AdmissionPolicy:
-    """동시 처리 제한(계획 0071, app/core/admission.py). 번호표는 DB 연결 15개(풀 5 + 넘침 10) 중 실시간 WebSocket 몫 3을 뺀 12
-    (가설: 실시간은 입장·퇴장 때만 짧게 씀). 0071 측정으로 10·12·15를 비교해 정함. 0이면 끔."""
+    """동시 처리 제한(계획 0071, app/core/admission.py). 번호표는 DB 연결 합계(db_pool_total) 중 실시간 WebSocket 몫 3을 뺀 12
+    (가설: 실시간은 입장·퇴장 때만 짧게 씀). 0071 측정으로 10·12·15를 비교해 정함. 0이면 끔. 연결 합계보다 크면 ConfigError
+    (번호표가 연결보다 많으면 연결을 기다리는 요청이 다시 생김)."""
 
     limit: int = 12
     wait_s: float = 2.0            # 번호표를 이만큼 못 받으면 503. 받아 둔 요청이 쌓이는 상한
-    db_pool_timeout_s: float = 5.0  # 연결 풀 기다림 상한(SQLAlchemy 기본 30초). 번호표가 있으면 거의 안 기다림
+    db_pool_timeout_s: float = 5.0  # 연결 풀 기다림 상한(SQLAlchemy 기본 30초). 넘으면 503 DB_BUSY
+    db_pool_size: int = 5           # 연결 풀(app/db/session.py). 합계 = size + overflow = 15
+    db_pool_overflow: int = 10
+
+    @property
+    def db_pool_total(self) -> int:
+        return self.db_pool_size + self.db_pool_overflow
 
 
 ADMISSION_ENV = (
@@ -89,6 +96,13 @@ def _load_ranged(env: Mapping[str, str], table, policy_cls):
             raise ConfigError(f"{name}는 {lo}에서 {hi} 사이여야 합니다(지금: {v}).")
         values[field] = v
     return policy_cls(**values)
+
+
+def _load_admission(env: Mapping[str, str]) -> AdmissionPolicy:
+    policy = _load_ranged(env, ADMISSION_ENV, AdmissionPolicy)
+    if policy.limit > policy.db_pool_total:
+        raise ConfigError(f"ADMISSION_LIMIT({policy.limit})는 DB 연결 합계({policy.db_pool_total}) 이하여야 합니다.")
+    return policy
 
 
 # (환경 변수, 필드, 형, 최소, 최대). 시간 최소는 0 이하·최대는 0 이상이라 둘의 순서가 뒤집힐 수 없음
@@ -260,7 +274,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         kakao_admin_key=env.get("KAKAO_ADMIN_KEY", "").strip() or None,
         ocr_engine=ocr_engine,
         request_log=_load_switch(env, "REQUEST_LOG", default=True),
-        admission=_load_ranged(env, ADMISSION_ENV, AdmissionPolicy),
+        admission=_load_admission(env),
         verification=load_verification(env),
         bots=load_bots(env),
         friends=load_friends(env),

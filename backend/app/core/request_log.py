@@ -7,7 +7,7 @@
 - db_n·db_ms: 그 안에서 DB에 보낸 쿼리 수·시간(실패한 쿼리 포함). pool_ms: 연결 풀에서 연결을 받기까지 기다린 시간(app/db/session.py의 풀이 잼)
 - queue_ms: 입구 번호표를 기다린 시간(app/core/admission.py, 계획 0071). 못 받아 503이면 path는 "-"(라우팅 전)
 - path는 라우트 틀(`/v1/runs/{runId}`)이라 기록 ID·사용자 ID가 남지 않는다. 라우트에 안 맞은 요청은 "-"
-- 남기지 않는 것: WebSocket(/v1/realtime, HTTP 미들웨어를 안 지남), 헬스체크(헤더 X-Scrun-Probe: 1, compose healthcheck)
+- 남기지 않는 것: WebSocket(/v1/realtime, HTTP 미들웨어를 안 지남), 컨테이너 안 헬스체크(루프백 + X-Scrun-Probe: 1, is_local_probe)
 - 서버 로그(운영은 journald)로 본다: `journalctl CONTAINER_NAME=scrun-api-1 --since … | grep '"path"'`
 - 끄기: 환경 변수 REQUEST_LOG=0
 """
@@ -23,7 +23,17 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
 log = logging.getLogger("scrun.request")
-PROBE_HEADER = "x-scrun-probe"
+PROBE_HEADER = b"x-scrun-probe"
+LOOPBACK = {"127.0.0.1", "::1"}
+
+
+def is_local_probe(scope) -> bool:
+    """컨테이너 안 헬스체크(compose healthcheck가 localhost로 X-Scrun-Probe: 1). 밖에서 붙인 헤더는 무시(Caddy도 지움):
+    헤더만 보면 누구나 번호표·요청 로그를 건너뜀(0071 리뷰). uvicorn --proxy-headers라 Caddy를 거친 요청의 client는 실제 IP"""
+    client = scope.get("client")
+    if not client or client[0] not in LOOPBACK:
+        return False
+    return any(k == PROBE_HEADER and v == b"1" for k, v in scope.get("headers", ()))
 
 
 class _RequestStats:
@@ -113,7 +123,7 @@ def _emit(request: Request, status: int, stats: _RequestStats) -> None:
 
 
 async def request_log_middleware(request: Request, call_next):
-    if request.headers.get(PROBE_HEADER) == "1":   # 컨테이너 헬스체크(10초마다)는 기준선을 흐리므로 남기지 않음
+    if is_local_probe(request.scope):   # 컨테이너 헬스체크(10초마다)는 기준선을 흐리므로 남기지 않음
         return await call_next(request)
     stats = _RequestStats()
     token = _request_stats.set(stats)

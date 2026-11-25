@@ -3,9 +3,12 @@ import asyncio
 
 import httpx
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+from sqlalchemy.exc import TimeoutError as PoolTimeoutError
 
 from app.core import request_log as rl
-from app.core.admission import Admission
+from app.core.admission import AdmissionMiddleware
+from app.core.envelope import pool_timeout_handler
 
 
 def _app(limit: int, wait_s: float, hold: asyncio.Event) -> FastAPI:
@@ -16,7 +19,7 @@ def _app(limit: int, wait_s: float, hold: asyncio.Event) -> FastAPI:
         await hold.wait()
         return {"ok": True}
 
-    app.middleware("http")(Admission(limit, wait_s))
+    app.add_middleware(AdmissionMiddleware, limit=limit, wait_s=wait_s)
     return app
 
 
@@ -78,15 +81,64 @@ def test_probe_bypasses_the_gate():
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
             first = asyncio.create_task(c.get("/slow"))
             await asyncio.sleep(0.05)
-            probe = await c.get("/health", headers={"X-Scrun-Probe": "1"})   # 번호표가 없어도 바로
+            probe = await c.get("/health", headers={"X-Scrun-Probe": "1"})   # 루프백(127.0.0.1)이면 번호표 없이 바로
             busy = await c.get("/health")
+            outside = httpx.AsyncClient(transport=httpx.ASGITransport(app=app, client=("203.0.113.5", 4000)),
+                                        base_url="http://t")
+            async with outside:
+                spoofed = await outside.get("/health", headers={"X-Scrun-Probe": "1"})   # 밖에서 붙인 헤더는 무시
             hold.set()
             await first
-            return probe, busy
+            return probe, busy, spoofed
 
-    probe, busy = _run(go())
+    probe, busy, spoofed = _run(go())
     assert probe.status_code == 200
     assert busy.status_code == 503
+    assert spoofed.status_code == 503
+
+
+def test_ticket_is_held_until_the_body_is_sent():
+    """번호표는 응답 본문까지 다 보낸 뒤 반납(그 전에 반납하면 연결을 쥔 요청이 번호표 밖에 생김, 0071 리뷰)."""
+    async def go():
+        hold = asyncio.Event()
+        app = FastAPI()
+
+        @app.get("/stream")
+        async def stream():
+            async def body():
+                yield b"head"
+                await hold.wait()   # 머리는 나갔지만 본문이 아직
+                yield b"tail"
+            return StreamingResponse(body())
+
+        app.add_middleware(AdmissionMiddleware, limit=1, wait_s=0.2)
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+            first = asyncio.create_task(c.get("/stream"))
+            await asyncio.sleep(0.05)
+            second = await c.get("/stream")
+            hold.set()
+            return await first, second
+
+    first, second = _run(go())
+    assert first.status_code == 200 and first.content == b"headtail"
+    assert second.status_code == 503
+
+
+def test_pool_timeout_is_503_not_500():
+    async def go():
+        app = FastAPI()
+        app.add_exception_handler(PoolTimeoutError, pool_timeout_handler)
+
+        @app.get("/db")
+        async def db():
+            raise PoolTimeoutError("QueuePool limit reached")
+
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+            return await c.get("/db")
+
+    r = _run(go())
+    assert r.status_code == 503 and r.headers["Retry-After"] == "1"
+    assert r.json()["error"]["details"] == {"reason": "DB_BUSY"}
 
 
 def test_ticket_is_returned_when_route_fails():
@@ -101,7 +153,7 @@ def test_ticket_is_returned_when_route_fails():
         async def ok():
             return {"ok": True}
 
-        app.middleware("http")(Admission(1, 0.2))
+        app.add_middleware(AdmissionMiddleware, limit=1, wait_s=0.2)
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app, raise_app_exceptions=False),
                                      base_url="http://t") as c:
             failed = await c.get("/boom")

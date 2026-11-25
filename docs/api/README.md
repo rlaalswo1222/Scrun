@@ -112,7 +112,7 @@
 | `FRIEND_NOT_RUNNING` | 409 | 같이 달리기 전에 친구가 섬을 나갔거나 다른 코스로 옮김(잠깐 멈춘 친구는 같이) → 그 코스로 일반 입장 | D-21 | |
 | `RATE_LIMITED` | 429 | 너무 자주(없는 친구 코드를 10분에 10번 등, 계획 0044) | G-08, I-08 | |
 | `INTERNAL_ERROR` | 500 | 서버 오류 | I-08 | |
-| `SERVICE_UNAVAILABLE` | 503 | 점검·과부하. 계기판 사진은 OCR이 밀림·오류·시간 초과(시간 초과는 `details.reason: "OCR_TIMEOUT"`, 계획 0055) | I-08, 계기판 사진은 E-05 안 안내 | |
+| `SERVICE_UNAVAILABLE` | 503 | 점검·과부하. 서버가 바쁨은 `details.reason: "BUSY"`(동시 처리 번호표를 2초 안에 못 받음)·`"DB_BUSY"`(DB 연결 기다림 초과), 둘 다 `Retry-After: 1` 헤더(계획 0071). 계기판 사진은 OCR이 밀림·오류·시간 초과(시간 초과는 `details.reason: "OCR_TIMEOUT"`, 계획 0055) | I-08, 계기판 사진은 E-05 안 안내 | |
 
 (I-07 네트워크 없음은 서버 응답이 없는 경우라 앱이 처리)
 

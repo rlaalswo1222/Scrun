@@ -50,10 +50,15 @@ def test_unmatched_path_and_no_db(db_client, lines):
     assert lines[-1]["path"] == "-" and lines[-1]["status"] == 404 and lines[-1]["db_n"] == 0
 
 
-def test_probe_header_is_not_logged(db_client, lines):
-    r = db_client.get("/v1/agreements", headers={"X-Scrun-Probe": "1"})   # compose 헬스체크
+def test_probe_header_is_not_logged_only_from_loopback(db_client, lines):
+    from fastapi.testclient import TestClient
+    from app.main import app
+    local = TestClient(app, client=("127.0.0.1", 50000))
+    r = local.get("/v1/agreements", headers={"X-Scrun-Probe": "1"})   # compose 헬스체크(컨테이너 안)
     assert r.status_code == 200
     assert lines == []
+    r = db_client.get("/v1/agreements", headers={"X-Scrun-Probe": "1"})   # 밖에서 붙인 헤더는 무시하고 남김
+    assert r.status_code == 200 and len(lines) == 1
 
 
 def test_failed_query_is_counted(test_db):

@@ -98,6 +98,7 @@ def test_admission_settings():
     a = load_settings({**base, "ADMISSION_LIMIT": "0", "ADMISSION_WAIT_S": "0.5", "DB_POOL_TIMEOUT_S": "10"}).admission
     assert (a.limit, a.wait_s, a.db_pool_timeout_s) == (0, 0.5, 10.0)
     for name, bad in (("ADMISSION_LIMIT", "-1"), ("ADMISSION_LIMIT", "12.5"), ("ADMISSION_WAIT_S", "0"),
-                      ("ADMISSION_WAIT_S", "abc"), ("DB_POOL_TIMEOUT_S", "120")):
+                      ("ADMISSION_WAIT_S", "abc"), ("DB_POOL_TIMEOUT_S", "120"),
+                      ("ADMISSION_LIMIT", "16")):   # 연결 합계 15보다 많으면 안 됨
         with pytest.raises(ConfigError):
             load_settings({**base, name: bad})
