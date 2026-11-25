@@ -28,6 +28,13 @@ namespace Scrun.App
         // 재발급이 거절돼 다시 로그인해야 할 때(다른 기기에서 탈취 의심, refresh 만료 등). 화면은 로그인으로 보낸다.
         public event Action Expired;
 
+        // 로그인이 바뀜(새 로그인·가입·로그아웃·재로그인 필요). 이 로그인의 캐시를 버리는 데 씀(ResponseCache, 계획 0074)
+        internal event Action LoginChanged;
+
+        // 지금 access 토큰을 이 실행에서 받은 때(UTC, 기기 시계). 만료를 기기 시계가 틀려도 맞게 어림하려고(ApiClient, 계획 0074).
+        // 저장소에서 읽은 토큰은 null(언제 받았는지 모름 → 토큰의 exp를 기기 시계로 봄)
+        internal DateTime? AccessReceivedUtc { get; private set; }
+
         public Session(ISecureStore store)
         {
             this.store = store;
@@ -63,6 +70,7 @@ namespace Scrun.App
             Save(access, refresh);
             SignupToken = null;
             Epoch++;
+            NotifyLoginChanged();
         }
 
         // 재발급: 같은 로그인의 토큰만 바꿈
@@ -74,6 +82,7 @@ namespace Scrun.App
                 throw new ApiException(ApiFailure.BadResponse, "서버가 토큰을 주지 않았습니다.");
             AccessToken = access;
             RefreshToken = refresh;
+            AccessReceivedUtc = DateTime.UtcNow;
             Persist(() => store.Set(StoreKey, JsonConvert.SerializeObject(new Saved { a = access, r = refresh })));
         }
 
@@ -93,8 +102,10 @@ namespace Scrun.App
         internal void Clear()
         {
             AccessToken = RefreshToken = SignupToken = null;
+            AccessReceivedUtc = null;
             Epoch++;
             Persist(() => store.Delete(StoreKey));
+            NotifyLoginChanged();
             try { Cleared?.Invoke(); }
             catch (Exception e) { UnityEngine.Debug.LogException(e); } // 정리 실패가 로그아웃을 막지 않게
         }
@@ -112,6 +123,12 @@ namespace Scrun.App
             {
                 UnityEngine.Debug.LogException(e);
             }
+        }
+
+        void NotifyLoginChanged()
+        {
+            try { LoginChanged?.Invoke(); }
+            catch (Exception e) { UnityEngine.Debug.LogException(e); } // 캐시 정리 실패가 로그인 전환을 막지 않게
         }
 
         internal void Expire()

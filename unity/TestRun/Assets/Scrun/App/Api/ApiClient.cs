@@ -35,11 +35,90 @@ namespace Scrun.App
         Task<bool> refreshing;
         int refreshingEpoch;
 
+        // 화면 첫 페이지 응답 캐시(계획 0074 A). null이면 안 씀(테스트 기본). 로그인이 바뀌면 통째로 버림
+        public ResponseCache Cache { get; set; }
+
         public ApiClient(IHttpTransport http, Session session, Func<string> baseUrl)
         {
             this.http = http;
             Session = session;
             this.baseUrl = baseUrl;
+            session.LoginChanged += () => Cache?.Clear();
+        }
+
+        // 캐시에 둔 응답(없거나 못 읽으면 default). 화면이 새로 받기 전에 먼저 그릴 때
+        public T Peek<T>(string path)
+        {
+            var body = Cache?.Get(path);
+            if (body == null) return default;
+            try { return ParseEnvelope<T>(new HttpResponse { Status = 200, Body = body }); }
+            catch (Exception e) when (e is ApiException || e is JsonException || e is InvalidOperationException ||
+                                      e is ArgumentException || e is InvalidCastException)
+            {
+                return default; // 모양이 바뀐 옛 캐시 등
+            }
+        }
+
+        // 성공한 응답 뒤: GET 첫 페이지는 캐시에 넣고, 쓰기가 성공하면 캐시를 버림. 그사이 로그인이 바뀌었으면 아무것도 안 함
+        void AfterSuccess(string method, string path, AuthMode auth, HttpResponse res, int epoch)
+        {
+            if (Cache == null || Session.Epoch != epoch) return;
+            if (method == "GET")
+            {
+                if (auth == AuthMode.User && ResponseCache.Cacheable(path)) Cache.Put(path, res.Body);
+            }
+            else if (ResponseCache.InvalidatedBy(method, path)) Cache.Clear();
+        }
+
+        // ---- access 만료 전에 미리 재발급(계획 0074 D) ----
+        // 401을 받고 재발급하면 왕복이 셋(요청 → 401 → 재발급 → 다시). 곧 만료면 요청 전에 재발급해 둘로, 앱으로 돌아올 때 해 두면 하나로
+        public const int RefreshAheadSeconds = 300;
+        const double ProactiveRetrySeconds = 30; // 미리 재발급이 망 오류로 실패하면 이만큼은 다시 안 함(요청마다 늦어지지 않게)
+        string jwtToken;
+        long jwtIat, jwtExp;
+        DateTime proactiveFailedUtc = DateTime.MinValue;
+
+        // 지금 access가 RefreshAheadSeconds 안에 만료되나. 이 실행에서 받은 토큰은 받은 때 + 수명(exp − iat)으로 봐 기기 시계가
+        // 틀려도 맞음. 저장소에서 읽은 토큰은 exp를 기기 시계로(틀리면 한 번 더 재발급하는 정도)
+        internal bool AccessExpiringSoon(DateTime utcNow)
+        {
+            var token = Session.AccessToken;
+            if (token == null || Session.RefreshToken == null || !ReadJwtTimes(token)) return false;
+            DateTime expires = Session.AccessReceivedUtc is DateTime got
+                ? got.AddSeconds(jwtExp - jwtIat)
+                : DateTimeOffset.FromUnixTimeSeconds(jwtExp).UtcDateTime;
+            return (expires - utcNow).TotalSeconds < RefreshAheadSeconds;
+        }
+
+        public async Task RefreshIfExpiringSoonAsync()
+        {
+            var now = DateTime.UtcNow;
+            if ((now - proactiveFailedUtc).TotalSeconds < ProactiveRetrySeconds || !AccessExpiringSoon(now)) return;
+            try { await RefreshAsync(Session.AccessToken); }
+            catch (ApiException e) when (e.Failure != ApiFailure.NotLoggedIn)
+            {
+                proactiveFailedUtc = now; // 망 오류: 지금 토큰으로 그대로(만료됐으면 401 → 재발급 길이 처리)
+            }
+        }
+
+        bool ReadJwtTimes(string token)
+        {
+            if (token == jwtToken) return true;
+            try
+            {
+                var part = token.Split('.')[1].Replace('-', '+').Replace('_', '/');
+                part = part.PadRight(part.Length + (4 - part.Length % 4) % 4, '=');
+                var claims = JObject.Parse(System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(part)));
+                jwtIat = (long)claims["iat"];
+                jwtExp = (long)claims["exp"];
+                jwtToken = token;
+                return true;
+            }
+            catch (Exception e) when (e is IndexOutOfRangeException || e is FormatException || e is JsonException ||
+                                      e is ArgumentException || e is InvalidCastException || e is NullReferenceException)
+            {
+                return false; // JWT가 아니면(테스트의 가짜 토큰 등) 미리 재발급 안 함
+            }
         }
 
         public Task<T> GetAsync<T>(string path, AuthMode auth) => SendAsync<T>("GET", path, null, auth);
@@ -55,6 +134,7 @@ namespace Scrun.App
         async Task<T> SendCore<T>(string method, string path, string json, MultipartBody raw, AuthMode auth,
                                   int timeoutSeconds = ApiConfig.TimeoutSeconds)
         {
+            if (auth == AuthMode.User) await RefreshIfExpiringSoonAsync();
             int epoch = Session.Epoch;
             string usedToken = TokenFor(auth);
             var res = await SendOnce(method, path, json, raw, usedToken, timeoutSeconds);
@@ -67,7 +147,9 @@ namespace Scrun.App
                 if (Session.Epoch != epoch) throw NotLoggedIn("로그인이 바뀌었습니다. 다시 시도하세요.");
                 res = await SendOnce(method, path, json, raw, TokenFor(auth), timeoutSeconds);
             }
-            return Parse<T>(res);
+            var result = Parse<T>(res); // 실패면 여기서 예외(캐시는 건드리지 않음)
+            AfterSuccess(method, path, auth, res, epoch);
+            return result;
         }
 
         string TokenFor(AuthMode auth)

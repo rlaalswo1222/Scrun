@@ -120,11 +120,17 @@ namespace Scrun.App
             }
             loading = true;
             reloadAfter = false;
+            // 앱을 다시 켰을 때: 지난 응답(캐시)으로 먼저 그리고 아래에서 조용히 새로 받음(스켈레톤 없음, 계획 0074 A)
+            if (home == null && Api.Users.CachedHome() is HomeData cached) Show(cached);
             HomeData got = null;
             bool ok = await Feedback.Load(state, home != null, async () => got = await Api.Users.HomeAsync(), Load);
             loading = false;
             if (Root.panel == null) return; // 기다리는 사이 화면을 떠남(다시 보일 때 OnShow가 받음)
-            if (ok && got != null) Show(got);
+            if (ok && got != null)
+            {
+                Show(got);
+                TabPrefetch.Run(); // 기록·친구 탭 첫 화면을 뒤에서 받아 둠(이번 실행에 한 번, 계획 0074 B)
+            }
             if (reloadAfter) Load();
         }
 

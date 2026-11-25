@@ -135,6 +135,24 @@ namespace Scrun.App
             if (panel != null) Destroy(panel);
         }
 
+        // 앱으로 돌아옴: access가 곧 만료면 미리 재발급(돌아와서 처음 누른 화면이 401 → 재발급 → 다시를 기다리지 않게, 계획 0074 D)
+        async void OnApplicationPause(bool paused)
+        {
+            if (paused) return;
+            try
+            {
+                if (Api.Session.IsLoggedIn) await Api.Client.RefreshIfExpiringSoonAsync();
+            }
+            catch (ApiException e)
+            {
+                Debug.Log("[미리 재발급] " + e.Message); // 다시 로그인 필요면 Session.Expired가 로그인 화면으로 보냄
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e); // 키체인 등. 앱 복귀를 막지 않음
+            }
+        }
+
         static AppScreen TabRoot(AppTab tab) => tab switch
         {
             AppTab.Home => new HomeScreen(),

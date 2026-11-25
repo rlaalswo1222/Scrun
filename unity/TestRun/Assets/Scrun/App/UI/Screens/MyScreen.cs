@@ -108,10 +108,18 @@ namespace Scrun.App
                 await Task.WhenAll(meTask, progressTask, calTask);
                 (gotMe, gotProgress, gotCal) = (meTask.Result, progressTask.Result, calTask.Result);
             };
+            // 앱을 다시 켰을 때: 지난 응답(캐시)으로 먼저 그림(계획 0074 A). 셋 중 내 정보가 있어야 그림(나머지는 비어도 됨)
+            if (me == null && Api.Users.CachedMe() is Me cachedMe)
+                Apply(cachedMe, Api.Users.CachedProgress(), Api.Users.CachedCalibration());
             // 처음만 스켈레톤(실패하면 그 자리에, 메뉴는 그대로), 다시 보일 때는 조용히(실패하면 지난 값 그대로)
             bool ok = await Feedback.Load(state, me != null, work, Load);
             loading = false;
             if (!ok || Root.panel == null) return;
+            Apply(gotMe, gotProgress, gotCal);
+        }
+
+        void Apply(Me gotMe, Progress gotProgress, CalibrationRecord gotCal)
+        {
             me = gotMe;
             progress = gotProgress;
             calibrationSub.text = MyText.LastCalibration(gotCal?.CreatedAt);
