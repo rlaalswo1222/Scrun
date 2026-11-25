@@ -189,6 +189,64 @@ namespace Scrun.App.Tests
             Assert.AreEqual(50100 + 100 - 10200, room.ServerOffsetMs.Value, 1e-6);
         }
 
+        // ---------- 묵은 값 내다보기(계획 0074) ----------
+        [Test]
+        public void StaleSampleIsPredictedFromWhenItWasSent()
+        {
+            var r = new RemoteRunner("u1", "민트", Lap);
+            r.Sample(100f, 36f, true, now: 10, sentAt: 9.5); // 10 m/s, 0.5초 묵은 값
+            Assert.AreEqual(105f, r.PositionAt(10), 1e-3, "받은 순간에 이미 묵은 만큼 앞");
+            Assert.AreEqual(110f, r.PositionAt(10.5), 1e-3);
+            var future = new RemoteRunner("u2", "코랄", Lap);
+            future.Sample(100f, 36f, true, now: 10, sentAt: 12);
+            Assert.AreEqual(100f, future.PositionAt(10), 1e-3, "미래 시각은 받은 순간으로");
+        }
+
+        [Test]
+        public void StaleNewSampleStillBlendsWithoutJumping()
+        {
+            var r = new RemoteRunner("u1", "민트", Lap);
+            r.Sample(100f, 36f, true, now: 0, sentAt: 0);
+            // 1초 뒤 보이는 자리 110. 새 값 106은 0.4초 묵음 → 있어야 할 자리 110 → 차이 0, 그대로 이어짐
+            r.Sample(106f, 36f, true, now: 1, sentAt: 0.6);
+            Assert.AreEqual(110f, r.PositionAt(1), 1e-3);
+            Assert.AreEqual(115f, r.PositionAt(1.5), 1e-3);
+        }
+
+        static string Joined(float d, double? at) =>
+            "{\"type\":\"joined\",\"runner\":{\"userId\":\"a\",\"nickname\":\"닉a\",\"d\":" + d + ",\"v\":36,\"running\":true" +
+            (at == null ? "" : ",\"at\":" + at) + "}}";
+
+        [Test]
+        public void RoomUsesServerReceiveTimeAfterPong()
+        {
+            var clock = new Clock { T = 10.2 };
+            var noPong = new RunTogetherRoom(clock.Now);
+            noPong.Apply(Welcome()); // 코스 길이(1000 m)
+            Assert.IsTrue(noPong.Apply(Joined(100f, 1)));
+            Assert.AreEqual(100f, noPong.Runners[0].PositionAt(10.2), 1e-3, "시계 차이를 모르면 받은 순간");
+
+            var room = new RunTogetherRoom(clock.Now);
+            room.Apply(Welcome());
+            room.Apply("{\"type\":\"pong\",\"t\":10000,\"serverTime\":50100}"); // 왕복 200 ms, 서버 = 앱 + 40000 ms
+            clock.T = 20; // 서버 시계로 60000
+            // 서버가 59700(앱 19.7)에 받음, 상대 폰 → 서버는 내 왕복 절반 0.1초로 어림 → 19.6에 나옴 → 0.4초 묵음
+            Assert.IsTrue(room.Apply(Joined(100f, 59700)));
+            Assert.AreEqual(104f, room.Runners[0].PositionAt(20), 1e-3);
+
+            var old = new RunTogetherRoom(clock.Now);
+            old.Apply(Welcome());
+            old.Apply("{\"type\":\"pong\",\"t\":10000,\"serverTime\":50100}");
+            Assert.IsTrue(old.Apply(Joined(100f, 1000)));
+            Assert.AreEqual(100f + 10f * (float)RunTogetherRoom.MaxAgeSec, old.Runners[0].PositionAt(20), 1e-3,
+                "시계가 틀어져 아주 옛날이면 MaxAgeSec까지만");
+            var noAt = new RunTogetherRoom(clock.Now);
+            noAt.Apply(Welcome());
+            noAt.Apply("{\"type\":\"pong\",\"t\":10000,\"serverTime\":50100}");
+            Assert.IsTrue(noAt.Apply(Joined(100f, null)));
+            Assert.AreEqual(100f, noAt.Runners[0].PositionAt(20), 1e-3, "옛 서버(at 없음)는 받은 순간");
+        }
+
         // ---------- 보내는 메시지·다시 붙기 ----------
         [Test]
         public void OutgoingMessages()

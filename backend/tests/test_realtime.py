@@ -25,6 +25,15 @@ class FakeClock:
         return self.t
 
 
+def no_at(x):
+    """러너 내용에서 받은 시각 at(계획 0074, 늘 바뀜)을 뺀 것. at 자체는 test_runner_carries_server_receive_time이 봄"""
+    if isinstance(x, list):
+        return [no_at(i) for i in x]
+    if isinstance(x, dict):
+        return {k: no_at(v) for k, v in x.items() if k != "at"}
+    return x
+
+
 @pytest.fixture
 def h():
     clock = FakeClock()
@@ -50,8 +59,8 @@ def test_runner_is_hidden_until_first_state(h):
     assert [r["userId"] for r in wb["runners"]] == ["a"] and wb["runners"][0]["nickname"] == "닉a"
     assert h.drain(a) == [] and h.states(a)["runners"] == [], "첫 state 전엔 안 보임(시작점 0m에 나타나지 않게)"
     assert h.update(b, 4000.0, 9.0, False)
-    assert h.drain(a) == [{"type": "joined", "runner": {"userId": "b", "nickname": "닉b", "d": 4000.0, "v": 9.0,
-                                                         "running": False}}]
+    assert no_at(h.drain(a)) == [{"type": "joined", "runner": {"userId": "b", "nickname": "닉b", "d": 4000.0, "v": 9.0,
+                                                                "running": False}}]
     assert h.drain(b) == []
     h.update(b, 4001.0, 9.0, False)
     assert h.drain(a) == [], "joined는 한 번만"
@@ -61,7 +70,7 @@ def test_state_is_wrapped_clamped_and_hidden_from_self(h):
     a, _ = placed(h, "a")
     b, _ = placed(h, "b")
     assert h.update(a, LAKE_M + 10.5, 45.0, True)
-    assert h.states(b)["runners"] == [{"userId": "a", "d": 10.5, "v": 30.0, "running": True}]
+    assert no_at(h.states(b)["runners"]) == [{"userId": "a", "d": 10.5, "v": 30.0, "running": True}]
     assert [r["userId"] for r in h.states(a)["runners"]] == ["b"]
     assert not h.update(a, math.nan, 1.0, True) and not h.update(a, 1.0, "9", True) and not h.update(a, True, 1.0, True)
 
@@ -155,11 +164,25 @@ def test_running_positions_for_entry(h):
 
 
 
+def test_runner_carries_server_receive_time(h, monkeypatch):
+    """러너마다 서버가 그 값을 받은 시각 at(ms). 앱은 그만큼 묵은 값으로 보고 앞으로 내다봄(계획 0074). 봇은 지금 계산이라 지금 시각"""
+    from app.realtime import hub as hub_module
+    clock = [1_000_000]
+    monkeypatch.setattr(hub_module, "server_time_ms", lambda: clock[0])
+    a, _ = placed(h, "a")
+    b, _ = placed(h, "b")
+    assert h.update(a, 10.0, 9.0, True)
+    clock[0] += 400
+    s = h.states(b)
+    assert s["serverTime"] == 1_000_400 and s["runners"][0]["at"] == 1_000_000, "0.4초 묵은 값"
+    assert h.update(a, 11.0, 9.0, True) and h.states(b)["runners"][0]["at"] == 1_000_400
+
+
 def test_run_distance_is_passed_on(h):
     a, _ = placed(h, "a")
     b, _ = placed(h, "b")
     assert h.update(a, 10.0, 9.0, True, 2400.04)
-    assert h.states(b)["runners"] == [{"userId": "a", "d": 10.0, "v": 9.0, "running": True, "run": 2400.0}]
+    assert no_at(h.states(b)["runners"]) == [{"userId": "a", "d": 10.0, "v": 9.0, "running": True, "run": 2400.0}]
     assert h.update(a, 11.0, 9.0, True, "많이") and h.update(a, 11.0, 9.0, True, math.nan)
     assert "run" not in h.states(b)["runners"][0], "숫자가 아니면 모름(연결은 안 끊음)"
     assert h.update(a, 11.0, 9.0, True, -5) and h.states(b)["runners"][0]["run"] == 0.0
@@ -357,7 +380,8 @@ def test_two_runners_see_each_other(db_client, runner):
                     break
             else:
                 raise AssertionError("A 상태가 B에게 안 감")
-            assert s["runners"] == [{"userId": w["you"], "d": 123.4, "v": 9.5, "running": True}]
+            assert no_at(s["runners"]) == [{"userId": w["you"], "d": 123.4, "v": 9.5, "running": True}]
+            assert s["runners"][0]["at"] <= s["serverTime"], "받은 시각은 보낸 시각보다 앞(계획 0074)"
 
             wb.send_json({"type": "ping", "t": 42})
             pong = recv(wb, "pong")

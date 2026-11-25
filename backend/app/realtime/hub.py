@@ -101,6 +101,7 @@ class Runner:
     placed: bool = False    # 첫 state를 받음(그 전엔 다른 사람에게 안 보임)
     conn: Optional[Conn] = None
     disconnected_at: Optional[float] = None  # hub clock 기준
+    at: Optional[int] = None  # 서버가 마지막 state를 받은 시각(ms, server_time_ms). 앱이 그만큼 묵은 값으로 보고 앞으로 내다봄(계획 0074)
 
     def public(self) -> dict:
         p = {"userId": self.user_id, "nickname": self.nickname, **self.motion()}
@@ -112,6 +113,8 @@ class Runner:
         m = {"userId": self.user_id, "d": round(self.d, 2), "v": round(self.v, 2), "running": self.running}
         if self.run is not None:
             m["run"] = round(self.run, 1)
+        if self.at is not None:
+            m["at"] = self.at
         return m
 
 
@@ -131,8 +134,9 @@ class Bot:
         return {**self.motion(now, length_m), "nickname": self.nickname}
 
     def motion(self, now: float, length_m: float) -> dict:
+        """at은 지금(위치를 지금 계산하므로 묵지 않음, 계획 0074)."""
         return {"userId": self.user_id, "d": self.d_at(now, length_m), "v": round(self.kmh, 2), "running": True,
-                "bot": True}
+                "bot": True, "at": server_time_ms()}
 
 
 RUNNER, BOT = "RUNNER", "BOT"  # run_companions.kind(친구인지는 읽을 때 친구 표로 정함)
@@ -267,6 +271,7 @@ class Hub:
             runner.v = min(max(v, 0.0), MAX_KMH)
             runner.running = bool(running)
             runner.run = min(max(float(run), 0.0), MAX_RUN_M) if _finite(run) else None
+            runner.at = server_time_ms()
             if not runner.placed:
                 runner.placed = True
                 self._broadcast_locked(room, {"type": "joined", "runner": runner.public()}, except_user=runner.user_id)
