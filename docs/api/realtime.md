@@ -14,8 +14,8 @@
 | 폰 → 서버 | `state` | `d`(코스 시작점부터 m, 한 바퀴 안), `v`(km/h), `running`(bool), 선택 `run`(이번 달리기 거리 m, 달리기 전엔 없음, 계획 0041) | 초당 2번(달리기 전에도: 연결 살아 있음 표시) |
 | 폰 → 서버 | `ping` | `t`(폰 시각 ms, 그대로 돌아옴) | 5초마다(왕복 지연 실측·서버 시각 맞추기). 서버는 기다리지 않고 바로 `pong` |
 | 폰 → 서버 | `leave` | 없음 | 맵을 나갈 때. 서버가 바로 `left`를 알리고 자리를 지운 뒤 1000으로 닫음(다시 붙으려면 다시 입장) |
-| 서버 → 폰 | `welcome` | `you`, `mapInstanceId`, `courseLengthM`, `serverTime`(ms), `runners`[나 빼고 `{userId, nickname, d, v, running}`] | 붙을 때 |
-| 서버 → 폰 | `states` | `serverTime`, `runners`[나 빼고 `{userId, d, v, running}`] | 초당 2번 |
+| 서버 → 폰 | `welcome` | `you`, `mapInstanceId`, `courseLengthM`, `serverTime`(ms), `runners`[나 빼고 `{userId, nickname, d, v, running, at}`] | 붙을 때 |
+| 서버 → 폰 | `states` | `serverTime`, `runners`[나 빼고 `{userId, d, v, running, at}`]. `at`(ms, 서버 시계) = 서버가 그 러너의 값을 받은 시각(봇은 지금). 앱은 `at`을 `pong`으로 잰 시계 차이로 바꿔 그만큼 묵은 값으로 보고 앞으로 내다봄(계획 0074). 옛 서버엔 없음 | 초당 2번 |
 | 서버 → 폰 | `joined` | `runner{userId, nickname, d, v, running}` | 새 사람이 첫 `state`를 보냄 |
 | 서버 → 폰 | `left` | `userId` | `leave`, 끊긴 지 30초가 지남, 다른 맵으로 옮김 |
 | 서버 → 폰 | `pong` | `t`(보낸 값), `serverTime` | `ping`에 답 |
