@@ -1,10 +1,9 @@
-from datetime import datetime
 from enum import Enum
 from typing import Optional
 
 from pydantic import Field
 
-from ..core.model import CamelModel
+from ..core.model import CamelModel, UtcDatetime
 from .common import RunStats
 from .progress import Rewards
 
@@ -40,7 +39,7 @@ class VerificationResult(CamelModel):
     console: Optional[RunStats] = Field(default=None, description="계기판에서 읽은 값(CONFIRM_REQUIRED면 확인할 값)")
     sensor: RunStats
     comparison: list[ComparisonRow] = Field(description="센서 대조 표. 판정 전(CONFIRM_REQUIRED)·못 읽음이면 빈 목록")
-    retake_deadline: Optional[datetime] = Field(default=None, description="재촬영 필요·값 확인일 때 마감 시각")
+    retake_deadline: Optional[UtcDatetime] = Field(default=None, description="재촬영 필요·값 확인일 때 마감 시각")
     retakes_left: Optional[int] = Field(default=None, description="재촬영 필요·값 확인일 때 남은 다시 찍기 횟수(이만큼 더 못 읽으면 UNVERIFIED. 틀렸어요는 안 씀)")
     rewards: Optional[Rewards] = Field(default=None, description="정해졌을 때(인증 완료·미인증) 성장 반영 결과(계획 0048, GET /runs/{runId}/rewards와 같음). 정하기 전(값 확인·다시 찍기)은 null")
 

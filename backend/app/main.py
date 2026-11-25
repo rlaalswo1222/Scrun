@@ -16,14 +16,13 @@ from .core.envelope import (
     api_error_handler,
     http_error_handler,
     pool_timeout_handler,
-    request_id_middleware,
     unhandled_error_handler,
     validation_error_handler,
 )
 from .core.errors import ApiError
 from .core.kakao import close_client as close_kakao_client
 from .core.ocr import start_ocr, stop_ocr
-from .core.request_log import install_request_log, request_log_middleware
+from .core.request_log import RequestContextMiddleware, install_request_log
 from .realtime import router as realtime
 from .routers import auth, courses, events, friends, home, progress, runs, users, verification
 
@@ -46,13 +45,13 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="SCRUN API", version="0.1.0-stub", description=DESCRIPTION, lifespan=lifespan)
 
-# 미들웨어는 나중에 붙인 것이 바깥: 요청 ID → 요청 로그 → 번호표(0071) → 라우터. 요청 로그가 번호표 기다림·503도 남김
+# 미들웨어는 나중에 붙인 것이 바깥: 요청 ID·요청 로그 → 번호표(0071) → 라우터. 요청 로그가 번호표 기다림·503도 남김.
+# 둘 다 순수 ASGI(BaseHTTPMiddleware·@app.middleware("http")는 요청마다 작업·통로를 더 만들어 CPU를 씀, 계획 0073 측정)
 if settings.admission.limit:
     app.add_middleware(AdmissionMiddleware, **ADMISSION_KWARGS)
-if settings.request_log:   # 요청마다 처리 시간 한 줄(계획 0070). 요청 ID 미들웨어 안쪽이라 rid를 같이 남김
+if settings.request_log:   # 요청마다 처리 시간 한 줄(계획 0070)
     install_request_log()
-    app.middleware("http")(request_log_middleware)
-app.middleware("http")(request_id_middleware)
+app.add_middleware(RequestContextMiddleware, log_requests=settings.request_log)
 app.add_exception_handler(ApiError, api_error_handler)
 app.add_exception_handler(PoolTimeoutError, pool_timeout_handler)  # 연결 풀 기다림 초과 → 503(계획 0071)
 app.add_exception_handler(RequestValidationError, validation_error_handler)

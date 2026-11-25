@@ -1,10 +1,9 @@
-from datetime import datetime
 from enum import Enum
 from typing import Any
 
 from pydantic import Field
 
-from ..core.model import CamelModel
+from ..core.model import CamelModel, UtcDatetime
 
 
 class EventName(str, Enum):
@@ -19,7 +18,7 @@ class EventName(str, Enum):
 
 class Event(CamelModel):
     name: EventName
-    occurred_at: datetime
+    occurred_at: UtcDatetime
     props: dict[str, Any] = Field(default_factory=dict)
 
 

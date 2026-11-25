@@ -88,3 +88,41 @@ def test_pool_wait_is_measured_in_the_pool(test_db):
         rl._request_stats.reset(token)
         engine.dispose()
     assert stats.pool_ms > 0 and stats.db_n == 1
+
+
+def _small_app(log_requests: bool):
+    from fastapi import FastAPI, Request
+
+    app = FastAPI()
+
+    @app.get("/ok")
+    def ok_route(request: Request):
+        return {"rid": request.state.request_id}
+
+    @app.get("/boom")
+    def boom():
+        raise RuntimeError("처리 못 한 예외")
+
+    app.add_middleware(rl.RequestContextMiddleware, log_requests=log_requests)
+    return app
+
+
+def test_request_id_even_without_log(lines):
+    """REQUEST_LOG=0이어도 요청 ID는 붙고 라우터의 request.state.request_id와 같음(계획 0073 순수 ASGI)"""
+    from fastapi.testclient import TestClient
+    r = TestClient(_small_app(log_requests=False)).get("/ok")
+    assert r.status_code == 200 and r.json()["rid"] == r.headers["X-Request-Id"]
+    assert r.headers["X-Request-Id"].startswith("req_") and lines == []
+
+
+def test_unhandled_exception_is_logged_as_500(lines):
+    from fastapi.testclient import TestClient
+    r = TestClient(_small_app(log_requests=True), raise_server_exceptions=False).get("/boom")
+    assert r.status_code == 500
+    assert lines[-1]["status"] == 500 and lines[-1]["path"] == "/boom" and lines[-1]["rid"].startswith("req_")
+
+
+def test_each_request_gets_own_id(db_client, lines):
+    a, b = db_client.get("/v1/agreements"), db_client.get("/v1/agreements")
+    assert a.headers["X-Request-Id"] != b.headers["X-Request-Id"]
+    assert [x["rid"] for x in lines] == [a.headers["X-Request-Id"], b.headers["X-Request-Id"]]
