@@ -37,5 +37,6 @@ pc "del $FLAG 2>nul"
 
 pc "docker logs scrun-perf-api-1 --since $SINCE" > "$OUT/server_log.txt"
 python "$ROOT/backend/perf/server_log_stats.py" < "$OUT/server_log.txt" > "$OUT/server_stats.md"
+gzip -9f "$OUT/server_log.txt"   # 원본은 압축해 둠(plot.py가 .gz를 읽음)
 psql_pc "select round(total_exec_time::numeric,1)||' ms | '||calls||' calls | '||round(mean_exec_time::numeric,2)||' ms avg | '||left(regexp_replace(query, '\s+', ' ', 'g'), 160) from pg_stat_statements where query not like '%pg_stat_statements%' order by total_exec_time desc limit 10" > "$OUT/slow_queries.txt"
 echo "== 서버 안 시간 ($OUT/server_stats.md)"; cat "$OUT/server_stats.md"

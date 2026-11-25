@@ -1,0 +1,5 @@
+이름: s1_r1m_v100
+시각: 2026-11-25T18:58:19+09:00
+스크립트: backend/perf/k6/s1_open_app.js -e VUS=100 -e USERS=10000 -e DURATION=2m
+서버 커밋: 5db1df9 Feat: 부하 시험 실행 스크립트·서버 로그 요약, seed_load를 사용자 묶음으로 나눠 넣기
+데이터: 10000 users, 1000000 runs, 3364212 samples, 2418 MB

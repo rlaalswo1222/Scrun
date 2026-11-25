@@ -1,0 +1,10 @@
+1453.1 ms | 306 calls | 4.75 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+685.7 ms | 306 calls | 2.24 ms avg | SELECT runs.user_id, max(runs.ended_at) AS max_1 FROM runs WHERE runs.user_id IN ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, 
+513.3 ms | 306 calls | 1.68 ms avg | SELECT runs.user_id, count(*) AS count_1 FROM runs WHERE runs.user_id IN ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARC
+273.0 ms | 1542 calls | 0.18 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+184.8 ms | 42 calls | 4.40 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+182.0 ms | 36 calls | 5.06 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+146.0 ms | 72 calls | 2.03 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+134.2 ms | 34 calls | 3.95 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+129.3 ms | 77 calls | 1.68 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+122.3 ms | 44 calls | 2.78 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende

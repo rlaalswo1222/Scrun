@@ -1,0 +1,5 @@
+이름: s4_r1m_v2
+시각: 2026-11-25T19:47:09+09:00
+스크립트: backend/perf/k6/s4_verify_photo.js -e VUS=2 -e USERS=10000 -e DURATION=90s
+서버 커밋: 5db1df9 Feat: 부하 시험 실행 스크립트·서버 로그 요약, seed_load를 사용자 묶음으로 나눠 넣기
+데이터: 10000 users, 1000728 runs, 3367367 samples, 2420 MB

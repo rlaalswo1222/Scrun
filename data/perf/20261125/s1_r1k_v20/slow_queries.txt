@@ -1,0 +1,10 @@
+235.5 ms | 1550 calls | 0.15 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+149.5 ms | 242 calls | 0.62 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+117.8 ms | 149 calls | 0.79 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+109.8 ms | 154 calls | 0.71 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+66.4 ms | 242 calls | 0.27 ms avg | SELECT runs.user_id, max(runs.ended_at) AS max_1 FROM runs WHERE runs.user_id IN ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR) AND runs.stat
+62.4 ms | 78 calls | 0.80 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+60.7 ms | 6200 calls | 0.01 ms avg | SELECT users.id, users.nickname, users.height_cm, users.weight_kg, users.timezone, users.friend_code, users.feed_share_default, users.updated_at, users.created_
+57.7 ms | 84 calls | 0.69 ms avg | SELECT runs.id, runs.user_id, runs.client_run_id, runs.course_id, runs.map_instance_id, runs.goal_type, runs.goal_value, runs.status, runs.started_at, runs.ende
+55.2 ms | 242 calls | 0.23 ms avg | SELECT runs.user_id, count(*) AS count_1 FROM runs WHERE runs.user_id IN ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR) AND runs.status = $6:
+50.3 ms | 149 calls | 0.34 ms avg | SELECT runs.user_id, max(runs.ended_at) AS max_1 FROM runs WHERE runs.user_id IN ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, 

@@ -1,0 +1,5 @@
+이름: s3_r1m_v100_fix3
+시각: 2026-11-25T20:13:11+09:00
+스크립트: backend/perf/k6/s3_realtime.js -e VUS=100 -e USERS=10000 -e HOLD=30
+서버 커밋: 1328a0e Fix: DB 연결을 미리 받지 않고 풀 안에서 대기 시간 재기(계획 0070)
+데이터: 10000 users, 1001500 runs, 3367367 samples, 2421 MB
