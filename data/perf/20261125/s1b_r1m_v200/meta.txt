@@ -1,0 +1,5 @@
+이름: s1b_r1m_v200
+시각: 2026-11-25T22:08:56+09:00
+스크립트: backend/perf/k6/s1_open_app.js -e VUS=200 -e USERS=10000 -e DURATION=5m
+서버 커밋: f40ad00 Merge pull request #139 from rlaalswo1222/feat/seed-load
+데이터: 10000 users, 1000000 runs, 3364212 samples, 2418 MB
