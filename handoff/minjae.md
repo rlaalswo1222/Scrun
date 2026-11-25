@@ -2,7 +2,16 @@
 
 민재(git `minjae`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만 하고 고치지 않는다. 끝난 결론은 영역 문서(`docs/speed/README.md`, `docs/unity/unity_map.md`, `docs/api/`, `docs/adr/`, `docs/plans/`)에, Claude 작업 요령(Figma·에디터·노션·HTML·Windows 줄바꿈)은 `docs/claude_howto.md`에 있다. 옛 전체본: `docs/log/HANDOFF_minjae_20261119.md`(11/19 밤 정리 전: 그날 PR별 자세한 기록·지난 팀원 전달 전부), `_20261118.md`(11/18 정리 전, 끝난 머지·결정의 자세한 기록)
 
-## 지금 (11/25)
+## 지금 (11/26 새벽, 세션 끝)
+- **계획 0071 "몰려도 멈추지 않게" 구현·측정 끝, 판정 모두 통과(PR #141 → 머지·운영 배포: 이 인수인계가 들어간 머지 뒤 배포했으면 아래 "배포 확인", 못 했으면 그대로 남음)**: 순수 ASGI 번호표 12장(2초 못 받으면 503 `BUSY` + `Retry-After: 1`), `queue_ms`, 풀 기다림 5초(넘으면 503 `DB_BUSY`), 헬스체크 우회는 루프백만(Caddyfile이 헤더 지움). 결과: **200명 실패 21.7% → 0%, 처리 12 → 185/초, 회복 564초 → 13–14초**, 100명 p95 +1.9%·처리량 −0.9%(10% 안), S3 100명 3번 성공 → `docs/perf/README.md`, 그림 `docs/perf/img/0071_before_after.png`
+  - 첫 측정은 멈춘 스크립트가 살아남아 겹쳐 무효(`data/perf/20261125/invalid_0071_overlap/`). 측정 스크립트에 겹침·번호표 확인을 넣고 다시 잼
+  - **배포 때**: `update.sh develop` 뒤 `docker compose -f docker-compose.server.yml exec caddy caddy reload --config /etc/caddy/Caddyfile`(Caddyfile 바뀜) → 운영 로그 `queue_ms` 확인. **배포 확인**: `ssh … 'cd ~/scrun && git log --oneline -1'`이 #141 머지 커밋이고 `docker logs --tail 5 scrun-api-1 | grep queue_ms`가 찍히면 끝
+  - 11/26 새벽 GitHub API가 502·GraphQL 오류를 내 머지가 몇 번 실패함 → 새 세션에서 `gh pr view 141 --json state`로 먼저 확인
+  - 집 PC 시험 서버: `feat/admission-control` ffd9289, 번호표 12, 켜져 있음(안 쓸 땐 stop)
+  - 리뷰에서 남긴 것: 앱 `VerifyScreen`이 503을 모두 "계기판을 읽는 곳이 바빠요"로 보여 줌 → `details.reason` BUSY·DB_BUSY면 일반 문구로(지환과), 실시간 몫 3은 보장이 아니라 여유(S3로 확인)
+  - **운영 배포 위험**: 이미지 빌드가 OCR 모델을 modelscope.cn에서 받음 → 11/25 PC 빌드에서 DNS 실패 2번(다시 하면 됨). 막히면 운영 배포 실패 → 모델을 GitHub Release 등으로 옮기기(짧은 계획 먼저)
+
+## 지난 (11/25)
 - **이 세션 PR(11/25 저녁)**: #136(0070 승인·ADR-0014 k6·집 PC compose)·#137(요청 로그 미들웨어) **머지·운영 배포(오라클 c5180c6)**. #138(연결 미리 받기 되돌림)·#139(부하 시험 도구·첫 기준선) **머지·운영 배포(오라클 f40ad00)**. 기준선 다시(5분, #138 뒤): 100명 반복 통과(9%), 50명은 VACUUM 뒤 큰 체크포인트로 1회차 튐, 200명은 여전히 무너지고 회복 564초 → `docs/perf/README.md`
 - **계획 0070 첫 기준선 끝 → [docs/perf/README.md](../docs/perf/README.md)**: 기록 100만까지 데이터 크기 병목 아님, 동시 100명 근처 포화(api 한 코어·연결 풀), 200명에서 30초 풀 시간 초과로 무너지고 8분 회복 못 함, OCR 동시 4명 50% 503, 반복 판정 미달(21%, 5분으로 다시). 다음 계획 순위: ① 몰릴 때 멈추지 않게(동시 처리 제한·빠른 실패) ② OCR 큐 ③ 프로세스 여러 개(실시간 분리·Redis) ④ `home` 쿼리 10번
   - 집 PC 시험 서버: 지금 `fix/pool-wait-lazy` 1328a0e, DB에 기록 100만(사용자 1만) 들어 있음, 켜져 있음 → 안 쓸 땐 `docker compose -f docker-compose.perf.yml --env-file .env.perf stop`
@@ -65,7 +74,7 @@
 - **로컬에만(커밋 안 함)**: `Lm_LampGlass.mat`(`_EMISSION` 빠짐 → 섬 등대 빛이 꺼짐, 커밋하지 말고 되돌릴지 결정), `.claude/settings.json`, 지환 실명 파일 2개(`data/runs/20261029-004604/note.md`·`docs/speed/airpods_flight.md`, 동의 전엔 커밋 안 함), 계획 0032 홈 초안(0057이 대신함 → 지워도 됨)·로컬 브랜치 `feat/home-figma`, 미팅 자료·`midterm_feedback.md`·중간발표 폴더(**git에 안 올림 = 민재 결정**), 연구 문서 2개, 와이어프레임 초안. 브랜치 `fix/dev-recalibrate`(PR 안 엶) → 올릴지 결정. 머지한 로컬·원격 브랜치 `feat/speed-stride-model`·`feat/space-onboarding`·`feat/space-home-course`는 지워도 됨
 
 ## 다음 (새 세션은 여기부터)
-- **11/25 이어서 (먼저)**: ① **계획 0071 승인**(몰려도 멈추지 않게: 번호표 N·대기 W·503, [docs/plans/0071-overload-protection.md](../docs/plans/0071-overload-protection.md), 설명 그림 `0071-overload.html`) → 구현 → 기준선(100명 p95 145.8 ms, 200명 회복 564초)과 비교 ② 맵 정원 시뮬레이션 ③ 아바타 걸음 수 계획(상준) ④ 로딩 개선 계획 ⑤ 실시간 `serverTime` 보정 ⑥ 지환·상준에게 인증 40% 알리기
+- **11/26 이어서 (먼저)**: ① #141 머지·운영 배포·Caddy reload·`queue_ms` 확인(안 됐으면) ② **11/27 교수님 미팅 + 4차 보고서**: 성능 결과(`docs/perf/README.md` 0070 기준선·0071 전후 표, 그림 `0071_before_after.png`, "집 PC 시험 서버·가짜 데이터" 명시) ③ OCR 모델 받기 안정화(modelscope 의존, 짧은 계획) ④ 앱 인증 화면 503 `BUSY` 문구(지환) ⑤ 0072 OCR 비동기 큐 계획(지환) ⑥ 맵 정원 시뮬레이션(상준) ⑦ 아바타 걸음 수 계획(상준) ⑧ 로딩 개선 계획 ⑨ 실시간 `serverTime` 보정 ⑩ 지환·상준에게 인증 40% 알리기
 - **11/20 낮 팀 카톡 결정**
   - **맵·아바타가 화면보다 먼저**(민재). **상준이 맵 + 아바타를 같이 맡음**(가진 아바타를 Blender에서 다듬어 맵에 넣고 맵 최적화까지, 나누면 일이 커져서). 상준이 폰 실기기로 테스트·최적화 평가 뒤 **오늘(11/20) 안에 민재에게 넘김** → 민재가 앱에서 실제 실행해 **성능 측정**
   - 맵은 **1개, 안에 테마 5개**. 시연은 하나만 보여 주면 됨. 실사 영상 3D 복원은 안 함(최하위)

@@ -70,6 +70,19 @@ def _fail(request: Request, status: int, code: ErrorCode, message: str, details:
     return JSONResponse(status_code=status, content=body.model_dump(mode="json", by_alias=True))
 
 
+def error_response(request: Request, code: ErrorCode, details: Any = None) -> JSONResponse:
+    """라우터 밖(미들웨어)에서 오류 응답을 만들 때. 미들웨어에서 던진 ApiError는 예외 처리기를 거치지 않는다."""
+    status, message = ERRORS[code]
+    return _fail(request, status, code, message, details)
+
+
+async def pool_timeout_handler(request: Request, exc: Exception) -> JSONResponse:
+    """DB 연결 풀 기다림 초과(SQLAlchemy TimeoutError, 상한 DB_POOL_TIMEOUT_S)는 서버가 바쁜 것 → 500 대신 503(계획 0071)."""
+    response = error_response(request, ErrorCode.SERVICE_UNAVAILABLE, {"reason": "DB_BUSY"})
+    response.headers["Retry-After"] = "1"
+    return response
+
+
 async def request_id_middleware(request: Request, call_next):
     request.state.request_id = "req_" + uuid.uuid4().hex[:12]
     response = await call_next(request)
