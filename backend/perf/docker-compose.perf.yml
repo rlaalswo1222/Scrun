@@ -1,0 +1,51 @@
+# 부하 시험 서버(계획 0070). 집 PC(Windows + Docker Desktop)에서 돌리고, 같은 공유기의 노트북에서 k6로 건다.
+# 운영(deploy/docker-compose.server.yml)과 같은 이미지·같은 단일 uvicorn에, 시험용으로 바꾼 것만:
+#   - KAKAO_MODE=fake: k_숫자 토큰으로 가짜 계정 로그인(집 안 네트워크에서만 열 것, 공유기 포트 포워딩 금지)
+#   - Caddy 없음: API 8000을 바로 엶(같은 공유기 안이라 HTTPS 생략)
+#   - pg_stat_statements 켬: 쿼리별 호출 수·시간
+#   - CPU: api·db가 논리 CPU 2개(cpuset)를 나눠 씀 → 운영 2 OCPU 한 묶음 흉내. 단 운영 OCPU는 물리 코어, 여기는 Ryzen SMT 스레드라 절대 수치는 다름
+# 실행(PC의 backend/perf 폴더): docker compose -f docker-compose.perf.yml --env-file .env.perf up -d --build
+# .env.perf(git 밖): DB_PASSWORD, JWT_SECRET
+name: scrun-perf
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: scrun
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD를 .env.perf에}
+      POSTGRES_DB: scrun
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "pg_stat_statements.track=all"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    cpuset: "0,1"
+    mem_limit: 4g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scrun"]
+      interval: 3s
+      retries: 30
+
+  api:
+    build: ..
+    environment:
+      DATABASE_URL: postgresql+psycopg://scrun:${DB_PASSWORD}@db:5432/scrun
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET을 .env.perf에}
+      KAKAO_MODE: fake
+      OCR_ENGINE: onnx
+      VERIFY_OCR_TIMEOUT_S: 15
+    ports:
+      - "8000:8000"
+    cpuset: "0,1"
+    mem_limit: 3g
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/v1/agreements', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  pgdata:

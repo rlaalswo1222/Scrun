@@ -6,10 +6,13 @@
 - 이 계획의 결과물: **다시 돌릴 수 있는 부하 시나리오 + 대량 가짜 데이터 + 서버 지표 + 첫 기준선 표**. 개선은 하지 않음(다음 계획들이 이 기준선과 비교)
 
 ## 정한 것 (11/25 민재)
-1. **어디서 돌리나**: 시험 서버는 **오라클 무료 ARM VM 하나 더**(운영과 같은 2코어 ARM, `VM.Standard.A1.Flex` 2 OCPU·12 GB, Ubuntu 24.04, 싱가포르). 무료 한도(A1 합계 4코어·24 GB, 디스크 합계 200 GB)는 기억 기준이라 콘솔에서 확인. **민재가 콘솔에서 만듦**(같은 VCN·서브넷, SSH 키는 `oracle_key` 공개 키) → Docker·compose·IP 제한은 Claude가 SSH로
-   - **부하는 노트북에서 건다**(Core Ultra 5 225H 14코어·15 GB·Wi-Fi 7, 수백 가상 사용자엔 충분, 가설 → 첫 실행 때 k6 CPU 기록). 같은 VM에서 걸면 서버와 CPU를 나눠 써서 수치가 틀어짐. 노트북 → 싱가포르 왕복(약 95 ms)이 섞이므로 서버 안 처리 시간은 지연 로그로 따로 봄. 시험 중 Unity·Docker 끄고 절전 끄기
+1. **어디서 돌리나**: 시험 서버 = **민재 집 PC**(Windows, Ryzen 5 5600 6코어·12스레드, 15.9 GB, 디스크 74 GB 남음, Docker Desktop, Wi-Fi), 부하 = **노트북**(Core Ultra 5 225H 14코어·15 GB, Wi-Fi 7)에서 k6. 같은 공유기, 노트북 → PC 왕복 1–18 ms(평균 9 ms, ping 20번, 둘 다 무선)
+   - **오라클 VM은 무료가 아니라서 안 씀(11/25 확인)**: [Always Free 문서](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) 기준 A1 무료는 월 1,500 OCPU시간·9,000 GB시간 = **2 OCPU·12 GB**이고, 운영 `bandly-server`가 이미 그만큼 씀. 앞서 적은 "합계 4코어·24 GB"는 옛 기준이었음
+   - 노트북 Docker 하나로 서버·부하를 같이 돌리는 안은 메모리(남은 2.7 GB, WSL 상한 4 GB) 때문에 뺌
+   - 서버 compose `backend/perf/docker-compose.perf.yml`: 운영과 같은 이미지·단일 uvicorn, `KAKAO_MODE=fake`, Caddy 없이 8000, `pg_stat_statements`, api·db가 논리 CPU 2개(`cpuset: "0,1"`)를 나눠 씀. 운영은 ARM 물리 코어, 여기는 x86 SMT 스레드라 **절대 수치는 운영과 다름** → 병목 순위·개선 전후 비교에 씀. 운영과의 비율은 가벼운 요청 몇 개로 따로 잼
+   - 무선이라 k6 쪽 지연에 흔들림이 섞임 → 시험마다 ping 100번을 같이 기록, 서버 안 처리 시간은 지연 로그로 따로 봄. 시험 때 PC 절전 끔, 노트북 전원 연결
+   - PC 접속·운영 메모: `docs/perf/README.md`(구현 때). 비밀값 `.env.perf`는 PC에만
    - 운영 서버에는 부하를 걸지 않음. 카카오 진짜 로그인이 켜져 있고, 팀이 실제로 씀
-   - 싱가포르 A1 자리가 없으면("Out of host capacity") 시간을 두고 다시. 무료 계정의 유휴 회수로 꺼지면 다시 켜고 데이터를 다시 넣음
 2. **부하 도구: k6** → [ADR-0014](../adr/0014-load-test-k6.md), 비교 [0070-load-tool.html](0070-load-tool.html). `fake_runner.py`는 실시간 부분이 asyncio라 Locust였어도 그대로 못 씀 → k6에선 로그인·입장 순서만 옮김
 3. **관측: 최소 + 발표 그림**: 요청마다 지연 로그 + `pg_stat_statements` + `docker stats` + k6 요약. 그림은 **k6 웹 대시보드 HTML 보고서**(`K6_WEB_DASHBOARD=true`, 노트북 쪽이라 서버 부하 없음, 우리 k6 버전에서 되는지 확인) + **`data/perf/` 원본으로 그린 전후 비교**(matplotlib 스크립트, 다시 돌리면 같은 그림). Prometheus·Grafana는 띄우지 않음(필요하면 나중에 노트북 쪽에)
 4. **가짜 데이터 크기**(가정한 시험값, 실제 사용자 수 예측 아님): 사용자 1만 명, 사람당 기록 100개(= 기록 100만 개, 속도 시계열 포함), 친구 0–50명, 인증 시도 기록 1–2개씩. 1천 → 1만 → 10만 → 100만 기록으로 늘리며 시간 변화를 봄
@@ -35,7 +38,11 @@
 - 운영 서버 코드 변경은 지연 로그 미들웨어 하나뿐이고, 켜도 운영 응답 시간이 눈에 띄게 늘지 않음(미들웨어 켜기 전후 `/v1/agreements` 비교)
 
 ## 진행
-- 11/25 정할 것 4개 결정, ADR-0014(k6). 다음: 민재가 오라클 콘솔에서 시험 VM 생성 → Claude가 SSH로 Docker·compose(`KAKAO_MODE=fake`)·IP 제한 → 지연 로그 미들웨어 → `seed_load.py` → S1부터 시나리오
+- 11/25 정할 것 4개 결정, ADR-0014(k6)
+- 11/25 시험 서버를 오라클 VM 대신 집 PC로(무료 한도 초과 확인). PC에 OpenSSH 서버 + 노트북 전용 키(`~/.ssh/scrun_pc`), 저장소 `C:\Users\admin\scrun`(develop 얕은 복제), compose 빌드·마이그레이션·실행, 노트북에서 `http://192.168.0.2:8000` 응답 확인(약관 21 ms, 가짜 로그인 됨), `pg_stat_statements` 켬
+  - SSH 세션에서는 Windows 자격 증명 관리자를 못 써서 `docker pull`이 실패 → SSH용 설정 `C:\Users\admin\.docker-ssh`(빈 로그인만 돌려주는 도우미 `docker-credential-anon.cmd`)를 `DOCKER_CONFIG`·`PATH`로 씀
+  - PC 네트워크 프로필이 "공용"인데 Docker Desktop 규칙으로 8000이 열림 → 시험할 때만 켜고 끝나면 `docker compose ... stop`. 공유기 포트 포워딩은 하지 않음
+- 다음: 지연 로그 미들웨어 → `seed_load.py` → k6 설치(노트북) → S1부터 시나리오
 
 ## 맥 할 일
 없음
