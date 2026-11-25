@@ -35,7 +35,7 @@ http://localhost:8000/docs 에서 눌러 본다.
 - `.env`의 `OCR_ENGINE`이 `none`(기본)이면 사진 인증은 503, `fake`면 **사진 파일 이름**으로 값을 정한다: `…d3120_t1080…` → 3120 m·1080초, `unsupported` → 읽을 수 없는 계기판, 그 밖(`blur` 등) → 다시 찍기(에디터 Fake Native "서버 가짜 OCR"이 이름을 붙임). 공개 서버엔 `fake`를 넣지 않는다
 - `onnx`는 **진짜 엔진**(계획 0046, `app/console_ocr/`): 서버가 뜰 때 읽기 프로세스 2개(각 1스레드)를 띄우고, 사진 3장 중 읽힌 것의 거리·시간이 모두 같을 때만 읽음. 시간 제한(`VERIFY_OCR_TIMEOUT_S`, 15초)보다 1초 먼저 그 프로세스를 죽이고 새로 띄움(503, 다시 찍기 횟수 안 셈). 처음 한 번 PP-OCRv5 모델을 받는다(`python -m app.console_ocr.fetch_models`, Docker는 빌드 때). 우리 숫자 모델은 `app/console_ocr/models/`(출처·sha256은 그 폴더 README)
 - 정확도는 실사진 채점 전이라 모름(`speedlab/ocr/README.md`). 맥 M5 1스레드에서 사진 3장 2.0–3.0초(합성 계기판, 11/17)
-- 판정 값(거리 15%, 시간 −30초에서 +5분, 쉰 시간으로 넓히는 폭 최대 10분, 마감 10분, 다시 찍기 3번)은 `VERIFY_*` 환경 변수로 바꾼다(`.env.example`, 기본값 `app/core/config.py` `VerificationPolicy`)
+- 판정 값(거리 40%(계획 0069, 처음 15%), 시간 −30초에서 +5분, 쉰 시간으로 넓히는 폭 최대 10분, 마감 10분, 다시 찍기 3번)은 `VERIFY_*` 환경 변수로 바꾼다(`.env.example`, 기본값 `app/core/config.py` `VerificationPolicy`)
 
 ### 스텁 API(9개) 규칙 — 오류 화면 확인용
 스텁 API는 토큰을 검사하지 않는다(아무 토큰이나 예시 사용자 `usr_demo`). 진짜가 되면 진짜 토큰만 받는다.
