@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>부하 도구 고르기</title>
+<style>
+:root {
+  --bg: #fbfaf7; --surface: #ffffff; --ink: #1d232b; --muted: #5d6673; --line: #e3e0d8;
+  --accent: #1f6feb; --good: #1a7f37; --warn: #9a6700; --bad: #c62828; --chip: #f1efe9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171c; --surface: #1b2027; --ink: #e8eaed; --muted: #a2abb7; --line: #2c333d;
+    --accent: #6ea8fe; --good: #56d364; --warn: #e3b341; --bad: #ff7b72; --chip: #232a33;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171c; --surface: #1b2027; --ink: #e8eaed; --muted: #a2abb7; --line: #2c333d;
+  --accent: #6ea8fe; --good: #56d364; --warn: #e3b341; --bad: #ff7b72; --chip: #232a33;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 -apple-system, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif; }
+main { max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 26px; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 36px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+h3 { font-size: 16.5px; margin: 20px 0 6px; }
+.lead { color: var(--muted); margin: 0 0 18px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 12px 0; }
+.rec { border-left: 4px solid var(--accent); }
+.good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+.table-wrap { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; width: 100%; min-width: 680px; background: var(--surface); }
+th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; font-size: 14.5px; }
+th { background: var(--chip); font-weight: 600; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.bar { display: inline-block; height: 10px; background: var(--accent); border-radius: 3px; vertical-align: middle; opacity: .75; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+pre { background: var(--chip); border-radius: 8px; padding: 12px; overflow-x: auto; font-size: 13px; line-height: 1.5; margin: 8px 0; }
+code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
+pre code { background: none; padding: 0; }
+small, .src { color: var(--muted); font-size: 13.5px; }
+a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+<h1>부하 테스트 도구 고르기</h1>
+<p class="lead">계획 0070 정할 것 2 → ADR-0014. 2026-11-25 민재. 서버(FastAPI + PostgreSQL + WebSocket)에 가짜 사용자를 수백 명 붙여 "어디가 얼마나 느린지"를 재는 도구를 고른다.</p>
+
+<div class="card rec">
+<b>한 줄 요약</b><br>
+오픈소스 부하 도구에서 많이 쓰이는 건 <b>JMeter·Gatling·k6·Locust 넷</b>이다(k6·Locust 둘만이 아님). 다만 우리 조건(파이썬 서버, 스크립트를 git으로 리뷰, WebSocket 시나리오, 작은 ARM VM)에선 JMeter·Gatling이 먼저 빠지고 <b>k6 vs Locust</b>가 남는다.
+추천은 <b>k6</b>: WebSocket이 내장이고, "p95가 300 ms 넘으면 실패" 같은 판정이 한 줄이며(계획의 "같은 시험 3번, p95 차이 10% 안" 판정에 바로 씀), 작은 VM에서도 부하를 많이 만든다. Locust를 고르면 파이썬이라 익숙하지만, WebSocket·판정을 직접 짜야 한다.
+</div>
+
+<h2>1. 정말 저 둘이 제일 많이 쓰이나?</h2>
+<p>"얼마나 쓰이는지"를 잰 공식 조사(사용률 순위)는 찾지 못했다. 대신 잴 수 있는 것 두 가지를 봤다.</p>
+
+<h3>GitHub 별 수 (2026-11-25, GitHub API로 직접 셈)</h3>
+<div class="table-wrap"><table>
+<tr><th>도구</th><th>언어(도구 / 시나리오)</th><th>별</th><th></th><th>성격</th></tr>
+<tr><td>wrk</td><td>C / Lua</td><td class="num">40,427</td><td><span class="bar" style="width:160px"></span></td><td>주소 하나를 세게 두드리는 벤치마크. 시나리오 없음, 2023-12 뒤 커밋 없음</td></tr>
+<tr><td><b>k6</b></td><td>Go / JavaScript·TypeScript</td><td class="num">32,401</td><td><span class="bar" style="width:128px"></span></td><td>시나리오형 부하 도구 (Grafana Labs)</td></tr>
+<tr><td><b>Locust</b></td><td>Python / Python</td><td class="num">28,312</td><td><span class="bar" style="width:112px"></span></td><td>시나리오형 부하 도구</td></tr>
+<tr><td>Vegeta</td><td>Go / 명령줄</td><td class="num">25,256</td><td><span class="bar" style="width:100px"></span></td><td>정해진 초당 요청 수로 두드림. 시나리오 없음</td></tr>
+<tr><td>hey</td><td>Go / 명령줄</td><td class="num">20,803</td><td><span class="bar" style="width:82px"></span></td><td>ab(ApacheBench) 대체. 시나리오 없음</td></tr>
+<tr><td>JMeter</td><td>Java / GUI·XML</td><td class="num">9,613</td><td><span class="bar" style="width:38px"></span></td><td>시나리오형. 1998년부터, 기업 QA에서 가장 오래·널리 씀</td></tr>
+<tr><td>Artillery</td><td>Node / YAML·JS</td><td class="num">9,125</td><td><span class="bar" style="width:36px"></span></td><td>시나리오형</td></tr>
+<tr><td>Gatling</td><td>Scala(JVM) / Java·Kotlin·Scala·JS</td><td class="num">6,966</td><td><span class="bar" style="width:28px"></span></td><td>시나리오형</td></tr>
+</table></div>
+<p><small>별은 "개발자가 관심을 보인 수"이지 사용량이 아니다. 특히 JMeter는 GitHub 이전부터 쓰였고 Apache 미러에서 받는 경우가 많아 별이 실제 사용보다 훨씬 적게 나온다.</small></p>
+
+<h3>업계 자료</h3>
+<ul>
+<li>도구 비교 글들은 대개 <b>JMeter·Gatling·k6·Locust</b>를 "오픈소스 4강"으로 묶는다. JMeter는 1998년부터 기본 선택지였다고 Gatling(경쟁사) 글도 적는다. 다만 대부분 도구 만든 회사나 블로그 자료라 사용량 측정이 아니다.</li>
+<li>ThoughtWorks Technology Radar는 k6를 2020-10 Assess → 2021-04 Trial → 2022-10 <b>Adopt</b>로 올렸다(개발자 경험·CI 연결을 이유로). Locust·Gatling이 Radar에 오른 기록은 이번 검색에선 못 찾았다.</li>
+</ul>
+<p><b>결론:</b> "가장 많이 쓰이는 둘"이라기보다 <b>4강 가운데, 코드로 시나리오를 쓰는 요즘 방식의 대표 둘</b>이다. wrk·Vegeta·hey는 별은 많지만 "로그인 → 홈 → 기록 목록" 같은 흐름을 못 그려서 우리 S1–S4엔 안 맞는다(엔드포인트 하나 미세 측정할 때 보조로는 쓸 수 있음).</p>
+
+<h2>2. JMeter·Gatling이 먼저 빠지는 이유</h2>
+<div class="table-wrap"><table>
+<tr><th></th><th>JMeter</th><th>Gatling</th></tr>
+<tr><td>시나리오 쓰는 법</td><td>GUI로 만들고 XML(<code>.jmx</code>)로 저장 → git diff로 리뷰하기 어려움</td><td>Java·Kotlin·Scala 코드(2024년부터 JS/TS도). 리뷰는 쉬움</td></tr>
+<tr><td>WebSocket(S3)</td><td>플러그인 필요</td><td>내장</td></tr>
+<tr><td>우리 팀과의 거리</td><td>JVM, 무거움(가상 사용자 하나 = 스레드 하나)</td><td>JVM 빌드 도구(Maven·Gradle)가 따라옴. 팀은 JVM을 안 씀</td></tr>
+<tr><td>판단</td><td colspan="2">둘 다 좋은 도구지만 우리 코드(파이썬·C#)와 동떨어지고, 같은 일을 k6·Locust가 더 가볍게 한다</td></tr>
+</table></div>
+
+<h2>3. k6 vs Locust — 우리 시나리오에 대 보기</h2>
+<div class="table-wrap"><table>
+<tr><th>기준</th><th>k6</th><th>Locust</th></tr>
+<tr><td>시나리오 언어</td><td>JavaScript(TypeScript도). Node.js가 아니라 npm 패키지는 그대로 못 씀</td><td class="good">Python. 서버·speedlab과 같은 언어</td></tr>
+<tr><td>S1 앱 켜기·S2 달리기(HTTP)</td><td>쉬움</td><td>쉬움</td></tr>
+<tr><td>S3 실시간 20명 WebSocket</td><td class="good">WebSocket 모듈 내장</td><td class="warn">내장 없음. WebSocket 클라이언트로 User 클래스를 직접 짜거나 locust-plugins. 연결별 지연을 Locust 통계에 넣는 것도 직접</td></tr>
+<tr><td>S4 계기판 사진 3장 업로드</td><td>multipart 내장(<code>http.file</code>)</td><td>requests 방식 <code>files=</code></td></tr>
+<tr><td>판정(문턱)</td><td class="good"><code>thresholds: { http_req_duration: ['p(95)&lt;300'] }</code> 한 줄, 넘으면 종료 코드 실패 → CI에 그대로</td><td class="warn">내장 없음. 이벤트 훅에서 종료 코드를 직접 정하거나 locust-plugins</td></tr>
+<tr><td>결과</td><td>끝에 요약(p90·p95, p99는 설정으로 추가), JSON·CSV, Prometheus로 보내기 내장</td><td class="good">실시간 웹 화면(그래프)이 보기 좋음. <code>--headless --csv</code>로 백분위 CSV</td></tr>
+<tr><td>부하 만드는 힘</td><td class="good">Go라 한 프로세스가 CPU 코어를 다 씀. 작은 VM에서도 수천 가상 사용자</td><td class="warn">파이썬 프로세스 하나 = 코어 하나. 늘리려면 <code>--processes</code>나 master·worker 여러 개</td></tr>
+<tr><td>설치</td><td>바이너리 하나(Linux ARM64 있음)</td><td><code>pip install locust</code></td></tr>
+<tr><td><code>fake_runner.py</code> 재사용</td><td>로그인·입장 순서만 옮겨 적음</td><td>로그인 함수는 거의 그대로. <b>실시간 부분은 asyncio라 Locust(gevent)에 그대로 못 넣어 다시 써야 함</b> — 계획 0070에 "재사용 쉬움"이라 적은 건 반만 맞음</td></tr>
+<tr><td>라이선스</td><td>AGPL-3.0 (우리 서버에 넣는 게 아니라 시험할 때만 돌려서 공개 의무와 무관)</td><td>MIT</td></tr>
+<tr><td>취업·면접 설명</td><td>"k6로 p95 문턱을 걸고 CI에서 돌림" — 요즘 백엔드 공고·글에서 흔함</td><td>"Locust로 파이썬 시나리오" — 파이썬 팀에선 흔함</td></tr>
+</table></div>
+
+<h3>같은 S1을 두 도구로 (모양만 보여 주는 예시, 아직 돌려 보지 않음)</h3>
+<div class="cols">
+<div class="card"><b>k6</b> <small>s1_open_app.js</small>
+<pre><code>import http from 'k6/http';
+import { check } from 'k6';
+
+export const options = {
+  stages: [{ duration: '1m', target: 50 },
+           { duration: '5m', target: 50 }],
+  thresholds: {
+    http_req_duration: ['p(95)&lt;300'],
+    http_req_failed: ['rate&lt;0.01'],
+  },
+};
+const BASE = __ENV.BASE;
+let auth;  // 가상 사용자마다 따로
+
+export default function () {
+  if (!auth) {
+    const r = http.post(`${BASE}/v1/auth/kakao`,
+      JSON.stringify({ kakaoAccessToken: `k_${__VU}` }),
+      { headers: { 'Content-Type': 'application/json' } });
+    auth = { headers: { Authorization:
+      'Bearer ' + r.json('success.data.accessToken') } };
+  }
+  for (const p of ['/v1/home', '/v1/friends', '/v1/feed'])
+    check(http.get(BASE + p, auth),
+          { '200': (r) =&gt; r.status === 200 });
+}</code></pre>
+<small>실행: <code>k6 run -e BASE=http://시험서버 s1_open_app.js</code></small>
+</div>
+<div class="card"><b>Locust</b> <small>s1_open_app.py</small>
+<pre><code>import itertools
+from locust import HttpUser, task, between
+
+ids = itertools.count(1)
+
+class AppUser(HttpUser):
+    wait_time = between(1, 3)
+
+    def on_start(self):
+        r = self.client.post("/v1/auth/kakao",
+            json={"kakaoAccessToken": f"k_{next(ids)}"})
+        token = r.json()["success"]["data"]["accessToken"]
+        self.client.headers["Authorization"] = \
+            f"Bearer {token}"
+
+    @task
+    def open_app(self):
+        for p in ("/v1/home", "/v1/friends", "/v1/feed"):
+            self.client.get(p)
+
+# 문턱(p95 &lt; 300 ms) 판정은 따로 이벤트 훅으로 짜야 함</code></pre>
+<small>실행: <code>locust -f s1_open_app.py --headless -u 50 -r 1 -t 6m --csv out --host http://시험서버</code></small>
+</div>
+</div>
+<p><small>가짜 계정 <code>k_숫자</code>는 시험 서버의 <code>KAKAO_MODE=fake</code>에서만 됨. 가입이 안 된 계정은 가짜 데이터 넣기(<code>seed_load.py</code>)에서 미리 만들어 둔다.</small></p>
+
+<h2>4. 나머지 정할 것 3개 (계획 0070)</h2>
+<div class="card">
+<b>1. 어디서 돌리나</b> — 결정(11/25): 시험 서버는 <b>집 PC</b>(Docker), 부하는 같은 공유기의 <b>노트북</b>에서 k6<br>
+<b>부하를 만드는 쪽</b>도 어딘가에 있어야 한다. 같은 기계에서 돌리면 서버와 CPU를 나눠 써서 수치가 틀어진다. 처음엔 오라클 무료 ARM VM을 하나 더 만들 생각이었지만, <a href="https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm">오라클 문서</a> 기준 A1 무료는 2 OCPU·12 GB이고 운영 서버가 이미 다 써서 무료가 아니었다(이 HTML 첫판의 "합계 4코어·24 GB"는 옛 기준). 서버 안의 순수 처리 시간은 지연 로그 미들웨어로 따로 본다.
+</div>
+<div class="card">
+<b>3. 관측 범위</b> — 추천: <b>최소</b>(요청마다 지연 로그 + <code>pg_stat_statements</code> + 도구 요약 + <code>docker stats</code>)<br>
+Prometheus·Grafana는 대시보드가 보기 좋지만 시험 VM 메모리와 설정이 늘어난다. 기준선을 먼저 뽑고, 발표·면접용 그림이 필요하면 그때 붙인다(k6는 Prometheus로 보내기가 내장이라 나중에 붙이기 쉬움).
+</div>
+<div class="card">
+<b>4. 가짜 데이터 크기</b> — 추천: 계획 그대로 <b>사용자 1만 · 기록 100만까지 단계로</b>(1천 → 1만 → 10만 → 100만)<br>
+지금 운영 DB(사용자 2명·기록 20개)로는 인덱스 차이가 안 보인다. 어느 단계에서 피드·목록이 꺾이는지가 다음 계획(인덱스·EXPLAIN)의 근거가 된다. 크기는 가정한 시험값이고 실제 사용자 수 예측이 아니다.
+</div>
+
+<h2>출처</h2>
+<ul class="src">
+<li>GitHub 별: GitHub API <code>repos/{owner}/{repo}</code>, 2026-11-25 조회 — <a href="https://github.com/grafana/k6">grafana/k6</a>, <a href="https://github.com/locustio/locust">locustio/locust</a>, <a href="https://github.com/apache/jmeter">apache/jmeter</a>, <a href="https://github.com/gatling/gatling">gatling/gatling</a>, <a href="https://github.com/artilleryio/artillery">artilleryio/artillery</a>, <a href="https://github.com/tsenart/vegeta">tsenart/vegeta</a>, <a href="https://github.com/wg/wrk">wg/wrk</a>, <a href="https://github.com/rakyll/hey">rakyll/hey</a></li>
+<li><a href="https://www.thoughtworks.com/radar/tools/k6">ThoughtWorks Technology Radar — k6</a> (Assess 2020-10 → Trial 2021-04 → Adopt 2022-10)</li>
+<li><a href="https://grafana.com/blog/open-source-load-testing-tool-review/">Grafana, Open source load testing tool review 2020</a> (k6 만든 쪽 자료라 감안)</li>
+<li><a href="https://gatling.io/blog/jmeter-alternative">Gatling, JMeter alternative</a> (JMeter가 1998년부터 기본 선택지, 경쟁사 자료)</li>
+<li><a href="https://dev.to/qainsights/jmeter-vs-k6-vs-locust-in-2026-which-load-testing-tool-should-you-pick-366f">QAInsights, JMeter vs k6 vs Locust in 2026</a>, <a href="https://www.blazemeter.com/blog/open-source-load-testing-tools">BlazeMeter, open source load testing tools</a> (블로그·업체 자료)</li>
+<li>도구 문서: <a href="https://grafana.com/docs/k6/latest/">k6 문서</a>(thresholds·WebSocket·multipart), <a href="https://docs.locust.io/en/stable/">Locust 문서</a>(headless·CSV·분산 실행·다른 프로토콜 직접 짜기)</li>
+</ul>
+</main>
+</body>
+</html>
