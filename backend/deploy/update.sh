@@ -22,13 +22,15 @@ $C up -d db
 # 마이그레이션은 따로, 실패하면 여기서 멈춤(지금 돌고 있는 API는 그대로 둠)
 $C run --rm --no-deps api python -m alembic upgrade head
 $C up -d --remove-orphans
-# Caddyfile은 파일을 끼워 넣은 것이라 바뀌어도 컨테이너가 다시 안 만들어짐 → 늘 다시 읽힘(같으면 아무 일 없음).
-# 빠뜨리면 경로 나눔(계획 0073)이 옛 설정으로 남아 /v1/realtime이 api로 가 실시간이 끊긴다(0071·0073 리뷰)
-for i in 1 2 3 4 5; do   # 막 새로 뜬 Caddy는 관리 API가 늦게 열릴 수 있음
-  $C exec -T caddy caddy reload --config /etc/caddy/Caddyfile && break
-  [ "$i" = 5 ] && { echo "Caddy 설정을 다시 읽지 못함: $C logs caddy" >&2; exit 1; }
-  sleep 2
-done
+# Caddyfile은 파일 하나를 끼워 넣은(bind mount) 것이라, git reset이 파일을 새로 만들면 컨테이너는 옛 파일을 계속 본다
+# (caddy reload도 옛 파일을 읽음). 11/26 0073 첫 배포에서 이것 때문에 /v1/realtime·사진 인증이 몇 분 api로 가 끊김.
+# → 컨테이너 안 파일이 서버 파일과 다르면 Caddy를 새로 만든다(몇 초 끊김). 같으면 아무것도 안 함
+if ! $C exec -T caddy cat /etc/caddy/Caddyfile | cmp -s - Caddyfile; then
+  echo "Caddyfile이 바뀜 → Caddy를 새로 만듦"
+  $C up -d --force-recreate --no-deps caddy
+  sleep 3
+  $C exec -T caddy cat /etc/caddy/Caddyfile | cmp -s - Caddyfile || { echo "Caddy가 새 Caddyfile을 못 읽음: $C logs caddy" >&2; exit 1; }
+fi
 docker image prune -f >/dev/null
 
 # 앱 서비스 셋(api·realtime·ocr, 계획 0073)이 모두 건강해질 때까지 기다림(최대 90초, ocr은 모델을 올리느라 조금 늦음)
