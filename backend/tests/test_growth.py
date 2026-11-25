@@ -64,7 +64,7 @@ def test_unverified_runs_add_nothing(db_client, me, db):
     r = data(skip(db_client, me, skipped, "SKIPPED"))["rewards"]
     assert (r["xpBeforeM"], r["xpAfterM"], r["leveledUp"], r["weeklyGoal"]["counted"]) == (0, 0, False, False)
     mismatch = finished(db_client, me, cid="c2")
-    assert data(read_then(db_client, me, mismatch, "d3800_t1000.jpg"))["rewards"]["xpAfterM"] == 0
+    assert data(read_then(db_client, me, mismatch, "d5100_t1000.jpg"))["rewards"]["xpAfterM"] == 0
     late = finished(db_client, me, cid="c3")
     db.execute(update(Run).where(Run.id == late).values(verification_deadline=ago(minutes=1)))
     db.commit()

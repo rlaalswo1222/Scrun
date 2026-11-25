@@ -72,9 +72,11 @@ def run_row(db, run_id) -> Run:
 # ---------- 판정(순수 함수) ----------
 @pytest.mark.parametrize("console_m,console_s,ok_d,ok_t", [
     (3000, 1000, True, True),
-    (3529, 1000, True, True),     # (3529 − 3000) / 3529 = 14.99%
-    (3530, 1000, False, True),    # 15.01%
-    (2610, 1000, True, True),     # −14.9%
+    (5000, 1000, True, True),     # (5000 − 3000) / 5000 = 40%: 말이 안 되는 값만 거름(계획 0069)
+    (5001, 1000, False, True),    # 40.01%
+    (2143, 1000, True, True),     # −39.99%(센서가 더 많이 잡음)
+    (2142, 1000, False, True),    # −40.06%
+    (2541, 1000, True, True),     # −18.1%: 11/21 실사용(−17.5%)처럼 15% 때 떨어지던 차이
     (3000, 970, True, True),      # 계기판이 30초 짧음까지
     (3000, 969, True, False),
     (3000, 1300, True, True),     # 5분 길게까지(카운트다운 전 걷기)
@@ -138,7 +140,7 @@ def test_read_values_are_confirmed_before_judging(db_client, me, db):
     assert len(v[0].photo_hashes) == 3  # 사진은 해시만
 
 
-@pytest.mark.parametrize("name", ["d3600_t1000", "d3000_t1400", "d3000_t900"])
+@pytest.mark.parametrize("name", ["d5100_t1000", "d2100_t1000", "d3000_t1400", "d3000_t900"])
 def test_confirmed_mismatch_is_unverified_without_retake(db_client, me, db, name):
     """맞아요 뒤 오차 초과는 다시 찍기 없이 미인증(계획 0045 정할 것 3: 값이 맞으니 차이는 진짜)."""
     run_id = finished(db_client, me)
