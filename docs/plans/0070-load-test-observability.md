@@ -42,7 +42,12 @@
 - 11/25 시험 서버를 오라클 VM 대신 집 PC로(무료 한도 초과 확인). PC에 OpenSSH 서버 + 노트북 전용 키(`~/.ssh/scrun_pc`), 저장소 `C:\Users\admin\scrun`(develop 얕은 복제), compose 빌드·마이그레이션·실행, 노트북에서 `http://192.168.0.2:8000` 응답 확인(약관 21 ms, 가짜 로그인 됨), `pg_stat_statements` 켬
   - SSH 세션에서는 Windows 자격 증명 관리자를 못 써서 `docker pull`이 실패 → SSH용 설정 `C:\Users\admin\.docker-ssh`(빈 로그인만 돌려주는 도우미 `docker-credential-anon.cmd`)를 `DOCKER_CONFIG`·`PATH`로 씀
   - PC 네트워크 프로필이 "공용"인데 Docker Desktop 규칙으로 8000이 열림 → 시험할 때만 켜고 끝나면 `docker compose ... stop`. 공유기 포트 포워딩은 하지 않음
-- 다음: 지연 로그 미들웨어 → `seed_load.py` → k6 설치(노트북) → S1부터 시나리오
+- 11/25 지연 로그 미들웨어 PR #137(`app/core/request_log.py`): 요청마다 `{rid, method, path 틀, status, ms, db_n, db_ms, pool_ms}`. `/code-review` 반영(실패 쿼리 집계, 풀 대기 = `get_db`에서 연결을 미리 받는 시간, 헬스체크는 `X-Scrun-Probe: 1` 헤더로 제외, `REQUEST_LOG` 1·0만). PC에서 첫 커밋 동작 확인(약관 서버 1.6 ms vs 노트북에서 20–43 ms)
+  - **WebSocket(S3)은 이 로그에 안 남음**(HTTP 미들웨어를 안 지남) → S3 서버 쪽은 k6 WebSocket 지표 + `docker stats`로 봄
+  - uvicorn 기본 접근 로그(실제 경로·IP)는 그대로 → 끌지 민재 결정
+  - 판정 "켜도 운영 응답 시간이 눈에 띄게 늘지 않음"은 #137 배포 뒤 `REQUEST_LOG=0`/1로 `/v1/agreements` 비교
+- 11/25 노트북에 k6 v2.4.0 설치(winget `GrafanaLabs.k6`)
+- 다음: `seed_load.py`(1천 기록부터) → k6 S1
 
 ## 맥 할 일
 없음
