@@ -16,7 +16,10 @@ from .core.envelope import (
     unhandled_error_handler,
     validation_error_handler,
 )
+from .core.config import settings
 from .core.errors import ApiError
+from .core.request_log import install as install_request_log
+from .core.request_log import request_log_middleware
 from .core.kakao import close_client as close_kakao_client
 from .core.ocr import start_ocr, stop_ocr
 from .realtime import router as realtime
@@ -41,6 +44,9 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="SCRUN API", version="0.1.0-stub", description=DESCRIPTION, lifespan=lifespan)
 
+if settings.request_log:   # 요청마다 처리 시간 한 줄(계획 0070). 요청 ID 미들웨어 안쪽이라 rid를 같이 남김
+    install_request_log()
+    app.middleware("http")(request_log_middleware)
 app.middleware("http")(request_id_middleware)
 app.add_exception_handler(ApiError, api_error_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)

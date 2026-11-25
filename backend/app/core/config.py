@@ -9,6 +9,7 @@
 - VERIFY_*: 계기판 인증 판정 값(계획 0038). 없으면 아래 VerificationPolicy 기본값
 - BOT_FILL_TO·BOT_PACES_KMH: 페이스 봇(계획 0040). 없으면 아래 BotPolicy 기본값, BOT_FILL_TO=0이면 봇 없음
 - FRIEND_ADD_FAIL_LIMIT·FRIEND_ADD_FAIL_WINDOW_S: 틀린 친구 코드 제한(계획 0044). 없으면 아래 FriendPolicy 기본값
+- REQUEST_LOG: 요청마다 처리 시간·DB 쿼리 수를 한 줄씩(계획 0070). 기본 켜짐, 0이면 끔
 """
 import logging
 import os
@@ -183,6 +184,7 @@ class Settings:
     refresh_reuse_grace_s: int = 30  # 교체 직후 같은 refresh 토큰 재시도 허용(응답 유실)
     max_sessions_per_user: int = 5  # 살아 있는 로그인(기기) 수 상한
     ocr_engine: str = "none"
+    request_log: bool = True  # 요청마다 처리 시간 한 줄(계획 0070, app/core/request_log.py). REQUEST_LOG=0이면 끔
     verification: VerificationPolicy = VerificationPolicy()
     bots: BotPolicy = BotPolicy()
     friends: FriendPolicy = FriendPolicy()
@@ -222,6 +224,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         kakao_app_id=kakao_app_id,
         kakao_admin_key=env.get("KAKAO_ADMIN_KEY", "").strip() or None,
         ocr_engine=ocr_engine,
+        request_log=env.get("REQUEST_LOG", "1").strip().lower() not in ("0", "false", "off", "no"),
         verification=load_verification(env),
         bots=load_bots(env),
         friends=load_friends(env),
