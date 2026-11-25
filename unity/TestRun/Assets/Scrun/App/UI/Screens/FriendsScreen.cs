@@ -82,6 +82,12 @@ namespace Scrun.App
                 gotRunning = r.Result;
                 gotFeed = p.Result;
             };
+            // 앱을 다시 켰을 때: 지난 응답(캐시)으로 먼저 그림(계획 0074 A). 친구 목록이 있어야 그림(달리는 친구·피드는 비어도 됨)
+            if (friends == null && !fromPull && Api.Friends.CachedList() is List<Friend> cachedFriends)
+            {
+                Apply(cachedFriends, Api.Friends.CachedRunning(), Api.Friends.CachedFeed());
+                state.Clear(); // 공통 칸의 스켈레톤·빈 상태 표시를 지움(아래 Feedback.Load가 조용히 받음)
+            }
             // 처음(아직 보여 줄 게 없음)만 스켈레톤(실패하면 그 자리에), 탭에 다시 들어오면 지금 목록을 둔 채 조용히.
             // 끌어서 새로고침은 위 표시만 두고 실패는 안내하되, 그새 다른 화면으로 갔으면 그 화면 위에 띄우지 않음
             bool ok = fromPull && friends != null
@@ -92,6 +98,11 @@ namespace Scrun.App
             pull.Busy(false);
             if (Root.panel == null) return; // 기다리는 사이 화면을 떠남
             if (!ok) return; // 처음이면 공통 칸이 실패를 보임, 아니면 지난 목록 그대로
+            Apply(gotFriends, gotRunning, gotFeed);
+        }
+
+        void Apply(List<Friend> gotFriends, List<RunningFriend> gotRunning, FeedPage gotFeed)
+        {
             friends = gotFriends ?? new List<Friend>();
             FriendDirectory.Set(friends);
             running = gotRunning ?? new List<RunningFriend>();

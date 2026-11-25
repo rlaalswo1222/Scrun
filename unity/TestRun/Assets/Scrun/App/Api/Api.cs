@@ -30,7 +30,11 @@ namespace Scrun.App
         static void Ensure()
         {
             if (client != null) return;
-            client = new ApiClient(new UnityHttpTransport(), new Session(Native.SecureStore), () => ApiConfig.BaseUrl);
+            client = new ApiClient(new UnityHttpTransport(), new Session(Native.SecureStore), () => ApiConfig.BaseUrl)
+            {
+                // 화면 첫 페이지 캐시(계획 0074 A). 앱 안에서만 읽히는 곳, 앱 버전이 바뀌면 안 씀
+                Cache = new ResponseCache(System.IO.Path.Combine(Application.persistentDataPath, "api-cache"), Application.version),
+            };
             auth = new AuthApi(client);
             users = new UsersApi(client);
             courses = new CoursesApi(client);
@@ -143,6 +147,13 @@ namespace Scrun.App
             finally { c.Session.LoggingOut = false; }
         }
 
+        // ---- 캐시에 둔 마지막 응답(계획 0074 A): 화면이 새로 받기 전에 먼저 그림. 없으면 null ----
+        public HomeData CachedHome() => c.Peek<HomeData>("/v1/home");
+        public Me CachedMe() => c.Peek<Me>("/v1/users/me");
+        public Progress CachedProgress() => c.Peek<Progress>("/v1/users/me/progress");
+        public CalibrationRecord CachedCalibration() => c.Peek<CalibrationRecord>("/v1/users/me/calibration");
+        public WeeklyGoal CachedWeeklyGoal() => c.Peek<WeeklyGoal>("/v1/users/me/weekly-goal");
+
         // 홈 한 번에(B-01–B-04, 계획 0057)
         public async Task<HomeData> HomeAsync() =>
             await c.GetAsync<HomeData>("/v1/home", AuthMode.User) ?? throw new ApiException(ApiFailure.BadResponse, "홈 응답이 비었습니다.");
@@ -201,13 +212,18 @@ namespace Scrun.App
         }
 
         // 내 끝난 기록(최신순 20개씩). cursor는 앞 쪽의 NextCursor, month(YYYY-MM)는 그 달만(F-01 달 칩, 서버가 사용자 시간대로 자름)
-        public async Task<RunListPage> ListAsync(string cursor = null, string month = null)
+        public async Task<RunListPage> ListAsync(string cursor = null, string month = null) =>
+            await c.GetAsync<RunListPage>(ListPath(cursor, month), AuthMode.User) ?? new RunListPage();
+
+        // 첫 쪽의 캐시(계획 0074 A, 달 칩도). 없으면 null
+        public RunListPage CachedList(string month = null) => c.Peek<RunListPage>(ListPath(null, month));
+
+        static string ListPath(string cursor, string month)
         {
             var query = new List<string>();
             if (month != null) query.Add("month=" + Uri.EscapeDataString(month));
             if (cursor != null) query.Add("cursor=" + Uri.EscapeDataString(cursor));
-            return await c.GetAsync<RunListPage>(query.Count == 0 ? "/v1/runs" : "/v1/runs?" + string.Join("&", query), AuthMode.User)
-                   ?? new RunListPage();
+            return query.Count == 0 ? "/v1/runs" : "/v1/runs?" + string.Join("&", query);
         }
 
         // 기록 상세(E-12 결과·F-03, 계획 0051). 내 끝난 기록만
@@ -292,6 +308,11 @@ namespace Scrun.App
         public Task<List<Friend>> ListAsync() => c.GetAsync<List<Friend>>("/v1/friends", AuthMode.User);
 
         public Task<List<RunningFriend>> RunningAsync() => c.GetAsync<List<RunningFriend>>("/v1/friends/running", AuthMode.User);
+
+        // 캐시에 둔 마지막 응답(계획 0074 A). 없으면 null
+        public List<Friend> CachedList() => c.Peek<List<Friend>>("/v1/friends");
+        public List<RunningFriend> CachedRunning() => c.Peek<List<RunningFriend>>("/v1/friends/running");
+        public FeedPage CachedFeed() => c.Peek<FeedPage>("/v1/feed");
 
         // 같이 달리기(G-03, 계획 0047): 친구가 courseId에서 달리는 중이면 그 맵에 입장(응답은 맵 입장과 같음 + NearFriend).
         // 실패: 409 FRIEND_NOT_RUNNING(그새 끝냄·코스를 옮김)·404 USER_NOT_FOUND(친구 아님) → 앱은 그 코스로 일반 입장. 그 밖은 맵 입장과 같음
