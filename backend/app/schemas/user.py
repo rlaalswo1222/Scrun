@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date
 from enum import Enum
 from typing import Any, Optional
 
@@ -6,7 +6,7 @@ from pydantic import Field, StrictBool, field_validator
 
 from ..core import nickname as nick
 from ..core import timezones as tz
-from ..core.model import CamelModel
+from ..core.model import CamelModel, UtcDatetime
 
 
 class Me(CamelModel):
@@ -16,7 +16,7 @@ class Me(CamelModel):
     weight_kg: int
     friend_code: str = Field(description="친구 추가용 코드")
     timezone: str
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class MeUpdate(CamelModel):
@@ -80,7 +80,7 @@ class CalibrationUpload(CamelModel):
 
 
 class Calibration(CalibrationUpload):
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class WeeklyGoalCycle(CamelModel):

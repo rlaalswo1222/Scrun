@@ -150,3 +150,22 @@ def test_설정은_true_false만(db_client, value):
     me = signup(db_client, "k_1")
     fail(db_client.patch(SETTINGS, json={"feedShareDefault": value}, headers=me), 400, "VALIDATION_ERROR")
     assert data(db_client.get(SETTINGS, headers=me)) == {"feedShareDefault": True}
+
+
+def test_시계가_조금_뒤로_가도_방금_받은_토큰은_통과(db_client):
+    """발급 시각(iat)이 검사하는 쪽 시계보다 조금 미래여도 통과(시계 차이 여유, app/core/tokens.py CLOCK_SKEW_S).
+    0073 측정에서 로그인 직후 401이 난 일(가설: 가상 머신 시계가 뒤로 보정됨). 크게 미래면 여전히 거절"""
+    import time
+
+    import jwt
+
+    from app.core.config import settings
+    me = signup(db_client, "k_1")
+    user_id = data(db_client.get(ME, headers=me))["userId"]
+
+    def issued_in(seconds):
+        now = int(time.time()) + seconds
+        return bearer(jwt.encode({"sub": user_id, "typ": tokens.ACCESS, "iat": now, "exp": now + 3600},
+                                 settings.jwt_secret, algorithm=tokens.ALGORITHM))
+    assert db_client.get(ME, headers=issued_in(10)).status_code == 200
+    fail(db_client.get(ME, headers=issued_in(tokens.CLOCK_SKEW_S + 60)), 401, "UNAUTHORIZED")

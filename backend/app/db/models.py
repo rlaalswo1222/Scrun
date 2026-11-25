@@ -284,6 +284,16 @@ class Friendship(_Created, Base):
     __table_args__ = (CheckConstraint("user_a_id < user_b_id", name="ck_friendships_order"),)
 
 
+class FriendCodeFailure(Base):
+    """틀린 친구 코드 시도 한 번(맞혀 보기 막기, 계획 0044 → 0073: 일반 API 프로세스가 여럿이라 메모리 대신 DB). app/core/attempts.py"""
+    __tablename__ = "friend_code_failures"
+    id: Mapped[str] = mapped_column(Text, primary_key=True)
+    user_id: Mapped[str] = mapped_column(Text, ForeignKey("users.id", ondelete=CASCADE), nullable=False)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (Index("ix_friend_code_failures_user_at", "user_id", "at"),)
+
+
 class Event(Base):
     __tablename__ = "events"
     id: Mapped[str] = mapped_column(Text, primary_key=True)

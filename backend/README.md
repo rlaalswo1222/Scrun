@@ -11,7 +11,7 @@ cd backend
 cp .env.example .env                                            # 접속 정보·키. .env는 git에 안 올림
 ../.venv/Scripts/python -c "import secrets; print(secrets.token_urlsafe(48))"   # 나온 값을 .env의 JWT_SECRET=에
 docker compose up -d                                            # PostgreSQL(개발 DB scrun + 테스트 DB scrun_test)
-../.venv/Scripts/python -m alembic upgrade head                 # 테이블 21개 + 약관 목록 + 코스 4개
+../.venv/Scripts/python -m alembic upgrade head                 # 테이블 22개 + 약관 목록 + 코스
 ```
 `.env`에 `JWT_SECRET`이 없거나 32자 미만이면 서버가 시작하지 않는다(`ConfigError`). `KAKAO_MODE`를 안 적으면 `real`이고 `KAKAO_APP_ID`가 필요하다. 로컬 개발은 `.env.example`대로 `KAKAO_MODE=fake`. 테스트·예시 내보내기는 `.env` 없이도 돈다(임시 키 + 가짜 카카오, `app/testenv.py`).
 Docker Desktop이 켜져 있어야 한다. DB를 지우고 처음부터: `docker compose down -v` → 위 두 줄 다시.
@@ -51,16 +51,19 @@ http://localhost:8000/docs 에서 눌러 본다.
 ```
 app/
   main.py            앱 만들기, 오류 처리 연결, 라우터 묶기
-  core/              공통: envelope(응답 껍데기·오류 처리·requestId), errors(오류 코드 표), config(환경 변수 + 검사),
+  core/              공통: envelope(응답 껍데기·오류 처리), errors(오류 코드 표), config(환경 변수 + 검사),
                      envfile(.env 읽기·DB 주소만, 마이그레이션용),
                      tokens(access·가입용·refresh 토큰), sessions(refresh 토큰 수명: 재발급·재사용·기기·상한),
                      kakao(카카오 확인, 가짜/진짜), security(진짜 로그인 확인), auth(스텁 API용 로그인 확인), occupancy(코스별 지금 맵에 있는 사람 수, 세는 곳 한 곳),
-                     nickname(정규화·형식·금칙어·중복), model(camelCase),
+                     nickname(정규화·형식·금칙어·중복),
                      run_access(러닝 상태 이름·내 기록 찾기·인증 마감), ocr(계기판 사진 읽기 엔진 자리, 가짜/없음),
                      verification(센서-계기판 대조 판정, 순수 함수),
-                     request_log(요청마다 처리 시간·DB 쿼리 수 JSON 한 줄, 계획 0070, REQUEST_LOG=0이면 끔),
+                     request_log(요청 ID X-Request-Id + 요청마다 처리 시간·DB 쿼리 수 JSON 한 줄, 순수 ASGI, 계획 0070·0073, REQUEST_LOG=0이면 로그만 끔),
+                     attempts(틀린 친구 코드 횟수, DB), model(camelCase·시각 칸 UtcDatetime),
                      admission(동시 처리 번호표·빠른 503, 계획 0071, ADMISSION_LIMIT=0이면 끔)
-  db/                models(테이블 21개), session(DB 연결), ids(ULID), testing(테스트 DB로 바꿔 끼우기)
+  db/                models(테이블 22개), session(DB 연결), ids(ULID), testing(테스트 DB로 바꿔 끼우기)
+  realtime/          hub(방 상태, 메모리·한 프로세스), router(WebSocket /v1/realtime), link(일반 API가 허브를 부르는 곳: 같은 프로세스 또는
+                     REALTIME_URL로 HTTP, 서킷 브레이커), internal(허브 내부 API /internal/hub/*, 계획 0073)
   schemas/           요청·응답 모델(도메인별). Swagger의 Schemas
   routers/           API 주소(도메인별). auth.py, users.py의 닉네임 확인·내 정보·설정·보정값, courses.py, runs.py, verification.py, friends.py(같이 달리기 빼고)가 진짜, 나머지는 스텁
   testenv.py         테스트·예시 내보내기 전용 설정(임시 서명 키 + 가짜 카카오, app보다 먼저 부름)
@@ -72,7 +75,8 @@ scripts/             export_openapi(OpenAPI·예시), notion_pages(노션 본문
 tests/               test_contract(스텁 API 계약), test_auth(로그인·닉네임 진짜 흐름, 동시 요청 포함), test_courses(코스·맵 입장 진짜 흐름),
                      test_config(설정 검사), test_kakao(진짜 카카오 응답 처리), test_nickname(닉네임 규칙),
                      test_runs(러닝 시작·종료 진짜 흐름), test_verification(계기판 인증: 판정 경계·재촬영·마감·동시 요청),
-                     test_request_log(요청 로그: 경로 틀·헬스체크 제외·실패 쿼리), test_admission(번호표: 503·기다림·헬스체크·반납)
+                     test_request_log(요청 로그·요청 ID: 경로 틀·헬스체크 제외·실패 쿼리), test_admission(번호표: 503·기다림·헬스체크·반납),
+                     test_realtime_link(허브 내부 API·원격 허브·서킷 브레이커·바쁠 때 입장 503), test_link_*(허브를 거치는 기존 흐름을 원격 허브로 한 번 더)
 ```
 
 ## 테스트·내보내기 (DB가 떠 있어야 함)
@@ -94,8 +98,9 @@ tests/               test_contract(스텁 API 계약), test_auth(로그인·닉�
 
 ## 팀 공용 개발 서버 (11/09, 계획 0019)
 - 주소 **`https://161-118-211-155.sslip.io`** (`/docs`로 눌러 보기). 오라클 싱가포르 ARM, Docker Compose(API + PostgreSQL + Caddy), HTTPS 인증서는 Caddy가 자동
+- **서비스 셋(계획 0073)**: 같은 이미지를 `api`(일반 API, uvicorn 프로세스 2개) · `realtime`(WebSocket + 허브, 하나) · `ocr`(계기판 사진 인증, 하나)로 띄우고 Caddy가 경로로 나눔(`deploy/Caddyfile`). `api`는 `REALTIME_URL`로 실시간 프로세스의 허브 내부 API(`/internal/hub/*`, 밖에선 404)를 부름. 로그: `docker logs scrun-api-1`·`scrun-realtime-1`·`scrun-ocr-1`(OCR 로그는 이제 `ocr`)
 - **진짜 카카오만**(`KAKAO_MODE=real`) → 아이폰 앱이 붙는 곳. 에디터의 가짜 로그인(`k_123`)은 이 서버에서 `INVALID_KAKAO_TOKEN`으로 거절되니 에디터는 지금처럼 로컬 서버(`127.0.0.1`, 한글 이름 컴퓨터에서 `localhost`는 실시간이 안 붙음: `docs/api/realtime.md`)를 쓴다
-- 접속은 민재만(SSH). 다시 올리기: 서버에서 `~/scrun/backend/deploy/update.sh [브랜치, 기본 develop]`(git pull → 빌드 → 마이그레이션(실패하면 멈추고 지금 API는 그대로) → 재시작 → API 건강 확인)
+- 접속은 민재만(SSH). 다시 올리기: 서버에서 `~/scrun/backend/deploy/update.sh [브랜치, 기본 develop]`(git pull → 빌드 → 마이그레이션(실패하면 멈추고 지금 API는 그대로) → 재시작 → `api`·`realtime`·`ocr` 건강 확인)
 - 비밀값은 서버의 `backend/deploy/.env`에만(칸은 `deploy/.env.server.example`). 매일 한국 시간 4시 30분 `deploy/daily.sh`: DB 백업 최근 7개(`~/scrun-backups`, 이 계정만 읽기) + 만료 토큰 정리. 서버 밖 백업·운영 서버 분리·진짜 도메인은 BL-51
 - 지금은 개발용이라 데이터가 지워질 수 있음(테이블을 바꾸는 PR이 합쳐지면 마이그레이션이 그대로 돎)
 

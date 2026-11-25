@@ -4,7 +4,9 @@ namespace Scrun.App
 {
     // 같은 맵의 다른 러너 한 명(실시간 방에서 받은 것). 위치는 받은 d에서 v × 지난 시간만큼 앞으로 내다보고,
     // 새 값이 오면 지금 보이는 자리와의 차이를 CorrectSec에 걸쳐 줄여 순간이동 없이 맞춘다(계획 0029, 가설: 지연 버퍼보다 낫다).
-    // 시각은 앱 시계(초, RealtimeClock.Now). 서버 시각과 맞출 필요 없음(받은 순간 기준).
+    // 시각은 앱 시계(초, RealtimeClock.Now). "지난 시간"은 값이 상대 폰에서 나온 때(sentAt)부터: 받은 값은 상대 폰 → 서버 →
+    // 서버가 모아 보내기(0.5초마다) → 내 폰만큼 묵어 있어, 받은 순간부터 세면 상대가 그만큼 뒤에 보였다(10 km/h에 1–1.3 m,
+    // 계획 0074). sentAt은 RunTogetherRoom.SentAt이 서버의 받은 시각 at과 시계 차이로 어림(없으면 받은 순간).
     public sealed class RemoteRunner
     {
         public const double CorrectSec = 0.5;  // 새 값으로 맞추는 시간
@@ -36,7 +38,8 @@ namespace Scrun.App
             lap = lapM;
         }
 
-        public void Sample(float d, float v, bool running, double now)
+        // sentAt: 이 값이 상대 폰에서 나온 때(앱 시계, now 이하). 모르면 now(받은 순간)
+        public void Sample(float d, float v, bool running, double now, double? sentAt = null)
         {
             if (float.IsNaN(d) || float.IsNaN(v)) return;
             Running = running;
@@ -47,14 +50,16 @@ namespace Scrun.App
             lastD = d;
             lastV = v;
             anchorD = d;
-            anchorT = now;
+            anchorT = Math.Min(now, sentAt ?? now);
             SpeedKmh = v;
             if (first)
             {
                 correction = 0;
                 return;
             }
-            float diff = LoopMath.Delta(LoopMath.Wrap(d, lap), shown, lap);
+            // 새 기준으로 지금 있어야 할 자리(묵은 만큼 앞)와 지금 보이는 자리의 차이를 CorrectSec에 걸쳐 줄임
+            float target = (float)(d + v / 3.6 * (now - anchorT));
+            float diff = LoopMath.Delta(LoopMath.Wrap(target, lap), shown, lap);
             correction = Math.Abs(diff) > SnapM ? 0 : diff;
             correctionT = now;
         }

@@ -38,13 +38,22 @@ def issue_realtime(user_id: str, map_id: str) -> str:
     return _encode(user_id, REALTIME, settings.realtime_token_ttl_s, map=map_id)
 
 
+# 시계 차이 여유(초). 발급 시각(iat)이 검사하는 쪽 시계보다 미래면 PyJWT가 거절하는데, 시계가 잠깐 뒤로 보정되면(가상 머신 시계 맞추기)
+# 방금 받은 토큰이 401이 됨 — 0073 측정에서 로그인 직후 가상 사용자 2명이 한 바퀴씩 401(DB까지 안 감, 가설: Hyper-V TimeSync).
+# 서버가 여럿이면 서버끼리 시계도 조금씩 다름. 여유는 발급 시각에만: PyJWT의 leeway는 만료(exp)에도 걸려 만료된 토큰이
+# 30초 더 통하게 되므로(계정 삭제 같은 API까지, test_expired_token_cannot_delete) 만료는 여유 없이 따로 본다
+CLOCK_SKEW_S = 30
+
+
 def _decode(token: str) -> dict:
     try:
-        return jwt.decode(token, settings.jwt_secret, algorithms=[ALGORITHM])
-    except jwt.ExpiredSignatureError:
-        raise ApiError(ErrorCode.TOKEN_EXPIRED)
+        claims = jwt.decode(token, settings.jwt_secret, algorithms=[ALGORITHM], leeway=CLOCK_SKEW_S,
+                            options={"verify_exp": False, "require": ["exp", "iat"]})
     except jwt.InvalidTokenError:
         raise ApiError(ErrorCode.UNAUTHORIZED)
+    if not isinstance(claims["exp"], (int, float)) or claims["exp"] <= time.time():
+        raise ApiError(ErrorCode.TOKEN_EXPIRED)
+    return claims
 
 
 def decode_realtime(token: str) -> dict:

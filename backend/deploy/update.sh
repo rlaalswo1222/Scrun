@@ -21,15 +21,30 @@ $C build api
 $C up -d db
 # 마이그레이션은 따로, 실패하면 여기서 멈춤(지금 돌고 있는 API는 그대로 둠)
 $C run --rm --no-deps api python -m alembic upgrade head
-$C up -d
+$C up -d --remove-orphans
+# Caddyfile은 파일 하나를 끼워 넣은(bind mount) 것이라, git reset이 파일을 새로 만들면 컨테이너는 옛 파일을 계속 본다
+# (caddy reload도 옛 파일을 읽음). 11/26 0073 첫 배포에서 이것 때문에 /v1/realtime·사진 인증이 몇 분 api로 가 끊김.
+# → 컨테이너 안 파일이 서버 파일과 다르면 Caddy를 새로 만든다(몇 초 끊김). 같으면 아무것도 안 함
+if ! $C exec -T caddy cat /etc/caddy/Caddyfile | cmp -s - Caddyfile; then
+  echo "Caddyfile이 바뀜 → Caddy를 새로 만듦"
+  $C up -d --force-recreate --no-deps caddy
+  sleep 3
+  $C exec -T caddy cat /etc/caddy/Caddyfile | cmp -s - Caddyfile || { echo "Caddy가 새 Caddyfile을 못 읽음: $C logs caddy" >&2; exit 1; }
+fi
 docker image prune -f >/dev/null
 
-# API가 건강해질 때까지 기다림(최대 60초)
-for _ in $(seq 1 30); do
-  [ "$($C ps --format '{{.Service}} {{.Health}}' | awk '$1=="api"{print $2}')" = "healthy" ] && break
+# 앱 서비스 셋(api·realtime·ocr, 계획 0073)이 모두 건강해질 때까지 기다림(최대 90초, ocr은 모델을 올리느라 조금 늦음)
+unhealthy() {
+  for s in api realtime ocr; do
+    [ "$($C ps --format '{{.Service}} {{.Health}}' | awk -v s="$s" '$1==s{print $2}')" = "healthy" ] || echo "$s"
+  done
+}
+for _ in $(seq 1 45); do
+  [ -z "$(unhealthy)" ] && break
   sleep 2
 done
 $C ps --format 'table {{.Service}}\t{{.Status}}'
-[ "$($C ps --format '{{.Service}} {{.Health}}' | awk '$1=="api"{print $2}')" = "healthy" ] || { echo "API가 건강하지 않음: $C logs api" >&2; exit 1; }
+bad="$(unhealthy | tr '\n' ' ')"
+[ -z "$bad" ] || { echo "건강하지 않은 서비스: $bad— $C logs <서비스>" >&2; exit 1; }
 exit 0
 }

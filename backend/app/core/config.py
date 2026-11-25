@@ -60,8 +60,10 @@ class VerificationPolicy:
 
 @dataclass(frozen=True)
 class AdmissionPolicy:
-    """동시 처리 제한(계획 0071, app/core/admission.py). 번호표는 DB 연결 합계(db_pool_total) 중 실시간 WebSocket 몫 3을 뺀 12
-    (가설: 실시간은 입장·퇴장 때만 짧게 씀). 0071 측정으로 10·12·15를 비교해 정함. 0이면 끔. 연결 합계보다 크면 ConfigError
+    """동시 처리 제한(계획 0071, app/core/admission.py). 번호표·연결 풀은 프로세스마다. 기본 12는 한 프로세스일 때 DB 연결 15 중
+    실시간 몫 3을 뺀 값(0071 측정으로 정함). 일반 API를 프로세스 여러 개로 띄우면(계획 0073) 합계가 늘어 DB에 너무 몰리므로
+    compose에서 api는 프로세스당 6(2개 × 6 = 12, 0073 측정: 24면 200명 p95가 0.7초, 12면 0.5초)·realtime·ocr은 12로 준다.
+    합계·DB 연결 한도는 tests/test_config.py가 compose 파일로 확인. 0이면 끔. 연결 합계보다 크면 ConfigError
     (번호표가 연결보다 많으면 연결을 기다리는 요청이 다시 생김)."""
 
     limit: int = 12
@@ -221,6 +223,9 @@ class Settings:
     max_sessions_per_user: int = 5  # 살아 있는 로그인(기기) 수 상한
     ocr_engine: str = "none"
     request_log: bool = True  # 요청마다 처리 시간 한 줄(계획 0070, app/core/request_log.py). REQUEST_LOG=0이면 끔
+    # 실시간 프로세스 주소(계획 0073, app/realtime/link.py). 있으면 이 프로세스는 허브를 갖지 않고(WebSocket도 안 받음) 그 프로세스에
+    # 묻는다 — 일반 API를 프로세스 여러 개로 띄울 때. 없으면 허브가 이 프로세스에(로컬·테스트·한 프로세스 운영)
+    realtime_url: Optional[str] = None
     admission: AdmissionPolicy = AdmissionPolicy()
     verification: VerificationPolicy = VerificationPolicy()
     bots: BotPolicy = BotPolicy()
@@ -266,6 +271,10 @@ def load_settings(env: Mapping[str, str]) -> Settings:
     if ocr_engine not in OCR_ENGINES:
         raise ConfigError(f"OCR_ENGINE은 {' 또는 '.join(OCR_ENGINES)}여야 합니다(지금: {ocr_engine!r}).")
 
+    realtime_url = env.get("REALTIME_URL", "").strip() or None
+    if realtime_url is not None and not re.fullmatch(r"https?://[A-Za-z0-9.\-]+(:[0-9]+)?/?", realtime_url):
+        raise ConfigError(f"REALTIME_URL은 http://주소:포트 모양이어야 합니다(예: http://realtime:8000). 지금: {realtime_url!r}")
+
     return Settings(
         database_url=env.get("DATABASE_URL", DEFAULT_DATABASE_URL),
         jwt_secret=jwt_secret,
@@ -274,6 +283,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         kakao_admin_key=env.get("KAKAO_ADMIN_KEY", "").strip() or None,
         ocr_engine=ocr_engine,
         request_log=_load_switch(env, "REQUEST_LOG", default=True),
+        realtime_url=realtime_url,
         admission=_load_admission(env),
         verification=load_verification(env),
         bots=load_bots(env),

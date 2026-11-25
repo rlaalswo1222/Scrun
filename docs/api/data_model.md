@@ -34,6 +34,7 @@ erDiagram
     users ||--o{ user_impacts : "해금"
     impacts ||--o{ user_impacts : ""
     users ||--o{ friendships : "두 사람 한 줄"
+    users ||--o{ friend_code_failures : "틀린 친구 코드"
     users ||--o{ events : "지표"
 ```
 
@@ -213,6 +214,13 @@ erDiagram
 | **user_a_id** | → users (CASCADE) | user_a_id < user_b_id |
 | **user_b_id** | → users (CASCADE) | |
 
+**friend_code_failures** — 틀린 친구 코드 시도 한 번(맞혀 보기 막기, 계획 0044 → 0073). 일반 API를 프로세스 여러 개로 띄우므로 메모리 대신 여기서 셈(`app/core/attempts.py`). 같은 사람의 시도는 사람별 잠금(`pg_advisory_xact_lock`)으로 줄 세움, 미리 센 줄은 바로 커밋, 코드를 찾으면 그 줄을 지움. 옛 줄은 그 사람이 다시 시도할 때 지움(10분에 10번이라 사람당 많아야 10줄)
+| 칸 | 형식 | 설명 |
+|---|---|---|
+| **id** | text | |
+| user_id | → users (CASCADE) | (user_id, at) 색인 |
+| at | timestamptz | 시도 시각 |
+
 피드는 따로 저장하지 않음(인덱스 `runs(user_id, ended_at, id)`): 친구들의 `runs`(`shared`, 상태 `PENDING`·`VERIFIED`·`UNVERIFIED`)를 `ended_at` 최신순으로 조회. 마감 지난 `PENDING`은 응답에서 `UNVERIFIED`로 보임(DB는 주인이 읽을 때 닫힘). 틀린 코드 횟수(맞혀 보기 막기)는 DB가 아니라 서버 메모리.
 
 **events** — PRD 2.4 지표(목표 완주율·재방문율·인증 성공률·지루함)
@@ -266,7 +274,7 @@ R = 읽기, W = 쓰기. (노션 API 명세 42개)
 | GET /v1/runs/{runId}/rewards | R run_rewards, impacts |
 | GET /v1/users/me/progress | R user_progress, impacts, user_impacts |
 | PUT /v1/users/me/impact | W user_progress · R user_impacts |
-| POST /v1/friends | R users(friend_code) · W friendships |
+| POST /v1/friends | R users(friend_code) · W friendships, friend_code_failures |
 | GET /v1/friends | R friendships, users, runs (+ 실시간 방) |
 | GET /v1/friends/running | R friendships, users, courses (+ 실시간 방) |
 | GET /v1/friends/{userId} | R friendships, users, user_progress, runs, courses (+ 실시간 방) |

@@ -106,6 +106,7 @@ namespace Scrun.App
             int seq = ++loadSeq;
             if (fromPull) pull.Busy(true);
             string month = chips[selected].month;
+            if (shown == null && !fromPull) ShowCached(month); // 앱을 다시 켰을 때·칩을 바꿨을 때 지난 응답이 있으면 먼저(계획 0074 A)
             DateTime weekStart = default;
             RunListPage gotMonth = null;
             List<RunSummary> week = null;
@@ -139,6 +140,19 @@ namespace Scrun.App
             if (Root.panel == null) return; // 기다리는 사이 화면을 떠남
             if (!ok) return; // 처음이면 공통 칸이 실패를 보임, 아니면 지난 목록 그대로
             Show(week, gotMonth, weekStart, keepLoaded: !fromPull && !chipChanged, goal: goal);
+        }
+
+        // 캐시(전체 첫 쪽·고른 달 첫 쪽·주간 목표)로 먼저 그림. 전체·그 달이 둘 다 있어야(주간 목표는 없으면 월요일부터).
+        // 이번 주 요약은 첫 쪽만으로(한 주에 20번 넘게 달린 드문 경우는 새로 받은 뒤 맞춰짐)
+        void ShowCached(string month)
+        {
+            var all = Api.Runs.CachedList();
+            var byMonth = month == null ? all : Api.Runs.CachedList(month);
+            if (all == null || byMonth == null) return;
+            var goal = Api.Users.CachedWeeklyGoal();
+            Show(new List<RunSummary>(all.Items ?? new List<RunSummary>()), byMonth,
+                 RecordsText.WeekStartUtc(DateTime.UtcNow, goal), goal: goal);
+            state.Clear(); // 공통 칸의 스켈레톤을 지움(아래 Feedback.Load가 조용히 받음)
         }
 
         // 요약 카드의 주 기준(주간 목표 주기)과 셋째 칸. 곁들이는 값이라 못 받으면 월요일부터·인증 횟수로(목록을 막지 않음)

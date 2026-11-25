@@ -19,7 +19,7 @@ namespace Scrun.App
         public float CourseLengthM { get; private set; }
         public IReadOnlyList<RemoteRunner> Runners => runners;
 
-        // 서버 시각 − 앱 시각(ms, 왕복 절반 보정). pong을 받기 전엔 null. 페이스 봇(S4 이후)이 씀
+        // 서버 시각 − 앱 시각(ms, 왕복 절반 보정). pong을 받기 전엔 null. 받은 값이 언제 나왔는지 어림하는 데 씀(SentAt, 계획 0074)
         public double? ServerOffsetMs { get; private set; }
         public double? RoundTripMs { get; private set; }
 
@@ -150,11 +150,24 @@ namespace Scrun.App
             if (lv >= 1 && lv <= 999) runner.Level = (int)lv;
         }
 
-        static void SampleFrom(RemoteRunner runner, JObject r, double now)
+        // 받은 값이 상대 폰에서 나온 때(앱 시계, 초) 어림. 서버가 그 값을 받은 시각 at(ms, 서버 시계, 계획 0074)을 pong으로 잰
+        // 시계 차이로 앱 시계로 바꾸고, 상대 폰 → 서버 몫은 내 왕복의 절반으로 어림(상대 왕복은 모름, 가설).
+        // at·시계 차이가 없으면(옛 서버, 첫 pong 전) 받은 순간. 시계가 틀어져도 지금보다 미래·MaxAgeSec보다 옛날로는 안 감
+        public const double MaxAgeSec = 2.0;
+
+        internal double SentAt(JObject r, double now)
+        {
+            var at = r["at"];
+            if (ServerOffsetMs == null || at == null || (at.Type != JTokenType.Integer && at.Type != JTokenType.Float)) return now;
+            double sent = ((double)at - ServerOffsetMs.Value) / 1000.0 - (RoundTripMs ?? 0) / 2000.0;
+            return Math.Min(now, Math.Max(now - MaxAgeSec, sent));
+        }
+
+        void SampleFrom(RemoteRunner runner, JObject r, double now)
         {
             float? d = (float?)r["d"], v = (float?)r["v"];
             if (d == null || v == null) return;
-            runner.Sample(d.Value, v.Value, (bool?)r["running"] ?? false, now);
+            runner.Sample(d.Value, v.Value, (bool?)r["running"] ?? false, now, SentAt(r, now));
             var run = r["run"]; // 이번 달리기 거리(러너 카드 D-12). 숫자가 아니면 모름
             runner.RunDistanceM = run != null && (run.Type == JTokenType.Float || run.Type == JTokenType.Integer) ? (float?)run : null;
         }

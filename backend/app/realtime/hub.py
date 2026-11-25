@@ -1,6 +1,7 @@
 """실시간 방 상태(계획 0029, ADR-0010). 맵(= 코스) 하나가 방 하나, 상태는 이 프로세스 메모리에만 둔다.
 
-- 서버는 uvicorn 한 프로세스(ADR-0010). 여러 대로 늘릴 때 방 상태를 Redis 같은 공유 저장소로 옮긴다
+- 허브는 프로세스 하나에만 있다(ADR-0010). 일반 API를 프로세스 여러 개로 띄울 땐 실시간을 따로 한 프로세스로 두고 일반 API는
+  내부 API로 묻는다(계획 0073, app/realtime/link.py). 실시간 자체를 여러 개로 늘릴 때 방 상태를 Redis 같은 공유 저장소로 옮긴다
 - 잠금은 threading.Lock 하나. 연결 처리(이벤트 루프)와 입장·인원 API(스레드풀)가 같이 읽고 쓰기 때문.
   다른 연결에 알릴 것(joined·left)은 그 연결의 outbox(deque)에 넣고 wake()로 그 연결의 루프를 깨운다
   (연결마다 루프가 다를 수 있어 asyncio 객체를 공유하지 않음: 테스트 클라이언트는 연결마다 루프가 다름)
@@ -100,6 +101,7 @@ class Runner:
     placed: bool = False    # 첫 state를 받음(그 전엔 다른 사람에게 안 보임)
     conn: Optional[Conn] = None
     disconnected_at: Optional[float] = None  # hub clock 기준
+    at: Optional[int] = None  # 서버가 마지막 state를 받은 시각(ms, server_time_ms). 앱이 그만큼 묵은 값으로 보고 앞으로 내다봄(계획 0074)
 
     def public(self) -> dict:
         p = {"userId": self.user_id, "nickname": self.nickname, **self.motion()}
@@ -111,6 +113,8 @@ class Runner:
         m = {"userId": self.user_id, "d": round(self.d, 2), "v": round(self.v, 2), "running": self.running}
         if self.run is not None:
             m["run"] = round(self.run, 1)
+        if self.at is not None:
+            m["at"] = self.at
         return m
 
 
@@ -130,8 +134,9 @@ class Bot:
         return {**self.motion(now, length_m), "nickname": self.nickname}
 
     def motion(self, now: float, length_m: float) -> dict:
+        """at은 지금(위치를 지금 계산하므로 묵지 않음, 계획 0074)."""
         return {"userId": self.user_id, "d": self.d_at(now, length_m), "v": round(self.kmh, 2), "running": True,
-                "bot": True}
+                "bot": True, "at": server_time_ms()}
 
 
 RUNNER, BOT = "RUNNER", "BOT"  # run_companions.kind(친구인지는 읽을 때 친구 표로 정함)
@@ -266,6 +271,7 @@ class Hub:
             runner.v = min(max(v, 0.0), MAX_KMH)
             runner.running = bool(running)
             runner.run = min(max(float(run), 0.0), MAX_RUN_M) if _finite(run) else None
+            runner.at = server_time_ms()
             if not runner.placed:
                 runner.placed = True
                 self._broadcast_locked(room, {"type": "joined", "runner": runner.public()}, except_user=runner.user_id)
@@ -327,8 +333,9 @@ class Hub:
         return out
 
     # ---------- 입장·인원 API가 읽는 것 ----------
-    def present_user_ids(self) -> set[str]:
-        """어느 방이든 지금 붙어 있는 사람(끊긴 지 GRACE_S 안 포함). 어느 코스로 셀지는 자리(course_entries)가 정한다."""
+    def present_user_ids(self, strict: bool = False) -> set[str]:
+        """strict는 원격 허브(app/realtime/link.py)와 같은 모양을 맞추려고 받기만 함(같은 프로세스라 바쁠 일이 없음).
+        어느 방이든 지금 붙어 있는 사람(끊긴 지 GRACE_S 안 포함). 어느 코스로 셀지는 자리(course_entries)가 정한다."""
         with self._lock:
             self._sweep_locked()
             return set(self._where.keys())
