@@ -1,6 +1,6 @@
 # 계획 0073: API를 프로세스 여러 개로 — 실시간 분리
 
-- 상태: **승인**(2026-11-26 민재: 실시간 분리 + 내부 API, OCR 프로세스 따로, CPU 사용처 먼저 재기, 시험 서버 CPU를 물리 코어 2개로)
+- 상태: **구현·측정 끝, 리뷰 반영**(2026-11-26, PR #144, 운영 배포 전). 승인 11/26 민재: 실시간 분리 + 내부 API, OCR 프로세스 따로, CPU 사용처 먼저 재기, 시험 서버 CPU를 물리 코어 2개로(재 보니 바꿀 필요 없었음)
 - 담당: 민재
 - 왜: 계획 0070 S1([docs/perf/README.md](../perf/README.md#가상-사용자를-늘릴-때-기록-100만-2분))에서 동시 100명이면 api CPU가 최대 109% = **한 코어에서 막힘**. 파이썬 프로세스 하나는 GIL 때문에 한 번에 한 코어만 씀(스레드 40개여도). 운영도 uvicorn 한 프로세스. 0071 뒤 포화 처리량은 약 185/초(집 PC)
 - 결과물: 일반 API(REST)는 **프로세스 N개**, 실시간(WebSocket)은 **따로 한 프로세스**. 포화 처리량이 코어 수만큼 늘어나는지 전후로 잼
@@ -46,7 +46,18 @@
 - **배포** `deploy/docker-compose.server.yml`: 같은 이미지(`scrun-app:local`, `api`만 빌드)로 `api`(uvicorn `--workers 2`, `OCR_ENGINE=none`, `REALTIME_URL`) · `realtime`(허브) · `ocr`(`OCR_ENGINE=onnx`). DB 연결 합계 60(한도 100). `deploy/Caddyfile`: `/internal/*` 404, `/v1/realtime` → realtime, `^/v1/runs/[^/]+/verification/photo$` → ocr, 나머지 → api. `update.sh`는 세 서비스 건강을 모두 기다림
 - **시험 서버** `perf/docker-compose.perf.yml`: 같은 셋 + Caddy 8080(운영 Caddyfile). S1·S2는 api 8000에 바로(기준선과 같은 길), S3·S4는 Caddy 8080. `API_WORKERS`로 프로세스 수
 - **테스트**: 내부 API·원격 허브·실시간이 죽었을 때·`REALTIME_URL` 검사(`test_realtime_link.py`), 허브를 거치는 기존 테스트 14개를 원격 허브로 한 번 더(`test_link_*.py`: 함께 달린 사람, 친구 달리는 중·같이 달리기 입장, 정원 21번째 거절·동시 입장, 계정 삭제). 서버 테스트 476 통과
-- **운영 배포 때**: Caddyfile이 바뀌므로 `update.sh develop` 뒤 `docker compose -f docker-compose.server.yml exec caddy caddy reload --config /etc/caddy/Caddyfile`. OCR 로그는 이제 `scrun-ocr-1`(`journalctl CONTAINER_NAME=scrun-ocr-1`)
+- **운영 배포 때**: `update.sh develop`이 Caddy 설정도 다시 읽게 함(리뷰 반영). OCR 로그는 이제 `scrun-ocr-1`(`journalctl CONTAINER_NAME=scrun-ocr-1`)
+
+## 리뷰 반영 (11/26, `/code-review` 규칙·스펙 두 축)
+- **느림과 죽음을 나눔**(`link.py`): 연결이 안 되면 죽음(방에 사람도 없음) → 대체 값, 시간 초과·오류 답이면 바쁨 → 맵 입장 정원 검사(strict)만 503 `REALTIME_BUSY`(빈 값으로 세어 정원 20을 넘기지 않게), 나머지 읽기는 대체 값
+- **서킷 브레이커**: 죽음이면 5초, 바쁨이면 2초 동안 부르지 않고 바로 답함(실시간을 끈 채 S1에서 홈 p50이 37 → 80 ms로 늘던 것)
+- **`/internal/*`은 번호표·요청 로그 밖**(`admission.py`·`request_log.py` `is_internal`): 일반 API 요청이 이미 번호표를 쥐고 부르므로 두 번 줄 세우지 않음
+- **번호표를 합계로**: api는 프로세스당 6(2개 × 6 = 12), realtime·ocr은 12. 프로세스당 12(합계 24)는 DB에 너무 몰려 200명 p95 0.7초, 12면 0.5초·처리량 +24%(아래 결과). `tests/test_config.py`가 compose 두 파일에서 api 번호표 합계 12·DB 연결 합계 90 안을 봄(번호표를 일부러 틀리면 실패 확인)
+- **compose 의존성**: api·ocr은 realtime을 기다리지 않음, Caddy는 api만 건강하면 뜸(realtime·ocr이 안 떠도 그 경로만 502)
+- **바꿔 끼우는 곳 한 곳**: 라우터는 `link.hub_link`로만 부르고 테스트는 그 이름 하나만 바꿈. 허브를 직접 가져오면 `test_routers_reach_the_hub_only_through_link` 실패
+- 문서: `docs/api/data_model.md`에 `friend_code_failures`, README 구조·테이블 22개, ADR-0010은 본문 대신 "갱신" 줄
+- **계획 밖이지만 같이 고친 것**: 토큰 발급 시각(iat) 여유 30초(`tokens.py`, 만료는 여유 없이 따로 봄). 측정 중 로그인 직후 401이 나서(아래 결과)
+- 남긴 것: 함께 달린 사람을 실시간이 바쁠 때 못 받으면 빈 목록으로 저장(종료는 막지 않음), 친구 코드 옛 줄은 그 사람이 다시 시도할 때만 지움(사람당 많아야 10줄), op 이름이 `internal.py`·`link.py` 두 곳
 
 ### 다른 안: 허브를 Redis로 (ADR-0010 "확장" 항목)
 - 모든 프로세스가 같은 일을 하고 방 상태·알림을 Redis로 나눔 → 실시간까지 여러 개로 늘릴 수 있고 배포해도 방이 남음
@@ -58,7 +69,18 @@
 3. 먼저 py-spy로 재기(추천) vs 바로 프로세스 늘리기
 4. 시험 서버 CPU: 지금 `cpuset 0,1`은 Ryzen의 **한 물리 코어의 두 스레드**일 가능성이 큼(perf compose 주석) → 프로세스를 늘려도 이득이 작게 나옴. 운영처럼 **물리 코어 2개**로 바꾸고 기준선을 그 조건으로 다시 잰 뒤 비교(추천)
 
-## 판정 (집 PC, 물리 코어 2개로 바꾼 조건에서 기준선 다시 → 전후)
+## 결과 (11/26, 집 PC, [docs/perf/README.md](../perf/README.md#계획-0073-본편-프로세스-나누기--200명-처리량-185--283초54))
+| | 0071 | 1단계(요청당 CPU) | 본편 번호표 24 | 본편 번호표 12 | 판정 |
+|---|---|---|---|---|---|
+| S1 200명 처리량 | 185/초 | 211/초 | 229/초 | **283/초(+54%)** | 통과(30% 넘음) |
+| S1 200명 홈 p95 | 0.70초 | 0.57초 | 0.71초 | **0.49–0.53초** | 통과 |
+| S1 100명 홈 p95 | 163–185 ms | 118–129 ms | 121–136 ms | (안 잼) | 통과(10% 안) |
+| S3 100명 ×3 | 성공 | — | 3번 모두 100/100, 실패 0 | — | 통과 |
+| 실시간 끈 채 S1 | — | — | 실패 0%(느려짐 → 서킷 브레이커) | — | 통과 |
+- 시험 서버 CPU 2개를 거의 다 씀(api 104% + db 63% + realtime 10%) → 더 늘리려면 요청당 CPU(ORM·스레드 넘기기·`home` 쿼리 10번)나 코어 수
+- 남은 확인: 서킷 브레이커·`/internal/*` 번호표 밖·번호표 12로 100명·S3는 리뷰 반영 뒤 다시 안 잼, 운영 배포 뒤 세 서비스·`queue_ms`·실물 인증 1번
+
+## 판정 기준 (처음 정한 것. 시험 서버 CPU는 바꿀 필요 없었음)
 | | 목표 |
 |---|---|
 | S1 포화 처리량(200명) | 늘어남. 얼마나 늘었는지 기록하고, 30% 미만이면 프로세스를 늘릴 가치를 다시 판단 |

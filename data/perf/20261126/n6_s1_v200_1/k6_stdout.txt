@@ -1,0 +1,11 @@
+S1 앱 켜기 VUS=200 USERS=10000 반복 12182
+login            p50 23.4  p95 312.4  p99 371.8 ms
+me               p50 177.5  p95 459.8  p99 567.3 ms
+home             p50 223.2  p95 496.7  p99 609.2 ms
+runs_active      p50 176.6  p95 457.5  p99 554.4 ms
+runs             p50 186.3  p95 466.9  p99 569.7 ms
+friends          p50 201.2  p95 481.0  p99 587.2 ms
+friends_running  p50 181.0  p95 460.8  p99 559.1 ms
+feed             p50 199.4  p95 481.7  p99 580.1 ms
+progress         p50 180.4  p95 459.5  p99 554.1 ms
+실패율 0.00%  초당 요청 283.9
