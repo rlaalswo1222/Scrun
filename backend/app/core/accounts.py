@@ -12,7 +12,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..db.models import AuthIdentity, User
-from ..realtime.hub import hub
+from ..realtime.link import hub_link
 
 log = logging.getLogger("scrun.accounts")
 KAKAO = "KAKAO"
@@ -32,7 +32,7 @@ def delete_user(db: Session, user_id: str, reason: str) -> bool:
     """사용자와 딸린 데이터를 지우고 커밋. 이미 없으면 False. 카카오 연결 끊기는 부른 쪽이 먼저(실패하면 부르지 않음)."""
     gone = db.execute(delete(User).where(User.id == user_id)).rowcount
     db.commit()
-    hub.forget_user(user_id)
+    hub_link.forget_user(user_id)
     if gone:
         log.info("계정 삭제: %s (%s)", user_id, reason)
     return bool(gone)

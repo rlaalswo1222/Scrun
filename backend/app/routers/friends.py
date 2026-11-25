@@ -25,7 +25,8 @@ from ..core.run_access import PENDING, UNVERIFIED, VERIFIED, is_expired
 from ..core.security import current_user
 from ..db.models import Course, Friendship, Run, User, UserProgress
 from ..db.session import get_db
-from ..realtime.hub import RunningNow, hub
+from ..realtime.hub import RunningNow
+from ..realtime.link import hub_link
 from ..schemas.common import CursorPage
 from ..schemas.course import MapEntry
 from ..schemas.friend import FeedItem, Friend, FriendAddRequest, FriendProfile, RunningFriend, RunTogetherRequest
@@ -73,7 +74,7 @@ def _friends(db: Session, ids: list[str], running: Optional[dict[str, RunningNow
     """친구 줄(Friend 모양) 여럿. 순서는 부른 쪽이 정함."""
     if not ids:
         return []
-    running = hub.running_now(ids) if running is None else running
+    running = hub_link.running_now(ids) if running is None else running
     names = dict(db.execute(select(User.id, User.nickname).where(User.id.in_(ids))).all())
     # 인증 마크도 공유한 기록만 센다(공유를 끈 기록의 수가 친구에게 새지 않게)
     verified = dict(db.execute(select(Run.user_id, func.count()).where(Run.user_id.in_(ids), Run.status == VERIFIED,
@@ -118,14 +119,14 @@ def add_friend(body: FriendAddRequest, request: Request, user: User = Depends(cu
                db: Session = Depends(get_db)):
     policy = settings.friends
     # 없는 코드일 것으로 미리 세고(동시에 여러 개가 와도 한도를 못 넘게), 코드를 찾으면 돌려준다
-    ticket = friend_code_failures.acquire(user.id, policy.add_fail_limit, policy.add_fail_window_s)
+    ticket = friend_code_failures.acquire(db, user.id, policy.add_fail_limit, policy.add_fail_window_s)
     if ticket is None:
         raise ApiError(E.RATE_LIMITED)
     code = normalize(body.friend_code)
     target = db.scalar(select(User).where(User.friend_code == code)) if code else None
     if target is None:
         raise ApiError(E.FRIEND_CODE_NOT_FOUND)
-    friend_code_failures.release(user.id, ticket)
+    friend_code_failures.release(db, ticket)
     if target.id == user.id:
         raise ApiError(E.SELF_FRIEND_CODE)
     # 두 사람을 ID 순서로 잠그고 센다: 동시에 여러 명이 추가해도 50명을 넘지 않게(순서가 같아 서로 기다리다 멈추지 않음).
@@ -165,7 +166,7 @@ def running_friends(request: Request, user: User = Depends(current_user), db: Se
 
 def running_rows(db: Session, user: User) -> list[dict]:
     """지금 달리는 친구(G-01·B-01). 홈(GET /home)도 같이 쓴다."""
-    running = hub.running_now(_friend_ids(db, user.id))
+    running = hub_link.running_now(_friend_ids(db, user.id))
     if not running:
         return []
     names = dict(db.execute(select(User.id, User.nickname).where(User.id.in_(running))).all())
@@ -226,7 +227,7 @@ def delete_friend(userId: str, user: User = Depends(current_user), db: Session =
 def run_together(userId: str, body: RunTogetherRequest, request: Request, user: User = Depends(current_user),
                  db: Session = Depends(get_db), rng: random.Random = Depends(get_rng)):
     _require_friend(db, user, userId)
-    where = hub.in_map(userId)   # 잠깐 멈춘 친구도(물 마시기), 맵에 있으면 같이
+    where = hub_link.in_map(userId)   # 잠깐 멈춘 친구도(물 마시기), 맵에 있으면 같이
     if where is None or where[0] != body.course_id:
         raise ApiError(E.FRIEND_NOT_RUNNING)
     return ok(request, enter_course(db, request, user, body.course_id, rng, near_friend=(userId, where[1])))

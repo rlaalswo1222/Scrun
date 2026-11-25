@@ -30,7 +30,8 @@ from ..core.security import current_user
 from ..db.ids import new_id
 from ..db.models import Course, CourseEntry, Friendship, Run, RunCompanion, RunGhost, RunSample, User
 from ..db.session import get_db
-from ..realtime.hub import RUNNER, hub
+from ..realtime.hub import RUNNER
+from ..realtime.link import hub_link
 from ..realtime.router import map_id_of
 from ..schemas.common import CursorPage
 from ..schemas.run import (
@@ -218,7 +219,7 @@ def start_run(body: RunStartRequest, request: Request, user: User = Depends(curr
         db.add(RunGhost(run_id=run_id, ghost_run_id=body.ghost_run_id))
     db.commit()
     if inserted is not None:
-        hub.start_tracking(user.id, run_id)  # 이번 러닝에서 같은 방에서 같이 달린 사람을 모음(종료 때 저장)
+        hub_link.start_tracking(user.id, run_id)  # 이번 러닝에서 같은 방에서 같이 달린 사람을 모음(종료 때 저장)
     run = db.scalar(select(Run).where(Run.user_id == user.id, Run.client_run_id == body.client_run_id))
     return ok(request, _started(run))
 
@@ -426,7 +427,7 @@ def finish_run(runId: str, body: RunFinishRequest, request: Request, user: User 
     run.verification_deadline = deadline_on_finish(body.ended_at, datetime.now(timezone.utc), body.sent_at)
     _save_companions(db, run)
     db.commit()
-    hub.stop_tracking(user.id, run.id)  # 커밋 뒤에 지움(커밋이 실패해 앱이 다시 보내면 다시 넣게)
+    hub_link.stop_tracking(user.id, run.id)  # 커밋 뒤에 지움(커밋이 실패해 앱이 다시 보내면 다시 넣게)
     # 오래전에 꺼진 러닝을 복구해 끝냄 → 마감이 이미 지남: 바로 미인증으로 닫아 응답이 PENDING으로 보이지 않게(앱이 촬영으로 가지 않음)
     if close_expired(db, run_id=run.id):
         db.commit()
@@ -436,7 +437,7 @@ def finish_run(runId: str, body: RunFinishRequest, request: Request, user: User 
 
 def _save_companions(db: Session, run: Run) -> None:
     """실시간 방에서 모은 함께 달린 사람·봇을 남긴다. 그 사이 탈퇴한 사람은 뺀다(외래 키)."""
-    found = hub.companions(run.user_id, run.id)
+    found = hub_link.companions(run.user_id, run.id)
     ids = {c.user_id for c in found if c.user_id}
     alive = set(db.scalars(select(User.id).where(User.id.in_(ids)))) if ids else set()
     seq = 0
@@ -460,7 +461,7 @@ def discard_run(runId: str, user: User = Depends(current_user), db: Session = De
     if run.status == ACTIVE:
         run.status = DISCARDED
         db.commit()
-        hub.stop_tracking(user.id, run.id)
+        hub_link.stop_tracking(user.id, run.id)
     elif run.status != DISCARDED:
         raise ApiError(E.RUN_ALREADY_FINISHED)
     return Response(status_code=204)

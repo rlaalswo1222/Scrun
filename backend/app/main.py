@@ -23,6 +23,7 @@ from .core.errors import ApiError
 from .core.kakao import close_client as close_kakao_client
 from .core.ocr import start_ocr, stop_ocr
 from .core.request_log import RequestContextMiddleware, install_request_log
+from .realtime import internal as realtime_internal
 from .realtime import router as realtime
 from .routers import auth, courses, events, friends, home, progress, runs, users, verification
 
@@ -60,4 +61,6 @@ app.add_exception_handler(Exception, unhandled_error_handler)
 
 for r in (auth, users, home, courses, runs, verification, progress, friends, events):
     app.include_router(r.router)
-app.include_router(realtime.router)  # WebSocket /v1/realtime(계획 0029)
+if settings.realtime_url is None:   # 허브를 가진 프로세스만(계획 0073). 일반 API 프로세스는 REALTIME_URL로 그 프로세스에 묻는다
+    app.include_router(realtime.router)  # WebSocket /v1/realtime(계획 0029)
+    app.include_router(realtime_internal.router)  # 허브 내부 API(일반 API 프로세스가 부름, 밖에선 못 부름)

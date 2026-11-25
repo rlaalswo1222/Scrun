@@ -94,8 +94,9 @@ tests/               test_contract(스텁 API 계약), test_auth(로그인·닉�
 
 ## 팀 공용 개발 서버 (11/09, 계획 0019)
 - 주소 **`https://161-118-211-155.sslip.io`** (`/docs`로 눌러 보기). 오라클 싱가포르 ARM, Docker Compose(API + PostgreSQL + Caddy), HTTPS 인증서는 Caddy가 자동
+- **서비스 셋(계획 0073)**: 같은 이미지를 `api`(일반 API, uvicorn 프로세스 2개) · `realtime`(WebSocket + 허브, 하나) · `ocr`(계기판 사진 인증, 하나)로 띄우고 Caddy가 경로로 나눔(`deploy/Caddyfile`). `api`는 `REALTIME_URL`로 실시간 프로세스의 허브 내부 API(`/internal/hub/*`, 밖에선 404)를 부름. 로그: `docker logs scrun-api-1`·`scrun-realtime-1`·`scrun-ocr-1`(OCR 로그는 이제 `ocr`)
 - **진짜 카카오만**(`KAKAO_MODE=real`) → 아이폰 앱이 붙는 곳. 에디터의 가짜 로그인(`k_123`)은 이 서버에서 `INVALID_KAKAO_TOKEN`으로 거절되니 에디터는 지금처럼 로컬 서버(`127.0.0.1`, 한글 이름 컴퓨터에서 `localhost`는 실시간이 안 붙음: `docs/api/realtime.md`)를 쓴다
-- 접속은 민재만(SSH). 다시 올리기: 서버에서 `~/scrun/backend/deploy/update.sh [브랜치, 기본 develop]`(git pull → 빌드 → 마이그레이션(실패하면 멈추고 지금 API는 그대로) → 재시작 → API 건강 확인)
+- 접속은 민재만(SSH). 다시 올리기: 서버에서 `~/scrun/backend/deploy/update.sh [브랜치, 기본 develop]`(git pull → 빌드 → 마이그레이션(실패하면 멈추고 지금 API는 그대로) → 재시작 → `api`·`realtime`·`ocr` 건강 확인)
 - 비밀값은 서버의 `backend/deploy/.env`에만(칸은 `deploy/.env.server.example`). 매일 한국 시간 4시 30분 `deploy/daily.sh`: DB 백업 최근 7개(`~/scrun-backups`, 이 계정만 읽기) + 만료 토큰 정리. 서버 밖 백업·운영 서버 분리·진짜 도메인은 BL-51
 - 지금은 개발용이라 데이터가 지워질 수 있음(테이블을 바꾸는 PR이 합쳐지면 마이그레이션이 그대로 돎)
 

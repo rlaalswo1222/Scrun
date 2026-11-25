@@ -19,28 +19,66 @@ services:
       interval: 3s
       retries: 30
 
+  # 계획 0073: 같은 이미지를 셋으로 띄운다. Caddy(Caddyfile)가 경로로 나눔
+  #   api      일반 API. uvicorn 프로세스 2개(코어 수). 허브는 REALTIME_URL로 실시간 프로세스에 물음(app/realtime/link.py)
+  #   realtime WebSocket /v1/realtime + 허브 + 허브 내부 API. 방 상태가 메모리라 하나만
+  #   ocr      계기판 사진 인증만. 읽기 프로세스 2개를 이 프로세스 하나만 띄움(api가 여럿이어도 OCR은 둘)
+  # DB 연결은 프로세스마다 풀 15 → 합계 60(api 2 × 15 + realtime 15 + ocr 15), Postgres 기본 한도 100 안
   api:
     build: ..
+    image: scrun-app:local
     restart: unless-stopped
-    environment:
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*", "--workers", "2"]
+    environment: &app_env
       DATABASE_URL: postgresql+psycopg://scrun:${DB_PASSWORD}@db:5432/scrun
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET을 .env에}
       KAKAO_MODE: real # 공개 서버라 고정. fake면 아무나 아무 계정으로 로그인됨
       KAKAO_APP_ID: ${KAKAO_APP_ID:?KAKAO_APP_ID를 .env에}
       KAKAO_ADMIN_KEY: ${KAKAO_ADMIN_KEY:-} # 계정 삭제·연결 끊기 웹훅(계획 0058). 없으면 그 둘만 503(서버는 뜸)
-      OCR_ENGINE: onnx # 계기판 OCR 진짜 엔진(계획 0046): 읽기 프로세스 2개, 사진 3장 15초 제한
       VERIFY_OCR_TIMEOUT_S: ${VERIFY_OCR_TIMEOUT_S:-15} # 읽기 시간 제한(초). 실사진이 15초를 넘겨 .env로 잠시 늘려 잼(11/19, 계획 0055)
-    logging: # 배포(update.sh)가 컨테이너를 새로 만들어도 로그가 남게(11/19 첫 OCR 실패 로그를 잃음, 계획 0055).
+      OCR_ENGINE: none
+      REALTIME_URL: http://realtime:8000
+    logging: &app_logging # 배포(update.sh)가 컨테이너를 새로 만들어도 로그가 남게(11/19 첫 OCR 실패 로그를 잃음, 계획 0055).
       driver: journald # 보기: docker logs scrun-api-1(이번 컨테이너) / journalctl CONTAINER_NAME=scrun-api-1 --since "1 hour ago"(지난 것까지)
     depends_on:
       db:
         condition: service_healthy
-    healthcheck: # DB까지 거치는 약관 API로 확인. 헤더가 있으면 요청 로그에 안 남김(계획 0070)
+      realtime:
+        condition: service_healthy
+    healthcheck: &app_health # DB까지 거치는 약관 API로 확인. 헤더가 있으면 요청 로그에 안 남김(계획 0070)
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen(u.Request('http://localhost:8000/v1/agreements', headers={'X-Scrun-Probe': '1'}), timeout=3)"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  realtime:
+    image: scrun-app:local # api가 빌드한 이미지(따로 빌드하지 않음)
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      <<: *app_env
+      REALTIME_URL: "" # 허브를 갖는 쪽
+    logging: *app_logging
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck: *app_health
+
+  ocr:
+    image: scrun-app:local
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      <<: *app_env
+      OCR_ENGINE: onnx # 계기판 OCR 진짜 엔진(계획 0046): 읽기 프로세스 2개, 사진 3장 15초 제한
+    logging: *app_logging
+    depends_on:
+      db:
+        condition: service_healthy
+      realtime:
+        condition: service_healthy
+    healthcheck: *app_health
 
   caddy:
     image: caddy:2-alpine
@@ -57,6 +95,10 @@ services:
       - caddyconfig:/config
     depends_on:
       api:
+        condition: service_healthy
+      realtime:
+        condition: service_healthy
+      ocr:
         condition: service_healthy
 
 volumes:

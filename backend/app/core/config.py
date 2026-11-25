@@ -221,6 +221,9 @@ class Settings:
     max_sessions_per_user: int = 5  # 살아 있는 로그인(기기) 수 상한
     ocr_engine: str = "none"
     request_log: bool = True  # 요청마다 처리 시간 한 줄(계획 0070, app/core/request_log.py). REQUEST_LOG=0이면 끔
+    # 실시간 프로세스 주소(계획 0073, app/realtime/link.py). 있으면 이 프로세스는 허브를 갖지 않고(WebSocket도 안 받음) 그 프로세스에
+    # 묻는다 — 일반 API를 프로세스 여러 개로 띄울 때. 없으면 허브가 이 프로세스에(로컬·테스트·한 프로세스 운영)
+    realtime_url: Optional[str] = None
     admission: AdmissionPolicy = AdmissionPolicy()
     verification: VerificationPolicy = VerificationPolicy()
     bots: BotPolicy = BotPolicy()
@@ -266,6 +269,10 @@ def load_settings(env: Mapping[str, str]) -> Settings:
     if ocr_engine not in OCR_ENGINES:
         raise ConfigError(f"OCR_ENGINE은 {' 또는 '.join(OCR_ENGINES)}여야 합니다(지금: {ocr_engine!r}).")
 
+    realtime_url = env.get("REALTIME_URL", "").strip() or None
+    if realtime_url is not None and not re.fullmatch(r"https?://[A-Za-z0-9.\-]+(:[0-9]+)?/?", realtime_url):
+        raise ConfigError(f"REALTIME_URL은 http://주소:포트 모양이어야 합니다(예: http://realtime:8000). 지금: {realtime_url!r}")
+
     return Settings(
         database_url=env.get("DATABASE_URL", DEFAULT_DATABASE_URL),
         jwt_secret=jwt_secret,
@@ -274,6 +281,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         kakao_admin_key=env.get("KAKAO_ADMIN_KEY", "").strip() or None,
         ocr_engine=ocr_engine,
         request_log=_load_switch(env, "REQUEST_LOG", default=True),
+        realtime_url=realtime_url,
         admission=_load_admission(env),
         verification=load_verification(env),
         bots=load_bots(env),

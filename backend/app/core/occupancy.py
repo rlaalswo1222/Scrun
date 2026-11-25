@@ -12,7 +12,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..db.models import CourseEntry
-from ..realtime.hub import hub
+from ..realtime.link import hub_link
 
 ENTRY_FRESH = timedelta(minutes=2)  # 입장 → 실시간 연결까지 기다려 주는 시간(섬 불러오기·느린 망)
 
@@ -20,7 +20,7 @@ ENTRY_FRESH = timedelta(minutes=2)  # 입장 → 실시간 연결까지 기다�
 def count_present(db: Session, course_ids: Iterable[str], exclude_user_id: Optional[str] = None) -> dict[str, int]:
     """코스 ID → 그 맵에 지금 있는 사람 수(한 사람은 한 번만). exclude_user_id는 빼고 셈(입장 검사에서 나 빼기)."""
     ids = list(course_ids)
-    connected = hub.present_user_ids()  # 어느 방이든: 옛 방에 남은 사람도 자리가 옮겨진 코스로 셈(물어본 코스와 상관없이 같은 답)
+    connected = hub_link.present_user_ids()  # 어느 방이든: 옛 방에 남은 사람도 자리가 옮겨진 코스로 셈(물어본 코스와 상관없이 같은 답)
     conds = [CourseEntry.entered_at >= func.now() - ENTRY_FRESH]
     if connected:
         conds.append(CourseEntry.user_id.in_(connected))

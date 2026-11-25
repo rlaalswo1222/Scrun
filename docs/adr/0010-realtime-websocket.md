@@ -26,7 +26,7 @@ A. 공용 서버의 FastAPI 앱에 WebSocket 엔드포인트를 붙여 방(맵)�
 - 주고받는 양이 작다(계산: 한 사람 상태 약 80바이트 × 20명 × 1초 2번 = 폰 한 대가 받는 양 초당 약 3.2KB). Fusion의 강점을 쓸 데가 없다
 - 로그인 토큰·오류 규칙(`docs/api/README.md`)을 그대로 쓴다
 - 지연 실측(11/10, 민재 Windows 노트북 와이파이, TCP 연결 왕복 12–15회 중앙값): 오라클 싱가포르(우리 서버) **222ms**, AWS 싱가포르 96ms, AWS 서울 39ms. 10 km/h에서 0.22초면 약 0.6m(계산)라 보간으로 가릴 수 있다고 본다(가설, S3 실측으로 확인)
-- 앞단 Caddy는 WebSocket을 설정 없이 통과시킨다([Caddy reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)). 서버는 uvicorn 한 프로세스라 방 상태를 메모리에 둬도 된다
+- 앞단 Caddy는 WebSocket을 설정 없이 통과시킨다([Caddy reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)). 서버는 uvicorn 한 프로세스라 방 상태를 메모리에 둬도 된다(11/26 계획 0073: 일반 API는 프로세스 여러 개로 늘리고 실시간은 따로 한 프로세스, 일반 API는 허브 내부 API로 물음 → 방 상태는 여전히 한 프로세스 메모리)
 
 ## 결과와 위험
 - **지금 달리는 사람 수**(`runnersNow`)는 실시간 서버의 연결 수로 센다. 샘플을 올릴 때 `runs.updated_at`을 갱신하는 임시 방식은 실시간 서버가 생길 때까지만(`docs/api/README.md` "코스와 맵 인원")

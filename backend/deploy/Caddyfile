@@ -1,7 +1,23 @@
 # 주소(SITE_ADDRESS)로 오는 HTTPS를 API로 넘긴다. 인증서는 Caddy가 자동으로 받고 갱신한다.
+# 계획 0073: 경로로 세 서비스에 나눔(docker-compose.server.yml). handle은 서로 배타, 경로가 구체적인 것부터
 {$SITE_ADDRESS} {
 	encode gzip
 	# 컨테이너 안 헬스체크 표시(X-Scrun-Probe)는 밖에서 붙여도 지움: 번호표·요청 로그를 건너뛰지 못하게(계획 0071)
 	request_header -X-Scrun-Probe
-	reverse_proxy api:8000
+	# 허브 내부 API는 서비스끼리만(비밀 머리도 따로 확인함, app/realtime/internal.py)
+	handle /internal/* {
+		respond 404
+	}
+	# 실시간 WebSocket → 허브를 가진 프로세스 하나
+	handle /v1/realtime {
+		reverse_proxy realtime:8000
+	}
+	# 계기판 사진 인증 → OCR 읽기 프로세스를 가진 서비스 하나(값 확인·건너뛰기는 일반 API)
+	@photo path_regexp photo ^/v1/runs/[^/]+/verification/photo$
+	handle @photo {
+		reverse_proxy ocr:8000
+	}
+	handle {
+		reverse_proxy api:8000
+	}
 }
