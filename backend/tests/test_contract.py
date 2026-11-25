@@ -132,3 +132,31 @@ def test_error_docs_are_not_merged_as_dicts():
 def test_same_status_error_codes_are_all_documented(method, path, status, codes):
     desc = app.openapi()["paths"][path][method]["responses"][status]["description"]
     assert all(c in desc for c in codes), desc
+
+
+def _bare_datetime(tp, meta=()) -> bool:
+    """칸 형식 안에 UtcDatetime이 아닌 그냥 datetime이 있는지(Optional·list 안까지)."""
+    from datetime import datetime
+    from typing import Annotated, get_args, get_origin
+
+    from app.core.model import UTC_JSON
+    if tp is datetime:
+        return UTC_JSON not in meta
+    if get_origin(tp) is Annotated:
+        inner, *extra = get_args(tp)
+        return _bare_datetime(inner, tuple(extra))
+    return any(_bare_datetime(a) for a in get_args(tp))
+
+
+def test_time_fields_are_utc_typed():
+    """모든 모델의 시각 칸은 UtcDatetime(JSON으로 낼 때 UTC Z, app/core/model.py). 그냥 datetime이면 +09:00이 그대로 나감"""
+    from app.core.model import CamelModel
+
+    def subclasses(c):
+        for s in c.__subclasses__():
+            yield s
+            yield from subclasses(s)
+
+    bare = sorted({f"{m.__module__}.{m.__qualname__}.{name}" for m in subclasses(CamelModel)
+                   for name, f in m.model_fields.items() if _bare_datetime(f.annotation, tuple(f.metadata))})
+    assert not bare, f"시각 칸은 datetime 대신 UtcDatetime으로: {bare}"

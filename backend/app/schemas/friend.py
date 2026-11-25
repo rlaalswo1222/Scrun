@@ -1,9 +1,8 @@
-from datetime import datetime
 from typing import Optional
 
 from pydantic import Field
 
-from ..core.model import CamelModel
+from ..core.model import CamelModel, UtcDatetime
 from .common import Verification
 
 
@@ -20,15 +19,15 @@ class Friend(CamelModel):
     running_now: bool
     running_distance_m: Optional[int] = Field(
         default=None, description="달리는 중이면 이번 러닝 거리(m, G-10 '3.2km 달리는 중'). 안 달리거나 옛 앱이면 null")
-    last_run_at: Optional[datetime] = Field(
+    last_run_at: Optional[UtcDatetime] = Field(
         default=None, description="마지막으로 끝낸 공유 러닝의 종료 시각(G-10 '20분 전 러닝'). 없으면 null")
 
 
 class FriendRun(CamelModel):
     """친구의 끝난 러닝 한 줄(피드·프로필). 친구가 공유한 기록만."""
     run_id: str
-    started_at: datetime
-    ended_at: datetime
+    started_at: UtcDatetime
+    ended_at: UtcDatetime
     course_id: str
     course_name: str
     distance_m: int

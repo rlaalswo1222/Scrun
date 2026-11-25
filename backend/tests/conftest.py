@@ -5,7 +5,6 @@ use_test_settings()  # app보다 먼저(임시 서명 키 + 가짜 카카오)
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.attempts import friend_code_failures
 from app.db.testing import TestDatabase
 from app.main import app
 from app.realtime.hub import hub
@@ -23,5 +22,16 @@ def db_client(test_db):
     """진짜 API 테스트용: 테스트 DB를 비우고 시작."""
     test_db.reset()
     hub.reset()  # 실시간 방(메모리)도 비움
-    friend_code_failures.reset()  # 틀린 친구 코드 횟수(메모리)
     return TestClient(app)
+
+
+@pytest.fixture
+def remote_link(monkeypatch):
+    """일반 API가 허브를 같은 프로세스가 아니라 내부 API(HTTP)로 부르게 바꿔 끼움(계획 0073, app/realtime/link.py).
+    내부 API는 같은 앱(테스트 클라이언트)에 붙어 있어, 실시간 프로세스를 따로 띄운 것과 같은 길을 지난다.
+    라우터는 모두 link.hub_link로 부르므로 여기 한 곳만 바꾸면 된다(직접 부르면 test_realtime_link가 실패)."""
+    from app.core.config import settings
+    from app.realtime import link
+    remote = link.RemoteHub("http://testserver", link.internal_token(settings.jwt_secret), client=TestClient(app))
+    monkeypatch.setattr(link, "hub_link", remote)
+    return remote

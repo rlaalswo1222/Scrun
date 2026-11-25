@@ -1,9 +1,11 @@
 # 부하 시험 서버(계획 0070). 집 PC(Windows + Docker Desktop)에서 돌리고, 같은 공유기의 노트북에서 k6로 건다.
-# 운영(deploy/docker-compose.server.yml)과 같은 이미지·같은 단일 uvicorn에, 시험용으로 바꾼 것만:
+# 운영(deploy/docker-compose.server.yml)과 같은 이미지·같은 서비스 나눔(계획 0073)에, 시험용으로 바꾼 것만:
 #   - KAKAO_MODE=fake: k_숫자 토큰으로 가짜 계정 로그인(집 안 네트워크에서만 열 것, 공유기 포트 포워딩 금지)
-#   - Caddy 없음: API 8000을 바로 엶(같은 공유기 안이라 HTTPS 생략)
+#   - API 8000을 바로 엶 + Caddy는 8080에 HTTP로(같은 공유기 안이라 HTTPS 생략)
 #   - pg_stat_statements 켬: 쿼리별 호출 수·시간
-#   - CPU: api·db가 논리 CPU 2개(cpuset)를 나눠 씀 → 운영 2 OCPU 한 묶음 흉내. 단 운영 OCPU는 물리 코어, 여기는 Ryzen SMT 스레드라 절대 수치는 다름
+#   - CPU: 모든 서비스가 논리 CPU 2개(cpuset)를 나눠 씀 → 운영 2 OCPU 한 묶음 흉내. WSL2 가상 CPU라 0·1도 실제론 다른 코어처럼 돎
+#     (11/26 잼: 파이썬 계산 2개가 약 2배, 계획 0073). 운영 ARM과 절대 수치는 다름
+#   - API_WORKERS: 일반 API 프로세스 수(기본 2, 1이면 0073 전과 같은 한 프로세스)
 # 실행(PC의 backend/perf 폴더): docker compose -f docker-compose.perf.yml --env-file .env.perf up -d --build
 # .env.perf(git 밖): DB_PASSWORD, JWT_SECRET
 name: scrun-perf
@@ -25,16 +27,22 @@ services:
       interval: 3s
       retries: 30
 
+  # 계획 0073: 운영(deploy/docker-compose.server.yml)처럼 같은 이미지를 셋으로. 모두 같은 논리 CPU 2개(cpuset)를 나눠 씀
+  #   api 8000: 일반 API(uvicorn 2개). S1·S2는 여기로 바로(0070·0071 기준선과 같은 길, Caddy 없음)
+  #   caddy 8080: 운영과 같은 Caddyfile로 경로 나눔. S3(WebSocket → realtime)·S4(사진 → ocr)는 여기로
   api:
     build: ..
-    environment:
+    image: scrun-app:perf
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*", "--workers", "${API_WORKERS:-2}"]
+    environment: &app_env
       DATABASE_URL: postgresql+psycopg://scrun:${DB_PASSWORD}@db:5432/scrun
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET을 .env.perf에}
       KAKAO_MODE: fake
-      OCR_ENGINE: onnx
       VERIFY_OCR_TIMEOUT_S: 15
-      ADMISSION_LIMIT: ${ADMISSION_LIMIT:-12}   # 계획 0071: 번호표 수 비교(.env.perf 또는 명령 앞에서 바꿈)
+      ADMISSION_LIMIT: ${ADMISSION_LIMIT:-6}   # 번호표 수(프로세스마다, 계획 0071). api 2개 × 6 = 12(0073 측정, 운영과 같음)
       ADMISSION_WAIT_S: ${ADMISSION_WAIT_S:-2}
+      OCR_ENGINE: none
+      REALTIME_URL: http://realtime:8000
     ports:
       - "8000:8000"
     cpuset: "0,1"
@@ -42,12 +50,57 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    healthcheck:
+    healthcheck: &app_health
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen(u.Request('http://localhost:8000/v1/agreements', headers={'X-Scrun-Probe': '1'}), timeout=3)"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  realtime:
+    image: scrun-app:perf
+    pull_policy: never
+    environment:
+      <<: *app_env
+      REALTIME_URL: ""
+      ADMISSION_LIMIT: 12
+    cpuset: "0,1"
+    mem_limit: 1g
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck: *app_health
+
+  ocr:
+    image: scrun-app:perf
+    pull_policy: never
+    environment:
+      <<: *app_env
+      OCR_ENGINE: onnx
+      ADMISSION_LIMIT: 12
+    cpuset: "0,1"
+    mem_limit: 3g
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck: *app_health
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      SITE_ADDRESS: ":8080"   # 집 안 HTTP(인증서 없음)
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+    cpuset: "0,1"
+    depends_on: # api만 건강하면 뜸. realtime·ocr이 안 떠도 그 경로만 502이고 나머지 API는 됨(계획 0073 리뷰)
+      api:
+        condition: service_healthy
+      realtime:
+        condition: service_started
+      ocr:
+        condition: service_started
 
 volumes:
   pgdata:

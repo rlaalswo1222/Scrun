@@ -1,5 +1,4 @@
 """공통 응답 껍데기(docs/api/README.md "응답 껍데기"): resultType · success.data · error · meta."""
-import uuid
 from datetime import datetime, timezone
 from typing import Any, Generic, Literal, Optional, TypeVar
 
@@ -9,13 +8,13 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .errors import ERRORS, ApiError, ErrorCode
-from .model import CamelModel
+from .model import CamelModel, UtcDatetime
 
 T = TypeVar("T")
 
 
 class Meta(CamelModel):
-    timestamp: datetime
+    timestamp: UtcDatetime
     path: str
     request_id: str
 
@@ -80,13 +79,6 @@ async def pool_timeout_handler(request: Request, exc: Exception) -> JSONResponse
     """DB 연결 풀 기다림 초과(SQLAlchemy TimeoutError, 상한 DB_POOL_TIMEOUT_S)는 서버가 바쁜 것 → 500 대신 503(계획 0071)."""
     response = error_response(request, ErrorCode.SERVICE_UNAVAILABLE, {"reason": "DB_BUSY"})
     response.headers["Retry-After"] = "1"
-    return response
-
-
-async def request_id_middleware(request: Request, call_next):
-    request.state.request_id = "req_" + uuid.uuid4().hex[:12]
-    response = await call_next(request)
-    response.headers["X-Request-Id"] = request.state.request_id
     return response
 
 

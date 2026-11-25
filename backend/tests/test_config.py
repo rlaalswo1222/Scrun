@@ -102,3 +102,34 @@ def test_admission_settings():
                       ("ADMISSION_LIMIT", "16")):   # 연결 합계 15보다 많으면 안 됨
         with pytest.raises(ConfigError):
             load_settings({**base, name: bad})
+
+
+@pytest.mark.parametrize("compose", ["deploy/docker-compose.server.yml", "perf/docker-compose.perf.yml"])
+def test_compose_tickets_and_db_connections_add_up(compose):
+    """프로세스를 여럿 띄우면(계획 0073) 번호표·연결 풀이 프로세스마다라 합계가 늘어난다. api의 번호표 합계는 12(0073 측정:
+    24면 DB에 너무 몰려 200명 p95가 0.7초), DB 연결 합계는 Postgres 기본 한도 100에서 관리용 여유 10을 뺀 90 안"""
+    import re
+    from pathlib import Path
+
+    import yaml
+
+    from app.core.config import AdmissionPolicy
+
+    def value(v):   # "${NAME:-6}" → 6
+        m = re.fullmatch(r"\$\{\w+:-(\d+)\}", str(v))
+        return int(m.group(1) if m else v)
+
+    services = yaml.safe_load((Path(__file__).resolve().parents[1] / compose).read_text(encoding="utf-8"))["services"]
+    pool = AdmissionPolicy().db_pool_total
+    processes, api_tickets = 0, 0
+    for name in ("api", "realtime", "ocr"):
+        svc = services[name]
+        cmd = svc.get("command") or []
+        workers = value(cmd[cmd.index("--workers") + 1]) if "--workers" in cmd else 1
+        limit = value(svc["environment"].get("ADMISSION_LIMIT", AdmissionPolicy().limit))
+        assert limit <= pool, f"{name}: 번호표 {limit} > 연결 풀 {pool}"
+        processes += workers
+        if name == "api":
+            api_tickets = workers * limit
+    assert api_tickets == 12, f"api 번호표 합계 {api_tickets}(프로세스 수 × ADMISSION_LIMIT)는 12로"
+    assert processes * pool <= 90, f"DB 연결 합계 {processes * pool} > 90"

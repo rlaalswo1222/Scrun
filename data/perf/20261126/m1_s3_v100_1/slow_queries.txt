@@ -1,0 +1,10 @@
+7456.6 ms | 100 calls | 74.57 ms avg | SELECT courses.id, courses.name, courses.description, courses.mood, courses.thumbnail_url, courses.type, courses.length_m, courses.max_runners_per_map, courses.
+52.2 ms | 100 calls | 0.52 ms avg | DELETE FROM refresh_tokens WHERE refresh_tokens.user_id = $1::VARCHAR AND refresh_tokens.expires_at <= $2::TIMESTAMP WITH TIME ZONE
+35.7 ms | 100 calls | 0.36 ms avg | SELECT users.id FROM users WHERE users.id = $1::VARCHAR FOR UPDATE
+24.9 ms | 100 calls | 0.25 ms avg | INSERT INTO course_entries (user_id, course_id) VALUES ($1::VARCHAR, $2::VARCHAR) ON CONFLICT (user_id) DO UPDATE SET course_id = $3::VARCHAR, entered_at = now(
+24.9 ms | 100 calls | 0.25 ms avg | SELECT refresh_tokens.family_id FROM refresh_tokens WHERE refresh_tokens.user_id = $1::VARCHAR AND refresh_tokens.revoked_at IS NULL AND refresh_tokens.expires_
+23.4 ms | 100 calls | 0.23 ms avg | INSERT INTO refresh_tokens (id, user_id, family_id, device_id, token_hash, expires_at, revoked_at, revoked_reason, replaced_by_id) VALUES ($1::VARCHAR, $2::VARC
+12.2 ms | 100 calls | 0.12 ms avg | UPDATE refresh_tokens SET revoked_at=$1::TIMESTAMP WITH TIME ZONE, revoked_reason=$2::VARCHAR WHERE refresh_tokens.family_id IN ($3::VARCHAR) AND refresh_tokens
+10.6 ms | 100 calls | 0.11 ms avg | SELECT course_entries.user_id, course_entries.course_id, course_entries.entered_at FROM course_entries WHERE course_entries.user_id = $1::VARCHAR
+10.5 ms | 200 calls | 0.05 ms avg | SELECT users.id, users.nickname, users.height_cm, users.weight_kg, users.timezone, users.friend_code, users.feed_share_default, users.updated_at, users.created_
+6.1 ms | 200 calls | 0.03 ms avg | SELECT $2 FROM ONLY "public"."users" x WHERE "id" OPERATOR(pg_catalog.=) $1 FOR KEY SHARE OF x
