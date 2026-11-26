@@ -51,7 +51,7 @@ final class SpeedEstimator {
     static let airMaxAge = 0.5, airMinCover = 0.7, holdS = 2.5, smoothS = 2.0, updateS = 0.5
     static let airD = 2.598                    // km/h per g (10/29 B 달리기 11구간 전체 맞춤)
     static let bFull = 4.828, bPhone = 6.396   // 보정점이 하나뿐일 때 빌리는 ln(충격) 기울기 (B)
-    static let airMinPoints = 2                // 에어팟 식을 만드는 최소 달리기 점 수(계획 0083)
+    static let airMinPoints = 2                // 에어팟 식을 만드는 최소 달리기 점 수(계획 0086)
     static let walkA = -3.45, walkB = 0.0732   // 걷기 v = a + b·spm
     static let g = 9.80665
     // 이 사람 걷기 절편(계획 0023 설계, 11/10 민재 결정으로 켬, fusion_live.py WALK_OWN·WALK_MIN_KMH).
@@ -323,7 +323,7 @@ final class SpeedEstimator {
     private func refit() {
         let run = points.filter { $0.running }
         phone = Self.fit(run.map { ($0.limp, $0.v) }, bDefault: Self.bPhone)
-        // 에어팟 식은 에어팟 값이 있는 달리기 점이 airMinPoints 이상일 때만(계획 0083). 하나뿐이면 기울기를 B 값에서 빌려
+        // 에어팟 식은 에어팟 값이 있는 달리기 점이 airMinPoints 이상일 때만(계획 0086). 하나뿐이면 기울기를 B 값에서 빌려
         // 이 사람에게 안 맞을 수 있어 폰 식으로. 앱 C# CalibrationModel.HasAirPods와 같은 기준
         let air = run.compactMap { p in p.amp.map { (p.limp, p.v - Self.airD * $0) } }
         full = air.count >= Self.airMinPoints ? Self.fit(air, bDefault: Self.bFull) : nil

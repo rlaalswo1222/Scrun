@@ -41,7 +41,7 @@ SMOOTH_S = 2.0
 UPDATE_S = 0.5
 AIR_D = 2.598                    # km/h per g (B 달리기 11구간 전체 맞춤)
 B_FULL, B_PHONE = 4.828, 6.396   # 보정점이 하나뿐일 때 빌리는 ln(충격) 기울기 (B)
-AIR_MIN_POINTS = 2               # 에어팟 식을 만드는 최소 달리기 점 수(계획 0083, Swift airMinPoints와 같음)
+AIR_MIN_POINTS = 2               # 에어팟 식을 만드는 최소 달리기 점 수(계획 0086, Swift airMinPoints와 같음)
 WALK = (-3.45, 0.0732)           # 걷기 v = a + b·spm (fusion.py 두 사람 합친 공식)
 # 이 사람 걷기 절편(계획 0023 설계, 11/10 민재 결정으로 켬). 공통 공식은 10/29 두 사람(다리 길이 비슷)으로 만든 것이라
 # 키가 다른 사람은 보폭이 달라 틀림. 절편은 WALK_MIN_KMH 이상 걷기 점으로(2 km/h는 오를 때·내릴 때 걸음 수 차이가 가장 크고
@@ -279,7 +279,7 @@ class SpeedEstimator:
     def refit(self):
         run = [p for p in self.points if p['running']]
         self.phone = self.fit([(p['limp'], p['v']) for p in run], B_PHONE)
-        # 에어팟 식은 에어팟 값이 있는 달리기 점이 AIR_MIN_POINTS 이상일 때만(계획 0083): 하나뿐이면 기울기를 B에서 빌려 안 맞을 수 있음
+        # 에어팟 식은 에어팟 값이 있는 달리기 점이 AIR_MIN_POINTS 이상일 때만(계획 0086): 하나뿐이면 기울기를 B에서 빌려 안 맞을 수 있음
         air = [(p['limp'], p['v'] - AIR_D * p['amp']) for p in run if p['amp'] is not None]
         self.full = self.fit(air, B_FULL) if len(air) >= AIR_MIN_POINTS else None
         # 보폭(계획 0060): L(m) = v / 3.6 ÷ (걸음 수 / 60) = L0 + KS·(60000 / 걸음 수 − 공중 ms)

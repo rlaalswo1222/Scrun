@@ -79,7 +79,7 @@ namespace Scrun.App.Tests
             Assert.AreEqual(state, flow.State);
         }
 
-        // 계획 0083: 에어팟 값이 있는 달리기 점이 2개 이상일 때만 "에어팟 보정"(Swift airMinPoints와 같은 기준)
+        // 계획 0086: 에어팟 값이 있는 달리기 점이 2개 이상일 때만 "에어팟 보정"(Swift airMinPoints와 같은 기준)
         [Test]
         public void 에어팟_보정은_에어팟_값이_있는_달리기_점이_둘_이상일_때만()
         {

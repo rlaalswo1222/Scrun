@@ -363,7 +363,7 @@ namespace Scrun.App
                 }
             }
             var model = CalibrationModel.Parse(sensor.ExportCalibration());
-            bool air = model != null && model.HasAirPods; // 계획 0083: 속도 계산이 에어팟을 쓰는 기준과 같게
+            bool air = model != null && model.HasAirPods; // 계획 0086: 속도 계산이 에어팟을 쓰는 기준과 같게
             var airChip = Q<Label>("sensor-air");
             airChip.text = air ? CalibrationCopy.AirPodsOn : CalibrationCopy.AirPodsOff;
             airChip.EnableInClassList("calib-chip--gray", !air);
