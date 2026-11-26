@@ -31,7 +31,7 @@ namespace Scrun
         public void Refresh()
         {
             float lap = zoneRoots.Length * zoneLength;
-            float s = Mathf.Repeat(runner && Application.isPlaying ? runner.Distance : editorDistance, lap);
+            float s = Mathf.Repeat(runner && Application.isPlaying ? runner.TrackDistance : editorDistance, lap);
             for (int i = 0; i < zoneRoots.Length; i++)
             {
                 if (zoneRoots[i]) { bool on = Near(i, s, pad); if (zoneRoots[i].activeSelf != on) zoneRoots[i].SetActive(on); }

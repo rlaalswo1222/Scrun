@@ -25,7 +25,7 @@ namespace Scrun
             var track = runner ? runner.Track : null;
             if (track)
             {
-                float d = runner.Distance;
+                float d = runner.TrackDistance; // 맵 위 위치(세계 속도 배율, 계획 0083)
                 float lateral = runner.LateralOffset;
                 pos = track.GetPoint(d - distance) + track.GetRight(d - distance) * lateral + Vector3.up * height;
                 at = track.GetPoint(d + lookAhead) + track.GetRight(d + lookAhead) * lateral * 0.5f + Vector3.up * lookHeight;

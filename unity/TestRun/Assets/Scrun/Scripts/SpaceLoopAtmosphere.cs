@@ -77,7 +77,7 @@ namespace Scrun
             var track = runner ? runner.Track : null;
             float lap = zones.Length * zoneLength;
             // 편집 모드에서는 러너가 아직 움직이지 않으므로(거리 0) 미리보기 거리를 쓴다
-            float s = runner && Application.isPlaying ? runner.Distance : previewDistance;
+            float s = runner && Application.isPlaying ? runner.TrackDistance : previewDistance;
             s = Mathf.Repeat(s, lap);
             var w = new float[zones.Length];
             float tot = 0;
