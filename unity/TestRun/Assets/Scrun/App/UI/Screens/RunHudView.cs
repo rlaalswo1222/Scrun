@@ -172,20 +172,31 @@ namespace Scrun.App
             if (Debug.isDebugBuild)
             {
                 double? rtt = together?.RoundTripMs;
-                dev.text = $"속도 {RunLink.PlayerSpeedKmh:0.0} km/h · 왕복 {(rtt.HasValue ? rtt.Value.ToString("0") + "ms" : "-")}" +
-                           $" · {together?.Status.ToString() ?? "혼자"}" + MethodsDev();
+                // 11/27 민재: 아래 작은 글씨라 달리며 안 보임 → 위(미니맵 옆) 상자, 속도는 크게
+                dev.text = $"<size=34><b>{RunLink.PlayerSpeedKmh:0.0}</b></size> km/h" + MethodsDev() +
+                           $"\n왕복 {(rtt.HasValue ? rtt.Value.ToString("0") + "ms" : "-")} · {together?.Status.ToString() ?? "혼자"}";
             }
         }
 
         // 개발 표시: 세 방식 값과 에어팟 공중 시간(계획 0060). 아이폰 센서가 덧붙인 칸을 줄 때만
-        internal static string MethodsDev() => MethodsDev((Native.Speed as ISpeedSensorDiagnostics)?.Methods ?? default);
+        internal static string MethodsDev()
+        {
+            var diag = Native.Speed as ISpeedSensorDiagnostics;
+            return MethodsDev(diag?.Methods ?? default) + AirDev(diag?.AirPodsSamplesPerSec, Native.Speed?.Current.UsingAirPods ?? false);
+        }
+
+        // 11/27 민재 "세 값이 똑같다": 준비 화면 "연결됨"은 에어팟 20개/초 이상인데 계산은 약 32개/초(45의 70%) 이상이어야 에어팟을 씀.
+        // 그 사이면 연결됨으로 보여도 계산엔 안 쓰임 → 몇 개/초인지와 계산이 지금 에어팟을 쓰는지 같이 보임
+        internal static string AirDev(int? perSec, bool used) =>
+            perSec == null ? "" : $" · {perSec}개/초 · 계산에 {(used ? "씀" : "안 씀")}";
 
         internal static string MethodsDev(SpeedMethodReading m)
         {
             if (!m.Has) return "";
-            static string K(float v) => float.IsNaN(v) ? "-" : v.ToString("0.0");
-            return $"\n기본 {K(m.BaseKmh)} · 섞기 {K(m.BlendKmh)} · 고치기 {K(m.FixKmh)} · 공중 " +
-                   (float.IsNaN(m.FlightMs) ? "-" : m.FlightMs.ToString("0") + "ms") + $" · 쓰는 중 {SpeedMethodPrefs.Name(m.InUse)}";
+            // 둘째 자리까지: 보정한 날엔 세 값이 0.1 안으로 붙어 같은 숫자로 보임(11/27)
+            static string K(float v) => float.IsNaN(v) ? "-" : v.ToString("0.00");
+            return $"\n기본 {K(m.BaseKmh)} · 섞기 {K(m.BlendKmh)} · 고치기 {K(m.FixKmh)}  (쓰는 중: {SpeedMethodPrefs.Name(m.InUse)})" +
+                   "\n에어팟 공중 " + (float.IsNaN(m.FlightMs) ? "-" : m.FlightMs.ToString("0") + "ms");
         }
 
         // D-13 배너: 같은 출발선·같은 시계라 거리 차이 = 내 이번 거리 − 고스트 거리
