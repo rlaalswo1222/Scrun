@@ -121,7 +121,9 @@ namespace Scrun
         }
 
         public const int RouteShapePoints = 256; // 미니맵 코스 모양 점 수(6.7 km면 26m마다)
-        const float HeadHeightM = 2.15f;         // 이름표를 다는 높이(섬 RunnerLabels와 같음)
+        const float HeadHeightM = 2.15f;         // 몸 키를 못 잴 때 이름표 높이(섬 RunnerLabels와 같음)
+        const float HeadMarginM = 0.12f;         // 머리 끝 위 여백
+        float headHeightM = -1f;                 // 이름표 높이 = 처음 본 몸의 키 + 여백(우주 루프 아바타 약 1.7 m, 섬 Y Bot 약 1.8 m)
         const float LabelMaxM = 80f;             // 이 거리 안의 사람만 이름표(섬 RunnerLabels와 같음)
 
         // 위에서 본 코스 모양(x·z). 앱 미니맵이 줄여 그림
@@ -148,15 +150,29 @@ namespace Scrun
             {
                 var rc = kv.Value.runner;
                 if (rc == null || !rc.isActiveAndEnabled) continue;
-                var sp = cam.WorldToScreenPoint(rc.transform.position + Vector3.up * HeadHeightM);
+                var sp = cam.WorldToScreenPoint(rc.transform.position + Vector3.up * HeadHeight(rc));
                 if (sp.z <= 0f || sp.z > LabelMaxM) continue;
                 RunLink.Heads[kv.Key] = new Vector2(sp.x, sp.y);
             }
             if (ghostTag != null && ghostTag.gameObject.activeInHierarchy)
             {
-                var sp = cam.WorldToScreenPoint(ghostTag.runner.transform.position + Vector3.up * HeadHeightM);
+                var sp = cam.WorldToScreenPoint(ghostTag.runner.transform.position + Vector3.up * HeadHeight(ghostTag.runner));
                 if (sp.z > 0f && sp.z <= LabelMaxM) RunLink.Heads[RunLink.GhostKey] = new Vector2(sp.x, sp.y);
             }
+        }
+
+        // 이름표 높이: 고정 2.15 m는 섬 Y Bot 기준이라 우주 루프 아바타(머리 끝 약 1.7 m)에선 가까운 사람일수록 떠 보였음(11/27).
+        // 몸(켜진 SkinnedMeshRenderer, 입은 러닝복 한 벌 포함)의 위 끝을 처음 한 번 재서 모두 같이 씀(같은 맵은 같은 아바타)
+        float HeadHeight(RunnerController rc)
+        {
+            if (headHeightM > 0f) return headHeightM;
+            float top = float.MinValue;
+            foreach (var r in rc.GetComponentsInChildren<SkinnedMeshRenderer>())
+                if (r.enabled) top = Mathf.Max(top, r.bounds.max.y);
+            if (top == float.MinValue) return HeadHeightM;
+            headHeightM = top - rc.transform.position.y + HeadMarginM;
+            Debug.Log($"[같이 뛰기] 이름표 높이 {headHeightM:0.00}m({rc.name})");
+            return headHeightM;
         }
 
         void Update()
