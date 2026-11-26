@@ -24,6 +24,7 @@ namespace Scrun
         const float PostStep = 2.0f, PostD = 4.3f, PostW = 0.07f, PostH = 0.62f, CapH = 0.1f;
 
         readonly List<Mesh> meshes = new List<Mesh>();
+        readonly Vector3[] corner = new Vector3[4]; // Box가 기둥마다 새로 만들지 않게
         GameObject root;
 
         void Start()
@@ -140,7 +141,7 @@ namespace Scrun
             var rgt = track.GetRight(sm);
             var c = track.GetPoint(sm) + rgt * d;
             var up = Vector3.up;
-            Vector3[] corner = { -f - rgt, f - rgt, f + rgt, -f + rgt };
+            corner[0] = -f - rgt; corner[1] = f - rgt; corner[2] = f + rgt; corner[3] = -f + rgt;
             for (int k = 0; k < 4; k++)
             {
                 var a = c + corner[k] * (w * 0.5f);
