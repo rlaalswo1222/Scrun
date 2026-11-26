@@ -3,7 +3,7 @@
          속도·페이스는 보여 주지 않는다(BL-12 ②, D-10 노트 "결과 화면에서"): Figma D-17·D-19의 "평균 페이스"는 뺌 → 상준 확인 -->
     <Style src="project://database/Assets/Scrun/App/Resources/UI/Course.uss" />
     <Style src="project://database/Assets/Scrun/App/Resources/UI/RunEnd.uss" />
-    <ui:VisualElement name="run-end" class="course run-end">
+    <ui:VisualElement name="run-end" class="course run-end" picking-mode="Ignore">
 
         <!-- D-17 일시정지 -->
         <ui:VisualElement name="pause" class="end-layer">

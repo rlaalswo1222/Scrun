@@ -107,8 +107,9 @@ namespace Scrun.App
         // 머리 위 화면 자리에 이름표를 놓음
         void Place(VisualElement tag, Vector2 screen, IPanel panel)
         {
-            // 화면 픽셀(아래에서 위) → 패널 좌표(위에서 아래)
-            var at = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(screen.x, Screen.height - screen.y));
+            // 화면 픽셀(아래에서 위) → 패널 좌표(위에서 아래) → 이름표 층 안 좌표. 층은 화면 위 안전 영역만큼 아래에서 시작해서
+            // 패널 좌표를 그대로 left·top에 넣으면 그만큼(아이폰 약 93pt) 아래로 밀려 이름표가 발 높이에 붙었음(11/27)
+            var at = layer.WorldToLocal(RuntimePanelUtils.ScreenToPanel(panel, new Vector2(screen.x, Screen.height - screen.y)));
             // 다른 이름표와 겹치면 위로 쌓음(섬 RunnerLabels와 같게, 6칸까지). 크기는 지난 프레임 배치 값
             float w = tag.resolvedStyle.width, h = tag.resolvedStyle.height;
             if (w > 0f && h > 0f)
