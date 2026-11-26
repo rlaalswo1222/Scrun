@@ -79,7 +79,7 @@ namespace Scrun
                 route.SetRoute(request.RouteId);
                 name = route.RouteName;
             }
-            float d = Mathf.Repeat(request.EntryPositionM, track.LapLength); // 서버와 같은 계산이라 한 바퀴 안이지만 혹시 몰라
+            float d = Mathf.Repeat(request.EntryPositionM, track.RunLapLength); // 서버와 같은 계산이라 한 바퀴 안이지만 혹시 몰라. 실제 거리 기준(세계 속도 배율, 계획 0083)
             player.runner.Teleport(d);
             RunnerTag.GatherBotsAround(d);
             var follow = Find<FollowCamera>(scene);

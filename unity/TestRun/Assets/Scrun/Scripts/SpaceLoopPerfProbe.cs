@@ -116,7 +116,7 @@ namespace Scrun
         IEnumerator MeasureAt(string phase, string label, float d, float warm, float sample)
         {
             status = $"{phase}  {label} {d:0}m  ({Time.realtimeSinceStartup - startTime:0}초)";
-            runner.Teleport(d - warm * RunKmh / 3.6f);
+            runner.TeleportTrack(d - warm * RunKmh / 3.6f * runner.WorldScale); // d는 맵 위 위치
             if (follow) follow.Snap();
             speed.Stop(); speed.Add(RunKmh);
             yield return new WaitForSeconds(warm);
