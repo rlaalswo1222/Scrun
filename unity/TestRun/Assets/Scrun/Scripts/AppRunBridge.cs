@@ -69,10 +69,10 @@ namespace Scrun
         void TeleportPlayer(float lapM)
         {
             if (player == null || player.runner == null || route == null) return;
-            player.runner.Teleport(Mathf.Repeat(lapM, route.LapLength));
+            player.runner.Teleport(Mathf.Repeat(lapM, route.RunLapLength));
             var follow = FindInScene<FollowCamera>();
             if (follow != null) follow.Snap();
-            RunLink.ReportPlayer(player.runner.Distance, player.runner.SpeedKmh, route.LapLength);
+            RunLink.ReportPlayer(player.runner.Distance, player.runner.SpeedKmh, route.RunLapLength);
         }
 
         void UseSensorSpeed()
@@ -178,7 +178,9 @@ namespace Scrun
         void Update()
         {
             var me = player.runner;
-            float lap = route.LapLength;
+            // 앱·서버·다른 러너는 모두 실제 거리로 주고받는다. 세계 속도 배율(계획 0083)이 있으면 한 바퀴도 실제 거리로(맵 한 바퀴 ÷ 배율).
+            // 맵에 놓는 건 RunnerController가 곱해서 함
+            float lap = route.RunLapLength;
             // 입장 위치로 옮기기 전(MapLaunchApplier가 한 프레임 뒤에 옮김)의 자리를 알리지 않게
             if (!MapLaunch.Applied.IsCompleted) return;
             RunLink.ReportPlayer(me.Distance, me.SpeedKmh, lap);

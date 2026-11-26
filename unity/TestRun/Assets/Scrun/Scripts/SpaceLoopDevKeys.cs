@@ -22,9 +22,10 @@ namespace Scrun
             if (!Debug.isDebugBuild) enabled = false;
         }
 
+        // d는 맵 위 위치(구간 볼거리 자리가 맵에 박혀 있음). 세계 속도 배율이 있으면 실제 거리는 d ÷ 배율
         void Go(float d, string label)
         {
-            runner.Teleport(d);
+            runner.TeleportTrack(d);
             if (follow) follow.Snap();
             msg = label; msgUntil = Time.time + 2f;
         }
@@ -35,8 +36,8 @@ namespace Scrun
             if (kb == null || !runner) return;
             for (int i = 0; i < spots.Length; i++)
                 if (kb[(Key)((int)Key.Digit1 + i)].wasPressedThisFrame) Go(spots[i], Names[i]);
-            if (kb.leftBracketKey.wasPressedThisFrame) Go(Mathf.Max(0, runner.Distance - 100f), "-100m");
-            if (kb.rightBracketKey.wasPressedThisFrame) Go(runner.Distance + 100f, "+100m");
+            if (kb.leftBracketKey.wasPressedThisFrame) Go(Mathf.Max(0, runner.TrackDistance - 100f), "-100m");
+            if (kb.rightBracketKey.wasPressedThisFrame) Go(runner.TrackDistance + 100f, "+100m");
             if (kb.oKey.wasPressedThisFrame)
             {
                 if (!outfit) outfit = runner.GetComponentInChildren<AvatarOutfit>();
@@ -53,7 +54,7 @@ namespace Scrun
             var s = new GUIStyle(GUI.skin.label) { fontSize = 18 };
             s.normal.textColor = Color.white;
             float lap = zoneLength * 5;
-            float d = runner ? Mathf.Repeat(runner.Distance, lap) : 0;
+            float d = runner ? Mathf.Repeat(runner.TrackDistance, lap) : 0;
             int z = Mathf.Clamp((int)(d / zoneLength), 0, 4);
             GUI.Label(new Rect(16, 12, 900, 30), $"{Names[z]}  {d:0}m  {(runner ? runner.SpeedKmh : 0):0.0} km/h   [1~5 구간] [ [ ] ±100m ] [↑↓ 속도] [O 러닝복]", s);
             if (Time.time < msgUntil) GUI.Label(new Rect(16, 40, 600, 30), msg, s);
