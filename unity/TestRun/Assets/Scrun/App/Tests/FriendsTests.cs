@@ -70,10 +70,25 @@ namespace Scrun.App.Tests
             Assert.AreEqual("1:05:09", FriendText.Duration(3909));
             Assert.AreEqual("9'25\"/km", FriendText.Pace(565));
             Assert.IsNull(FriendText.Pace(null));
-            var run = new FriendRun { DistanceM = 3510, DurationS = 1982, AvgPaceSPerKm = 565 };
+            var run = new FriendRun { DistanceM = 3510, DurationS = 1982, AvgPaceSPerKm = 565, Verification = "VERIFIED" };
             Assert.AreEqual("3.51km  ·  33:02", FriendText.RunStats(run));
+            Assert.AreEqual("3.51km", FriendText.RecordKm(run));
             Assert.AreEqual("33:02 · 평균 9'25\"/km", FriendText.RunDetail(run));
-            Assert.AreEqual("33:02", FriendText.RunDetail(new FriendRun { DurationS = 1982 }));
+            Assert.AreEqual("33:02", FriendText.RunDetail(new FriendRun { DurationS = 1982, Verification = "VERIFIED" }));
+        }
+
+        // 계획 0078: 남과 비교는 인증 기록만 → 인증 대기·미인증 친구 기록은 카드는 보이되 거리·시간·페이스는 숨김
+        [TestCase("UNVERIFIED")]
+        [TestCase("PENDING")]
+        [TestCase(null)]
+        public void FriendStatsHiddenUnlessVerified(string verification)
+        {
+            var run = new FriendRun { DistanceM = 3510, DurationS = 1982, AvgPaceSPerKm = 565, Verification = verification };
+            Assert.IsFalse(FriendText.ShowsStats(run));
+            Assert.AreEqual(FriendText.HiddenStats, FriendText.RunStats(run));
+            Assert.AreEqual(FriendText.HiddenKm, FriendText.RecordKm(run));
+            Assert.AreEqual(FriendText.HiddenStats, FriendText.RunDetail(run));
+            StringAssert.DoesNotContain("km", FriendText.RunStats(run) + FriendText.RunDetail(run));
         }
 
         [Test]

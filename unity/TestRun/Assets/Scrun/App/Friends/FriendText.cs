@@ -156,12 +156,23 @@ namespace Scrun.App
             return "아직 러닝 기록이 없어요";
         }
 
+        // 남과 비교는 인증 기록만(중간발표 피드백 3순위, 계획 0078): 친구 기록의 거리·시간·페이스는 인증 완료일 때만.
+        // 인증 대기·미인증은 카드는 보이고 숫자 자리에 이 문구(임시, 상준 확인). 서버는 숫자를 그대로 줌(옛 앱이 null을 못 읽음)
+        public const string HiddenStats = "인증한 러닝만 기록이 보여요";
+        public const string HiddenKm = "기록 비공개";
+        public static bool ShowsStats(FriendRun r) => r.Verification == "VERIFIED";
+
         // G-01 피드 카드 아래 "3.51km  ·  33:02"
-        public static string RunStats(FriendRun r) => $"{Km(r.DistanceM)}  ·  {Duration(r.DurationS)}";
+        public static string RunStats(FriendRun r) =>
+            ShowsStats(r) ? $"{Km(r.DistanceM)}  ·  {Duration(r.DurationS)}" : HiddenStats;
+
+        // G-09 최근 러닝 큰 글자 "3.51km"
+        public static string RecordKm(FriendRun r) => ShowsStats(r) ? Km(r.DistanceM) : HiddenKm;
 
         // G-09 최근 러닝 줄 둘째 줄 "33:02 · 평균 9'25"/km"
         public static string RunDetail(FriendRun r)
         {
+            if (!ShowsStats(r)) return HiddenStats;
             var pace = Pace(r.AvgPaceSPerKm);
             return pace == null ? Duration(r.DurationS) : $"{Duration(r.DurationS)} · 평균 {pace}";
         }
