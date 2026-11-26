@@ -79,6 +79,16 @@ def test_parsers():
     assert parse_time("0.018") is None                                              # 거리 모양은 시간 아님
 
 
+def test_all_eights_is_ghost_not_distance():
+    """계획 0082: 꺼진 칸 "8.88"(모든 자리 8)은 거리가 아님 — 11/27 p05가 8.88 km로 READ됐던 것."""
+    assert parse_km("8.88") is None and parse_km("88.8") is None and parse_km("8.888") is None
+    assert parse_km("8.08") == 8080 and parse_km("0.88") == 880                     # 8이 아닌 자리가 있으면 그대로
+    assert parse_time("88:88") is None and parse_time("8.88") is None               # 시간은 원래 안 됨(초 60 이상)
+    d = reg(0, 0, 1, 1, number="8.88", name="distance", how="label")
+    t = reg(0, 0, 1, 1, number="0:51", name="time", how="label")
+    assert decide([d, t]).status == "UNREADABLE"
+
+
 def test_plain_time_only_when_both_reads_agree():
     """계획 0082: 콜론이 안 찍힌 "0042"(DRAX My Mountain) = 0:42. 꺼진 자리 "8888"이 시간이 되지 않게 두 읽기가 같을 때만."""
     assert parse_time("0042") is None
