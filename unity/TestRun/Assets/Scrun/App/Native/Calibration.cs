@@ -58,6 +58,13 @@ namespace Scrun.App
 
         public string ToJson() => JsonConvert.SerializeObject(this);
 
+        // 에어팟 식을 만드는 최소 달리기 점 수(계획 0083). Swift SpeedEstimator.airMinPoints와 같은 기준
+        public const int AirMinPoints = 2;
+
+        // 이 보정으로 달릴 때 에어팟을 속도 계산에 쓰는지: 에어팟 값이 있는 달리기 점이 AirMinPoints 이상
+        [JsonIgnore]
+        public bool HasAirPods => Points != null && Points.Count(p => p != null && p.Running && p.AirAmp.HasValue) >= AirMinPoints;
+
         // 모양이 맞지 않으면 null(다른 버전, 깨진 값, 점 없음)
         public static CalibrationModel Parse(string json)
         {

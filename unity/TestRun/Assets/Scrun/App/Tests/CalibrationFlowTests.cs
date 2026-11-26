@@ -79,6 +79,20 @@ namespace Scrun.App.Tests
             Assert.AreEqual(state, flow.State);
         }
 
+        // 계획 0083: 에어팟 값이 있는 달리기 점이 2개 이상일 때만 "에어팟 보정"(Swift airMinPoints와 같은 기준)
+        [Test]
+        public void 에어팟_보정은_에어팟_값이_있는_달리기_점이_둘_이상일_때만()
+        {
+            CalibrationPoint P(double v, bool run, double? amp) =>
+                new CalibrationPoint { V = v, LnImpact = 1, Cadence = 170, Running = run, AirAmp = amp };
+            Assert.IsFalse(new CalibrationModel(new[] { P(8, true, null), P(10, true, null) }).HasAirPods, "에어팟 없이 보정");
+            Assert.IsFalse(new CalibrationModel(new[] { P(8, true, 0.9), P(10, true, null) }).HasAirPods,
+                "도중에 끊겨 하나뿐 → 에어팟 식 안 만듦(기울기를 남의 값에서 빌리게 됨)");
+            Assert.IsFalse(new CalibrationModel(new[] { P(4, false, 0.5), P(6, false, 0.6), P(10, true, 1.0) }).HasAirPods,
+                "걷기 점은 안 셈");
+            Assert.IsTrue(new CalibrationModel(new[] { P(8, true, 0.9), P(10, true, 1.0), P(12, true, null) }).HasAirPods);
+        }
+
         [Test]
         public void 안내대로_뛰면_7단계를_재고_저장하며_3분_안에_끝난다()
         {
