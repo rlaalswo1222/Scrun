@@ -6,16 +6,17 @@ namespace Scrun.App
 {
     // H-10 설정(계획 0049, Figma 610:2647). 알림·공개·연결·데이터 줄 + 아래 로그아웃·계정 삭제.
     // 되는 것: 친구에게 러닝 피드 공개(feedShareDefault, PATCH /users/me/settings), 이어폰 지금 상태, 약관 문서 열기, 로그아웃.
-    // 아직 없는 것(정할 것 1 나): 알림 두 줄(BL-46)·공동 맵 인증 마크 보이기(API 없음)는 잠긴 스위치 + "준비 중". 계정 삭제는 계획 0058(확인 시트 → DELETE /users/me).
+    // 주간 목표 리마인더(BL-46, 계획 0079)는 이 기기 스위치(WeeklyReminder). 켤 때 알림 권한이 없으면 묻고, 거부했으면 iOS 설정으로.
+    // 아직 없는 것(정할 것 1 나): "친구가 달릴 때"(서버 푸시)·공동 맵 인증 마크 보이기(API 없음)는 잠긴 스위치 + "준비 중". 계정 삭제는 계획 0058(확인 시트 → DELETE /users/me).
     // 개발 빌드면 맨 아래 "네이티브 점검"(예전 마이 자리에서 옮김)
     public sealed class SettingsScreen : AppScreen
     {
-        VisualElement content, feedSwitch;
+        VisualElement content, feedSwitch, reminderSwitch;
         Label headphones;
         UserSettings settings;
         List<Agreement> agreements;
         FriendParts.Sheet sheet;
-        bool loading, saving, loggingOut, deleting;
+        bool loading, saving, loggingOut, deleting, askingReminder;
 
         protected override string Uxml => "UI/Settings";
         public override bool HidesTabBar => true;
@@ -27,7 +28,10 @@ namespace Scrun.App
 
             var alerts = MyParts.Group(content, "알림");
             alerts.Add(MyParts.SwitchRow("친구가 달릴 때", "친구가 달리기 시작하면 알려줘요", false, null, locked: true, onLocked: Soon));
-            alerts.Add(MyParts.SwitchRow("주간 목표 리마인더", "목표까지 남은 횟수를 알려줘요", false, null, locked: true, onLocked: Soon));
+            var reminder = MyParts.SwitchRow("주간 목표 리마인더", "목표까지 남은 횟수를 알려줘요", WeeklyReminder.ShownOn, SetReminder);
+            reminder.name = "weekly-reminder";
+            reminderSwitch = reminder.Q<VisualElement>("switch");
+            alerts.Add(reminder);
             MyParts.MarkLast(alerts);
 
             var open = MyParts.Group(content, "공개 설정");
@@ -67,6 +71,10 @@ namespace Scrun.App
                 var dev = new Button(() => { if (Nav.Current == this) Nav.Push(new NativeCheckScreen()); }) { text = "네이티브 점검 (개발 빌드)" };
                 dev.AddToClassList("link-button");
                 content.Add(dev);
+                // 아이폰 확인용(계획 0079): 리마인더 예약 자리 하나를 1분 뒤로. 앱을 내리고 기다리면 알림이 와야 함
+                var remind = new Button(() => WeeklyReminder.TestInOneMinute()) { text = "리마인더 1분 뒤 시험 (개발 빌드)" };
+                remind.AddToClassList("link-button");
+                content.Add(remind);
             }
         }
 
@@ -77,15 +85,22 @@ namespace Scrun.App
             {
                 Native.Headphones.Changed += OnHeadphones;
                 OnHeadphones(Native.Headphones.Status);
+                // iOS 설정에서 알림을 허용·거부하고 돌아오면 리마인더 스위치를 다시 그림(계획 0079 리뷰)
+                Native.Permissions.Changed += OnPermission;
+                MyParts.SetSwitch(reminderSwitch, WeeklyReminder.ShownOn);
             }
-            catch (System.Exception e) { Debug.LogWarning("[설정] 이어폰 상태를 못 읽음: " + e.Message); }
+            catch (System.Exception e) { Debug.LogWarning("[설정] 이어폰·알림 상태를 못 읽음: " + e.Message); }
             Load();
         }
 
         protected internal override void OnHide()
         {
-            try { Native.Headphones.Changed -= OnHeadphones; }
-            catch (System.Exception e) { Debug.LogWarning("[설정] 이어폰 구독을 못 뺌: " + e.Message); }
+            try
+            {
+                Native.Headphones.Changed -= OnHeadphones;
+                Native.Permissions.Changed -= OnPermission;
+            }
+            catch (System.Exception e) { Debug.LogWarning("[설정] 이어폰·알림 구독을 못 뺌: " + e.Message); }
         }
 
         protected internal override bool OnBack()
@@ -128,6 +143,36 @@ namespace Scrun.App
             if (Root.panel == null) return;
             if (ok) settings = got;
             MyParts.SetSwitch(feedSwitch, settings.FeedShareDefault);
+        }
+
+        void OnPermission(PermissionKind kind, PermissionStatus _)
+        {
+            if (kind == PermissionKind.Notifications && Root.panel != null) MyParts.SetSwitch(reminderSwitch, WeeklyReminder.ShownOn);
+        }
+
+        async void SetReminder(bool on)
+        {
+            if (askingReminder) return;
+            if (on)
+            {
+                var status = Native.Permissions.GetStatus(PermissionKind.Notifications);
+                if (status == PermissionStatus.NotDetermined)
+                {
+                    askingReminder = true;
+                    status = await Native.Permissions.RequestAsync(PermissionKind.Notifications);
+                    askingReminder = false;
+                    if (Root.panel == null) return;
+                }
+                if (status != PermissionStatus.Granted)
+                {
+                    // 거부·제한: 앱에서 다시 물을 수 없음 → iOS 설정의 이 앱 화면. 돌아와서 다시 켜면 됨
+                    if (status == PermissionStatus.Denied) Native.Permissions.OpenSettings();
+                    MyParts.SetSwitch(reminderSwitch, false);
+                    return;
+                }
+            }
+            WeeklyReminder.SetEnabled(on);
+            MyParts.SetSwitch(reminderSwitch, WeeklyReminder.ShownOn);
         }
 
         async void OpenTerms()

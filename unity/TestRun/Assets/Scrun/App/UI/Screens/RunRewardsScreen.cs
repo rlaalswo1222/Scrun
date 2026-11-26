@@ -103,6 +103,7 @@ namespace Scrun.App
                 }
             }, Load);
             loading = false;
+            if (ok) _ = WeeklyReminder.RefreshQuietlyAsync(); // 이번 러닝으로 목표를 채웠으면 리마인더를 지움(결과 화면에서 앱을 닫아도, 계획 0079)
             if (Root.panel == null || !ok) return;
             Show(r, p);
             Animate();
