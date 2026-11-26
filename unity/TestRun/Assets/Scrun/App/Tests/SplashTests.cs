@@ -49,15 +49,29 @@ namespace Scrun.App.Tests
         }
 
         [Test]
-        public void 화면은_Figma대로_만들어진다()
+        public void 화면은_로그인에서_카카오_버튼만_뺀_모양()
         {
             var splash = Show();
-            Assert.IsNotNull(splash.Root.Q<Label>(className: "splash-logo"));
-            Assert.AreEqual("SCRUN", splash.Root.Q<Label>(className: "splash-logo").text);
-            Assert.AreEqual("지루했던 러닝머신을,\n계속하고 싶은 러닝으로", splash.Root.Q<Label>(className: "splash-tagline").text);
-            Assert.IsNotNull(splash.Root.Q("character"));
-            Assert.AreEqual("app-root--splash", splash.RootClass, "노치·홈 바까지 그라데이션");
+            var root = splash.Root;
+            Assert.IsNotNull(root.Q(className: "ob-login-logo"), "로그인과 같은 로고");
+            Assert.IsNotNull(root.Q(className: "ob-login-planet"), "로그인과 같은 행성");
+            Assert.IsTrue(root.Q("fit").ClassListContains(SplashScreen.ArtClass), "로고·행성은 페이드인");
+            // 글·버튼 칸은 자리만 남기고 숨김(visibility) → 로고·행성이 로그인과 같은 자리
+            Assert.IsTrue(root.Q(className: "ob-login-text").ClassListContains(SplashScreen.HoldClass));
+            Assert.IsTrue(root.Q(className: "ob-login-foot").ClassListContains(SplashScreen.HoldClass));
+            Assert.IsFalse(root.Q<Button>("kakao").enabledSelf, "숨긴 카카오 버튼은 못 누름");
+            Assert.AreEqual(DisplayStyle.None, root.Q("notice").style.display.value, "알림 줄은 로그인처럼 없을 때 안 보임");
+            Assert.AreEqual(SpaceArt.LoginRootClass, splash.RootClass, "바탕도 로그인과 같게(노치·홈 바까지)");
             Assert.IsTrue(splash.HidesTabBar);
+        }
+
+        [Test]
+        public void 스플래시_USS가_붙는다()
+        {
+            var splash = Show();
+            var uss = UnityEngine.Resources.Load<StyleSheet>("UI/Splash");
+            Assert.IsNotNull(uss);
+            Assert.IsTrue(splash.Root.styleSheets.Contains(uss), "페이드인·숨김 규칙");
         }
 
         [Test]
@@ -81,9 +95,9 @@ namespace Scrun.App.Tests
         public void 다른_화면은_앱_배경을_바꾸지_않는다() => Assert.IsNull(new Other().RootClass);
 
         [Test]
-        public void 보이는_시간은_1에서_2초_다_보이는_건_1초_이상()
+        public void 보이는_시간은_2에서_3초_다_보이는_건_1초_이상()
         {
-            Assert.That(SplashScreen.ShowMs, Is.InRange(1000, 2000), "Figma 노트 1–2초");
+            Assert.That(SplashScreen.ShowMs, Is.InRange(2000, 3000), "Figma 노트 1–2초에서 1초 늘림(11/25)");
             Assert.That(SplashScreen.ShowMs - SplashScreen.FadeMs, Is.GreaterThanOrEqualTo(1000), "페이드 뒤 다 보이는 시간");
         }
     }

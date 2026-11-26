@@ -137,13 +137,6 @@
     --glass-fill: rgba(16, 26, 51, 0.92);
 }
 
-/* 스플래시(A-01, 계획 0030, AppScreen.RootClass) */
-.app-root--splash {
-    background-color: var(--color-primary); /* 아이폰 실행 화면 색(AppSceneBuilder.LaunchColor)도 이 값 */
-    background-image: url("project://database/Assets/Scrun/App/UI/Images/SplashGradient.png");
-    -unity-background-scale-mode: stretch-to-fill;
-}
-
 .app-root--home {
     background-image: url("project://database/Assets/Scrun/App/UI/Images/Space/BgHome.png");
 }

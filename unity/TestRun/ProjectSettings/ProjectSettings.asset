@@ -16,7 +16,7 @@ PlayerSettings:
   productName: Scrun
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
-  m_SplashScreenBackgroundColor: {r: 0.18431373, g: 0.43529412, b: 0.89411765, a: 1}
+  m_SplashScreenBackgroundColor: {r: 0.06666667, g: 0.09019608, b: 0.27058825, a: 1}
   m_ShowUnitySplashScreen: 0
   m_ShowUnitySplashLogo: 0
   m_SplashScreenOverlayOpacity: 1
@@ -224,18 +224,18 @@ PlayerSettings:
   tvOSTopShelfImageWideLayers: []
   tvOSTopShelfImageWideLayers2x: []
   iOSLaunchScreenType: 1
-  iOSLaunchScreenPortrait: {fileID: 0}
-  iOSLaunchScreenLandscape: {fileID: 0}
+  iOSLaunchScreenPortrait: {fileID: 2800000, guid: a483752b82c5c9242ac06990f9a70c62, type: 3}
+  iOSLaunchScreenLandscape: {fileID: 2800000, guid: a483752b82c5c9242ac06990f9a70c62, type: 3}
   iOSLaunchScreenBackgroundColor:
     serializedVersion: 2
-    rgba: 4293160751
+    rgba: 4282717969
   iOSLaunchScreenFillPct: 100
   iOSLaunchScreenSize: 100
   iOSLaunchScreeniPadType: 1
-  iOSLaunchScreeniPadImage: {fileID: 0}
+  iOSLaunchScreeniPadImage: {fileID: 2800000, guid: a483752b82c5c9242ac06990f9a70c62, type: 3}
   iOSLaunchScreeniPadBackgroundColor:
     serializedVersion: 2
-    rgba: 4293160751
+    rgba: 4282717969
   iOSLaunchScreeniPadFillPct: 100
   iOSLaunchScreeniPadSize: 100
   iOSLaunchScreenCustomStoryboardPath: 

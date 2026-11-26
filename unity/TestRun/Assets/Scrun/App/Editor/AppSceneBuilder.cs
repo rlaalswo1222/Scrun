@@ -95,7 +95,6 @@ namespace Scrun.App.Editor
         // 캐릭터는 투명 배경 그대로. 둘 다 UI에 원래 크기 근처로만 그려서 밉맵 없음
         public static void EnsureAppImages()
         {
-            SetImage($"{ImageDir}/SplashGradient.png", uncompressed: true);
             SetImage($"{ImageDir}/CharacterRun.png", uncompressed: false);
             // 온보딩 그림(계획 0031): 서 있는·스트레칭 캐릭터(로그인 실패·홈·결과에서 씀)
             foreach (var name in new[] { "CharacterStand", "CharacterStretch" })
@@ -158,10 +157,12 @@ namespace Scrun.App.Editor
             ti.SaveAndReimport();
         }
 
-        // 아이폰 실행 화면(Unity가 뜨기 전 iOS가 그리는 화면)을 스플래시 위쪽 색으로(계획 0030):
-        // 기본값이면 검은 화면 → 파란 스플래시로 번쩍임. "그림 + 배경(상대 크기)"에 그림 없이 배경색만.
-        // Unity 시작 화면 배경색도 같게(Unity 로고 화면은 꺼져 있음)
-        static readonly Color LaunchColor = new Color32(0x2F, 0x6F, 0xE4, 0xFF); // App.uss --color-primary(sky/700)와 같게
+        // 아이폰 실행 화면(Unity가 뜨기 전 iOS가 그리는 화면)을 스플래시·로그인 바탕(bg_login)으로:
+        // 기본값이면 검은 화면이 번쩍인 뒤 스플래시가 뜸. "그림 + 배경(상대 크기)"에 bg_login을 화면 폭 100%로 →
+        // 그림 비율(786×1703)이 요즘 아이폰(19.5:9)과 같아 화면을 다 덮고, 그 위에 스플래시가 로고·행성을 페이드인.
+        // 그림이 안 닿는 곳(아이패드 등 비율이 다른 화면)은 bg_login 평균색. Unity 시작 화면 배경색도 같게(Unity 로고 화면은 꺼져 있음)
+        const string LaunchImage = ImageDir + "/Space/BgLogin.png";
+        static readonly Color LaunchColor = new Color32(0x11, 0x17, 0x45, 0xFF); // bg_login 평균색
 
         public static void EnsureLaunchScreen()
         {
@@ -181,9 +182,24 @@ namespace Scrun.App.Editor
                 if (p == null) { Debug.LogWarning($"[AppScene] 설정 없음: {prop}"); return; }
                 if (p.colorValue != v) { p.colorValue = v; changed = true; }
             }
+            void SetObject(string prop, Object v)
+            {
+                var p = so.FindProperty(prop);
+                if (p == null) { Debug.LogWarning($"[AppScene] 설정 없음: {prop}"); return; }
+                if (p.objectReferenceValue != v) { p.objectReferenceValue = v; changed = true; }
+            }
+            var image = AssetDatabase.LoadAssetAtPath<Texture2D>(LaunchImage);
+            if (image == null) Debug.LogError($"[AppScene] 실행 화면 그림이 없음: {LaunchImage}");
+            // 그림이 하나라도 비면 Unity가 기본 실행 화면(진회색)으로 돌아감("Both portrait and landscape launch screen images
+            // have to be provided", 11/25 확인) → 세로·가로·아이패드 모두 같은 그림. 앱은 세로로 켜지므로 가로는 실제로 안 보임
             SetInt("iOSLaunchScreenType", 1); // iOSLaunchScreenType.ImageAndBackgroundRelative
+            SetObject("iOSLaunchScreenPortrait", image);
+            SetObject("iOSLaunchScreenLandscape", image);
+            SetInt("iOSLaunchScreenFillPct", 100); // 화면 폭 전체
             SetColor("iOSLaunchScreenBackgroundColor", LaunchColor);
             SetInt("iOSLaunchScreeniPadType", 1); // 대상 기기가 아이폰·아이패드(targetDevice 2)라 아이패드도
+            SetObject("iOSLaunchScreeniPadImage", image);
+            SetInt("iOSLaunchScreeniPadFillPct", 100);
             SetColor("iOSLaunchScreeniPadBackgroundColor", LaunchColor);
             SetColor("m_SplashScreenBackgroundColor", LaunchColor);
             if (!changed) return;
@@ -191,7 +207,7 @@ namespace Scrun.App.Editor
             // 프로젝트 설정 파일은 SaveAssetIfDirty·SaveToSerializedFileAndForget로는 안 써짐(11/12 확인) → 전체 저장.
             // 값이 다를 때(처음 한 번)만 돈다. 그때 편집 중이던 다른 에셋이 함께 써질 수 있으니 실행 뒤 git 변경을 확인
             AssetDatabase.SaveAssets();
-            Debug.Log("[AppScene] 아이폰 실행 화면: 스플래시 파랑(#2F6FE4)");
+            Debug.Log("[AppScene] 아이폰 실행 화면: 로그인 바탕 그림(bg_login), 남는 곳은 #111745");
         }
 
         // 앱은 세로 고정 + 달리기 화면만 가로. 아이폰은 Info.plist에 적힌 방향으로만 돌 수 있으므로
