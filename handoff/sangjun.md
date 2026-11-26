@@ -1,8 +1,13 @@
-# 상준 인수인계 (2026-11-10, 11/21 갱신)
+# 상준 인수인계 (2026-11-10, 11/27 갱신)
 
 상준(git `sangjun`)의 개인 작업 메모. 새 채팅은 `CLAUDE.md`(규칙·문서 지도)와 이 파일을 먼저 읽는다. 팀원은 읽기만, 고치지 않는다.
 
-## 지금 (11/21): 우주 루프 맵·새 아바타를 저장소에 (계획 0063, 브랜치 `feat/space-loop`)
+## 지금 (11/27): 달리는 화면 생동감 (계획 0083, 브랜치 `feat/run-feel-v15`)
+- 한 것: 앱으로 달려 본 뒤 "아바타가 열심히 달리는 느낌이 아니다" → 동작을 속도마다 이어지게 새로 만듦(v15 달리기 9·걷기 5, Foot IK), 우주 루프 길 가장자리 LED·경계봉 촘촘히, 세계 속도 배율 장치(꺼 둠). 검토 `docs/unity/run_feel_review_1127.md`, 계획 0083 1-15
+- 작업 폴더: develop 위 git worktree `Scrun_runfeel`(공유 폴더는 커밋 안 한 시험판이 많아 따로). develop 작업 폴더는 Unity로 열어 보지 않음 → 민재 리뷰 때 컴파일·재생 확인 필요
+- 다음: 세계 속도 ×1.4 켤지 결정(서버 코스 길이 3,000 → 2,143, "3km 루프" 표현 [팀 확인]), 착지 눌림 코드, 아이폰 실측(30fps·그리기 호출)
+
+## 지난 (11/21): 우주 루프 맵·새 아바타를 저장소에 (계획 0063, 브랜치 `feat/space-loop`)
 - 한 것: 최신 develop 위 별도 작업 폴더(`Scrun_spaceloop`, git worktree)에서 장면 `SpaceLoop.unity`, 맵 에셋·스크립트·셰이더, 아바타 v8 + v9 걷기·달리기, 레이어 8 `SL_Reflect`, 큰 파일 받기(`unity/tools/spaceloop_fetch.py`), ADR-0013(제안)·계획 0063·`docs/unity/space_loop.md`. 장면의 꺼 둔 옛 아바타(v3·v4)는 지움. 새 Library로 열어 컴파일 오류 0, 장면 끊긴 연결 0, 재생 6초 정상 확인
 - 커밋 이메일: GitHub noreply(이 맥 계정 `shape-0218`). 커밋할 때만 `git -c user.email=...`로 넣었고 저장소 설정은 안 바꿈
 - 올림(11/21): 민재가 `shape-0218`을 Collaborator로 추가 → 브랜치 push, Release [spaceloop-assets-v1](https://github.com/rlaalswo1222/Scrun/releases/tag/spaceloop-assets-v1)(zip 131MB, 받기 스크립트로 받아 199개 같은 내용 확인), PR #120(develop). 민재 리뷰 대기
