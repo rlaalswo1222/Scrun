@@ -1,4 +1,4 @@
-"""실사진 칸 단위 채점(계획 0083): 헬스장 사진에서 자른 거리·시간 칸을 7세그먼트 모델이 글자 그대로 맞히는 비율.
+"""실사진 칸 단위 채점(계획 0084): 헬스장 사진에서 자른 거리·시간 칸을 7세그먼트 모델이 글자 그대로 맞히는 비율.
 
     python eval_cells.py data/gym_cells --onnx ../../backend/app/console_ocr/models/yolox_nano_7seg.onnx [--onnx 다른.onnx]
 

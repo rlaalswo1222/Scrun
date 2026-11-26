@@ -83,7 +83,7 @@ def main():
     ap.add_argument("--out", default="runs/yolox_nano")
     ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
     ap.add_argument("--limit", type=int, default=0, help="빠른 확인용: 학습 장 수 제한")
-    ap.add_argument("--synth", default="data/synth", help="합성 폴더({train,val}), 계획 0083은 data/synth_v2")
+    ap.add_argument("--synth", default="data/synth", help="합성 폴더({train,val}), 계획 0084은 data/synth_v2")
     args = ap.parse_args()
     out = HERE / args.out
     out.mkdir(parents=True, exist_ok=True)
