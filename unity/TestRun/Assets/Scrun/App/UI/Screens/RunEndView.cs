@@ -131,9 +131,12 @@ namespace Scrun.App
 
         public void Hide() => Show(RunEndPanel.None);
 
+        // 패널이 다 닫히면 층 전체를 숨김(RunSetup·RunReady와 같게). 전엔 패널만 숨겨 화면 전체 크기의 빈 층이 남아
+        // 맵 위 멈춤 버튼 터치를 가로챘음(첫 일시정지 → 계속 달리기 뒤 멈춤 버튼이 안 눌림)
         void Show(RunEndPanel p)
         {
             Shown = p;
+            root.SetVisible(p != RunEndPanel.None);
             pause.SetVisible(p == RunEndPanel.Pause);
             confirm.SetVisible(p == RunEndPanel.Confirm);
             goal.SetVisible(p == RunEndPanel.Goal);

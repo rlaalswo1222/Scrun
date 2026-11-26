@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using UnityEngine.UIElements;
 
 namespace Scrun.App.Tests
 {
@@ -24,6 +25,24 @@ namespace Scrun.App.Tests
         }
 
         // ---------- 일시정지 ----------
+        // 11/27 민재 아이폰: 일시정지 → 계속 달리기 뒤 멈춤 버튼이 안 눌림. 패널만 숨기고 화면 전체 크기의 층이 남아 터치를 가로챘음
+        [Test]
+        public void 패널을_다_닫으면_층이_맵_위_버튼을_덮지_않는다()
+        {
+            var host = new VisualElement();
+            var view = new RunEndView(host);
+            var layer = host[0];
+            Assert.AreEqual(DisplayStyle.None, layer.style.display.value, "처음엔 층 전체가 숨음");
+
+            view.ShowPause(100f, 30);
+            Assert.AreEqual(RunEndPanel.Pause, view.Shown);
+            Assert.AreEqual(DisplayStyle.Flex, layer.style.display.value);
+
+            view.Hide();
+            Assert.AreEqual(DisplayStyle.None, layer.style.display.value, "계속 달리기 뒤 빈 층이 멈춤 버튼을 덮으면 안 됨");
+            Assert.AreEqual(PickingMode.Ignore, layer.Q("run-end").pickingMode, "패널이 떠 있어도 바깥 틀은 터치를 받지 않음");
+        }
+
         [Test]
         public void 일시정지하면_시간이_멈추고_계속은_걸음이_다시_잡혀야_흐른다()
         {
