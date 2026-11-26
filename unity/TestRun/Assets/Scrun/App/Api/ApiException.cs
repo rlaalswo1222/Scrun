@@ -1,4 +1,5 @@
 using System;
+using Newtonsoft.Json.Linq;
 
 namespace Scrun.App
 {
@@ -34,6 +35,29 @@ namespace Scrun.App
         // 4xx(본문을 못 읽은 BadResponse 포함)·상태 없이 응답이 이상함(빈 runId 등 BadResponse)은 다시 보내도 같고,
         // 로그인 만료는 다시 로그인해야 함(계획 0035 리뷰, #49 2차 리뷰: 상태 0만 보면 BadResponse도 다시 보냈음)
         public bool IsTransient => Failure == ApiFailure.Network || (Failure != ApiFailure.NotLoggedIn && Status >= 500);
+
+        // error.details.reason(예: 503의 BUSY·DB_BUSY·OCR_TIMEOUT·REALTIME_BUSY, 계획 0077). 없거나 글자가 아니거나 읽을 수 없으면 null
+        public string Reason
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(DetailsJson)) return null;
+                try { return JObject.Parse(DetailsJson)["reason"] is JValue { Type: JTokenType.String } v ? (string)v : null; }
+                catch (Exception) { return null; }
+            }
+        }
+
+        // 서버 전체가 붐벼 잠깐 뒤 다시 보내면 되는 503: 동시성 한도 초과(BUSY, 계획 0071)·DB 연결 못 받음(DB_BUSY)
+        public bool IsServerCrowded =>
+            Failure == ApiFailure.Server && Status == 503 && Reason is Reasons.Busy or Reasons.DbBusy;
+
+        // 앱이 가르는 서버 503 details.reason 값(backend app/core/admission.py·envelope.py·ocr.py). 맵 입장 REALTIME_BUSY는 서버 문구 그대로라 안 씀
+        public static class Reasons
+        {
+            public const string Busy = "BUSY";
+            public const string DbBusy = "DB_BUSY";
+            public const string OcrTimeout = "OCR_TIMEOUT";
+        }
 
         public override string ToString() =>
             $"ApiException({Failure}, {Status}, {Code ?? "-"}, requestId={RequestId ?? "-"}): {Message}";

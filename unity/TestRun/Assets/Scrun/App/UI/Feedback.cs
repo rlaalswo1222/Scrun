@@ -170,6 +170,9 @@ namespace Scrun.App
             ShowError(title, body, e.RequestId, canRetry ? retry : null);
         }
 
+        // 서버 전체가 붐빌 때 본문(계획 0077, 상준 확인 전). 제목이 "잠시 후 다시 시도해 주세요"라 같은 말은 안 붙임
+        public const string CrowdedText = "지금 이용하는 사람이 많아요.";
+
         // 실패 종류 → 제목·본문·다시 시도 가능 여부(임시 문구)
         public static (string title, string body, bool canRetry) Describe(ApiException e)
         {
@@ -180,6 +183,8 @@ namespace Scrun.App
                 case ApiFailure.BadResponse:
                     return ("잠시 후 다시 시도해 주세요", "서버 응답을 읽지 못했어요.", true);
                 default:
+                    // 서버 전체가 붐빔(BUSY·DB_BUSY): 서버 기본 문구 "서버를 잠시 쓸 수 없습니다." 대신(계획 0077)
+                    if (e.IsServerCrowded) return ("잠시 후 다시 시도해 주세요", CrowdedText, true);
                     if (e.Status >= 500 || e.Status == 429)
                         return ("잠시 후 다시 시도해 주세요", e.Message, true);
                     return ("확인해 주세요", e.Message, false); // 보낸 값 문제(400·409 등) → 다시 보내도 같음

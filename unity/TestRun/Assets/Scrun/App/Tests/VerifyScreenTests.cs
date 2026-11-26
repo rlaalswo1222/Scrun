@@ -23,14 +23,34 @@ namespace Scrun.App.Tests
             Assert.AreEqual("계기판 인증", s.Root.Q<Label>("nav-title").text);
         }
 
-        // 계획 0055: 서버 OCR 시간 초과(503 details.reason)만 Timeout, 일꾼이 다 찬 503은 그대로 바빠요
+        static ApiException E503(string details) => ApiReasonTests.E503(details);
+
+        // 계획 0055: 서버 OCR 시간 초과(503 details.reason)만 Timeout(다시 찍기), 그 밖의 503은 Busy
         [Test]
         public void Ocr_timeout_is_told_apart_from_busy()
         {
-            ApiException E(string details) => new ApiException(ApiFailure.Server, "x", 503, "SERVICE_UNAVAILABLE", null, details);
-            Assert.IsTrue(VerifyScreen.IsOcrTimeout(E("{\"reason\":\"OCR_TIMEOUT\"}")));
-            Assert.IsFalse(VerifyScreen.IsOcrTimeout(E(null)));
-            Assert.IsFalse(VerifyScreen.IsOcrTimeout(E("{\"reason\":\"OTHER\"}")));
+            Assert.IsTrue(VerifyScreen.IsOcrTimeout(E503("{\"reason\":\"OCR_TIMEOUT\"}")));
+            Assert.IsFalse(VerifyScreen.IsOcrTimeout(E503(null)));
+            Assert.IsFalse(VerifyScreen.IsOcrTimeout(E503("{\"reason\":\"OTHER\"}")));
+        }
+
+        // 계획 0077: 사진 보내기 503은 이유가 붐빔(BUSY·DB_BUSY)이든 OCR 쪽(이유 없음)이든 같은 사진을 다시 보내라는 한 문구
+        [TestCase("{\"reason\":\"BUSY\"}")]
+        [TestCase("{\"reason\":\"DB_BUSY\"}")]
+        [TestCase(null)]
+        public void Send_503_other_than_timeout_says_send_again(string details)
+        {
+            var kind = VerifyScreen.ErrorOf(E503(details));
+            Assert.AreEqual(VerifyError.Busy, kind);
+            Assert.AreEqual(VerifyScreen.SendBusyText, VerifyScreen.SendErrorText(kind));
+            StringAssert.DoesNotContain("찍어", VerifyScreen.SendErrorText(kind)); // 사진 탓이 아님 → 다시 찍기 안내가 아님
+        }
+
+        [Test]
+        public void Send_timeout_goes_back_to_retake()
+        {
+            Assert.AreEqual(VerifyError.Timeout, VerifyScreen.ErrorOf(E503("{\"reason\":\"OCR_TIMEOUT\"}")));
+            StringAssert.Contains("다시 찍어", VerifyScreen.TimeoutText);
         }
 
         [Test]

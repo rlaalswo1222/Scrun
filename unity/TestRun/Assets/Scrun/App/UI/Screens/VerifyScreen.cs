@@ -284,7 +284,7 @@ namespace Scrun.App
             if (flow.Step == VerifyStep.Done) Finish();
         }
 
-        static VerifyError ErrorOf(ApiException e)
+        internal static VerifyError ErrorOf(ApiException e)
         {
             if (e.Failure == ApiFailure.Network) return VerifyError.Network;
             switch (e.Code)
@@ -296,6 +296,18 @@ namespace Scrun.App
                 default: return VerifyError.Other;
             }
         }
+
+        // 사진 보내기 503(시간 초과 빼고): 서버 전체가 붐빔(BUSY·DB_BUSY)이든 읽는 쪽 밀림·고장(이유 없음)이든 사진 탓이 아니고
+        // 할 일이 같음(같은 사진을 잠시 뒤 다시 보내기) → 한 문구(계획 0077, 문구 11/26 민재, 상준 확인 전)
+        internal const string SendBusyText = "사진 확인이 잠시 안 돼요. 그대로 다시 보내 주세요.";
+
+        // E-04 사진 보내기 실패 문구(시간 초과는 안내 화면으로 돌아가 TimeoutText)
+        internal static string SendErrorText(VerifyError e) => e switch
+        {
+            VerifyError.Network => "인터넷 연결을 확인하고 다시 보내 주세요. 사진은 그대로 있어요.",
+            VerifyError.Busy => SendBusyText,
+            _ => "사진을 보내지 못했어요. 다시 보내 주세요.",
+        };
 
         internal const string TimeoutText = "숫자를 읽는 데 시간이 너무 걸렸어요. 계기판이 가이드 안에 크게 들어오게 다시 찍어 주세요.";
 
@@ -317,9 +329,9 @@ namespace Scrun.App
             spinner.style.rotate = new Rotate(new Angle(deg, AngleUnit.Degree));
         }
 
-        // 서버가 읽기 시간을 넘김(계획 0055): "바빠요"가 아니라 사진(가이드 밖 글자가 많음 등)을 바꿔 다시 찍게 안내
+        // 서버가 읽기 시간을 넘김(계획 0055): 다른 503(같은 사진을 잠시 뒤 다시 보내기, 0077)과 달리 사진(가이드 밖 글자가 많음 등)을 바꿔 다시 찍게 안내
         internal static bool IsOcrTimeout(ApiException e) =>
-            e.Code == "SERVICE_UNAVAILABLE" && e.DetailsJson != null && e.DetailsJson.Contains("\"OCR_TIMEOUT\"");
+            e.Code == "SERVICE_UNAVAILABLE" && e.Reason == ApiException.Reasons.OcrTimeout;
 
         void Finish()
         {
@@ -417,12 +429,7 @@ namespace Scrun.App
             resultError.SetVisible(isResult && flow.Error == VerifyError.Camera);
             resultError.text = cameraFailed;
             confirmError.SetVisible(s == VerifyStep.Confirm && flow.Error != VerifyError.None);
-            confirmError.text = flow.Error switch
-            {
-                VerifyError.Network => "인터넷 연결을 확인하고 다시 보내 주세요. 사진은 그대로 있어요.",
-                VerifyError.Busy => "계기판을 읽는 곳이 바빠요. 잠시 뒤 다시 보내 주세요.",
-                _ => "사진을 보내지 못했어요. 다시 보내 주세요.",
-            };
+            confirmError.text = SendErrorText(flow.Error);
             if (isResult) RenderResult(s);
             else shownResult = null;
         }
