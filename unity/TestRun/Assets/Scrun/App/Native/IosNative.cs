@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
@@ -8,7 +9,7 @@ namespace Scrun.App
     // 아이폰 진짜 구현. 실제 일은 Swift(Assets/Plugins/iOS/Scrun*.swift)가 하고, 여기서는 이름·JSON만 오간다.
     // 통로(INativeChannel)만 바꿔 끼우면 에디터 테스트에서도 같은 코드가 돈다(IosNativeTests).
     // 이름·값 문자열은 Swift ScrunBridge.swift와 짝이다. 바꾸면 양쪽을 같이 고친다.
-    internal sealed class IosNative : IPermissions, IHeadphones, ISecureStore, IKakaoLogin, ICamera, IDeviceStatus, IShare
+    internal sealed class IosNative : IPermissions, IHeadphones, ISecureStore, IKakaoLogin, ICamera, IDeviceStatus, IShare, INotifications
     {
         readonly NativeBridge bridge;
 
@@ -128,6 +129,22 @@ namespace Scrun.App
         // 공유 시트가 닫히면 Swift가 보냈는지(true)·취소(false)를 줌
         public async Awaitable<bool> ShareTextAsync(string text) =>
             (bool?)await bridge.CallAsync("app.share", new { text = text ?? "" }) ?? false;
+
+        // ---- INotifications (주간 목표 리마인더, 계획 0079) ----
+
+        // Swift는 ids를 지우고 notices를 폰 시계의 그 날짜·시각으로 예약(달력 트리거, 시간대 없음)
+        public void Replace(IReadOnlyCollection<string> ids, IReadOnlyList<LocalNotice> notices)
+        {
+            bridge.Query("notify.replace", new
+            {
+                ids,
+                items = notices.Select(n => new
+                {
+                    id = n.Id, title = n.Title, body = n.Body,
+                    year = n.At.Year, month = n.At.Month, day = n.At.Day, hour = n.At.Hour, minute = n.At.Minute,
+                }).ToArray(),
+            });
+        }
 
         // ---- 이벤트 ----
 

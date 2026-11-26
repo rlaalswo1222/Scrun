@@ -155,8 +155,12 @@ namespace Scrun.App
         public WeeklyGoal CachedWeeklyGoal() => c.Peek<WeeklyGoal>("/v1/users/me/weekly-goal");
 
         // 홈 한 번에(B-01–B-04, 계획 0057)
-        public async Task<HomeData> HomeAsync() =>
-            await c.GetAsync<HomeData>("/v1/home", AuthMode.User) ?? throw new ApiException(ApiFailure.BadResponse, "홈 응답이 비었습니다.");
+        public async Task<HomeData> HomeAsync()
+        {
+            var home = await c.GetAsync<HomeData>("/v1/home", AuthMode.User) ?? throw new ApiException(ApiFailure.BadResponse, "홈 응답이 비었습니다.");
+            RescheduleReminder(home.WeeklyGoal);
+            return home;
+        }
 
         // 레벨·인증 횟수(H-01·H-04, 계획 0048)
         public async Task<Progress> ProgressAsync() =>
@@ -170,12 +174,20 @@ namespace Scrun.App
             c.SendAsync<CalibrationRecord>("PUT", "/v1/users/me/calibration", body, AuthMode.User);
 
         // 주간 목표 진행(D-01 "이번 주 목표까지 N회", 홈 B-01). 목표를 안 정했으면 TargetCount = null. DB 연결은 S6 BL-30
-        public Task<WeeklyGoal> GetWeeklyGoalAsync() =>
-            c.GetAsync<WeeklyGoal>("/v1/users/me/weekly-goal", AuthMode.User);
+        public async Task<WeeklyGoal> GetWeeklyGoalAsync() =>
+            RescheduleReminder(await c.GetAsync<WeeklyGoal>("/v1/users/me/weekly-goal", AuthMode.User));
 
         // 주간 목표 정하기(A-16 온보딩, 계획 0031·H-08 마이). 1–7회. 서버 DB 연결은 지환 BL-30(그 전엔 예시 응답만)
-        public Task<WeeklyGoal> PutWeeklyGoalAsync(WeeklyGoalUpdate body) =>
-            c.SendAsync<WeeklyGoal>("PUT", "/v1/users/me/weekly-goal", body, AuthMode.User);
+        public async Task<WeeklyGoal> PutWeeklyGoalAsync(WeeklyGoalUpdate body) =>
+            RescheduleReminder(await c.SendAsync<WeeklyGoal>("PUT", "/v1/users/me/weekly-goal", body, AuthMode.User));
+
+        // 주간 목표를 받는 곳이 여기 셋뿐이라(화면은 7곳) 리마인더를 여기서 다시 짬(계획 0079 리뷰: 화면마다 부르면 하나만 빠져도 어긋남).
+        // 목표가 없으면(null) 빈 목표로 넘겨 예약을 지움
+        static WeeklyGoal RescheduleReminder(WeeklyGoal g)
+        {
+            WeeklyReminder.Reschedule(g ?? new WeeklyGoal());
+            return g;
+        }
     }
 
     // 코스 목록·상세·맵 입장(계획 0021·PR #30). 셋 다 로그인 필요

@@ -175,6 +175,10 @@ private func scrunQuery(_ name: String, _ a: [String: Any]) throws -> Any? {
     case "camera.discard":
         ScrunCamera.discard(a)
         return nil
+    case "notify.replace":
+        // 주간 목표 리마인더(계획 0079): ids를 지우고 items를 N초 뒤로 예약
+        ScrunNotify.replace(a)
+        return nil
     case "device.thermal":
         // 달리는 중 발열 안내(I-12, 계획 0039). serious부터 시스템이 성능을 줄이기 시작함
         switch ProcessInfo.processInfo.thermalState {

@@ -209,5 +209,22 @@ namespace Scrun.App.Tests
                 Assert.AreEqual(k, IosNative.ParseKind(IosNative.KindName(k)));
             Assert.Throws<NativeException>(() => IosNative.ParseStatus("authorized"));
         }
+
+        // 주간 목표 리마인더(계획 0079): ScrunNotify.swift가 읽는 모양 = ids(지울 것) + items[{id, title, body, year·month·day·hour·minute}]
+        [Test]
+        public void 알림_예약은_지울_id와_폰_시계_날짜_시각을_보낸다()
+        {
+            ch.QueryReplies["notify.replace"] = "{\"ok\":true,\"value\":null}";
+            native.Replace(new[] { "weekly.0", "weekly.1" }, new[]
+            {
+                new LocalNotice { Id = "weekly.0", At = new System.DateTime(2026, 11, 25, 19, 0, 0), Title = "주간 목표", Body = "2번 남았어요" },
+            });
+            var (name, json) = ch.Queries[ch.Queries.Count - 1];
+            Assert.AreEqual("notify.replace", name);
+            StringAssert.Contains("\"ids\":[\"weekly.0\",\"weekly.1\"]", json);
+            StringAssert.Contains("\"id\":\"weekly.0\"", json);
+            StringAssert.Contains("\"body\":\"2번 남았어요\"", json);
+            StringAssert.Contains("\"year\":2026,\"month\":11,\"day\":25,\"hour\":19,\"minute\":0", json);
+        }
     }
 }
