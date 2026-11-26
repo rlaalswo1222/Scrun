@@ -289,15 +289,19 @@
     opacity: 0.4;
 }
 
+/* 개발 빌드만: 위 미니맵 오른쪽 ~ 멈춤 버튼 왼쪽(11/27, 달리며 보이게) */
 .course .hud-dev {
     position: absolute;
-    left: 0;
-    right: 0;
-    -unity-text-align: middle-center;
-    bottom: var(--space-2);
-    font-size: var(--font-size-caption);
-    color: rgba(255, 255, 255, 0.75);
-    padding: 0;
+    left: 196px;
+    right: 76px;
+    top: 40px;
+    -unity-text-align: upper-left;
+    font-size: 15px;
+    color: rgb(255, 255, 255);
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 12px;
+    padding: 8px 12px;
+    white-space: normal;
 }
 
 /* 고스트(계획 0050): 위 가운데 비교 배너(D-13), 이름표는 하늘색 밑줄(섬 고스트 몸 색과 같은 계열) */

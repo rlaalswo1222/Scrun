@@ -54,7 +54,7 @@
             <ui:Label name="hud-net" class="hud-net" picking-mode="Ignore" />
         </ui:VisualElement>
 
-        <!-- 아래 가운데: 개발 빌드에서만(시연·실측용 속도·왕복 지연) -->
+        <!-- 위 미니맵 옆: 개발 빌드에서만(시연·실측용 속도·세 방식·에어팟 공중 시간·왕복 지연) -->
         <ui:Label name="hud-dev" class="hud-dev" picking-mode="Ignore" />
 
         <!-- 가운데: 러너 정보 카드(BL-22, D-12). 배지는 BOT·친구(계획 0044) + Lv(계획 0059). 카드에서 친구 추가는 안 함(0044 정할 것 3) -->
