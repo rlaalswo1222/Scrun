@@ -228,6 +228,23 @@ def test_warm_up_loads_the_recognition_model_too():
 
 
 @needs_models
+def test_detection_runs_on_a_shrunk_image_and_times_are_split():
+    """계획 0081: 앱 사진(긴 변 2048)을 원본 크기로 글자 찾기 하던 것(RapidOCR 기본 = 짧은 변 736 이상) → 긴 변 DET_SIDE로
+    줄여 찾고, 읽기는 원본에서. 서버 로그가 찾기·인식 시간을 따로 남기게 stats에 det_s·rec_s."""
+    import cv2
+    from app.console_ocr.field import DET_SIDE, ConsoleReader
+    from app.console_ocr.pool import MODEL
+    img = cv2.imread(str(SAMPLE))
+    s = 2048 / max(img.shape[:2])
+    img = cv2.resize(img, None, fx=s, fy=s, interpolation=cv2.INTER_CUBIC)   # 앱이 보내는 크기
+    reader = ConsoleReader(str(MODEL), threads=1)
+    res = reader.read(img)
+    assert (reader.ocr.text_det.limit_type, reader.ocr.text_det.limit_side_len) == ("max", DET_SIDE)
+    assert (res.status, res.distance_m, res.duration_s) == ("READ", 6470, 34 * 60 + 49)
+    assert reader.stats["det_s"] > 0 and reader.stats["rec_s"] > 0
+
+
+@needs_models
 def test_real_engine_reads_a_synthetic_console_in_a_child_process():
     engine = OnnxOcr(ReaderPool(workers=1))
     try:

@@ -30,6 +30,7 @@ cd speedlab/ocr
 | `field.py` | **계기판 전체 사진 → 거리·시간**(계획 0042): PP-OCRv5 글자 영역 찾기 → 라벨은 PP-OCRv5 한국어 인식, 숫자는 YOLOX → 가까운 라벨로 이름(라벨 없으면 형식 규칙) → 후보가 하나씩일 때만 READ. 센서 값은 안 씀 — 원본은 서버 `console_ocr/field.py` |
 | `console_synth.py` | 계기판 전체 합성(칸 4–6개, 한·영 라벨 위·아래·왼쪽, 시간 점·콜론, 페이스·km/h, 아이콘뿐, 반사·원근) |
 | `eval_console.py` | 사진 단위 채점(거리·시간 둘 다 맞음 / 틀린 READ / UNREADABLE), `--fails`로 틀린 그림 |
+| `bench_det.py` | 글자 찾기 입력 크기별 시간·결과 비교(계획 0081): 사진을 앱 크기(긴 변 2048)로 키워 설정마다 한 장 시간(검출·인식·7세그먼트 따로)과 사진 단위 결과 |
 | `eval.py` | ONNX로 내보내 채점: 공개 test·합성 val·(있으면) 새 기종 실사진, 2스레드 처리 시간 |
 | `seg7_grid.py`, `winocr.ps1`, `Dockerfile` | 10/29 첫 시험(규칙 해독기, Windows OCR, Tesseract) |
 
@@ -43,6 +44,7 @@ cd speedlab/ocr
 .venv/bin/python -W ignore eval.py --size nano --run runs/yolox_nano [--photos <실사진 COCO 폴더>]
 .venv/bin/python console_synth.py data/console_synth_b 200 21          # 계기판 전체 합성 + truth.json
 .venv/bin/python eval_console.py data/console_synth_b --onnx runs/yolox_nano/model.onnx [--fails out]
+.venv/bin/python bench_det.py data/console_synth_b --threads 1 --configs default,1280,960,736 [--out runs/bench_det/x.json]
 ```
 
 ## 채점 기준 (ADR-0012)
@@ -67,8 +69,11 @@ cd speedlab/ocr
 | 11/17 | PP-OCRv5(검출·한국어 인식) + YOLOX-Nano + 라벨 짝짓기 | 80.5% | 1(끝자리 0.01 km) | 약 450 ms(맥 M5, 2스레드) |
 | 11/17 #61 리뷰 뒤 | 같음 + 애매하면 못 읽음(아래) | 78.0% | 1(2.91 → 2.9 km, 두 읽기가 같이 끝자리를 놓침, 서버 허용 오차 안) | 약 440 ms |
 
+| 11/26 계획 0081 | 같음, 글자 찾기 입력 긴 변 960(전엔 원본 크기) · 앱 크기 2048로 키움 | 78.0%(전 75.0%) | 0(전 1) | 0.55초(전 1.07초, 맥 M5 **1스레드**) |
+
+- 0081 행은 앱 크기로 키우고 1스레드라 위 행들(원본 크기·2스레드)과 시간을 바로 비교하지 않는다. 자세한 표는 `docs/plans/0081-ocr-det-speed.md`
 - 못 읽은 것 대부분은 라벨 없는 계기판(시간·페이스 둘 다 콜론 → 다시 찍기가 맞는 동작). 고치면서 쓴 시드 11 200장은 85.0% → 리뷰 뒤 79.0%(틀린 READ 0)
 - #61 리뷰(11/17 민재)로 "애매하면 못 읽음": 글자 전체가 숫자 모양일 때만 숫자("12.345"·"1680"을 잘라 읽지 않음), 7세그먼트 혼동(S→5)은 진짜 숫자가 있고 바로잡은 뒤 전부 숫자일 때만("BODY"·"STOP" 제외), 라벨은 거리·시간 낱말을 먼저("TIME HR:MIN" = 시간, 남은·LAP 시간 = 그 밖, 둘 다 있으면 모름), 짝짓기는 계기판의 라벨 방향(위·아래·왼쪽)을 먼저 정하고 거리 차·비율이 비슷하게 겨루면 못 읽음, 한 칸을 두 읽기가 다르게 읽으면 못 읽음
 
 ## 아직 없는 것
-- 새 기종 실사진(상준 BL-45 + 헬스장 앱 브래킷)
+- 새 기종 실사진(상준 BL-45 + 헬스장 앱 브래킷). 인터넷 계기판 사진은 로컬 `data/web/`(출처 불명이라 저장소에 안 올림, 긴 변 1000 px 넘고 라벨까지 사람이 읽히는 것만)

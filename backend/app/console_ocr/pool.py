@@ -100,7 +100,8 @@ def read_job(job: list, decode: Callable, reader, log_line: Callable = None) -> 
         st = getattr(reader, "stats", {}) or {}
         # 어디서 걸리는지 사진마다 남김(11/19 14초 초과). 사진·숫자 값은 안 남김(BL-17 ③)
         log_line(f"[계기판 OCR] 사진 {i + 1}/{len(job)} {img.shape[1]}x{img.shape[0]} {len(data) // 1024} KB: "
-                 f"{time.perf_counter() - t0:.2f}초(글자 영역 {st.get('boxes', 0)}개 찾기·인식 {st.get('ocr_s', 0):.2f}초, "
+                 f"{time.perf_counter() - t0:.2f}초(글자 영역 {st.get('boxes', 0)}개 찾기 {st.get('det_s', 0):.2f}초·"
+                 f"인식 {st.get('rec_s', 0):.2f}초, "
                  f"7세그먼트 {st.get('segs', 0)}개 {st.get('seg_s', 0):.2f}초) → {r.status}")
         if r.status == "READ" and i + 1 < len(job):
             key = (r.distance_m, r.duration_s)

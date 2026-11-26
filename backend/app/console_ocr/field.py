@@ -32,6 +32,10 @@ NOT_WORKOUT_TIME = ["남은", "REMAIN", "LAP", "SPLIT", "구간"]          # 남
 STRONG_OTHER = ["속도", "SPEED", "페이스", "PACE", "칼로리", "KCAL", "CAL", "경사", "INCLINE", "심박", "PULSE", "BPM",
                 "와트", "WATT"]
 OTHER_WORDS = STRONG_OTHER + ["ELEV", "%", "HR", "LEVEL", "레벨"]   # 뒤 다섯은 거리·시간 낱말보다 약함("TIME HR:MIN"은 시간)
+# 글자 찾기(검출) 입력의 긴 변 상한(계획 0081). RapidOCR 기본(짧은 변 736 "이상"으로 맞춤)은 앱 사진 2048×1342를
+# 원본 크기로 찾아 한 장 시간의 약 60%가 검출이었음. 긴 변 960으로 줄여도 인식·7세그먼트는 원본에서 잘라 읽음
+# (합성 200장 1스레드: 한 장 1.07 → 0.55초, 맞음 75.0 → 78.0%, 틀린 READ 1 → 0. 합성이라 정확도 아님)
+DET_SIDE = 960
 AMBIGUOUS_GAP = 0.35   # 짝짓기: 다른 종류 라벨(또는 다른 숫자)과의 거리 차가 숫자 높이의 이만큼보다 작으면 애매 → 못 읽음
 
 UNIT = re.compile(r"KM|MIN|KCAL|KM/H|KPH|%|BPM|M|분")   # 숫자 오른쪽에 붙는 단위(그 밖의 오른쪽 라벨은 다음 칸 것)
@@ -112,18 +116,22 @@ class PhotoRead:
 
 
 class ConsoleReader:
-    def __init__(self, seg_onnx: str, threads: int = 2, prefer: str = "seg"):
-        self.stats: dict = {}   # 마지막 regions()의 단계별 시간·영역 수(서버 로그용, 계획 0055)
+    def __init__(self, seg_onnx: str, threads: int = 2, prefer: str = "seg", det_side: Optional[int] = DET_SIDE):
+        """det_side: 검출 입력 긴 변 상한(None이면 RapidOCR 기본 — 비교용, `speedlab/ocr/bench_det.py`)."""
+        self.stats: dict = {}   # 마지막 regions()의 단계별 시간·영역 수(서버 로그용, 계획 0055·0081)
         # 무거운 엔진은 여기서만(칸 찾기 규칙·테스트는 onnxruntime·rapidocr 없이 돌게)
         from rapidocr import LangDet, LangRec, ModelType, OCRVersion, RapidOCR
 
         from .seg import OnnxReader
-        self.ocr = RapidOCR(params={
+        params = {
             "Det.ocr_version": OCRVersion.PPOCRV5, "Det.model_type": ModelType.MOBILE, "Det.lang_type": LangDet.CH,
             "Rec.ocr_version": OCRVersion.PPOCRV5, "Rec.model_type": ModelType.MOBILE, "Rec.lang_type": LangRec.KOREAN,
             "Global.use_cls": False, "Global.log_level": "error", "Global.text_score": 0.3,
             "EngineConfig.onnxruntime.intra_op_num_threads": threads,   # 오라클 2코어(ADR-0008)
-            "EngineConfig.onnxruntime.inter_op_num_threads": 1})
+            "EngineConfig.onnxruntime.inter_op_num_threads": 1}
+        if det_side is not None:
+            params.update({"Det.limit_type": "max", "Det.limit_side_len": det_side})
+        self.ocr = RapidOCR(params=params)
         self.seg = OnnxReader(seg_onnx, threads)
         self.prefer = prefer   # seg: 7세그먼트 읽기 먼저, 안 되면 인식 글자 / rec: 반대
 
@@ -140,7 +148,9 @@ class ConsoleReader:
     def regions(self, img: np.ndarray) -> list:
         t0 = time.perf_counter()
         r = self.ocr(img)
-        self.stats = {"ocr_s": time.perf_counter() - t0, "boxes": 0 if r.boxes is None else len(r.boxes), "seg_s": 0.0, "segs": 0}
+        det_s, _, rec_s = (v if isinstance(v, float) else 0.0 for v in (list(r.elapse_list) + [None] * 3)[:3])
+        self.stats = {"ocr_s": time.perf_counter() - t0, "det_s": det_s, "rec_s": rec_s,
+                      "boxes": 0 if r.boxes is None else len(r.boxes), "seg_s": 0.0, "segs": 0}
         if r.boxes is None:
             return []
         out = [Region(np.asarray(b, np.float32), str(t), float(c)) for b, t, c in zip(r.boxes, r.txts, r.scores)]
