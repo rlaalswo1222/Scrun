@@ -20,7 +20,12 @@ import numpy as np
 
 SEG_CONFUSION = str.maketrans({"S": "5", "s": "5", "O": "0", "o": "0", "D": "0", "I": "1", "l": "1", "|": "1",
                                "B": "8", "Z": "2", "z": "2", "G": "6", "q": "9", ",": "."})
-NUM = re.compile(r"^\d{1,3}(?:[.:]\d{1,2}){0,2}$")
+# 숫자 모양: 정수·소수 둘째 자리까지·시간(28:40, 1:02:05), 그리고 km 소수 셋째 자리("0.018", 계획 0082: DRAX 기구)
+NUM = re.compile(r"^(?:\d{1,3}(?:[.:]\d{1,2}){0,2}|\d{1,3}\.\d{3})$")
+PLAIN_TIME = re.compile(r"\d{3,4}")   # 콜론이 안 찍힌 시간 "0042" = 0:42 — 두 읽기가 같을 때만(계획 0082)
+# 7세그먼트를 돌리지 않는 낱말: 글자 3개 이상·숫자 없음·인식 점수 이만큼 이상(라벨·버튼·로고). 실사진 11/27:
+# 진짜 낱말은 0.84–1.0, 빨간 LED 숫자를 글자로 잘못 읽은 것("AFO" = 1.00)은 0.31–0.72(계획 0082)
+WORD_SCORE = 0.8
 
 # 라벨 낱말(대문자·공백 없앤 글자에서 찾음). 순서: 속도·페이스·마일(거리 km보다 먼저) → 거리·시간 → 그 밖
 RATE_WORDS = ["KM/H", "KMH", "KPH", "MPH", "/KM", "/MIN", "/분", "MILE"]   # 마일은 km로 못 바꿈 → 거리 칸으로 안 봄
@@ -39,7 +44,7 @@ DET_SIDE = 960
 AMBIGUOUS_GAP = 0.35   # 짝짓기: 다른 종류 라벨(또는 다른 숫자)과의 거리 차가 숫자 높이의 이만큼보다 작으면 애매 → 못 읽음
 
 UNIT = re.compile(r"KM|MIN|KCAL|KM/H|KPH|%|BPM|M|분")   # 숫자 오른쪽에 붙는 단위(그 밖의 오른쪽 라벨은 다음 칸 것)
-NUM_IN_TEXT = re.compile(r"([A-Z가-힣/%]*)(\d{1,3}(?:[.:]\d{1,2}){0,2})([A-Z가-힣/%]*)")   # 라벨·단위 + 숫자 + 라벨·단위
+NUM_IN_TEXT = re.compile(r"([A-Z가-힣/%]*)(\d{1,3}\.\d{3}|\d{1,3}(?:[.:]\d{1,2}){0,2})([A-Z가-힣/%]*)")   # 라벨·단위 + 숫자 + 라벨·단위
 
 
 def _norm(text: str) -> str:
@@ -70,8 +75,12 @@ def label_kind(text: str) -> Optional[str]:
     return None
 
 
-def parse_time(s: str) -> Optional[int]:
-    """'28:40'·'28.40'(점으로 보이는 기종)·'1:02:05' → 초. 초 자리가 60 이상이면 None."""
+def parse_time(s: str, plain_ok: bool = False) -> Optional[int]:
+    """'28:40'·'28.40'(점으로 보이는 기종)·'1:02:05' → 초. 초 자리가 60 이상이면 None.
+    plain_ok: 콜론이 안 찍힌 '0042'(= 0:42)·'024'(= 0:24)도 받음 — 두 읽기가 같은 칸만(계획 0082, 꺼진 자리 "8888" 막기)."""
+    if plain_ok and PLAIN_TIME.fullmatch(s):
+        m, sec = int(s[:-2]), int(s[-2:])
+        return None if sec >= 60 else m * 60 + sec
     parts = re.split(r"[.:]", s)
     if not all(p.isdigit() for p in parts) or not 2 <= len(parts) <= 3 or any(len(p) != 2 for p in parts[1:]):
         return None
@@ -82,7 +91,7 @@ def parse_time(s: str) -> Optional[int]:
 
 
 def parse_km(s: str) -> Optional[int]:
-    if not re.fullmatch(r"\d{1,3}\.\d{1,2}", s):
+    if not re.fullmatch(r"\d{1,3}\.\d{1,3}", s):   # 소수 셋째 자리 "0.018" km = 18 m(계획 0082)
         return None
     return int(round(float(s) * 1000))
 
@@ -98,6 +107,7 @@ class Region:
     cands: list = dfield(default_factory=list)  # 읽은 숫자 후보(prefer 순서): 7세그먼트·인식 글자
     name: Optional[str] = None  # 짝지은 뒤 distance·time·other
     how: str = ""               # label·rule
+    agree: bool = False         # 7세그먼트와 인식 글자가 같은 숫자열(콜론 없는 시간을 받을 조건)
 
     @property
     def rect(self):
@@ -159,16 +169,26 @@ class ConsoleReader:
         out = merge_split(out)
         for reg in out:
             num_rec = self._number(reg.rec)
+            if reg.kind is None and self._is_word(reg):
+                continue                         # 라벨·버튼·로고 낱말: 7세그먼트가 숫자를 지어냄("TOTAL STEPS" → 8:5)
             if reg.kind is None or num_rec:      # 숫자가 보이는 영역만 7세그먼트로 다시 읽음("3.12 km"처럼 붙은 것 포함)
                 t0 = time.perf_counter()
                 reg.seg = self.seg.read(self._crop(img, reg))
                 self.stats["seg_s"] += time.perf_counter() - t0
                 self.stats["segs"] += 1
-                num_seg = reg.seg if NUM.match(reg.seg) else None
+                plain_rec = re.sub(r"\s+", "", reg.rec)
+                reg.agree = bool(reg.seg) and PLAIN_TIME.fullmatch(reg.seg) is not None and reg.seg == plain_rec
+                num_seg = reg.seg if NUM.match(reg.seg) or reg.agree else None
                 order = (num_seg, num_rec) if self.prefer == "seg" else (num_rec, num_seg)
                 reg.cands = list(dict.fromkeys(c for c in order if c))
                 reg.number = reg.cands[0] if reg.cands else None
         return out
+
+    @staticmethod
+    def _is_word(reg: "Region") -> bool:
+        t = re.sub(r"\s+", "", reg.rec)
+        return (reg.rec_score >= WORD_SCORE and not any(ch.isdigit() for ch in t)
+                and sum(ch.isalpha() for ch in t) >= 3)
 
     @staticmethod
     def _number(text: str) -> Optional[str]:
@@ -326,7 +346,10 @@ def decide(regs: list) -> PhotoRead:
         use = labeled or cands                       # 라벨로 정한 것이 있으면 규칙 후보는 버림
         vals = set()
         for r in use:
-            parsed = {v for v in map(parse, r.cands) if v is not None}
+            if parse is parse_time:   # 콜론 없는 시간("0042")은 두 읽기가 같은 칸만(계획 0082)
+                parsed = {v for v in (parse_time(c, plain_ok=r.agree) for c in r.cands) if v is not None}
+            else:
+                parsed = {v for v in map(parse, r.cands) if v is not None}
             if len(parsed) >= 2:
                 vals.add(None)    # 한 칸을 두 읽기가 다르게 읽음 → 애매(추측하지 않음)
             else:
