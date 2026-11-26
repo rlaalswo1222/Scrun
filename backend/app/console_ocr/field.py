@@ -93,6 +93,10 @@ def parse_time(s: str, plain_ok: bool = False) -> Optional[int]:
 def parse_km(s: str) -> Optional[int]:
     if not re.fullmatch(r"\d{1,3}\.\d{1,3}", s):   # 소수 셋째 자리 "0.018" km = 18 m(계획 0082)
         return None
+    if set(s.replace(".", "")) == {"8"}:
+        # 모든 자리가 8 = 꺼진 칸의 잔상("8.88"). 11/27 p05: 거리 칸이 꺼져 있는데 8.88 km로 READ(계획 0082).
+        # 진짜 8.8·8.88 km는 못 읽음(다시 찍기) — 틀린 READ보다 낫다. 시간은 초 자리가 88이라 원래 안 됨
+        return None
     return int(round(float(s) * 1000))
 
 
