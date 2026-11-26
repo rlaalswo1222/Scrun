@@ -32,6 +32,7 @@ cd speedlab/ocr
 | `eval_console.py` | 사진 단위 채점(거리·시간 둘 다 맞음 / 틀린 READ / UNREADABLE), `--fails`로 틀린 그림 |
 | `bench_det.py` | 글자 찾기 입력 크기별 시간·결과 비교(계획 0081): 사진을 앱 크기(긴 변 2048)로 키워 설정마다 한 장 시간(검출·인식·7세그먼트 따로)과 사진 단위 결과 |
 | `eval.py` | ONNX로 내보내 채점: 공개 test·합성 val·(있으면) 새 기종 실사진, 2스레드 처리 시간 |
+| `app_photos_truth.py` | 앱이 보낸 인증 사진(개발 빌드, 계획 0085)의 `meta.json` → `truth.json`("맞아요" 누른 것만 정답)·`todo.json`(사람이 볼 것), `--score`는 서버 `read_job`·`combine`으로 묶음 단위 채점 |
 | `seg7_grid.py`, `winocr.ps1`, `Dockerfile` | 10/29 첫 시험(규칙 해독기, Windows OCR, Tesseract) |
 
 - 칸 찾기(`field.py`)는 RapidOCR 3.10.0 추가: 공용 `.venv`의 OpenCV·torch를 안 건드리게 `pip install --no-deps rapidocr==3.10.0 && pip install pyclipper omegaconf colorlog`. 모델(PP-OCRv5 검출 mobile·한국어 인식 mobile)은 처음 부를 때 받음. 모델 조건은 패키지의 `MODEL_LICENSES.md`(Apache-2.0, 저작권 Baidu·PaddleOCR)
@@ -46,6 +47,18 @@ cd speedlab/ocr
 .venv/bin/python eval_console.py data/console_synth_b --onnx runs/yolox_nano/model.onnx [--fails out]
 .venv/bin/python bench_det.py data/console_synth_b --threads 1 --configs default,1280,960,736 [--out runs/bench_det/x.json]
 ```
+
+### 앱이 보낸 인증 사진으로 채점 (계획 0085)
+개발 빌드 아이폰은 인증을 보낼 때마다 서버로 간 사진 그대로와 `meta.json`(센서 값·서버 답·"맞아요/틀렸어요")을 `Documents/verify-photos/<UTC 시각>_<기록 ID 앞 8자>/`에 남긴다(출시 빌드는 안 남김). 맥에서 꺼내 채점:
+```bash
+xcrun devicectl list devices                                   # UDID
+xcrun devicectl device copy from --device <UDID> --domain-type appDataContainer --domain-identifier com.scrun.app \
+    --source Documents/verify-photos --destination data/app_photos
+.venv/bin/python app_photos_truth.py data/app_photos            # 맞아요 → truth.json, 나머지 → todo.json
+.venv/bin/python app_photos_truth.py data/app_photos --score    # + 묶음마다 서버 규칙(0 EV부터, 두 장 일치)으로 다시 판정
+.venv/bin/python bench_det.py data/app_photos --long 0 --configs 960   # 앱이 이미 긴 변 2048로 보냄 → 키우지 않음
+```
+- 꺼낸 사진은 `data/`(git 밖). 계기판 유리에 얼굴이 비칠 수 있어 저장소에 안 올림. 다 꺼냈으면 폰에서는 앱을 지웠다 다시 설치해 비움(개발 빌드 앱 폴더째 지워짐)
 
 ## 채점 기준 (ADR-0012)
 1. 칸 단위 글자 정확도(소수점·콜론 포함 완전히 같아야 맞음)
