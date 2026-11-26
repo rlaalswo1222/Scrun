@@ -104,7 +104,7 @@ namespace Scrun.App
             row.Add(UiExtensions.Text(FriendText.RunDate(r.StartedAt), "fr-record-date"));
             var line = new VisualElement { pickingMode = PickingMode.Ignore };
             line.AddToClassList("fr-record-line");
-            line.Add(UiExtensions.Text(FriendText.Km(r.DistanceM), "fr-record-km"));
+            line.Add(UiExtensions.Text(FriendText.RecordKm(r), "fr-record-km"));
             var chip = VerificationChip(r.Verification);
             if (chip != null) line.Add(chip);
             row.Add(line);
