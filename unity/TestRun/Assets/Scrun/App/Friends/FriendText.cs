@@ -160,7 +160,7 @@ namespace Scrun.App
         // 인증 대기·미인증은 카드는 보이고 숫자 자리에 이 문구(임시, 상준 확인). 서버는 숫자를 그대로 줌(옛 앱이 null을 못 읽음)
         public const string HiddenStats = "인증한 러닝만 기록이 보여요";
         public const string HiddenKm = "기록 비공개";
-        public static bool ShowsStats(FriendRun r) => r.Verification == "VERIFIED";
+        public static bool ShowsStats(FriendRun r) => RunResultText.IsVerified(r.Verification);
 
         // G-01 피드 카드 아래 "3.51km  ·  33:02"
         public static string RunStats(FriendRun r) =>
