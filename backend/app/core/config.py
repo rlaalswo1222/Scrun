@@ -11,6 +11,8 @@
 - FRIEND_ADD_FAIL_LIMIT·FRIEND_ADD_FAIL_WINDOW_S: 틀린 친구 코드 제한(계획 0044). 없으면 아래 FriendPolicy 기본값
 - REQUEST_LOG: 요청마다 처리 시간·DB 쿼리 수를 한 줄씩(계획 0070). 기본 켜짐, 0이면 끔
 - ADMISSION_LIMIT·ADMISSION_WAIT_S: 동시 처리 번호표 수(0이면 끔)·기다리는 상한 초(계획 0071). DB_POOL_TIMEOUT_S: 연결 기다림 상한
+- SENTRY_DSN·SENTRY_ENVIRONMENT·SENTRY_RELEASE·SCRUN_SERVICE: 서버 오류를 Sentry로(계획 0087, ADR-0015, app/core/error_report.py).
+  DSN이 없으면 아무것도 안 보냄(로컬·테스트 기본). 환경 기본 local, 서비스 이름 기본 api(서버 compose가 api·realtime·ocr로 줌)
 """
 import logging
 import os
@@ -209,6 +211,41 @@ def load_bots(env: Mapping[str, str]) -> BotPolicy:
 
 
 @dataclass(frozen=True)
+class ErrorReportSettings:
+    """서버 오류를 Sentry로(계획 0087 1단계, ADR-0015). dsn이 없으면 꺼짐."""
+
+    dsn: Optional[str] = None
+    environment: str = "local"     # 운영 compose는 production
+    release: Optional[str] = None  # 배포한 커밋(update.sh가 SCRUN_RELEASE로 넘김). 어느 배포에서 생긴 오류인지
+    service: str = "api"           # api·realtime·ocr(계획 0073의 세 서비스)
+
+
+# Sentry DSN 모양: https://<공개 키>@<호스트>/<프로젝트 번호>. 비밀 키가 붙은 옛 모양(키:비밀@)은 받지 않음(서버에 둘 이유 없음)
+SENTRY_DSN_RE = re.compile(r"https://[0-9a-f]{16,64}@[A-Za-z0-9.\-]+(:[0-9]+)?/[0-9]+")
+SENTRY_NAME_RE = re.compile(r"[a-z0-9][a-z0-9_\-]{0,31}")         # 환경·서비스 이름
+SENTRY_RELEASE_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._\-]{0,63}")  # 커밋 해시·버전
+
+
+def load_error_report(env: Mapping[str, str]) -> ErrorReportSettings:
+    dsn = env.get("SENTRY_DSN", "").strip() or None
+    if dsn is not None and not SENTRY_DSN_RE.fullmatch(dsn):
+        raise ConfigError("SENTRY_DSN은 Sentry 프로젝트 설정 > Client Keys(DSN)의 https://키@호스트/번호 모양이어야 합니다.")
+    values = {"dsn": dsn}
+    for name, field, pattern, rule in (
+        ("SENTRY_ENVIRONMENT", "environment", SENTRY_NAME_RE, "영문 소문자·숫자·-·_ 32자까지(예: production)"),
+        ("SCRUN_SERVICE", "service", SENTRY_NAME_RE, "영문 소문자·숫자·-·_ 32자까지(예: api)"),
+        ("SENTRY_RELEASE", "release", SENTRY_RELEASE_RE, "영문·숫자·.·-·_ 64자까지(예: 커밋 a1b2c3d)"),
+    ):
+        raw = env.get(name, "").strip()
+        if not raw:
+            continue
+        if not pattern.fullmatch(raw):
+            raise ConfigError(f"{name}는 {rule}여야 합니다(지금: {raw!r}).")
+        values[field] = raw
+    return ErrorReportSettings(**values)
+
+
+@dataclass(frozen=True)
 class Settings:
     database_url: str
     jwt_secret: str
@@ -231,6 +268,7 @@ class Settings:
     bots: BotPolicy = BotPolicy()
     friends: FriendPolicy = FriendPolicy()
     growth: GrowthPolicy = GrowthPolicy()
+    error_report: ErrorReportSettings = ErrorReportSettings()
 
 
 SWITCH_VALUES = {"1": True, "0": False}
@@ -289,6 +327,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         bots=load_bots(env),
         friends=load_friends(env),
         growth=load_growth(env),
+        error_report=load_error_report(env),
     )
 
 

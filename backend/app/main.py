@@ -19,13 +19,14 @@ from .core.envelope import (
     unhandled_error_handler,
     validation_error_handler,
 )
+from .core.error_report import init_error_report
 from .core.errors import ApiError
 from .core.kakao import close_client as close_kakao_client
 from .core.ocr import start_ocr, stop_ocr
 from .core.request_log import RequestContextMiddleware, install_request_log
 from .realtime import internal as realtime_internal
 from .realtime import router as realtime
-from .routers import auth, courses, events, friends, home, progress, runs, users, verification
+from .routers import auth, courses, events, friends, health, home, progress, runs, users, verification
 
 DESCRIPTION = """
 러닝머신 실내 러닝 앱 SCRUN의 서버 API. **지금은 스텁**이라 고정 예시만 돌려준다.
@@ -44,6 +45,8 @@ async def lifespan(_: FastAPI):
     close_kakao_client()
 
 
+init_error_report(settings.error_report)   # Sentry(계획 0087): SENTRY_DSN이 있을 때만. 앱보다 먼저(시작 중 오류도 받게)
+
 app = FastAPI(title="SCRUN API", version="0.1.0-stub", description=DESCRIPTION, lifespan=lifespan)
 
 # 미들웨어는 나중에 붙인 것이 바깥: 요청 ID·요청 로그 → 번호표(0071) → 라우터. 요청 로그가 번호표 기다림·503도 남김.
@@ -59,7 +62,7 @@ app.add_exception_handler(RequestValidationError, validation_error_handler)
 app.add_exception_handler(StarletteHTTPException, http_error_handler)
 app.add_exception_handler(Exception, unhandled_error_handler)
 
-for r in (auth, users, home, courses, runs, verification, progress, friends, events):
+for r in (auth, users, home, courses, runs, verification, progress, friends, events, health):
     app.include_router(r.router)
 if settings.realtime_url is None:   # 허브를 가진 프로세스만(계획 0073). 일반 API 프로세스는 REALTIME_URL로 그 프로세스에 묻는다
     app.include_router(realtime.router)  # WebSocket /v1/realtime(계획 0029)

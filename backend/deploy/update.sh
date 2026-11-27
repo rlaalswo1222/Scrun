@@ -16,6 +16,8 @@ fi
 git fetch -q origin "$BRANCH"
 git checkout -q "$BRANCH"
 git reset -q --hard "origin/$BRANCH"   # 서버에서는 코드를 고치지 않는다(.env는 git 밖이라 안 지워짐)
+# Sentry 릴리스 = 이번 커밋(계획 0087): 오류가 어느 배포에서 생겼는지. compose가 SENTRY_RELEASE로 넘김
+export SCRUN_RELEASE="$(git rev-parse --short HEAD)"
 
 $C build api
 $C up -d db

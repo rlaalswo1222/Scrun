@@ -114,16 +114,22 @@ def install_request_log() -> None:
         log.propagate = False
 
 
-def _route_path(scope: Scope) -> str:
+def route_path(scope: Scope) -> str:
+    """라우트 틀(`/v1/runs/{runId}`). 라우트에 안 맞았으면 "-". 요청 로그·Sentry 태그(app/core/error_report.py)가 같이 씀"""
     route = scope.get("route")
     return getattr(route, "path", None) or "-"
 
 
+def request_id(scope: Scope) -> Optional[str]:
+    """RequestContextMiddleware가 붙인 요청 ID(scope["state"]). 미들웨어 밖이면 None"""
+    return scope.get("state", {}).get("request_id")
+
+
 def _emit(scope: Scope, status: int, stats: _RequestStats) -> None:
     line = {
-        "rid": scope.get("state", {}).get("request_id"),
+        "rid": request_id(scope),
         "method": scope["method"],
-        "path": _route_path(scope),
+        "path": route_path(scope),
         "status": status,
         "ms": round(stats.elapsed_ms(), 1),
         "db_n": stats.db_n,

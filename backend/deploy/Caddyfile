@@ -8,6 +8,19 @@
 	handle /internal/* {
 		respond 404
 	}
+	# 바깥 감시(UptimeRobot, 계획 0087): 서비스마다 살아 있나. /healthz/<서비스> → 그 서비스의 /healthz(DB까지 확인)
+	handle /healthz/api {
+		rewrite * /healthz
+		reverse_proxy api:8000
+	}
+	handle /healthz/realtime {
+		rewrite * /healthz
+		reverse_proxy realtime:8000
+	}
+	handle /healthz/ocr {
+		rewrite * /healthz
+		reverse_proxy ocr:8000
+	}
 	# 실시간 WebSocket → 허브를 가진 프로세스 하나
 	handle /v1/realtime {
 		reverse_proxy realtime:8000

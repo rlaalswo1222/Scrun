@@ -59,20 +59,21 @@ app/
                      run_access(러닝 상태 이름·내 기록 찾기·인증 마감), ocr(계기판 사진 읽기 엔진 자리, 가짜/없음),
                      verification(센서-계기판 대조 판정, 순수 함수),
                      request_log(요청 ID X-Request-Id + 요청마다 처리 시간·DB 쿼리 수 JSON 한 줄, 순수 ASGI, 계획 0070·0073, REQUEST_LOG=0이면 로그만 끔),
+                     error_report(처리 못 한 예외·ERROR 로그를 Sentry로, SENTRY_DSN 있을 때만, 요청 ID 태그·지역 변수·요청 머리 안 보냄, 계획 0087),
                      attempts(틀린 친구 코드 횟수, DB), model(camelCase·시각 칸 UtcDatetime),
                      admission(동시 처리 번호표·빠른 503, 계획 0071, ADMISSION_LIMIT=0이면 끔)
   db/                models(테이블 22개), session(DB 연결), ids(ULID), testing(테스트 DB로 바꿔 끼우기)
   realtime/          hub(방 상태, 메모리·한 프로세스), router(WebSocket /v1/realtime), link(일반 API가 허브를 부르는 곳: 같은 프로세스 또는
                      REALTIME_URL로 HTTP, 서킷 브레이커), internal(허브 내부 API /internal/hub/*, 계획 0073)
   schemas/           요청·응답 모델(도메인별). Swagger의 Schemas
-  routers/           API 주소(도메인별). auth.py, users.py의 닉네임 확인·내 정보·설정·보정값, courses.py, runs.py, verification.py, friends.py(같이 달리기 빼고)가 진짜, 나머지는 스텁
+  routers/           API 주소(도메인별). auth.py, users.py의 닉네임 확인·내 정보·설정·보정값, courses.py, runs.py, verification.py, friends.py(같이 달리기 빼고)가 진짜, health.py(/healthz, 바깥 감시용, 계획 0087), 나머지는 스텁
   testenv.py         테스트·예시 내보내기 전용 설정(임시 서명 키 + 가짜 카카오, app보다 먼저 부름)
   stub_data.py       스텁이 돌려주는 예시 값(실측 아님)
   stub_requests.py   모든 API 예시 요청 표 + 진짜가 된 API 목록(REAL)
 migrations/          DB 변경 기록(Alembic). 테이블을 바꾸면 여기 새 파일
 scripts/             export_openapi(OpenAPI·예시), notion_pages(노션 본문), real_examples(진짜 API 예시 흐름),
                      purge_refresh_tokens(만료 토큰 정리, 운영에서 하루 한 번)
-tests/               test_contract(스텁 API 계약), test_auth(로그인·닉네임 진짜 흐름, 동시 요청 포함), test_courses(코스·맵 입장 진짜 흐름),
+tests/               test_error_report(Sentry로 나가는 것·안 나가는 것, /healthz, compose·Caddy 헬스체크 경로), test_contract(스텁 API 계약), test_auth(로그인·닉네임 진짜 흐름, 동시 요청 포함), test_courses(코스·맵 입장 진짜 흐름),
                      test_config(설정 검사), test_kakao(진짜 카카오 응답 처리), test_nickname(닉네임 규칙),
                      test_runs(러닝 시작·종료 진짜 흐름), test_verification(계기판 인증: 판정 경계·재촬영·마감·동시 요청),
                      test_request_log(요청 로그·요청 ID: 경로 틀·헬스체크 제외·실패 쿼리), test_admission(번호표: 503·기다림·헬스체크·반납),
@@ -103,6 +104,7 @@ tests/               test_contract(스텁 API 계약), test_auth(로그인·닉�
 - 접속은 민재만(SSH). 다시 올리기: 서버에서 `~/scrun/backend/deploy/update.sh [브랜치, 기본 develop]`(git pull → 빌드 → 마이그레이션(실패하면 멈추고 지금 API는 그대로) → 재시작 → `api`·`realtime`·`ocr` 건강 확인)
 - 비밀값은 서버의 `backend/deploy/.env`에만(칸은 `deploy/.env.server.example`). 매일 한국 시간 4시 30분 `deploy/daily.sh`: DB 백업 최근 7개(`~/scrun-backups`, 이 계정만 읽기) + 만료 토큰 정리. 서버 밖 백업·운영 서버 분리·진짜 도메인은 BL-51
 - 지금은 개발용이라 데이터가 지워질 수 있음(테이블을 바꾸는 PR이 합쳐지면 마이그레이션이 그대로 돎)
+- **감시(계획 0087, ADR-0015)**: 처리 못 한 예외(500)·ERROR 로그는 Sentry로(`.env`의 `SENTRY_DSN`, 비우면 안 보냄, 태그 `request_id`로 서버 로그 줄과 이어 봄). 바깥 감시 UptimeRobot이 5분마다 `/healthz/api`·`/healthz/realtime`·`/healthz/ocr`(Caddy가 각 서비스의 `/healthz`로, DB까지 확인)를 부르고 안 되면 메일. 로그 보관 상한은 `deploy/journald-scrun.conf`(파일 안 명령으로 서버에 한 번 넣음). 컨테이너는 `update.sh`로 다시 올림(손으로 `docker compose up`하면 `SCRUN_RELEASE`가 비어 Sentry 릴리스 칸이 빔)
 
 ## 운영 서버에서 꼭 바꿀 것
 `.env`의 `JWT_SECRET`(새로 만든 무작위 값, 개발용과 다르게), `DATABASE_URL`(운영 DB), `KAKAO_MODE=real` + `KAKAO_APP_ID`(`fake`는 절대 안 됨) + `KAKAO_ADMIN_KEY`(계정 삭제·연결 끊기 웹훅, 계획 0058. 카카오 개발자 > 앱 > 웹훅 > 연결 해제 웹훅에 `https://<서버>/v1/auth/kakao/unlink` POST 등록, 11/19 등록함). 하루 한 번 `python -m scripts.purge_refresh_tokens`. 배포는 BL-51

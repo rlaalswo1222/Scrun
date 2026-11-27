@@ -41,6 +41,11 @@ services:
       # 번호표(계획 0071)는 프로세스마다 → api 2개 × 6 = 12. 12 × 2 = 24는 DB에 너무 몰려 200명 처리량 229/초·p95 0.7초,
       # 6 × 2는 283/초·p95 0.5초(0073 측정). realtime·ocr은 아래에서 12로 되돌림. tests/test_config.py가 합계를 봄
       ADMISSION_LIMIT: 6
+      # 서버 오류를 Sentry로(계획 0087, ADR-0015). DSN은 .env(git 밖), 비우면 안 보냄. 릴리스 = 배포한 커밋(update.sh가 넘김)
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: production
+      SENTRY_RELEASE: ${SCRUN_RELEASE:-}
+      SCRUN_SERVICE: api
     logging: &app_logging # 배포(update.sh)가 컨테이너를 새로 만들어도 로그가 남게(11/19 첫 OCR 실패 로그를 잃음, 계획 0055).
       driver: journald # 보기: docker logs scrun-api-1(이번 컨테이너) / journalctl CONTAINER_NAME=scrun-api-1 --since "1 hour ago"(지난 것까지)
     depends_on:
@@ -61,6 +66,7 @@ services:
       <<: *app_env
       REALTIME_URL: "" # 허브를 갖는 쪽
       ADMISSION_LIMIT: 12
+      SCRUN_SERVICE: realtime
     logging: *app_logging
     depends_on:
       db:
@@ -75,6 +81,7 @@ services:
       <<: *app_env
       OCR_ENGINE: onnx # 계기판 OCR 진짜 엔진(계획 0046): 읽기 프로세스 2개, 사진 3장 15초 제한
       ADMISSION_LIMIT: 12
+      SCRUN_SERVICE: ocr
     logging: *app_logging
     depends_on:
       db:
