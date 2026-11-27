@@ -15,7 +15,7 @@ from sqlalchemy import delete
 from sqlalchemy.orm import sessionmaker
 from starlette.concurrency import run_in_threadpool
 
-from ..core import growth, tokens
+from ..core import growth, metrics, tokens
 from ..core.errors import ApiError
 from ..db.models import Course, CourseEntry, User, UserProgress
 from ..db.session import get_sessionmaker
@@ -91,6 +91,7 @@ async def realtime(ws: WebSocket, make_session: sessionmaker = Depends(get_sessi
     conn, welcome = hub.join(map_id, course_id, length_m, user_id, nickname,
                              wake=lambda: loop.call_soon_threadsafe(wake.set), level=level)
     left = False
+    metrics.realtime_joined()   # 지금 붙어 있는 수(계획 0087), 아래 finally에서 뺌
     try:
         await ws.send_json(welcome)
         code = await _serve(ws, conn, wake)
@@ -100,6 +101,7 @@ async def realtime(ws: WebSocket, make_session: sessionmaker = Depends(get_sessi
     except (WebSocketDisconnect, RuntimeError):
         pass  # 폰이 먼저 끊음(RuntimeError: 닫힌 소켓에 보내기)
     finally:
+        metrics.realtime_left()
         left = hub.leave(conn, intentional=left)
     if left:
         try:

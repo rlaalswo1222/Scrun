@@ -16,6 +16,7 @@
 import hashlib
 import logging
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from datetime import datetime, timedelta
@@ -26,6 +27,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from starlette.formparsers import MultiPartException, MultiPartParser
 
+from ..core import metrics
 from ..core.config import settings
 from ..core.envelope import Envelope, error_responses, ok
 from ..core.errors import ApiError, ErrorCode, invalid
@@ -113,6 +115,14 @@ async def read_photos(request: Request, _: None = Depends(photo_target)) -> list
 
 
 # ---------- OCR ----------
+class OcrUnavailable(ApiError):
+    """OCR을 지금 못 함 → 503. outcome은 지표 결과 이름(계획 0087, metrics.observe_ocr): busy·timeout·stuck·엔진 reason·error"""
+
+    def __init__(self, outcome: str, message: str, details=None):
+        super().__init__(E.SERVICE_UNAVAILABLE, message, details)
+        self.outcome = outcome
+
+
 class _OcrRunner:
     """OCR은 CPU를 쓰므로 요청 스레드와 따로, 시간 제한(BL-17 ⑥). 동시에 WORKERS개까지, 자리가 없으면 줄 세우지 않고 바로 503.
     시간을 넘긴 작업은 스레드를 멈출 수 없으므로 자리를 돌려주고 "버려진 작업"으로 센다(새 요청이 그 뒤에 줄 서지 않게
@@ -129,12 +139,26 @@ class _OcrRunner:
         self.abandoned = 0
 
     def read(self, engine: OcrEngine, photos: list[Photo], timeout_s: float) -> ConsoleRead:
+        """읽기 + 지표(묶음 시간·결과, 계획 0087). 결과는 읽기 상태(READ 등) 또는 busy·timeout·error"""
+        started = time.perf_counter()
+        outcome = "error"
+        try:
+            result = self._read(engine, photos, timeout_s)
+            outcome = result.status.value
+            return result
+        except OcrUnavailable as e:
+            outcome = e.outcome
+            raise
+        finally:
+            metrics.observe_ocr(outcome, time.perf_counter() - started)
+
+    def _read(self, engine: OcrEngine, photos: list[Photo], timeout_s: float) -> ConsoleRead:
         with self.lock:
             if self.abandoned >= self.ABANDONED_MAX:
                 log.error("OCR 엔진이 시간을 넘긴 작업 %d개에 멈춰 있음 — 서버 재시작 필요", self.abandoned)
-                raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기를 잠시 쓸 수 없습니다.")
+                raise OcrUnavailable("stuck", "계기판 읽기를 잠시 쓸 수 없습니다.")
             if self.running >= self.WORKERS:
-                raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기가 밀려 있습니다. 잠시 뒤 다시 보내세요.")
+                raise OcrUnavailable("busy", "계기판 읽기가 밀려 있습니다. 잠시 뒤 다시 보내세요.")
             self.running += 1
         state = {"abandoned": False}
 
@@ -163,19 +187,20 @@ class _OcrRunner:
                         self.running -= 1
                         self.abandoned += 1
                 if not late:   # 엔진 바깥 고장(진짜 엔진은 1초 먼저 스스로 끊음) → 사진 탓이 아니라 reason 없음(리뷰)
-                    raise ApiError(E.SERVICE_UNAVAILABLE, "계기판 읽기가 시간 안에 끝나지 않았습니다.") from None
+                    raise OcrUnavailable("timeout", "계기판 읽기가 시간 안에 끝나지 않았습니다.") from None
                 return future.result()
         except BadPhoto:
             return UNREADABLE  # 사진을 못 엶 → 다시 찍기(횟수 셈)
         except EngineUnavailable as e:
             log.warning("계기판 OCR 503: %s", e)
-            raise ApiError(E.SERVICE_UNAVAILABLE, str(e), {"reason": e.reason} if e.reason else None) from None
+            raise OcrUnavailable((e.reason or "unavailable").lower(), str(e),
+                                 {"reason": e.reason} if e.reason else None) from None
         except ApiError:
             raise
         except Exception:
             # 엔진 고장은 503: 다시 찍기 횟수를 깎지 않음(고장 난 동안 기록이 미인증으로 굳지 않게). 원인은 서버 기록으로
             log.exception("OCR 엔진 오류")
-            raise ApiError(E.SERVICE_UNAVAILABLE, "계기판을 읽다가 오류가 났습니다. 다시 보내 주세요.") from None
+            raise OcrUnavailable("error", "계기판을 읽다가 오류가 났습니다. 다시 보내 주세요.") from None
 
 
 _ocr = _OcrRunner()

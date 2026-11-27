@@ -15,3 +15,5 @@ opencv-python-headless==5.0.0.93
 numpy==2.4.6
 # 서버 오류를 Sentry로(계획 0087, ADR-0015). SENTRY_DSN이 없으면 안 씀. 3.0은 갓 나온 큰 판이라 2.x 마지막판
 sentry-sdk==2.77.0
+# 서버 지표 /metrics(계획 0087 2단계). uvicorn 프로세스 여럿이라 PROMETHEUS_MULTIPROC_DIR 방식
+prometheus-client==0.26.0

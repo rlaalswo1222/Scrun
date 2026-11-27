@@ -22,6 +22,8 @@ from .core.envelope import (
 from .core.error_report import init_error_report
 from .core.errors import ApiError
 from .core.kakao import close_client as close_kakao_client
+from .core import metrics as metrics_core
+from .core.metrics import mark_process_dead as mark_metrics_process_dead
 from .core.ocr import start_ocr, stop_ocr
 from .core.request_log import RequestContextMiddleware, install_request_log
 from .realtime import internal as realtime_internal
@@ -43,6 +45,7 @@ async def lifespan(_: FastAPI):
     yield
     await asyncio.to_thread(stop_ocr)   # 프로세스 join이 이벤트 루프(실시간 WebSocket 정리)를 막지 않게
     close_kakao_client()
+    mark_metrics_process_dead()   # 다중 프로세스 지표에서 이 프로세스 몫 정리(계획 0087)
 
 
 init_error_report(settings.error_report)   # Sentry(계획 0087): SENTRY_DSN이 있을 때만. 앱보다 먼저(시작 중 오류도 받게)
@@ -53,9 +56,10 @@ app = FastAPI(title="SCRUN API", version="0.1.0-stub", description=DESCRIPTION, 
 # 둘 다 순수 ASGI(BaseHTTPMiddleware·@app.middleware("http")는 요청마다 작업·통로를 더 만들어 CPU를 씀, 계획 0073 측정)
 if settings.admission.limit:
     app.add_middleware(AdmissionMiddleware, **ADMISSION_KWARGS)
-if settings.request_log:   # 요청마다 처리 시간 한 줄(계획 0070)
+metrics_core.set_enabled(settings.metrics)
+if settings.request_log or settings.metrics:   # 요청마다 처리 시간 한 줄(계획 0070)·지표(계획 0087)가 쓰는 DB 시간 재기
     install_request_log()
-app.add_middleware(RequestContextMiddleware, log_requests=settings.request_log)
+app.add_middleware(RequestContextMiddleware, log_requests=settings.request_log, metrics=settings.metrics)
 app.add_exception_handler(ApiError, api_error_handler)
 app.add_exception_handler(PoolTimeoutError, pool_timeout_handler)  # 연결 풀 기다림 초과 → 503(계획 0071)
 app.add_exception_handler(RequestValidationError, validation_error_handler)

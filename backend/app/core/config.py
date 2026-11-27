@@ -13,6 +13,7 @@
 - ADMISSION_LIMIT·ADMISSION_WAIT_S: 동시 처리 번호표 수(0이면 끔)·기다리는 상한 초(계획 0071). DB_POOL_TIMEOUT_S: 연결 기다림 상한
 - SENTRY_DSN·SENTRY_ENVIRONMENT·SENTRY_RELEASE·SCRUN_SERVICE: 서버 오류를 Sentry로(계획 0087, ADR-0015, app/core/error_report.py).
   DSN이 없으면 아무것도 안 보냄(로컬·테스트 기본). 환경 기본 local, 서비스 이름 기본 api(서버 compose가 api·realtime·ocr로 줌)
+- METRICS: Prometheus 지표(GET /metrics, 계획 0087 2단계, app/core/metrics.py). 기본 켜짐, 0이면 끔
 """
 import logging
 import os
@@ -269,6 +270,7 @@ class Settings:
     friends: FriendPolicy = FriendPolicy()
     growth: GrowthPolicy = GrowthPolicy()
     error_report: ErrorReportSettings = ErrorReportSettings()
+    metrics: bool = True  # Prometheus 지표(계획 0087 2단계). METRICS=0이면 끔
 
 
 SWITCH_VALUES = {"1": True, "0": False}
@@ -328,6 +330,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         friends=load_friends(env),
         growth=load_growth(env),
         error_report=load_error_report(env),
+        metrics=_load_switch(env, "METRICS", default=True),
     )
 
 
