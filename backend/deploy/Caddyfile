@@ -4,8 +4,12 @@
 	encode gzip
 	# 컨테이너 안 헬스체크 표시(X-Scrun-Probe)는 밖에서 붙여도 지움: 번호표·요청 로그를 건너뛰지 못하게(계획 0071)
 	request_header -X-Scrun-Probe
-	# 허브 내부 API는 서비스끼리만(비밀 머리도 따로 확인함, app/realtime/internal.py)
+	# 허브 내부 API·Grafana 알람 받기는 서비스끼리만(비밀 머리도 따로 확인함, app/realtime/internal.py·app/routers/alerts.py)
 	handle /internal/* {
+		respond 404
+	}
+	# 지표는 서비스 안쪽(Alloy)만 긁음(계획 0087)
+	handle /metrics {
 		respond 404
 	}
 	# 바깥 감시(UptimeRobot, 계획 0087): 서비스마다 살아 있나. /healthz/<서비스> → 그 서비스의 /healthz(DB까지 확인)

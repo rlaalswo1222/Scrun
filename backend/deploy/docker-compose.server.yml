@@ -46,6 +46,11 @@ services:
       SENTRY_ENVIRONMENT: production
       SENTRY_RELEASE: ${SCRUN_RELEASE:-}
       SCRUN_SERVICE: api
+      # 지표(계획 0087 2단계): uvicorn 프로세스마다 이 폴더에 적고 /metrics가 합침. 아래 tmpfs라 컨테이너가 뜰 때마다 비어 있음
+      PROMETHEUS_MULTIPROC_DIR: /run/scrun-metrics
+      ALERT_WEBHOOK_TOKEN: ${ALERT_WEBHOOK_TOKEN:-} # Grafana 알람 → /internal/alerts → Sentry. 비우면 그 주소는 404
+    tmpfs: &metrics_tmpfs
+      - /run/scrun-metrics
     logging: &app_logging # 배포(update.sh)가 컨테이너를 새로 만들어도 로그가 남게(11/19 첫 OCR 실패 로그를 잃음, 계획 0055).
       driver: journald # 보기: docker logs scrun-api-1(이번 컨테이너) / journalctl CONTAINER_NAME=scrun-api-1 --since "1 hour ago"(지난 것까지)
     depends_on:
@@ -67,6 +72,7 @@ services:
       REALTIME_URL: "" # 허브를 갖는 쪽
       ADMISSION_LIMIT: 12
       SCRUN_SERVICE: realtime
+    tmpfs: *metrics_tmpfs
     logging: *app_logging
     depends_on:
       db:
@@ -82,6 +88,7 @@ services:
       OCR_ENGINE: onnx # 계기판 OCR 진짜 엔진(계획 0046): 읽기 프로세스 2개, 사진 3장 15초 제한
       ADMISSION_LIMIT: 12
       SCRUN_SERVICE: ocr
+    tmpfs: *metrics_tmpfs
     logging: *app_logging
     depends_on:
       db:
@@ -109,7 +116,78 @@ services:
       ocr:
         condition: service_started
 
+  # ---------- 지표·대시보드·알람(계획 0087 2단계, ADR-0015) ----------
+  # 밖으로 여는 포트 없음. Grafana만 서버 안 127.0.0.1:3000 → 노트북에서 SSH 터널(backend/README.md "감시")
+  # 메모리 상한은 첫 값(가설): 실제 쓰는 양을 대시보드 "컨테이너별 메모리"로 보고 고침
+  alloy:
+    image: grafana/alloy:v1.21.3
+    hostname: scrun-alloy # 지표의 instance 라벨. 없으면 컨테이너를 다시 만들 때마다 바뀌어 같은 지표가 새 줄로 생김(11/28 로컬 시험)
+    restart: unless-stopped
+    command: ["run", "--server.http.listen-addr=127.0.0.1:12345", "--storage.path=/var/lib/alloy/data", "/etc/alloy/config.alloy"]
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD} # Postgres 수집기(config.alloy)
+    volumes:
+      - ./observability/config.alloy:/etc/alloy/config.alloy:ro
+      - alloydata:/var/lib/alloy/data
+      # 서버 CPU·메모리·디스크(읽기 전용)
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro
+      # 컨테이너별 CPU·메모리(cAdvisor): 컨테이너 이름을 알려고 Docker 소켓. 읽기 전용으로 붙여도 Docker API는 다 부를 수 있어
+      # 사실상 서버 관리자 권한 → 이 컨테이너는 밖에 안 열고 이미지 판을 고정함
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /run/containerd/containerd.sock:/run/containerd/containerd.sock:ro # 새 Docker는 컨테이너 이름을 containerd로 찾음
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      # daily.sh가 쓰는 마지막 백업 시각(*.prom). update.sh가 폴더를 먼저 만듦(없으면 Docker가 root 소유로 만들어 daily.sh가 못 씀)
+      - ${HOME}/scrun-metrics:/scrun-metrics:ro
+    mem_limit: 384m
+    logging: *app_logging
+    depends_on: [prometheus]
+
+  prometheus:
+    image: prom/prometheus:v3.15.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=90d
+      - --storage.tsdb.retention.size=5GB
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    mem_limit: 768m
+    logging: *app_logging
+
+  grafana:
+    image: grafana/grafana:13.3.2
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000" # 서버 안에서만. 노트북: ssh -L 3000:localhost:3000 ... → http://localhost:3000
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD를 .env에(서버에서 token_urlsafe로)}
+      GF_AUTH_ANONYMOUS_ENABLED: "true" # 보기는 로그인 없이(터널이 곧 잠금, 11/28 민재). 고치기는 admin
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      ALERT_WEBHOOK_TOKEN: ${ALERT_WEBHOOK_TOKEN:?ALERT_WEBHOOK_TOKEN을 .env에(서버에서 token_urlsafe로)} # 알람 연락처(provisioning/alerting)
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+    mem_limit: 512m # 로컬 시험에서 켜자마자 343 MiB(11/28)
+    logging: *app_logging
+    depends_on: [prometheus]
+
 volumes:
   pgdata:
   caddydata:
   caddyconfig:
+  alloydata:
+  promdata:
+  grafanadata:

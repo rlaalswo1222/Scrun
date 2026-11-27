@@ -1,0 +1,6 @@
+# 지표 저장(계획 0087 2단계). 긁는 일은 Alloy가 하고 여기로 보냄(--web.enable-remote-write-receiver).
+# 보관은 compose 명령줄(90일 또는 5 GB 중 먼저 닿는 쪽)
+global:
+  scrape_interval: 15s
+  evaluation_interval: 1m
+scrape_configs: []

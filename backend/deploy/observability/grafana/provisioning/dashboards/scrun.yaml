@@ -1,0 +1,10 @@
+# 대시보드는 저장소 파일(../../dashboards/*.json)로 관리(계획 0087). 화면에서 고친 것은 다시 시작하면 파일로 돌아감
+apiVersion: 1
+providers:
+  - name: scrun
+    folder: SCRUN
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards

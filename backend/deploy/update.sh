@@ -13,11 +13,32 @@ if ! [[ "$PW" =~ ^[A-Za-z0-9_-]{24,}$ ]]; then
   echo "DB_PASSWORD는 영문·숫자·-·_로 24자 이상이어야 합니다(token_urlsafe 값)." >&2; exit 1
 fi
 
+# 지표·대시보드(계획 0087 2단계) 비밀이 .env에 없으면 서버에서 무작위로 만들어 넣음(화면에 안 찍음). compose가 ${..:?}로 검사해서
+# 없으면 build부터 멈추고 매일 백업(daily.sh의 compose exec)까지 멈추므로 compose를 부르기 전에
+for KEY in GRAFANA_ADMIN_PASSWORD ALERT_WEBHOOK_TOKEN; do
+  if ! grep -qE "^$KEY=.+" .env; then
+    sed -i "/^$KEY=\$/d" .env
+    echo "$KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(36))')" >> .env
+    echo "$KEY를 .env에 새로 만듦(값 확인: grep $KEY .env)"
+  fi
+done
+
 git fetch -q origin "$BRANCH"
 git checkout -q "$BRANCH"
 git reset -q --hard "origin/$BRANCH"   # 서버에서는 코드를 고치지 않는다(.env는 git 밖이라 안 지워짐)
 # Sentry 릴리스 = 이번 커밋(계획 0087): 오류가 어느 배포에서 생겼는지. compose가 SENTRY_RELEASE로 넘김
 export SCRUN_RELEASE="$(git rev-parse --short HEAD)"
+# 지표 텍스트 파일 폴더(계획 0087 2단계): Alloy가 읽고 daily.sh가 마지막 백업 시각을 씀. 처음이면 가장 최근 백업 파일 시각으로 채움
+# (안 채우면 첫 daily.sh 전까지 "백업 26시간 넘게 없음" 알람이 울림)
+mkdir -p "$HOME/scrun-metrics"
+# Docker가 먼저 만들면 root 소유가 되어 daily.sh가 못 씀(처음 배포가 옛 update.sh로 돌 때) → 내 소유로
+[ -O "$HOME/scrun-metrics" ] || sudo -n chown "$(id -u):$(id -g)" "$HOME/scrun-metrics"
+if [ ! -f "$HOME/scrun-metrics/backup.prom" ]; then
+  LAST=$(ls -1t "$HOME"/scrun-backups/scrun-*.dump 2>/dev/null | head -1 || true)
+  if [ -n "$LAST" ]; then
+    ./backup_metric.sh "$(stat -c %Y "$LAST")"
+  fi
+fi
 
 $C build api
 $C up -d db
