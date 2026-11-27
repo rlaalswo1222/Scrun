@@ -51,7 +51,8 @@ namespace Scrun.App
             MyParts.MarkLast(link);
 
             var data = MyParts.Group(content, "데이터");
-            data.Add(MyParts.Row("계기판 사진", null, "인증 직후 삭제", null, chevron: false)); // 확정 11/06(BL-40 ①): OCR 직후 폐기
+            // 확정 11/06(BL-40 ①): OCR 직후 폐기. 개발 빌드 아이폰은 보낸 사진을 이 폰 앱 폴더에 남김(계획 0085) → 그대로 보여 줌
+            data.Add(MyParts.Row("계기판 사진", null, VerifyPhotoLog.Enabled ? "개발 빌드: 폰에 남김" : "인증 직후 삭제", null, chevron: false));
             data.Add(MyParts.Row("약관·개인정보처리방침", null, null, OpenTerms));
             MyParts.MarkLast(data);
 

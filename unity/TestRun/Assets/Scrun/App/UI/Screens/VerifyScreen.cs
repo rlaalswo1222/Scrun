@@ -18,6 +18,7 @@ namespace Scrun.App
         readonly VerifyFlow flow = new VerifyFlow();
 
         CameraShot shot;           // 지금 들고 있는 사진(보내거나 버리면 null)
+        VerifyPhotoLog photoLog;   // 개발 빌드: 마지막으로 보낸 사진·서버 답 기록(계획 0085, 출시 빌드는 늘 null)
         Texture2D preview;          // E-04 미리보기
         IVisualElementScheduledItem ticker;
         IVisualElementScheduledItem spin;   // E-05 고리 돌리기(전엔 정지 그림이라 멈춘 것처럼 보임, 계획 0055)
@@ -204,16 +205,21 @@ namespace Scrun.App
         {
             if (busy || shot == null || !flow.Send()) return;
             busy = true;
+            photoLog = null; // 이전 보내기 기록에 이번 실패가 붙지 않게(리뷰)
             Render();
             try
             {
                 var parts = await VerifyPhotos.PrepareAsync(shot, sensor, Application.isEditor ? FakeNative.Config.cameraOcr : (FakeOcrResult?)null);
+                var evs = VerifyPhotos.SendOrder(shot.Photos).ConvertAll(p => p.ExposureBias); // parts와 같은 순서
+                photoLog = VerifyPhotoLog.Begin(runId, parts, evs, sensor, DateTime.UtcNow); // 개발 빌드만 남김
                 var r = await Api.Runs.VerifyPhotoAsync(runId, parts);
+                photoLog?.Answer(r, DateTime.UtcNow);
                 flow.Answer(r);
                 if (flow.Step != VerifyStep.ReadConfirm) DropPhoto(); // 값 확인이면 맞아요·틀렸어요까지 들고 있음
             }
             catch (ApiException e)
             {
+                photoLog?.Failed(e.Failure + ": " + e.Message, DateTime.UtcNow);
                 flow.Failed(ErrorOf(e));
                 if (flow.Step == VerifyStep.TimeOver || flow.Step == VerifyStep.Guide) DropPhoto();
                 if (e.Failure == ApiFailure.NotLoggedIn) Feedback.Handle(e);
@@ -221,6 +227,7 @@ namespace Scrun.App
             catch (Exception e) // 사진 파일을 못 읽음 등
             {
                 Debug.LogWarning("[인증] 사진을 보내지 못함: " + e.Message);
+                photoLog?.Failed(e.GetType().Name + ": " + e.Message, DateTime.UtcNow);
                 flow.Failed(VerifyError.Other);
             }
             finally
@@ -235,14 +242,18 @@ namespace Scrun.App
         async void ConfirmRead(bool correct)
         {
             if (busy || !flow.AnswerRead(correct)) return;
+            photoLog?.Confirm(correct); // "맞아요"면 읽은 값이 정답(계획 0085)
             busy = true;
             Render();
             try
             {
-                flow.Answer(await Api.Runs.ConfirmReadAsync(runId, flow.Result.AttemptId, correct));
+                var r = await Api.Runs.ConfirmReadAsync(runId, flow.Result.AttemptId, correct);
+                photoLog?.Answer(r, DateTime.UtcNow);
+                flow.Answer(r);
             }
             catch (ApiException e)
             {
+                photoLog?.Failed("확인 보내기 " + e.Failure + ": " + e.Message, DateTime.UtcNow);
                 flow.Failed(ErrorOf(e));
                 if (e.Failure == ApiFailure.NotLoggedIn) Feedback.Handle(e);
             }
