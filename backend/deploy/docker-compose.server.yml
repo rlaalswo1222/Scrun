@@ -191,6 +191,7 @@ services:
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
       GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_LOG_LEVEL: warn # 자기 요청 기록(INFO)이 Loki를 채우지 않게(계획 0087 3단계 배포 뒤)
       ALERT_WEBHOOK_TOKEN: ${ALERT_WEBHOOK_TOKEN:?ALERT_WEBHOOK_TOKEN을 .env에(서버에서 token_urlsafe로)} # 알람 연락처(provisioning/alerting)
     volumes:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro

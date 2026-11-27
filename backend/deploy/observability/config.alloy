@@ -120,6 +120,11 @@ loki.process "scrun" {
     expression = "127[.]0[.]0[.]1:[0-9]+ - \"GET /v1/agreements HTTP/1[.]1\" 200"
   }
 
+  // Alloy가 15초마다 앱 셋의 /metrics를 긁는 접속 줄(분당 12줄)도 버림. 밖에선 Caddy가 /metrics를 막아 앱까지 안 옴
+  stage.drop {
+    expression = "\"GET /metrics HTTP/1[.]1\" 200"
+  }
+
   forward_to = [loki.write.local.receiver]
 }
 
