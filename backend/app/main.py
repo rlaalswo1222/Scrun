@@ -28,7 +28,7 @@ from .core.ocr import start_ocr, stop_ocr
 from .core.request_log import RequestContextMiddleware, install_request_log
 from .realtime import internal as realtime_internal
 from .realtime import router as realtime
-from .routers import auth, courses, events, friends, health, home, progress, runs, users, verification
+from .routers import alerts, auth, courses, events, friends, health, home, progress, runs, users, verification
 
 DESCRIPTION = """
 러닝머신 실내 러닝 앱 SCRUN의 서버 API. **지금은 스텁**이라 고정 예시만 돌려준다.
@@ -66,7 +66,7 @@ app.add_exception_handler(RequestValidationError, validation_error_handler)
 app.add_exception_handler(StarletteHTTPException, http_error_handler)
 app.add_exception_handler(Exception, unhandled_error_handler)
 
-for r in (auth, users, home, courses, runs, verification, progress, friends, events, health):
+for r in (auth, users, home, courses, runs, verification, progress, friends, events, health, alerts):
     app.include_router(r.router)
 if settings.realtime_url is None:   # 허브를 가진 프로세스만(계획 0073). 일반 API 프로세스는 REALTIME_URL로 그 프로세스에 묻는다
     app.include_router(realtime.router)  # WebSocket /v1/realtime(계획 0029)

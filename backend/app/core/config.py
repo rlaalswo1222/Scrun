@@ -14,6 +14,7 @@
 - SENTRY_DSN·SENTRY_ENVIRONMENT·SENTRY_RELEASE·SCRUN_SERVICE: 서버 오류를 Sentry로(계획 0087, ADR-0015, app/core/error_report.py).
   DSN이 없으면 아무것도 안 보냄(로컬·테스트 기본). 환경 기본 local, 서비스 이름 기본 api(서버 compose가 api·realtime·ocr로 줌)
 - METRICS: Prometheus 지표(GET /metrics, 계획 0087 2단계, app/core/metrics.py). 기본 켜짐, 0이면 끔
+- ALERT_WEBHOOK_TOKEN: Grafana 알람을 받는 내부 주소(POST /internal/alerts → Sentry)의 비밀. 없으면 그 주소는 404. 32자 이상
 """
 import logging
 import os
@@ -271,6 +272,7 @@ class Settings:
     growth: GrowthPolicy = GrowthPolicy()
     error_report: ErrorReportSettings = ErrorReportSettings()
     metrics: bool = True  # Prometheus 지표(계획 0087 2단계). METRICS=0이면 끔
+    alert_webhook_token: Optional[str] = None  # Grafana 알람 → Sentry(app/routers/alerts.py). 없으면 받지 않음
 
 
 SWITCH_VALUES = {"1": True, "0": False}
@@ -311,6 +313,10 @@ def load_settings(env: Mapping[str, str]) -> Settings:
     if ocr_engine not in OCR_ENGINES:
         raise ConfigError(f"OCR_ENGINE은 {' 또는 '.join(OCR_ENGINES)}여야 합니다(지금: {ocr_engine!r}).")
 
+    alert_token = env.get("ALERT_WEBHOOK_TOKEN", "").strip() or None
+    if alert_token is not None and (len(alert_token) < 32 or not re.fullmatch(r"[A-Za-z0-9_\-]+", alert_token)):
+        raise ConfigError("ALERT_WEBHOOK_TOKEN은 영문·숫자·-·_로 32자 이상이어야 합니다(서버에서 token_urlsafe로 만듦).")
+
     realtime_url = env.get("REALTIME_URL", "").strip() or None
     if realtime_url is not None and not re.fullmatch(r"https?://[A-Za-z0-9.\-]+(:[0-9]+)?/?", realtime_url):
         raise ConfigError(f"REALTIME_URL은 http://주소:포트 모양이어야 합니다(예: http://realtime:8000). 지금: {realtime_url!r}")
@@ -331,6 +337,7 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         growth=load_growth(env),
         error_report=load_error_report(env),
         metrics=_load_switch(env, "METRICS", default=True),
+        alert_webhook_token=alert_token,
     )
 
 
