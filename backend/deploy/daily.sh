@@ -13,6 +13,8 @@ trap 'rm -f "$TMP"' EXIT
 docker compose -f docker-compose.server.yml exec -T db pg_dump -U scrun -d scrun -Fc > "$TMP"
 [ -s "$TMP" ] || { echo "백업 파일이 비었음" >&2; exit 1; }
 mv "$TMP" "$DIR/scrun-$STAMP.dump" # 끝까지 성공한 것만 이름을 붙임
+./backup_metric.sh "$(date +%s)" # 마지막 백업 시각 → Grafana(26시간 넘게 없으면 알람, 계획 0087). 토큰 정리가 실패해도 백업은 성공으로
 ls -1t "$DIR"/scrun-*.dump | tail -n +8 | xargs -r rm -f # 최신 7개만
-docker compose -f docker-compose.server.yml exec -T api python -m scripts.purge_refresh_tokens
+# PROMETHEUS_MULTIPROC_DIR를 비움: 짧게 도는 이 프로세스가 지표 파일(tmpfs)을 남기지 않게(계획 0087 리뷰)
+docker compose -f docker-compose.server.yml exec -T -e PROMETHEUS_MULTIPROC_DIR= api python -m scripts.purge_refresh_tokens
 echo "$(date -Iseconds) 백업 $DIR/scrun-$STAMP.dump"

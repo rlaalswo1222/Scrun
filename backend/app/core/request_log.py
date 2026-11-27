@@ -9,7 +9,8 @@
 - queue_ms: 입구 번호표를 기다린 시간(app/core/admission.py, 계획 0071). 못 받아 503이면 path는 "-"(라우팅 전)
 - path는 라우트 틀(`/v1/runs/{runId}`)이라 기록 ID·사용자 ID가 남지 않는다. 라우트에 안 맞은 요청은 "-"
 - 남기지 않는 것: WebSocket(/v1/realtime, HTTP 미들웨어를 안 지남), 컨테이너 안 헬스체크(루프백 + X-Scrun-Probe: 1, is_local_probe),
-  서비스끼리 부르는 내부 API(/internal/*, is_internal, 계획 0073)
+  서비스끼리 부르는 내부 API(/internal/*, is_internal, 계획 0073)·지표 긁기(/metrics, 계획 0087)
+- 같은 값으로 Prometheus 지표도 셈(app/core/metrics.py, 계획 0087 2단계, METRICS=0이면 끔). 요청 로그를 꺼도 지표는 따로
 - 서버 로그(운영은 journald)로 본다: `journalctl CONTAINER_NAME=scrun-api-1 --since … | grep '"path"'`
 - 끄기: 환경 변수 REQUEST_LOG=0
 """
@@ -25,18 +26,23 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from . import metrics
+
 log = logging.getLogger("scrun.request")
 PROBE_HEADER = b"x-scrun-probe"
 LOOPBACK = {"127.0.0.1", "::1"}
 
 
 INTERNAL_PATH = "/internal/"
+METRICS_PATH = "/metrics"
 
 
 def is_internal(scope) -> bool:
-    """서비스끼리 부르는 내부 API(허브, app/realtime/internal.py, 계획 0073). 번호표·요청 로그 밖: 일반 API 요청 하나가 그 안에서
-    부르므로 줄을 또 서면 정원 검사가 시간 초과로 503이 되고, 로그엔 같은 요청이 두 번 남는다. 밖에선 Caddy가 막고 비밀 머리도 봄"""
-    return scope.get("path", "").startswith(INTERNAL_PATH)
+    """서비스끼리 부르는 내부 API(허브, app/realtime/internal.py, 계획 0073)와 지표 긁기(/metrics, Alloy가 15초마다, 계획 0087).
+    번호표·요청 로그·지표 밖: 일반 API 요청 하나가 그 안에서 부르므로 줄을 또 서면 정원 검사가 시간 초과로 503이 되고, 로그엔 같은
+    요청이 두 번 남는다. 지표 긁기가 번호표를 기다리면 바쁠 때 지표가 끊김. 밖에선 Caddy가 둘 다 막고 내부 API는 비밀 머리도 봄"""
+    path = scope.get("path", "")
+    return path.startswith(INTERNAL_PATH) or path == METRICS_PATH
 
 
 def is_local_probe(scope) -> bool:
@@ -125,6 +131,14 @@ def request_id(scope: Scope) -> Optional[str]:
     return scope.get("state", {}).get("request_id")
 
 
+def _finish(scope: Scope, status: int, stats: _RequestStats, log_line: bool, count: bool) -> None:
+    if count:
+        metrics.observe_request(scope["method"], route_path(scope), status, stats.elapsed_ms() / 1000,
+                                stats.db_ms / 1000, stats.pool_ms / 1000, stats.queue_ms / 1000)
+    if log_line:
+        _emit(scope, status, stats)
+
+
 def _emit(scope: Scope, status: int, stats: _RequestStats) -> None:
     line = {
         "rid": request_id(scope),
@@ -155,9 +169,10 @@ class RequestContextMiddleware:
     - WebSocket(/v1/realtime)은 그대로 통과. 컨테이너 헬스체크(is_local_probe)는 요청 ID만 붙이고 로그는 안 남김
     """
 
-    def __init__(self, app: ASGIApp, log_requests: bool = True):
+    def __init__(self, app: ASGIApp, log_requests: bool = True, metrics: bool = False):
         self.app = app
         self.log_requests = log_requests
+        self.metrics = metrics
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -166,7 +181,8 @@ class RequestContextMiddleware:
         rid = "req_" + uuid.uuid4().hex[:12]
         scope.setdefault("state", {})["request_id"] = rid
         rid_header = (REQUEST_ID_HEADER, rid.encode("ascii"))
-        stats = _RequestStats() if self.log_requests and not (is_local_probe(scope) or is_internal(scope)) else None
+        observe = (self.log_requests or self.metrics) and not (is_local_probe(scope) or is_internal(scope))
+        stats = _RequestStats() if observe else None
         started = False
 
         async def send_with_id(message: Message) -> None:
@@ -175,7 +191,7 @@ class RequestContextMiddleware:
                 started = True
                 message = {**message, "headers": [*message.get("headers", ()), rid_header]}
                 if stats is not None:
-                    _emit(scope, message["status"], stats)
+                    _finish(scope, message["status"], stats, self.log_requests, self.metrics)
             await send(message)
 
         if stats is None:
@@ -186,7 +202,7 @@ class RequestContextMiddleware:
             await self.app(scope, receive, send_with_id)
         except Exception:
             if not started:
-                _emit(scope, 500, stats)
+                _finish(scope, 500, stats, self.log_requests, self.metrics)
             raise
         finally:
             _request_stats.reset(token)

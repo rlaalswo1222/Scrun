@@ -76,3 +76,17 @@ def report_exception(request: Request, exc: BaseException) -> None:
         scope.set_tag("route", route_path(request.scope))
         scope.set_tag("method", request.method)
         sentry_sdk.capture_exception(exc)
+
+
+def report_alert(name: str, summary: str, started_at: str) -> bool:
+    """Grafana 알람 하나를 Sentry 오류로(계획 0087 2단계, app/routers/alerts.py). 알람마다(이름 + 시작 시각) 새 묶음이라
+    Sentry 기본 규칙(새 오류 묶음 → 메일)으로 알람마다 메일 한 통. 같은 알람을 Grafana가 다시 보내도(repeat) 같은 묶음이라 메일 없음.
+    꺼져 있으면 False"""
+    if not sentry_sdk.get_client().is_active():
+        return False
+    with sentry_sdk.new_scope() as scope:
+        scope.fingerprint = ["grafana-alert", name, started_at]
+        scope.set_tag("source", "grafana")
+        scope.set_tag("alertname", name)
+        sentry_sdk.capture_message(f"[서버 알람] {name}: {summary}", level="error")
+    return True

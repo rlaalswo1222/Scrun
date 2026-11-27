@@ -1,0 +1,244 @@
+# 서버 알람(계획 0087 2단계, ADR-0015). 울리면 Grafana → api 안쪽 주소(/internal/alerts, 비밀은 ALERT_WEBHOOK_TOKEN)
+# → Sentry 오류 → Sentry 메일(새 메일 계정 없음, app/routers/alerts.py). 값(85% 등)은 첫 값(가설): 울리는 것을 보고 고침
+# 한계: api가 죽으면 이 길도 죽음 → api 죽음은 UptimeRobot(/healthz/api)이 메일
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: scrun-sentry
+    receivers:
+      - uid: scrun-sentry-webhook
+        type: webhook
+        disableResolveMessage: true
+        settings:
+          url: http://api:8000/internal/alerts
+          httpMethod: POST
+          authorization_scheme: Bearer
+          authorization_credentials: $ALERT_WEBHOOK_TOKEN
+
+policies:
+  - orgId: 1
+    receiver: scrun-sentry
+    group_by: ["alertname"]
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 12h   # 같은 알람을 다시 보내도 Sentry에선 같은 묶음(이름 + 시작 시각)이라 메일이 또 오지 않음
+
+groups:
+  - orgId: 1
+    name: scrun-server
+    folder: SCRUN
+    interval: 1m
+    rules:
+      - uid: scrun-cpu-high
+        title: 서버 CPU 85% 넘음
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: OK
+        annotations:
+          summary: "오라클 서버 CPU(2코어 평균)가 10분 넘게 85% 위. 부하 테스트 중이 아니면 Grafana SCRUN 서버 대시보드의 API별 요청·컨테이너 CPU를 볼 것"
+        labels: {severity: warning}
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: {from: 600, to: 0}
+            model:
+              refId: A
+              instant: true
+              expr: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])))
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: {type: gt, params: [85]}
+
+      - uid: scrun-memory-high
+        title: 서버 메모리 90% 넘음
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: OK
+        annotations:
+          summary: "쓸 수 있는 메모리가 10% 아래로 10분 넘게. 컨테이너별 메모리를 볼 것(메모리가 바닥나면 리눅스가 프로세스를 죽임)"
+        labels: {severity: warning}
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: {from: 600, to: 0}
+            model:
+              refId: A
+              instant: true
+              expr: 100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: {type: gt, params: [90]}
+
+      - uid: scrun-disk-high
+        title: 서버 디스크 85% 넘음
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: OK
+        annotations:
+          summary: "루트 디스크가 85% 넘게 참. 디스크가 차면 DB가 멈춤. 백업(~/scrun-backups)·로그(journalctl --disk-usage)·Docker 이미지(docker system df)를 볼 것"
+        labels: {severity: critical}
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: {from: 600, to: 0}
+            model:
+              refId: A
+              instant: true
+              expr: 100 * (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: {type: gt, params: [85]}
+
+      - uid: scrun-5xx-rate
+        title: API 5xx 비율 5% 넘음
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: OK
+        annotations:
+          summary: "최근 5분 응답 중 5xx(500 오류·503 바쁨)가 5% 넘음(요청이 분당 3개 넘을 때만). 500은 Sentry 오류, 503은 대시보드 번호표·DB 연결 기다림을 볼 것"
+        labels: {severity: critical}
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: {from: 600, to: 0}
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                100 * sum(rate(scrun_http_requests_total{status=~"5.."}[5m])) / sum(rate(scrun_http_requests_total[5m]))
+                and sum(rate(scrun_http_requests_total[5m])) > 0.05
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: {type: gt, params: [5]}
+
+      - uid: scrun-latency-p95
+        title: API 응답 p95 2초 넘음
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: OK
+        annotations:
+          summary: "사진 인증을 뺀 API 응답의 95%가 2초 안에 안 끝남(요청이 분당 3개 넘을 때만). 0073 측정 200명 p95는 0.5초"
+        labels: {severity: warning}
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: {from: 600, to: 0}
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                histogram_quantile(0.95, sum by (le) (rate(scrun_http_request_duration_seconds_bucket{route!~".*/verification/photo"}[5m])))
+                and sum(rate(scrun_http_requests_total[5m])) > 0.05
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: {type: gt, params: [2]}
+
+      - uid: scrun-service-down
+        title: 앱 서비스 지표가 안 긁힘
+        condition: C
+        for: 3m
+        noDataState: OK
+        execErrState: OK
+        annotations:
+          summary: "api·realtime·ocr 중 하나의 /metrics를 3분 넘게 못 긁음(서비스가 죽었거나 멈춤). docker compose ps, journalctl CONTAINER_NAME=scrun-<서비스>-1"
+        labels: {severity: critical}
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: {from: 300, to: 0}
+            model:
+              refId: A
+              instant: true
+              expr: min(up{job="scrun"})
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: {type: lt, params: [1]}
+
+      - uid: scrun-backup-stale
+        title: DB 백업이 26시간 넘게 없음
+        condition: C
+        for: 30m   # 배포 직후 Prometheus가 아직 비었을 때 바로 울리지 않게
+        noDataState: OK   # 수집 자체가 멈춘 건 아래 "지표 수집 멈춤"이 알림(제목으로 원인을 바로 알게)
+        execErrState: OK
+        annotations:
+          summary: "매일 한국 시간 4시 30분 daily.sh 백업이 26시간 넘게 성공 못 함. ~/scrun-daily.log, crontab -l, ls -lt ~/scrun-backups"
+        labels: {severity: critical}
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: {from: 600, to: 0}
+            model:
+              refId: A
+              instant: true
+              # 백업 시각 지표가 아예 없으면(daily.sh가 안 돎·~/scrun-metrics를 못 씀) 9999시간으로 봄
+              expr: ((time() - max(scrun_backup_last_success_timestamp_seconds)) / 3600) or on() (absent(scrun_backup_last_success_timestamp_seconds) * 9999)
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: {type: gt, params: [26]}
+
+      - uid: scrun-scrape-stopped
+        title: 지표 수집 멈춤
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: OK
+        annotations:
+          summary: "Prometheus에 앱 지표가 5분 넘게 안 들어옴(Alloy나 Prometheus가 멈춤). 이 동안 다른 알람도 못 울림. docker compose ps alloy prometheus, journalctl CONTAINER_NAME=scrun-alloy-1"
+        labels: {severity: critical}
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: {from: 600, to: 0}
+            model:
+              refId: A
+              instant: true
+              expr: absent(up{job="scrun"})
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: {type: gt, params: [0]}

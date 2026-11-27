@@ -1,0 +1,12 @@
+# Grafana가 읽는 곳(계획 0087). 화면에서 못 고침(editable: false) → 바꾸려면 이 파일
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 15s

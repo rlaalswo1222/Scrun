@@ -1,0 +1,58 @@
+// 지표 모으기(계획 0087 2단계, ADR-0015). Alloy 하나가 서버·컨테이너·Postgres 수집기를 안에 들고, 앱 /metrics까지 15초마다 긁어
+// Prometheus로 보낸다(remote_write). 3단계에서 로그(Loki)도 여기서.
+// 확인: 서버에서 docker compose -f docker-compose.server.yml logs alloy (UI는 컨테이너 안 127.0.0.1:12345, 밖에 안 엶)
+
+// 서버(호스트) CPU·메모리·디스크·네트워크 + 텍스트 파일 지표(daily.sh가 쓰는 마지막 백업 시각, ~/scrun-metrics/*.prom)
+prometheus.exporter.unix "host" {
+  procfs_path     = "/host/proc"
+  sysfs_path      = "/host/sys"
+  rootfs_path     = "/host/root"
+  set_collectors  = ["cpu", "diskstats", "filesystem", "loadavg", "meminfo", "netdev", "pressure", "textfile", "time", "uname"]
+
+  filesystem {
+    mount_points_exclude = "^/(dev|proc|run|sys|var/lib/docker/.+|snap/.+)($|/)"
+    fs_types_exclude     = "^(autofs|cgroup2?|devpts|devtmpfs|nsfs|overlay|proc|squashfs|sysfs|tmpfs|tracefs)$"
+  }
+
+  textfile {
+    directory = "/scrun-metrics"
+  }
+}
+
+// 컨테이너별 CPU·메모리·네트워크(cAdvisor). 컨테이너 이름을 알려고 Docker 소켓을 읽기 전용으로 씀
+prometheus.exporter.cadvisor "containers" {
+  docker_host      = "unix:///var/run/docker.sock"
+  docker_only      = true
+  storage_duration = "2m"
+  enabled_metrics  = ["cpu", "memory", "network"]
+}
+
+// Postgres 연결 수·트랜잭션·잠금
+prometheus.exporter.postgres "db" {
+  data_source_names = [string.format("postgresql://scrun:%s@db:5432/scrun?sslmode=disable", sys.env("DB_PASSWORD"))]
+}
+
+prometheus.scrape "exporters" {
+  targets         = array.concat(prometheus.exporter.unix.host.targets, prometheus.exporter.cadvisor.containers.targets, prometheus.exporter.postgres.db.targets)
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.local.receiver]
+}
+
+// 앱 지표(app/core/metrics.py). 서비스 안쪽 주소라 Caddy를 안 지남. service 라벨로 셋을 가름
+prometheus.scrape "app" {
+  job_name        = "scrun"
+  scrape_interval = "15s"
+  metrics_path    = "/metrics"
+  targets = [
+    {"__address__" = "api:8000", "service" = "api"},
+    {"__address__" = "realtime:8000", "service" = "realtime"},
+    {"__address__" = "ocr:8000", "service" = "ocr"},
+  ]
+  forward_to = [prometheus.remote_write.local.receiver]
+}
+
+prometheus.remote_write "local" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
