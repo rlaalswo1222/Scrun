@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .error_report import report_exception
 from .errors import ERRORS, ApiError, ErrorCode
 from .model import CamelModel, UtcDatetime
 
@@ -105,6 +106,7 @@ async def http_error_handler(request: Request, exc: StarletteHTTPException) -> J
 
 
 async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    report_exception(request, exc)   # Sentry(계획 0087). SENTRY_DSN이 없으면 아무것도 안 함
     status, message = ERRORS[ErrorCode.INTERNAL_ERROR]
     return _fail(request, status, ErrorCode.INTERNAL_ERROR, message)
 

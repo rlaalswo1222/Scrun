@@ -19,6 +19,7 @@ from .core.envelope import (
     unhandled_error_handler,
     validation_error_handler,
 )
+from .core.error_report import init_error_report
 from .core.errors import ApiError
 from .core.kakao import close_client as close_kakao_client
 from .core.ocr import start_ocr, stop_ocr
@@ -43,6 +44,8 @@ async def lifespan(_: FastAPI):
     await asyncio.to_thread(stop_ocr)   # 프로세스 join이 이벤트 루프(실시간 WebSocket 정리)를 막지 않게
     close_kakao_client()
 
+
+init_error_report(settings.error_report)   # Sentry(계획 0087): SENTRY_DSN이 있을 때만. 앱보다 먼저(시작 중 오류도 받게)
 
 app = FastAPI(title="SCRUN API", version="0.1.0-stub", description=DESCRIPTION, lifespan=lifespan)
 
