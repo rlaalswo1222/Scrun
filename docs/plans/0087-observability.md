@@ -1,6 +1,6 @@
 # 계획 0087: 로깅·모니터링 — 서버와 앱이 지금 어떤지 보고, 이상하면 알기
 
-- 상태: **도구 고름(11/27 민재) → ADR-0015 승인 → 1단계 완료(11/28, #160 머지·운영 배포·확인) → 2단계 구현·로컬 확인(11/28, `feat/observability-2`), 운영 배포는 집 PC에서 도입 전·후 k6 비교 뒤**. 설명 그림 [0087-observability.html](0087-observability.html)
+- 상태: **도구 고름(11/27 민재) → ADR-0015 승인 → 1단계 완료(11/28, #160 머지·운영 배포·확인) → 2단계 완료(11/28, #162 머지·운영 배포·확인). 남은 것: 집 PC에서 도입 전·후 k6 비교, 3단계(Loki)**. 설명 그림 [0087-observability.html](0087-observability.html)
 - 고른 것(ADR-0015): 오류 = **Sentry 무료**, 지표·로그·대시보드 = **오라클에 직접**(Prometheus·Loki·Grafana·Alloy), 바깥 감시 = **UptimeRobot 무료**, 알림 = **이메일**, Grafana = **SSH 터널로만**. 범위는 1–4단계 전부(순서대로, 단계마다 PR)
 - 담당: 민재(서버 공통·배포). 앱 크래시 수집은 맥 빌드가 필요(4단계)
 - 이어서: 계획 0070(관측 최소: 요청 로그 한 줄·k6, "Prometheus·Grafana는 띄우지 않음"), 0071·0073(성능), ADR-0008(서버 오라클, "백로그 후보: 앱 오류 수집"), 4차 멘토링(11/26 "로깅·모니터링이 되고 있나", "비포·애프터 기록", "모니터링으로 추세를 보다가 준비")
@@ -87,4 +87,8 @@
   - `METRICS=0`이어도 OCR·실시간은 셈 → `metrics.set_enabled`로 모두 끔. OCR 결과 라벨을 소문자로 맞춤(`read`·`unreadable`·`busy`·`timeout`·`stuck`·`ocr_timeout`·`error`), 결과 이름은 예외 타입 `OcrUnavailable(outcome)`로(몰래 붙인 속성 대신). 메서드 라벨은 정해진 7개 밖이면 `OTHER`. 알람 받기가 이상한 본문에 500 대신 400·무시, Sentry가 꺼져 있으면 서버 로그에 ERROR(조용히 사라지지 않게)
   - 대시보드에 API별 5xx 비율·OCR 읽힘 비율(6시간) 추가
   - 남은 한계(가설·알고 둠): Prometheus remote-write·Grafana 익명 보기는 compose 네트워크 안 다른 컨테이너가 인증 없이 닿음(api가 뚫리면 가짜 지표를 넣을 수 있음). Alloy에 `/`·Docker 소켓이 붙어 있어 사실상 서버 관리자 권한(`.env`도 읽힘) → 이미지 판 고정·밖에 안 엶. Postgres 수집기는 앱 DB 계정을 씀(`pg_monitor` 전용 계정이 더 좁음, 출시 전 보안 정리 때). api·realtime·ocr·db·caddy엔 메모리 상한 없음(그대로)
-- 남은 것(2단계): 서버에 `~/scrun-metrics`·`.env` 비밀 둘 준비 → 배포 → 서버에서 디스크·컨테이너 칸 확인, 알람 하나 시험. 도입 전·후 k6 비교는 집 PC가 켜질 때(지표 끔 + 수집 컨테이너 멈춤 vs 켬, 11/28 민재: 비교 전에 배포)
+- 11/28 #162 머지(develop `81c1a86`)·운영 배포(11/28 민재: 도입 전·후 비교 전에 배포, 되돌리기 쉬움·지금 운영 트래픽 적음). 첫 배포는 옛 `update.sh`가 돌아 손으로 먼저 준비: `~/scrun-metrics`(ubuntu 소유), `backup.prom`을 가장 최근 백업(11/27 04:30 한국 시간) 시각으로, `.env`에 `GRAFANA_ADMIN_PASSWORD`·`ALERT_WEBHOOK_TOKEN`(서버에서 무작위, 백업 `.env.bak-날짜`)
+  - 확인: 공개 `/metrics`·`/internal/alerts` 404, `/healthz/*` 200, 바깥에서 Grafana 3000 안 닿음. Prometheus에 `up{job="scrun"}` 셋 다 1, 디스크 `/`(로컬에선 비던 칸)·컨테이너별 메모리(이름 붙음)·`pg_up`·백업 시각·앱 요청. Grafana 규칙 8개·대시보드 불러옴(익명 보기). Grafana 컨테이너 안에서 그 비밀로 api `/internal/alerts`에 시험 알람 → 204 → **Sentry에 `[서버 알람] 배포 확인용 시험 알람` 도착(`source:grafana`, 무시해도 됨)**
+  - 배포 직후 "서버 CPU 85% 넘음"이 대기(pending): 5분 평균에 서버의 Docker 이미지 빌드가 들어감. 확인 때 1분 CPU 8.9%, `for: 10m`이라 안 울림
+  - **수집 도구 부담(운영, 평소)**: CPU(코어 1개 = 100%) Alloy 1.4%·Grafana 1.0%·Prometheus 0.5% = 서버 2코어의 약 1.5%. 메모리 Alloy 102 MB·Grafana 297 MB·Prometheus 42 MB ≈ 440 MB(상한 384·512·768 안). 앱 쪽(`/metrics` 셈)의 요청당 부담은 부하가 있어야 보임 → 집 PC 비교로
+- 남은 것: 집 PC가 켜지면 도입 전·후 k6(0073 시나리오, `METRICS=0` + `docker compose stop alloy prometheus grafana` vs 켬, 처리량 5% 안), 3단계(로그 모으기 Loki: Alloy가 journald → Loki, Grafana에서 요청 ID로 검색), 4단계(앱 크래시, 맥)
