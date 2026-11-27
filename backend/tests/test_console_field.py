@@ -92,14 +92,23 @@ def test_all_eights_is_ghost_not_distance():
 def test_plain_time_only_when_both_reads_agree():
     """계획 0082: 콜론이 안 찍힌 "0042"(DRAX My Mountain) = 0:42. 꺼진 자리 "8888"이 시간이 되지 않게 두 읽기가 같을 때만."""
     assert parse_time("0042") is None
-    assert parse_time("0042", plain_ok=True) == 42 and parse_time("024", plain_ok=True) == 24
+    assert parse_time("0042", plain_ok=True) == 42 and parse_time("1234", plain_ok=True) == 754
     assert parse_time("8888", plain_ok=True) is None and parse_time("0175", plain_ok=True) is None   # 초 자리 60 이상
+    assert parse_time("024", plain_ok=True) is None and parse_time("120", plain_ok=True) is None     # 4자리만(리뷰 11/27)
     d = reg(0, 0, 1, 1, number="0.018", name="distance", how="label")
     t = reg(0, 0, 1, 1, number="0042", name="time", how="label")
     t.agree = True
     res = decide([d, t])
     assert (res.status, res.distance_m, res.duration_s) == ("READ", 18, 42)
     t.agree = False                                                                  # 한 읽기만 "0042" → 안 받음
+    assert decide([d, t]).status == "UNREADABLE"
+
+
+def test_mispaired_calorie_is_not_plain_time():
+    """시간 라벨이 옆 칸 칼로리 "120"과 잘못 짝지어져도(두 읽기가 같아도) 1:20으로 READ하지 않음(리뷰 11/27)."""
+    d = reg(0, 0, 1, 1, number="0.18", name="distance", how="label")
+    t = reg(0, 0, 1, 1, number="120", name="time", how="label")
+    t.agree = True
     assert decide([d, t]).status == "UNREADABLE"
 
 
