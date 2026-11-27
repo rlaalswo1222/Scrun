@@ -1,6 +1,6 @@
 # 계획 0087: 로깅·모니터링 — 서버와 앱이 지금 어떤지 보고, 이상하면 알기
 
-- 상태: **도구 고름(11/27 민재) → ADR-0015 승인 → 1단계 완료(11/28, #160 머지·운영 배포·확인) → 2단계 완료(11/28, #162 머지·운영 배포·확인). 남은 것: 집 PC에서 도입 전·후 k6 비교, 3단계(Loki)**. 설명 그림 [0087-observability.html](0087-observability.html)
+- 상태: **도구 고름(11/27 민재) → ADR-0015 승인 → 1단계 완료(11/28, #160 머지·운영 배포·확인) → 2단계 완료(11/28, #162 머지·운영 배포·확인) → 3단계 구현·리뷰 반영(11/28, `feat/observability-3`, 서버 journald 읽기는 배포 뒤 확인). 남은 것: 집 PC에서 2단계 도입 전·후 k6 비교, 4단계(앱 크래시)**. 설명 그림 [0087-observability.html](0087-observability.html)
 - 고른 것(ADR-0015): 오류 = **Sentry 무료**, 지표·로그·대시보드 = **오라클에 직접**(Prometheus·Loki·Grafana·Alloy), 바깥 감시 = **UptimeRobot 무료**, 알림 = **이메일**, Grafana = **SSH 터널로만**. 범위는 1–4단계 전부(순서대로, 단계마다 PR)
 - 담당: 민재(서버 공통·배포). 앱 크래시 수집은 맥 빌드가 필요(4단계)
 - 이어서: 계획 0070(관측 최소: 요청 로그 한 줄·k6, "Prometheus·Grafana는 띄우지 않음"), 0071·0073(성능), ADR-0008(서버 오라클, "백로그 후보: 앱 오류 수집"), 4차 멘토링(11/26 "로깅·모니터링이 되고 있나", "비포·애프터 기록", "모니터링으로 추세를 보다가 준비")
@@ -92,3 +92,13 @@
   - 배포 직후 "서버 CPU 85% 넘음"이 대기(pending): 5분 평균에 서버의 Docker 이미지 빌드가 들어감. 확인 때 1분 CPU 8.9%, `for: 10m`이라 안 울림
   - **수집 도구 부담(운영, 평소)**: CPU(코어 1개 = 100%) Alloy 1.4%·Grafana 1.0%·Prometheus 0.5% = 서버 2코어의 약 1.5%. 메모리 Alloy 102 MB·Grafana 297 MB·Prometheus 42 MB ≈ 440 MB(상한 384·512·768 안). 앱 쪽(`/metrics` 셈)의 요청당 부담은 부하가 있어야 보임 → 집 PC 비교로
 - 남은 것: 집 PC가 켜지면 도입 전·후 k6(0073 시나리오, `METRICS=0` + `docker compose stop alloy prometheus grafana` vs 켬, 처리량 5% 안), 3단계(로그 모으기 Loki: Alloy가 journald → Loki, Grafana에서 요청 ID로 검색), 4단계(앱 크래시, 맥)
+- 11/28 3단계 구현(`feat/observability-3`, develop `f3cc82c`에서) — 로그를 한곳에 모아 Grafana에서 검색
+  - `deploy/observability/loki.yaml`: Loki 3.7.11 한 프로세스·파일 저장, **보관 30일**(compactor가 실제로 지움), 들어오는 양 상한 4 MB/초, 사용 통계 안 보냄. compose `loki`(메모리 512 MB, 밖에 안 엶), Alloy가 `/var/log/journal`·`/etc/machine-id`를 읽기 전용으로
+  - `config.alloy` 로그 줄: `loki.source.journal`(처음 켤 때 12시간 거슬러) → relabel: `scrun-` 컨테이너만 남김(keep, sshd·cron은 버림) → 라벨 `service`(컨테이너 이름 `scrun-<서비스>-1`에서)·`container`·`stream`(Docker가 stdout 6·stderr 3으로 적음. 접속 줄·요청 로그 JSON은 stdout, uvicorn 시작·경고는 stderr → 오류 등급으로 안 씀) → **컨테이너 헬스체크 접속 줄 버림**(api 하나만 시간당 약 350줄, 서버 전체 journald는 시간당 약 5천 줄, 11/28) → `loki.write`. 요청 ID·상태는 라벨로 안 둠(값이 끝없이 늘어남) → 검색 때 `|= "req_…"`·`| json`
+  - Grafana: Loki 데이터 원본, 대시보드 **SCRUN 로그**(서비스 고르기·검색어 칸, 서비스별 줄 수·오류처럼 보이는 줄 수, 로그 목록, 요청 로그 JSON 중 5xx·1초 넘는 요청 표)
+  - 로컬 확인(Docker, Loki + Grafana, 시험 줄 5개를 Loki에 직접 넣음): 대시보드 쿼리 전부 Grafana(익명 보기)로 성공, 검색어 빈칸 5줄, **`req_ccc333ddd444` → api·ocr 두 서비스의 그 요청 줄 2개**, 5xx·1초 표가 api 500·ocr 4.7초를 거름. 서버 journald 읽기는 로컬(Docker Desktop)에 journald가 없어 배포 뒤 서버에서 확인
+  - **로그 점검(11/28, 운영 7일 `journalctl --since -7d CONTAINER_NAME=scrun-{api,realtime,ocr,caddy}-1 | grep -cE <패턴>`, 9만 7,612줄)**: Bearer 토큰·JWT 모양(`eyJ…`)·`access_token`류·password·secret·Sentry DSN·이메일 주소 **모두 0건**(실시간 토큰은 머리로 와서 주소에 안 남음, 요청 로그는 라우트 틀만). 9만 979줄(93%)이 헬스체크 `GET /v1/agreements` 접속 줄 → 버리면 Loki에 쌓는 양이 크게 줆
+  - 로그 레벨은 **정리하지 않음**(이유: 요청 로그 INFO·문제 WARNING·고장 ERROR로 이미 나뉘어 있고, ERROR는 1단계에서 Sentry로 감. 바꿀 게 보이면 그때)
+  - 개인정보: uvicorn 접속 줄에 접속 IP·기록 ID가 든 주소가 남음(이미 서버 journald에 있던 것을 한곳에 모음) → 30일 보관, 개인정보처리방침(BL-40, 상준)에 "서버 접속 기록 30일 보관" 한 줄
+  - 11/28 리뷰 반영: **`stage.drop { source = "service" value = "" }`가 거꾸로 동작**(Alloy는 빈 value를 "값 없음"으로 봐 service가 있는 줄, 즉 scrun 줄을 다 버림 → 로그 화면이 빌 뻔함, 리뷰가 로컬 Alloy로 재현) → relabel `keep`(`scrun-.+`) + `stage.match {service=""} drop`으로 바꾸고 **실제 Alloy v1.21.3에 시험 줄을 흘려 확인**(scrun api·바깥 IP 약관 요청·db 줄은 남고 헬스체크·sshd·다른 컨테이너 줄은 버려짐, 라벨 `service`·`container`·`stream` 맞음). db·caddy는 `logging`이 없어 journald로 안 갔음 → 둘 다 journald(배포 때 몇 초 다시 시작). 요청 표 쿼리에 `| __error__=""`. 검색어에 `"`·`\`는 쿼리를 깸(화면 설명에 적음). 가설: ARM Alloy 이미지가 서버 journal 형식을 읽는지는 배포 뒤 첫 줄로 확인
+  - 테스트 `test_metrics.py` 21개(로그 줄: scrun-만·헬스체크 버림·30일·사용 통계 끔·로그 화면 쿼리가 service 라벨로·Alloy journald 마운트·Loki 밖에 안 엶, 데이터 원본 둘)
