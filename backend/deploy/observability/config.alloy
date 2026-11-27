@@ -1,5 +1,5 @@
-// 지표 모으기(계획 0087 2단계, ADR-0015). Alloy 하나가 서버·컨테이너·Postgres 수집기를 안에 들고, 앱 /metrics까지 15초마다 긁어
-// Prometheus로 보낸다(remote_write). 3단계에서 로그(Loki)도 여기서.
+// 지표·로그 모으기(계획 0087 2·3단계, ADR-0015). Alloy 하나가 서버·컨테이너·Postgres 수집기를 안에 들고, 앱 /metrics까지 15초마다
+// 긁어 Prometheus로 보내고(remote_write, 2단계), 서버 journald의 컨테이너 로그를 Loki로 보낸다(3단계, 맨 아래).
 // 확인: 서버에서 docker compose -f docker-compose.server.yml logs alloy (UI는 컨테이너 안 127.0.0.1:12345, 밖에 안 엶)
 
 // 서버(호스트) CPU·메모리·디스크·네트워크 + 텍스트 파일 지표(daily.sh가 쓰는 마지막 백업 시각, ~/scrun-metrics/*.prom)
@@ -54,5 +54,77 @@ prometheus.scrape "app" {
 prometheus.remote_write "local" {
   endpoint {
     url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+// ---------- 로그(3단계) ----------
+// 서버 journald(컨테이너 로그는 docker-compose.server.yml의 logging: journald로 여기 쌓임)에서 scrun- 컨테이너 줄만 읽음.
+// 라벨은 적게(Loki는 라벨로 색인): service(api·realtime·ocr·db·caddy·alloy·prometheus·grafana·loki)·container·stream.
+// 요청 ID·상태는 라벨로 안 둠(값이 끝없이 늘어남) → 검색 때 |= "req_…" 또는 | json 으로
+loki.relabel "journal" {
+  forward_to = []
+
+  // scrun- 컨테이너 줄만 남김(sshd·cron 같은 서버 로그는 여기서 버림). 11/28 리뷰: 처음엔 loki.process의 stage.drop
+  // { source = "service" value = "" }로 버리려 했는데 Alloy는 빈 value를 "값 없음"으로 봐서 거꾸로(scrun 줄을 버림) 동작했음
+  rule {
+    source_labels = ["__journal_container_name"]
+    regex         = "scrun-.+"
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__journal_container_name"]
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__journal_container_name"]
+    regex         = "scrun-(.+)-[0-9]+"
+    target_label  = "service"
+  }
+
+  // Docker는 stdout을 6, stderr를 3으로 적음. 접속 줄·요청 로그 JSON은 stdout, uvicorn 시작·경고 줄(uvicorn.error)은 stderr라
+  // "오류 등급"이 아니라 어느 출력인지만(오류 여부는 내용으로 거름)
+  rule {
+    source_labels = ["__journal_priority"]
+    regex         = "3"
+    replacement   = "stderr"
+    target_label  = "stream"
+  }
+
+  rule {
+    source_labels = ["__journal_priority"]
+    regex         = "6"
+    replacement   = "stdout"
+    target_label  = "stream"
+  }
+}
+
+loki.source.journal "host" {
+  path          = "/var/log/journal"
+  max_age       = "12h"   // 처음 켤 때 거슬러 읽는 범위
+  relabel_rules = loki.relabel.journal.rules
+  labels        = {job = "journal"}
+  forward_to    = [loki.process.scrun.receiver]
+}
+
+loki.process "scrun" {
+  // 위 relabel이 놓친 경우를 한 번 더(service 라벨이 비면 버림). stage.match는 11/28 로컬 Alloy로 확인
+  stage.match {
+    selector = "{service=\"\"}"
+    action   = "drop"
+  }
+
+  // 컨테이너 안 헬스체크(10초마다, compose healthcheck가 루프백으로 약관 API를 부름) 접속 줄은 버림: api 하나만 시간당 약 350줄
+  stage.drop {
+    expression = "127[.]0[.]0[.]1:[0-9]+ - \"GET /v1/agreements HTTP/1[.]1\" 200"
+  }
+
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
   }
 }

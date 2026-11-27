@@ -112,6 +112,7 @@ tests/               test_error_report(Sentry로 나가는 것·안 나가는 �
   - 비밀 `GRAFANA_ADMIN_PASSWORD`·`ALERT_WEBHOOK_TOKEN`은 `.env`에 없으면 `update.sh`가 서버에서 무작위로 만들어 넣음(없으면 compose가 멈춰 배포·매일 백업이 안 됨). Grafana 관리자 비밀번호는 Grafana를 처음 띄울 때만 적용(나중에 바꾸려면 Grafana 안에서)
   - 알고 둔 한계: Alloy에 서버 `/`·Docker 소켓이 붙어 사실상 관리자 권한, Prometheus 받기·Grafana 보기는 compose 네트워크 안에선 인증 없음(밖엔 안 엶)
   - 마지막 백업 시각은 `daily.sh`가 `deploy/backup_metric.sh`로 `~/scrun-metrics/backup.prom`에 씀(Alloy가 읽음)
+  - **로그 검색(3단계)**: Alloy가 서버 journald의 `scrun-` 컨테이너 줄을 `loki`(30일 보관, 밖에 안 엶)로 보냄(컨테이너 헬스체크 접속 줄은 버림). 같은 SSH 터널로 Grafana > SCRUN > **SCRUN 로그**: 서비스 고르기 + 검색어 칸. Sentry 오류의 `request_id`(`req_…`)를 검색어에 넣으면 그 요청이 지나간 서비스 로그가 시간순으로. 아래 표는 요청 로그 JSON 중 5xx·1초 넘는 요청. 직접 쿼리는 Explore > Loki, 예: `{service="ocr"} |= "UNREADABLE"`, `{service=~".+"} |= "\"rid\"" | json | status >= 500`. 접속 로그엔 IP·기록 ID가 든 주소가 있어 30일만 둠(개인정보처리방침 BL-40에 "서버 접속 기록 30일 보관")
 
 ## 운영 서버에서 꼭 바꿀 것
 `.env`의 `JWT_SECRET`(새로 만든 무작위 값, 개발용과 다르게), `DATABASE_URL`(운영 DB), `KAKAO_MODE=real` + `KAKAO_APP_ID`(`fake`는 절대 안 됨) + `KAKAO_ADMIN_KEY`(계정 삭제·연결 끊기 웹훅, 계획 0058. 카카오 개발자 > 앱 > 웹훅 > 연결 해제 웹훅에 `https://<서버>/v1/auth/kakao/unlink` POST 등록, 11/19 등록함). 하루 한 번 `python -m scripts.purge_refresh_tokens`. 배포는 BL-51

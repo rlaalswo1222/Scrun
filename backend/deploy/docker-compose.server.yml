@@ -14,6 +14,8 @@ services:
       POSTGRES_DB: scrun
     volumes:
       - pgdata:/var/lib/postgresql/data
+    logging: # 서버 journald로(계획 0087 3단계: Loki로 모아 검색). 앱 서비스의 &app_logging과 같은 값(앵커가 아래라 직접 적음)
+      driver: journald
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U scrun"]
       interval: 3s
@@ -108,6 +110,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddydata:/data
       - caddyconfig:/config
+    logging: *app_logging # 서버 journald로(계획 0087 3단계)
     depends_on: # api만 건강하면 뜸. realtime·ocr이 안 떠도 그 경로만 502이고 나머지 API는 됨(계획 0073 리뷰)
       api:
         condition: service_healthy
@@ -141,9 +144,12 @@ services:
       - /var/lib/docker:/var/lib/docker:ro
       # daily.sh가 쓰는 마지막 백업 시각(*.prom). update.sh가 폴더를 먼저 만듦(없으면 Docker가 root 소유로 만들어 daily.sh가 못 씀)
       - ${HOME}/scrun-metrics:/scrun-metrics:ro
+      # 컨테이너 로그(3단계): 서버 journald를 읽음. machine-id로 이 서버의 journal 폴더를 찾음
+      - /var/log/journal:/var/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
     mem_limit: 384m
     logging: *app_logging
-    depends_on: [prometheus]
+    depends_on: [prometheus, loki]
 
   prometheus:
     image: prom/prometheus:v3.15.1
@@ -158,6 +164,16 @@ services:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - promdata:/prometheus
     mem_limit: 768m
+    logging: *app_logging
+
+  loki:
+    image: grafana/loki:3.7.11
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./observability/loki.yaml:/etc/loki/loki.yaml:ro
+      - lokidata:/loki
+    mem_limit: 512m
     logging: *app_logging
 
   grafana:
@@ -182,7 +198,7 @@ services:
       - grafanadata:/var/lib/grafana
     mem_limit: 512m # 로컬 시험에서 켜자마자 343 MiB(11/28)
     logging: *app_logging
-    depends_on: [prometheus]
+    depends_on: [prometheus, loki]
 
 volumes:
   pgdata:
@@ -191,3 +207,4 @@ volumes:
   alloydata:
   promdata:
   grafanadata:
+  lokidata:

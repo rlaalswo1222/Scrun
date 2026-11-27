@@ -208,11 +208,13 @@ def test_provisioning_files_parse_and_point_at_alert_route():
     assert "scrun-scrape-stopped" in {r["uid"] for r in rules}   # 수집이 멈춘 걸 따로 알림
     for name in ("datasources/prometheus.yaml", "dashboards/scrun.yaml"):
         yaml.safe_load((OBS / "grafana/provisioning" / name).read_text(encoding="utf-8"))
+    sources = yaml.safe_load((OBS / "grafana/provisioning/datasources/prometheus.yaml").read_text(encoding="utf-8"))["datasources"]
+    assert {(s["uid"], s["url"]) for s in sources} == {("prometheus", "http://prometheus:9090"), ("loki", "http://loki:3100")}
 
 
 def test_server_compose_observability_is_private_and_pinned():
     services = yaml.safe_load((BACKEND / "deploy/docker-compose.server.yml").read_text(encoding="utf-8"))["services"]
-    for name in ("alloy", "prometheus", "grafana"):
+    for name in ("alloy", "prometheus", "grafana", "loki"):
         image = services[name]["image"]
         assert re.search(r":v?\d+\.\d+\.\d+$", image), image   # 판 고정(latest 아님)
         assert "mem_limit" in services[name]
@@ -225,3 +227,27 @@ def test_server_compose_observability_is_private_and_pinned():
     assert services["grafana"]["environment"]["ALERT_WEBHOOK_TOKEN"].startswith("${ALERT_WEBHOOK_TOKEN:?")
     caddy = (BACKEND / "deploy/Caddyfile").read_text(encoding="utf-8")
     assert re.search(r"handle /metrics \{\s*respond 404\s*\}", caddy)
+
+
+def test_logs_pipeline_reads_only_scrun_containers_and_keeps_30_days():
+    """3단계: Alloy가 journald의 scrun- 컨테이너 줄만 Loki로(헬스체크 줄은 버림), Loki는 30일 보관, 로그 화면 쿼리는 service 라벨로"""
+    alloy = (OBS / "config.alloy").read_text(encoding="utf-8")
+    assert 'loki.source.journal "host"' in alloy and 'url = "http://loki:3100/loki/api/v1/push"' in alloy
+    assert 'regex         = "scrun-(.+)-[0-9]+"' in alloy
+    # scrun- 아닌 줄은 relabel keep으로 버림. stage.drop { source = "service" value = "" }는 Alloy에서 거꾸로 동작해(11/28 리뷰) 쓰지 않음
+    assert re.search(r'regex\s*=\s*"scrun-\.\+"\s*action\s*=\s*"keep"', alloy)
+    assert 'value  = ""' not in alloy
+    assert "GET /v1/agreements HTTP/1[.]1" in alloy   # 컨테이너 헬스체크 접속 줄은 버림
+    loki = yaml.safe_load((OBS / "loki.yaml").read_text(encoding="utf-8"))
+    assert loki["limits_config"]["retention_period"] == "720h" and loki["compactor"]["retention_enabled"] is True
+    assert loki["analytics"]["reporting_enabled"] is False
+    logs = json.loads((OBS / "grafana/dashboards/scrun-logs.json").read_text(encoding="utf-8"))
+    assert {v["name"] for v in logs["templating"]["list"]} == {"service", "search"}
+    for panel in logs["panels"]:
+        for target in panel["targets"]:
+            assert target["expr"].startswith('sum by (service)') or target["expr"].startswith('{service=~"$service"}')
+    services = yaml.safe_load((BACKEND / "deploy/docker-compose.server.yml").read_text(encoding="utf-8"))["services"]
+    assert "/var/log/journal:/var/log/journal:ro" in services["alloy"]["volumes"]
+    assert "ports" not in services["loki"]   # 밖에 안 엶
+    for name in ("db", "caddy", "api", "realtime", "ocr", "alloy", "prometheus", "grafana", "loki"):
+        assert services[name]["logging"]["driver"] == "journald", name   # 모든 컨테이너 로그가 journald → Loki

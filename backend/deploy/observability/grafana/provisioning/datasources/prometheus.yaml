@@ -1,4 +1,4 @@
-# Grafana가 읽는 곳(계획 0087). 화면에서 못 고침(editable: false) → 바꾸려면 이 파일
+# Grafana가 읽는 곳(계획 0087): 지표 Prometheus(2단계)·로그 Loki(3단계). 화면에서 못 고침(editable: false) → 바꾸려면 이 파일
 apiVersion: 1
 datasources:
   - name: Prometheus
@@ -10,3 +10,11 @@ datasources:
     editable: false
     jsonData:
       timeInterval: 15s
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    jsonData:
+      maxLines: 1000
