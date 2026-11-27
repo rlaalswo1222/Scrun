@@ -251,3 +251,18 @@ def test_logs_pipeline_reads_only_scrun_containers_and_keeps_30_days():
     assert "ports" not in services["loki"]   # 밖에 안 엶
     for name in ("db", "caddy", "api", "realtime", "ocr", "alloy", "prometheus", "grafana", "loki"):
         assert services[name]["logging"]["driver"] == "journald", name   # 모든 컨테이너 로그가 journald → Loki
+
+
+def test_update_sh_reloads_every_single_file_observability_mount():
+    """파일 하나를 끼워 넣은 관측 설정은 git reset 뒤 컨테이너가 옛 파일을 봄 → update.sh가 바뀌면 새로 만들어야 함(11/28 3단계 배포).
+    compose에 새 단일 파일 마운트를 더하면 update.sh에도 넣으라고 여기서 걸림"""
+    services = yaml.safe_load((BACKEND / "deploy/docker-compose.server.yml").read_text(encoding="utf-8"))["services"]
+    update = (BACKEND / "deploy/update.sh").read_text(encoding="utf-8")
+    for name, svc in services.items():
+        for vol in svc.get("volumes", []):
+            src = vol.split(":")[0]
+            if src.startswith("./observability/") and "." in src.rsplit("/", 1)[-1]:   # 폴더가 아니라 파일
+                assert f'"{name} {src[2:]}"' in update, (name, src)
+    assert "changed observability/grafana" in update and "$C restart grafana" in update
+    alloy = (OBS / "config.alloy").read_text(encoding="utf-8")
+    assert 'GET /metrics HTTP/1[.]1' in alloy   # Alloy 자신의 긁기 줄은 버림
