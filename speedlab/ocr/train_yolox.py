@@ -36,9 +36,9 @@ def build(size: str) -> YOLOX:
     return model
 
 
-def datasets():
+def datasets(synth: str = "data/synth"):
     pub = HERE / "data/public/7seg_v3"
-    syn = HERE / "data/synth"
+    syn = HERE / synth
     train = load_coco(pub / "train", public=True) + load_coco(syn / "train")
     val = {"public_valid": load_coco(pub / "valid", public=True), "synth_val": load_coco(syn / "val")}
     return train, val
@@ -83,12 +83,13 @@ def main():
     ap.add_argument("--out", default="runs/yolox_nano")
     ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
     ap.add_argument("--limit", type=int, default=0, help="빠른 확인용: 학습 장 수 제한")
+    ap.add_argument("--synth", default="data/synth", help="합성 폴더({train,val}), 계획 0084은 data/synth_v2")
     args = ap.parse_args()
     out = HERE / args.out
     out.mkdir(parents=True, exist_ok=True)
     torch.manual_seed(0)
 
-    train_items, val_sets = datasets()
+    train_items, val_sets = datasets(args.synth)
     if args.limit:
         train_items = train_items[: args.limit]
     if not train_items:
