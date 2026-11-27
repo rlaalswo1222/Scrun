@@ -27,10 +27,12 @@ class _TimedQueuePool(QueuePool):
 
 
 # 연결 기다림 상한은 기본 30초 → 몇 초(계획 0071). 번호표(admission)가 연결 수 안으로 막아 평소엔 거의 안 기다림
+# hide_parameters: DB 오류(중복 키 등) 예외 메시지에 바인드 값(카카오 회원번호·닉네임·토큰 해시)을 넣지 않음 →
+# 그 예외가 500이 되어 Sentry·서버 로그로 가도 값은 안 남음(계획 0087 리뷰). 쿼리 모양([SQL: …])은 남음
 _POOL = settings.admission
 engine = create_engine(settings.database_url, pool_pre_ping=True, poolclass=_TimedQueuePool,
                        pool_size=_POOL.db_pool_size, max_overflow=_POOL.db_pool_overflow,
-                       pool_timeout=_POOL.db_pool_timeout_s)
+                       pool_timeout=_POOL.db_pool_timeout_s, hide_parameters=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
