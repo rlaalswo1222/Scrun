@@ -1,6 +1,6 @@
 # 계획 0087: 로깅·모니터링 — 서버와 앱이 지금 어떤지 보고, 이상하면 알기
 
-- 상태: **도구 고름(11/27 민재) → ADR-0015 승인 → 1단계 완료(11/28, #160 머지·운영 배포·확인). 다음은 2단계(지표·대시보드)**. 설명 그림 [0087-observability.html](0087-observability.html)
+- 상태: **도구 고름(11/27 민재) → ADR-0015 승인 → 1단계 완료(11/28, #160 머지·운영 배포·확인) → 2단계 구현·로컬 확인(11/28, `feat/observability-2`), 운영 배포는 집 PC에서 도입 전·후 k6 비교 뒤**. 설명 그림 [0087-observability.html](0087-observability.html)
 - 고른 것(ADR-0015): 오류 = **Sentry 무료**, 지표·로그·대시보드 = **오라클에 직접**(Prometheus·Loki·Grafana·Alloy), 바깥 감시 = **UptimeRobot 무료**, 알림 = **이메일**, Grafana = **SSH 터널로만**. 범위는 1–4단계 전부(순서대로, 단계마다 PR)
 - 담당: 민재(서버 공통·배포). 앱 크래시 수집은 맥 빌드가 필요(4단계)
 - 이어서: 계획 0070(관측 최소: 요청 로그 한 줄·k6, "Prometheus·Grafana는 띄우지 않음"), 0071·0073(성능), ADR-0008(서버 오라클, "백로그 후보: 앱 오류 수집"), 4차 멘토링(11/26 "로깅·모니터링이 되고 있나", "비포·애프터 기록", "모니터링으로 추세를 보다가 준비")
@@ -27,7 +27,7 @@
 | ① 오류 수집 | 서버 예외·500, 앱 크래시를 모아 묶고 몇 명이 겪었는지 | Sentry(클라우드) / GlitchTip(직접 운영, Sentry SDK 호환) / Firebase Crashlytics(앱만) | **Sentry** — 서버(FastAPI)와 Unity iOS(C#·네이티브 크래시, dSYM) 둘 다 공식 지원, 한곳에서 봄 |
 | ② 지표 | 초당 요청 수·응답 시간·오류율·CPU·메모리·DB 연결을 15초마다 숫자로 저장 | Prometheus 직접 운영 / Grafana Cloud 무료 | **오라클에 직접**(데이터가 밖으로 안 나감, 무료, 서버 여유 있음) |
 | ③ 로그 모으기 | 컨테이너 로그를 한곳에서 검색(요청 ID·경로·상태로) | Loki + Alloy 직접 운영 / Grafana Cloud Logs / journalctl 그대로 | **Loki 직접**(②와 같은 Grafana에서 봄) |
-| ④ 대시보드·알람 | 그래프, 기준 넘으면 알림 | Grafana(②·③과 같이) | Grafana 알림 → 팀 채널 |
+| ④ 대시보드·알람 | 그래프, 기준 넘으면 알림 | Grafana(②·③과 같이) | Grafana 알람 → api `/internal/alerts` → Sentry → 메일(11/28 정함, 새 메일 계정 없음) |
 | ⑤ 밖에서 보기 | 서버가 통째로 죽어도 알 수 있게 서버 밖에서 주기적으로 찔러 봄 | UptimeRobot 무료 / Grafana Cloud 합성 검사 | **UptimeRobot 무료**(5분 간격) |
 | ⑥ 제품 지표 | 보정 완주율·인증 성공률 같은 사용 이벤트 | `/v1/events`를 우리 DB에 | **따로 계획**(이벤트 목록은 상준과) |
 
@@ -47,14 +47,14 @@
    - 시험: 일부러 500(개발 전용 경로가 아니라 테스트에서 가짜 DSN 전송 확인 + 운영에선 컨테이너 하나 멈춰 UptimeRobot 메일 확인)
    - 민재가 할 것: Sentry 계정·프로젝트(Python 하나, 4단계에 Unity 하나) 만들고 DSN을 서버 `.env`에, UptimeRobot 계정
    - `daily.sh` 실패 알림은 2단계로(백업 시각을 지표로 내보내 "26시간 넘게 백업 없음" 알람, 새 서비스 없이)
-2. **지표·대시보드**: 서버에 `/metrics`(API별 요청 수·응답 시간 분포·오류, 연결 풀·번호표 대기, OCR 시간·READ 비율, 실시간 접속 수) + node·컨테이너·Postgres 수집기 + Prometheus + Grafana. 대시보드 "골든 시그널"(트래픽·지연·오류·포화도). uvicorn 프로세스가 여럿이라 Prometheus 다중 프로세스 방식 필요. Grafana 이메일 알림용 SMTP 계정 정하기, 백업 시각 지표·알람
+2. **지표·대시보드**: 서버에 `/metrics`(API별 요청 수·응답 시간 분포·오류, 연결 풀·번호표 대기, OCR 시간·READ 비율, 실시간 접속 수) + node·컨테이너·Postgres 수집기 + Prometheus + Grafana. 대시보드 "골든 시그널"(트래픽·지연·오류·포화도). uvicorn 프로세스가 여럿이라 Prometheus 다중 프로세스 방식 필요. 알람은 Sentry를 거쳐 메일(11/28 정함, SMTP 계정 없음), 백업 시각 지표·알람
 3. **로그 모으기**: Alloy가 journald를 읽어 Loki로, Grafana에서 요청 ID로 검색. 로그 레벨 정리(INFO·WARNING·ERROR), 개인정보·토큰이 로그에 안 찍히는지 점검
 4. **앱 크래시**: Sentry Unity SDK(C#·네이티브), dSYM 자동 올리기(맥 빌드), 앱 오류에 서버 요청 ID 붙이기, 개발·출시 환경 나눔, 개인정보처리방침(BL-40)·iOS 개인정보 표시에 "오류 정보 수집" 추가(상준)
 
 ## 지키는 것
 - 공개 저장소: Sentry DSN·Grafana 비밀번호·웹훅 주소는 `.env`(git 밖). DSN은 앱에 들어가 완전한 비밀은 아니지만 저장소엔 안 올림
 - 개인정보: 로그·오류에 카카오 토큰·JWT·이메일·사진을 넣지 않음(지금 요청 로그는 라우트 틀만). 오류 수집 도구의 "개인 정보 보내기"(send_default_pii) 끔
-- 서버 부하: 수집 주기 15초, 컨테이너마다 메모리 상한. 도입 전·후 k6로 같은 시나리오 비교(0075와 같이) → 비포·애프터
+- 서버 부하: 수집 주기 15초, 새로 띄우는 수집·저장·화면 컨테이너(alloy·prometheus·grafana)마다 메모리 상한. 도입 전·후 k6로 같은 시나리오 비교(0075와 같이) → 비포·애프터
 - 모니터링이 서버와 같이 죽는 것: ⑤ 밖에서 보기로 메움
 
 ## 판정
@@ -71,4 +71,20 @@
 - 11/27 `/code-review` 반영: DB 엔진 `hide_parameters=True`(IntegrityError 등 예외 메시지의 바인드 값이 Sentry로 가던 길), 테스트 설정(`testenv`)이 `SENTRY_DSN`을 비움(로컬 `.env`에 DSN이 있어도 pytest가 진짜로 안 보냄), 요청 ID·라우트 틀 읽기를 `request_log.request_id`·`route_path` 한 곳으로, 설정 칸마다 오류 문구, 위 1단계 글을 구현에 맞춤(`/healthz`가 번호표를 지남, ERROR 로그도 보냄). ERROR 로그 중 `realtime/router.py`의 "leave 뒤 자리 지우기 실패 user=…"는 내부 사용자 ID(ULID)가 메시지에 들어감 — 이름·카카오 번호가 아닌 내부 번호라 그대로 둠. OCR이 계속 죽으면 월 5천 건을 빨리 쓸 수 있음 → Sentry에서 같은 오류 묶음의 알림만 받고, 넘으면 다시 봄
 - 11/28 계정(민재 승인, Claude가 Chrome으로): **Sentry** — 민재 GitHub 계정으로 가입, 조직 `SCRUN`(`scrun.sentry.io`), 저장 지역 미국(US·EU 둘뿐, 한국 없음), 프로젝트 `python-fastapi`(오류 모니터링만, 로그·추적·프로파일링 끔), 저장소 연결 안 함, 기본 오류 알림 규칙 1개(가입 메일로). 처음 14일 체험 뒤 무료(오류 월 5,000건, 화면에서 확인). DSN은 서버 `deploy/.env`에 넣음(백업 `.env.bak-날짜`, 권한 600). **UptimeRobot** — 같은 GitHub 계정, 첫 감시 `/v1/agreements` 5분·이메일 알림(`/healthz` 셋은 배포 뒤 추가)
 - 11/28 #160 머지(develop `09e1573`)·운영 배포. `update.sh`는 실행 전에 파일 전체를 읽어 두어 첫 배포 땐 옛 스크립트가 돌아 릴리스 칸이 빔 → 한 번 더 배포해 세 서비스 모두 `release=09e1573`. 확인: 공개 `/healthz/api`·`/healthz/realtime`·`/healthz/ocr` 모두 200 `{"status":"ok"}`, 세 컨테이너 설정 DSN 있음·`production`·서비스 이름 맞음, journald 설정 넣음(`Storage=persistent`·`SystemMaxUse=4G`·`SystemKeepFree=10G`, 적용 때 1.6 GB, 재시작 뒤에도 컨테이너 로그 계속 쌓임), api 컨테이너 안에서 시험 오류 하나 → Sentry `python-fastapi`에 도착(`RuntimeError 배포 확인용 시험 오류`, 무시해도 됨), UptimeRobot에 `/healthz` 셋 추가(5분·이메일, 감시 4개/50), `/healthz/api` 첫 확인 응답 796 ms(북미에서 잼). 알림 경로는 서버를 멈추지 않고 UptimeRobot "Test Notification"으로 시험 메일 보냄(받았는지 민재 확인)
-- 2단계 전에 정할 것: Grafana 이메일 알림용 SMTP 계정, 부하 측정(0075) 땐 UptimeRobot 감시를 잠시 멈춤
+- 2단계 전에 정할 것: ~~Grafana 이메일 알림용 SMTP 계정~~(11/28 Sentry 거치기로 정해 필요 없음), 부하 측정(0075)은 집 PC에서만(운영엔 부하를 안 걺)
+- 11/28 2단계 정함(민재): 알람 메일은 **Sentry 거치기**(Grafana → api `/internal/alerts` → Sentry 오류 → Sentry 메일, 새 메일 계정 없음), Grafana는 **보기는 로그인 없이**(SSH 터널이 잠금, 관리자 비밀번호는 서버에서 무작위로 만들어 `.env`, Claude는 값을 안 봄)
+- 11/28 2단계 구현(`feat/observability-2`, develop `e1ab66b`에서)
+  - 앱: `app/core/metrics.py`(`prometheus-client==0.26.0`) — `scrun_http_requests_total{method,route,status}`, `scrun_http_request_duration_seconds{method,route}`, 요청당 DB 시간·DB 연결 기다림·번호표 기다림 히스토그램, `scrun_ocr_batches_total{result}`·`scrun_ocr_batch_seconds`, `scrun_realtime_connections`(livesum). 라벨은 라우트 틀·메서드·상태·OCR 결과만(ID 없음). 요청 로그 미들웨어가 이미 재는 값으로 셈(`METRICS=0`이면 끔, 요청 로그와 따로). uvicorn 프로세스 여럿이라 `PROMETHEUS_MULTIPROC_DIR`(compose tmpfs `/run/scrun-metrics`), 프로세스가 끝날 때 `mark_process_dead`. `GET /metrics`는 번호표·요청 로그·지표 밖(`is_internal`), Caddy가 밖에선 404. OCR 결과 이름은 던지는 자리에서 붙임(`_ocr_error`: busy·timeout·stuck·엔진 reason, 나머지 error)
+  - 알람 받기: `POST /internal/alerts`(비밀 `ALERT_WEBHOOK_TOKEN` Bearer, 없거나 틀리면 404) → 울리는 알람만 `report_alert`(Sentry 묶음 = 알람 이름 + 시작 시각 → 알람마다 메일 한 통, Grafana가 12시간마다 다시 보내도 같은 묶음). 로그는 WARNING(ERROR면 로그 연동이 한 번 더 보냄)
+  - 서버: `deploy/observability/` — `config.alloy`(서버·cAdvisor·Postgres 수집기 + 앱 셋 긁기 → remote_write), `prometheus.yml`(보관 90일 또는 5 GB, remote write 받기), Grafana provisioning(데이터 원본, 대시보드 `SCRUN 서버`(그래프·숫자 20칸 + 줄 제목 4), 알람 규칙 8개·연락처·정책). compose에 `alloy`(v1.21.3)·`prometheus`(v3.15.1)·`grafana`(13.3.2, `127.0.0.1:3000`만), 메모리 상한 384·768·512 MB(첫 값). `daily.sh` → `backup_metric.sh`가 마지막 백업 시각, `update.sh`가 `~/scrun-metrics`를 만들고 처음이면 가장 최근 백업 파일 시각으로 채움
+  - 로컬 확인(이 노트북 Docker, 시험 묶음 Postgres + api(uvicorn 2개) + Alloy·Prometheus·Grafana): 두 프로세스 숫자가 합쳐 나옴, 없는 주소는 라우트 `-`, 대시보드 그려짐, 알람 규칙·연락처 불러옴·익명은 고치기 403, **realtime·ocr이 없는 상태에서 "앱 서비스 지표가 안 긁힘"이 실제로 울려 api `/internal/alerts` 204·`[서버 알람]` 로그**. 시험에서 고친 것: cAdvisor가 컨테이너 이름을 못 붙임(새 Docker는 containerd로 찾음 → `/run/containerd/containerd.sock` 붙임), Grafana가 켜자마자 343 MB(상한 384 → 512), Alloy를 다시 만들면 instance 라벨이 바뀌어 같은 지표가 새 줄(→ `hostname: scrun-alloy`), 5xx 비율이 5xx가 없으면 빔(→ `or vector(0)`). 로컬(Docker Desktop)에선 루트 디스크가 ext4가 아니라 디스크 칸이 비어 서버에서 확인해야 함
+  - 테스트 `tests/test_metrics.py` 20개(라우트 틀로 셈·없는 주소 `-`·`/metrics`는 안 셈·공개 목록 밖, 요청 로그와 따로 켜고 끔, OCR 결과별, 알람 → Sentry 1건·지문·풀림은 없음·비밀 틀리면 404, 설정, 대시보드·알람이 쓰는 `scrun_` 이름이 실제로 있음, provisioning 파일, compose가 판 고정·Grafana만 127.0.0.1·tmpfs, Caddy `/metrics` 404)
+- 11/28 `/code-review`(규칙·계획 두 갈래) 반영
+  - 배포 날 거짓 알람: 백업 알람이 `for: 0s`·데이터 없음 = 울림 → `for: 30m`·지표가 아예 없으면 9999시간으로 계산(`absent`), 수집 자체가 멈춘 건 새 규칙 **"지표 수집 멈춤"**(`absent(up{job="scrun"})` 5분)으로 따로(규칙 8개). `daily.sh`가 백업 시각을 토큰 정리 **뒤**에 적어 토큰 정리만 실패해도 "백업 없음" → `mv` 바로 뒤로
+  - `.env`에 새 비밀 둘이 없으면 compose 전체가 멈춤(`${..:?}`, 배포·매일 백업까지) → `update.sh`가 compose 전에 없으면 서버에서 무작위로 만들어 넣음(화면에 안 찍음). 첫 배포는 옛 `update.sh`가 돌아 이 줄이 안 돌므로 배포 전에 손으로 준비(아래)
+  - `~/scrun-metrics`를 Docker가 먼저 만들면 root 소유 → `daily.sh`가 못 씀 → `update.sh`가 내 소유가 아니면 `sudo chown`, 첫 배포 전엔 손으로 만듦
+  - 짧게 도는 스크립트(`daily.sh`의 토큰 정리)가 지표 파일을 tmpfs에 남김 → `exec -e PROMETHEUS_MULTIPROC_DIR=`로 끔
+  - `METRICS=0`이어도 OCR·실시간은 셈 → `metrics.set_enabled`로 모두 끔. OCR 결과 라벨을 소문자로 맞춤(`read`·`unreadable`·`busy`·`timeout`·`stuck`·`ocr_timeout`·`error`), 결과 이름은 예외 타입 `OcrUnavailable(outcome)`로(몰래 붙인 속성 대신). 메서드 라벨은 정해진 7개 밖이면 `OTHER`. 알람 받기가 이상한 본문에 500 대신 400·무시, Sentry가 꺼져 있으면 서버 로그에 ERROR(조용히 사라지지 않게)
+  - 대시보드에 API별 5xx 비율·OCR 읽힘 비율(6시간) 추가
+  - 남은 한계(가설·알고 둠): Prometheus remote-write·Grafana 익명 보기는 compose 네트워크 안 다른 컨테이너가 인증 없이 닿음(api가 뚫리면 가짜 지표를 넣을 수 있음). Alloy에 `/`·Docker 소켓이 붙어 있어 사실상 서버 관리자 권한(`.env`도 읽힘) → 이미지 판 고정·밖에 안 엶. Postgres 수집기는 앱 DB 계정을 씀(`pg_monitor` 전용 계정이 더 좁음, 출시 전 보안 정리 때). api·realtime·ocr·db·caddy엔 메모리 상한 없음(그대로)
+- 남은 것(2단계): 서버에 `~/scrun-metrics`·`.env` 비밀 둘 준비 → 배포 → 서버에서 디스크·컨테이너 칸 확인, 알람 하나 시험. 도입 전·후 k6 비교는 집 PC가 켜질 때(지표 끔 + 수집 컨테이너 멈춤 vs 켬, 11/28 민재: 비교 전에 배포)

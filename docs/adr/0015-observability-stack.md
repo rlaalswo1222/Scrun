@@ -20,7 +20,7 @@
 | | Grafana Cloud 무료 | 설정 적음 | 지표 1만 시계열·로그 월 50 GB·**14일 보관**, 로그가 밖으로 나감 |
 | 로그 모으기 | **Loki**(위 직접 운영에 포함) | 라벨만 색인해 가벼움, Grafana에서 지표와 같이 봄 | 본문 전체 검색은 느림(라벨로 좁힌 뒤 찾음) |
 | | ELK(Elasticsearch·Logstash·Kibana) | 로그 본문 전체를 색인해 검색·집계가 강함, 현업에서 오래 씀 | Elasticsearch가 JVM이라 메모리를 많이 씀(가설: 서버 하나에 수 GB, 2차 출처 [SSD Nodes](https://www.ssdnodes.com/learn/self-hosted-log-management-vps)), 지표·대시보드는 따로, 11/28 민재 질문으로 추가 |
-| 알림 | **이메일** | 따로 만들 것 없음, Sentry·UptimeRobot이 기본으로 보냄 | 놓치기 쉬움, Grafana는 SMTP 설정 필요 |
+| 알림 | **이메일** | 따로 만들 것 없음, Sentry·UptimeRobot이 기본으로 보냄(Grafana 알람은 Sentry를 거침, 아래 결정) | 놓치기 쉬움, Grafana는 SMTP 설정 필요 |
 | | Discord / 텔레그램 | 폰 알림이 바로 옴 | 채널·봇을 만들어야 함 |
 | Grafana 접근 | **SSH 터널로만** | 밖에 포트를 안 엶 | 오라클 키가 있는 사람만 봄 |
 | | Caddy 뒤 주소 + 로그인 | 폰에서도 봄 | 공개 주소라 비밀번호·업데이트 관리 |
@@ -29,7 +29,7 @@
 - **오류 수집 = Sentry 무료(Developer)**. 서버(FastAPI)와 앱(Unity iOS) 둘 다. 계정은 1명(누가 만들고 팀이 어떻게 볼지는 계획 0087 1단계에서)
 - **지표·로그·대시보드 = 오라클에 직접**: Prometheus(숫자) + Loki(로그) + Grafana(그래프·검색·알람) + Grafana Alloy(수집), 수집기(서버·컨테이너·Postgres)
 - **바깥 감시 = UptimeRobot 무료**(5분 간격): 서버가 통째로 죽어 Grafana도 죽었을 때를 메움
-- **알림 = 이메일**
+- **알림 = 이메일**(Sentry·UptimeRobot은 직접, Grafana 알람은 Sentry를 거쳐, 11/28 추가)
 - **Grafana는 SSH 터널로만** 연다(밖에 포트 안 엶)
 
 ## 이유
@@ -42,7 +42,7 @@
 - 서버 부담: 도입 전·후 k6 같은 시나리오로 처리량·p95를 비교(계획 0075와 같이). 떨어지면 수집 주기·보관을 줄임
 - Sentry를 쓰면 오류 정보(기기·앱 버전·코드 위치)가 Sentry 회사로 감 → 개인정보처리방침(BL-40)·iOS 개인정보 표시에 적음, 사용자 정보·쿠키·요청 머리·본문·지역 변수는 안 모음(`data_collection`, 2.77에서 `send_default_pii`를 대신함), DB 오류 메시지의 바인드 값도 숨김(`hide_parameters`)
 - 무료 1명: 팀원이 직접 보려면 공용 계정이나 유료(Team)가 필요. 월 5천 건을 넘기면(출시 뒤) 다시 검토
-- Grafana 이메일 알림은 SMTP 계정이 필요(2단계에서 정함). 이메일 알림을 놓치는 일이 잦으면 Discord로 바꿈
+- Grafana 알람 메일: SMTP 계정 대신 **Grafana → api `/internal/alerts` → Sentry 오류 → Sentry 메일**(11/28 민재, 계획 0087 2단계). 새 계정·비밀번호가 없고 알람이 드물어 무료 한도에 영향이 거의 없음(가설). 한계: api가 죽으면 이 길도 죽음 → api 죽음은 UptimeRobot이 메일. 이메일 알림을 놓치는 일이 잦으면 Discord로 바꿈
 - 다시 검토할 조건: 서버를 옮길 때(ADR-0008), 사용자가 늘어 월 5천 건·디스크가 모자랄 때, Grafana를 팀이 폰에서 자주 봐야 할 때
 
 ## 참고
