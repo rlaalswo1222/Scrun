@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>로깅·모니터링 고르기</title>
+<style>
+:root{
+  --bg:#f7f7f5; --card:#ffffff; --ink:#1d1d1f; --sub:#5b5b60; --line:#e2e2e0;
+  --accent:#2f6fde; --accent-soft:#e8f0fd; --ok:#1f8a4c; --ok-soft:#e5f4ea; --warn:#b5600b; --warn-soft:#fbefe2;
+  --box:#f1f1ef;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141416; --card:#1d1d20; --ink:#ececee; --sub:#a3a3aa; --line:#33333a;
+    --accent:#7aa7ff; --accent-soft:#1f2a40; --ok:#5fcf8c; --ok-soft:#183024; --warn:#f0a85a; --warn-soft:#352616;
+    --box:#26262a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141416; --card:#1d1d20; --ink:#ececee; --sub:#a3a3aa; --line:#33333a;
+  --accent:#7aa7ff; --accent-soft:#1f2a40; --ok:#5fcf8c; --ok-soft:#183024; --warn:#f0a85a; --warn-soft:#352616;
+  --box:#26262a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Pretendard",sans-serif}
+main{max-width:900px;margin:0 auto;padding:28px 16px 64px}
+h1{font-size:26px;margin:0 0 6px}
+h2{font-size:20px;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)}
+h3{font-size:17px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{color:var(--sub)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--box);color:var(--sub);margin-right:4px}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.tag.rec{background:var(--accent-soft);color:var(--accent);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{color:var(--sub);font-weight:600}
+.scroll{overflow-x:auto}
+code{background:var(--box);padding:1px 5px;border-radius:4px;font-size:13.5px}
+pre{background:var(--box);padding:10px 12px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.5}
+ul{padding-left:20px;margin:6px 0}
+li{margin:3px 0}
+.q{border-left:4px solid var(--accent);padding-left:12px}
+svg text{fill:var(--ink);font-family:inherit}
+svg .sub{fill:var(--sub)}
+svg .boxf{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+svg .accf{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+svg .okf{fill:var(--ok-soft);stroke:var(--ok);stroke-width:1.5}
+svg .warnf{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.5}
+svg .ln{stroke:var(--sub);stroke-width:1.5;fill:none}
+small{color:var(--sub)}
+</style>
+</head>
+<body>
+<main>
+<h1>로깅·모니터링 고르기</h1>
+<p class="lead">계획 0087 설명 자료(11/27). 무엇이 있고, 무엇이 빠졌고, 무엇을 골라야 하는지. 고른 뒤 ADR로 남깁니다. "가설"이라고 적은 것은 아직 확인 안 한 것입니다.</p>
+
+<h2>1. 두 낱말부터</h2>
+<div class="grid">
+  <div class="card"><h3>로깅 = 일기장</h3>
+    <p>일이 생길 때마다 한 줄씩 적어 둠. 나중에 "그때 무슨 일이 있었지?"를 찾아봄.</p>
+    <pre>{"rid":"req_efb8…","path":"/v1/runs/{runId}/verification/photo",
+ "status":200,"ms":4767.7,"db_ms":6.7}</pre>
+    <small>우리 서버는 이미 이렇게 남김(계획 0070)</small>
+  </div>
+  <div class="card"><h3>모니터링 = 계기판</h3>
+    <p>숫자를 15초마다 재서 그래프로 보고, 기준을 넘으면 알람. "지금 괜찮나?", "한 달 동안 어떻게 변했나?"</p>
+    <p><span class="tag">초당 요청 수</span><span class="tag">응답 시간</span><span class="tag">오류율</span><span class="tag">CPU·연결 풀</span></p>
+    <small>구글 SRE 책의 "골든 시그널" 네 가지: 트래픽·지연·오류·포화도</small>
+  </div>
+</div>
+<div class="card">
+  <h3>여기에 하나 더: 오류 수집</h3>
+  <p>예외나 크래시가 나면 그 순간 상황(어느 코드 줄, 기기, 앱 버전, 요청 ID)을 자동으로 보내고, <b>같은 오류끼리 묶어 몇 명이 겪었는지</b> 보여 줌. 로그를 뒤지지 않아도 "새 오류가 생겼다"를 먼저 알려 줌.</p>
+</div>
+
+<h2>2. 지금 우리 상태</h2>
+<div class="scroll"><table>
+<tr><th>항목</th><th>상태</th><th>내용</th></tr>
+<tr><td>서버 요청 로그</td><td><span class="tag ok">있음</span></td><td>요청마다 JSON 한 줄(경로는 라우트 틀이라 ID 안 남음), OCR 장별 시간. journald에 저장, <code>journalctl</code>로 봄</td></tr>
+<tr><td>요청 ID</td><td><span class="tag ok">있음</span></td><td>응답 머리 <code>X-Request-Id</code>, 껍데기 <code>meta.requestId</code></td></tr>
+<tr><td>로그 보관 상한</td><td><span class="tag warn">없음</span></td><td>journald 1.6 GB 사용 중, 상한 설정 안 함</td></tr>
+<tr><td>서버 오류 수집</td><td><span class="tag warn">없음</span></td><td>500이 나도 아무도 모름</td></tr>
+<tr><td>지표·대시보드</td><td><span class="tag warn">없음</span></td><td>숫자는 k6 부하 테스트 때만 손으로 잼</td></tr>
+<tr><td>알람</td><td><span class="tag warn">없음</span></td><td>서버가 죽어도, 매일 백업이 실패해도 모름</td></tr>
+<tr><td>앱 크래시 수집</td><td><span class="tag warn">없음</span></td><td>출시 빌드는 오류를 어디에도 안 보냄(개발 빌드만 폰 안 파일)</td></tr>
+<tr><td>제품 지표 이벤트</td><td><span class="tag warn">자리만</span></td><td><code>POST /v1/events</code>가 204만 돌려줌(저장 안 함)</td></tr>
+</table></div>
+<p><small>오라클 서버 여유(11/27): ARM 2코어, 메모리 11 GB 중 약 1.5 GB 사용, 디스크 96 GB 중 20 GB 사용 → 수집 도구를 같이 띄울 자리는 있음(CPU 부담은 재 봐야 함)</small></p>
+
+<h2>3. 다 갖추면 이렇게 흐릅니다 (추천안)</h2>
+<div class="card scroll">
+<svg viewBox="0 0 860 430" width="100%" role="img" aria-label="로깅 모니터링 데이터 흐름">
+  <!-- 오라클 서버 테두리 -->
+  <rect x="150" y="20" width="520" height="300" rx="14" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="6 5"/>
+  <text x="166" y="44" font-size="14" font-weight="600">오라클 서버 (우리가 직접 운영)</text>
+
+  <!-- 앱 -->
+  <rect x="10" y="90" width="120" height="70" rx="10" class="boxf"/>
+  <text x="70" y="120" font-size="14" text-anchor="middle" font-weight="600">아이폰 앱</text>
+  <text x="70" y="140" font-size="12" text-anchor="middle" class="sub">Unity + Swift</text>
+
+  <!-- 서버 컨테이너 -->
+  <rect x="180" y="70" width="170" height="110" rx="10" class="boxf"/>
+  <text x="265" y="96" font-size="14" text-anchor="middle" font-weight="600">api · realtime · ocr</text>
+  <text x="265" y="118" font-size="12" text-anchor="middle" class="sub">요청 로그 → journald</text>
+  <text x="265" y="138" font-size="12" text-anchor="middle" class="sub">/metrics (숫자)</text>
+  <text x="265" y="158" font-size="12" text-anchor="middle" class="sub">+ DB·CPU·컨테이너 수집기</text>
+
+  <!-- Alloy -->
+  <rect x="390" y="70" width="110" height="110" rx="10" class="accf"/>
+  <text x="445" y="112" font-size="14" text-anchor="middle" font-weight="600">Alloy</text>
+  <text x="445" y="132" font-size="12" text-anchor="middle" class="sub">모아서</text>
+  <text x="445" y="148" font-size="12" text-anchor="middle" class="sub">넘겨 줌</text>
+
+  <!-- Prometheus / Loki -->
+  <rect x="535" y="60" width="115" height="55" rx="10" class="accf"/>
+  <text x="592" y="85" font-size="14" text-anchor="middle" font-weight="600">Prometheus</text>
+  <text x="592" y="103" font-size="12" text-anchor="middle" class="sub">숫자 저장</text>
+  <rect x="535" y="135" width="115" height="55" rx="10" class="accf"/>
+  <text x="592" y="160" font-size="14" text-anchor="middle" font-weight="600">Loki</text>
+  <text x="592" y="178" font-size="12" text-anchor="middle" class="sub">로그 저장·검색</text>
+
+  <!-- Grafana -->
+  <rect x="440" y="230" width="210" height="70" rx="10" class="okf"/>
+  <text x="545" y="258" font-size="14" text-anchor="middle" font-weight="600">Grafana</text>
+  <text x="545" y="278" font-size="12" text-anchor="middle" class="sub">그래프·검색·알람 규칙</text>
+
+  <!-- 바깥: Sentry, UptimeRobot, 팀 채널 -->
+  <rect x="700" y="70" width="150" height="70" rx="10" class="warnf"/>
+  <text x="775" y="100" font-size="14" text-anchor="middle" font-weight="600">Sentry</text>
+  <text x="775" y="120" font-size="12" text-anchor="middle" class="sub">오류·크래시 묶기</text>
+
+  <rect x="700" y="350" width="150" height="65" rx="10" class="warnf"/>
+  <text x="775" y="378" font-size="14" text-anchor="middle" font-weight="600">UptimeRobot</text>
+  <text x="775" y="398" font-size="12" text-anchor="middle" class="sub">5분마다 밖에서 찔러 봄</text>
+
+  <rect x="440" y="350" width="210" height="65" rx="10" class="boxf"/>
+  <text x="545" y="378" font-size="14" text-anchor="middle" font-weight="600">팀 알림 채널</text>
+  <text x="545" y="398" font-size="12" text-anchor="middle" class="sub">Discord 등 (정할 것 3)</text>
+
+  <!-- 화살표 -->
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--sub)"/></marker></defs>
+  <path d="M130 125 L178 125" class="ln" marker-end="url(#ar)"/>
+  <text x="154" y="116" font-size="11" text-anchor="middle" class="sub">API</text>
+  <path d="M70 90 C70 30, 690 20, 760 68" class="ln" marker-end="url(#ar)"/>
+  <text x="430" y="18" font-size="11" text-anchor="middle" class="sub">앱 크래시·오류 (4단계)</text>
+  <path d="M350 125 L388 125" class="ln" marker-end="url(#ar)"/>
+  <path d="M500 105 L533 90" class="ln" marker-end="url(#ar)"/>
+  <path d="M500 150 L533 160" class="ln" marker-end="url(#ar)"/>
+  <path d="M592 190 L592 228" class="ln" marker-end="url(#ar)"/>
+  <path d="M630 115 C660 160, 640 200, 630 228" class="ln" marker-end="url(#ar)"/>
+  <path d="M350 160 C420 200, 680 160, 712 140" class="ln" marker-end="url(#ar)"/>
+  <text x="660" y="205" font-size="11" class="sub">서버 예외·500</text>
+  <path d="M545 300 L545 348" class="ln" marker-end="url(#ar)"/>
+  <text x="552" y="330" font-size="11" class="sub">알람</text>
+  <path d="M700 382 L652 382" class="ln" marker-end="url(#ar)"/>
+  <path d="M775 140 C800 250, 700 330, 650 365" class="ln" marker-end="url(#ar)"/>
+  <path d="M775 350 L775 330 C775 320, 690 320, 670 300" class="ln" stroke-dasharray="4 4" marker-end="url(#ar)"/>
+  <text x="680" y="342" font-size="11" class="sub">서버 바깥</text>
+</svg>
+<small>파랑 = 오라클에 우리가 띄우는 수집·저장, 초록 = 보는 곳, 주황 = 서버 바깥 서비스. 서버가 통째로 죽으면 Grafana도 같이 죽으니 UptimeRobot이 바깥에서 알려 줘야 함.</small>
+</div>
+
+<h2>4. 층마다 무엇을 고르나</h2>
+
+<div class="card q">
+<h3>정할 것 1 · 오류 수집</h3>
+<div class="scroll"><table>
+<tr><th></th><th>(가) Sentry 무료 <span class="tag rec">추천</span></th><th>(나) Sentry Team 유료</th><th>(다) GlitchTip 직접 운영</th></tr>
+<tr><td>돈</td><td>0원</td><td>월 약 26달러(연 결제 기준, 재료비)</td><td>0원(오라클 메모리 0.5–2 GB)</td></tr>
+<tr><td>사람 수</td><td>1명(공용 계정으로 셋이 보게 할지 정해야 함)</td><td>여러 명</td><td>여러 명</td></tr>
+<tr><td>양</td><td>월 약 5천 건</td><td>월 약 5만 건</td><td>서버 디스크만큼</td></tr>
+<tr><td>서버(FastAPI)</td><td>공식 SDK</td><td>공식 SDK</td><td>Sentry SDK 그대로 씀</td></tr>
+<tr><td>Unity iOS 크래시</td><td>C#·네이티브 크래시, dSYM 자동 올리기, IL2CPP 줄 번호</td><td>같음</td><td>네이티브 크래시 기호 풀이가 되는지 <b>확인 필요</b>(가설: 안 될 수 있음)</td></tr>
+<tr><td>데이터 위치</td><td>Sentry 회사 서버(개인정보처리방침에 적어야 함)</td><td>같음</td><td>우리 서버</td></tr>
+</table></div>
+<p><small>앱만이라면 Firebase Crashlytics(무료)도 있지만, 서버 오류는 못 받아서 두 곳을 봐야 함. 가격은 공식 페이지에서 한 번 더 확인 필요.</small></p>
+</div>
+
+<div class="card q">
+<h3>정할 것 2 · 지표·로그·대시보드를 어디에</h3>
+<div class="scroll"><table>
+<tr><th></th><th>(가) 오라클에 직접 <span class="tag rec">추천</span></th><th>(나) Grafana Cloud 무료</th></tr>
+<tr><td>띄우는 것</td><td>Prometheus·Loki·Grafana·Alloy + 수집기(서버·컨테이너·Postgres)</td><td>Alloy 하나만(숫자·로그를 밖으로 보냄)</td></tr>
+<tr><td>한도</td><td>서버 디스크·메모리만큼, 보관 기간은 우리가 정함</td><td>지표 1만 시계열, 로그 월 50 GB, <b>14일 보관</b></td></tr>
+<tr><td>서버 부담</td><td>메모리 1–2 GB 정도(가설, 재 봐야 함), CPU는 수집 15초마다</td><td>작음</td></tr>
+<tr><td>데이터 위치</td><td>우리 서버(로그가 밖으로 안 나감)</td><td>Grafana 회사 서버</td></tr>
+<tr><td>배우는 것</td><td>운영까지 직접 → 면접에서 설명할 거리 많음</td><td>설정이 적음</td></tr>
+</table></div>
+<p><small>14일 보관이면 "한 달 추세"·발표용 비포·애프터 그래프가 사라질 수 있음 → (가) 추천.</small></p>
+</div>
+
+<div class="card q">
+<h3>정할 것 3 · 알림 받을 곳</h3>
+<ul>
+<li><b>(가) Discord 채널</b>: 웹훅 주소 하나로 Grafana·UptimeRobot 무료·Sentry 모두 보낼 수 있음. 폰 앱 알림도 옴</li>
+<li>(나) 이메일: 따로 만들 것 없음, 대신 놓치기 쉬움</li>
+<li>(다) 텔레그램: 봇 만들기가 필요</li>
+<li>카카오톡: 단체방에 자동으로 보내는 웹훅이 없음(가설)</li>
+</ul>
+</div>
+
+<div class="card q">
+<h3>정할 것 4 · Grafana를 어떻게 여나</h3>
+<ul>
+<li><b>(가) SSH 터널로만</b> <span class="tag rec">추천</span>: 밖에 포트를 안 엶. 노트북에서 <code>ssh -L 3000:localhost:3000 …</code> 하고 브라우저로. 키가 있는 사람만</li>
+<li>(나) Caddy 뒤 주소 + 로그인: 폰에서도 바로 보지만, 공개 주소라 비밀번호·업데이트 관리 필요</li>
+</ul>
+</div>
+
+<div class="card q">
+<h3>정할 것 5 · 범위와 순서</h3>
+<ol>
+<li><b>빨리 효과 큰 것</b>: 서버 Sentry(요청 ID 태그) · UptimeRobot · 알림 채널 · journald 상한 · 매일 백업 실패 알림</li>
+<li><b>지표·대시보드</b>: <code>/metrics</code>(API별 요청 수·응답 시간·오류, 연결 풀·번호표 대기, OCR 시간·READ 비율, 실시간 접속 수) + Prometheus + Grafana 골든 시그널 대시보드</li>
+<li><b>로그 모으기</b>: journald → Alloy → Loki, Grafana에서 요청 ID로 검색, 로그 레벨 정리, 토큰·개인정보가 안 찍히는지 점검</li>
+<li><b>앱 크래시</b>: Sentry Unity SDK, 맥에서 dSYM 올리기, 앱 오류에 서버 요청 ID, 개인정보처리방침(상준)</li>
+</ol>
+<p><small>제품 지표(<code>/v1/events</code>로 보정 완주율 등)는 이벤트 목록을 상준과 정해야 해서 따로 계획.</small></p>
+</div>
+
+<h2>5. 조심할 것</h2>
+<ul>
+<li><b>공개 저장소</b>: DSN·비밀번호·웹훅 주소는 서버 <code>.env</code>에만</li>
+<li><b>개인정보</b>: 로그·오류에 카카오 토큰·JWT·사진을 넣지 않음, 오류 수집의 "개인 정보 보내기" 끔. 바깥 서비스(Sentry)를 쓰면 개인정보처리방침에 적음</li>
+<li><b>uvicorn 프로세스가 여럿</b>(api 2개): 숫자를 프로세스마다 따로 세서 합쳐야 함(Prometheus 다중 프로세스 방식)</li>
+<li><b>서버 부담</b>: 도입 전·후 k6로 같은 시나리오를 돌려 처리량이 떨어지지 않는지 → 이것 자체가 비포·애프터 기록</li>
+</ul>
+
+<h2>6. 읽어 볼 것</h2>
+<ul>
+<li>구글 SRE 책 "Monitoring Distributed Systems"(골든 시그널): <a href="https://sre.google/sre-book/monitoring-distributed-systems/">sre.google</a></li>
+<li>Prometheus 소개: <a href="https://prometheus.io/docs/introduction/overview/">prometheus.io</a>, 다중 프로세스: <a href="https://prometheus.github.io/client_python/multiprocess/">client_python</a></li>
+<li>Grafana Alloy로 리눅스·로그 모으기(Docker Compose 예제): <a href="https://grafana.com/docs/alloy/latest/monitor/monitor-linux/">grafana.com</a></li>
+<li>Sentry FastAPI: <a href="https://docs.sentry.io/platforms/python/integrations/fastapi/">docs.sentry.io</a>, Sentry Unity(네이티브·IL2CPP): <a href="https://docs.sentry.io/platforms/unity/native-support/">docs.sentry.io</a></li>
+<li>가격(11/27 검색, 공식 페이지에서 다시 확인): <a href="https://sentry.io/pricing/">Sentry</a>, <a href="https://grafana.com/products/cloud/free-tier/">Grafana Cloud Free</a>, <a href="https://uptimerobot.com/pricing/">UptimeRobot</a>(무료 50개·5분), GlitchTip 메모리 <a href="https://www.ssdnodes.com/learn/self-hosted-error-tracking-sentry-alternatives">SSD Nodes 정리</a></li>
+</ul>
+</main>
+</body>
+</html>
