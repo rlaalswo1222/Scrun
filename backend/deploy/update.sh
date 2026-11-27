@@ -23,6 +23,7 @@ for KEY in GRAFANA_ADMIN_PASSWORD ALERT_WEBHOOK_TOKEN; do
   fi
 done
 
+OLD=$(git rev-parse -q --verify HEAD || true)   # 이번 배포 전 커밋: 관측 설정이 바뀌었는지 볼 때(아래)
 git fetch -q origin "$BRANCH"
 git checkout -q "$BRANCH"
 git reset -q --hard "origin/$BRANCH"   # 서버에서는 코드를 고치지 않는다(.env는 git 밖이라 안 지워짐)
@@ -53,6 +54,21 @@ if ! $C exec -T caddy cat /etc/caddy/Caddyfile | cmp -s - Caddyfile; then
   $C up -d --force-recreate --no-deps caddy
   sleep 3
   $C exec -T caddy cat /etc/caddy/Caddyfile | cmp -s - Caddyfile || { echo "Caddy가 새 Caddyfile을 못 읽음: $C logs caddy" >&2; exit 1; }
+fi
+# 관측 설정(계획 0087)도 바뀌면 다시 읽게. config.alloy·prometheus.yml·loki.yaml은 파일 하나를 끼워 넣어 위 Caddy와 같은 문제
+# → 이번 배포에서 바뀌었으면 새로 만듦. Grafana는 데이터 원본·알람 provisioning을 켜질 때만 읽음 → 바뀌었으면 다시 시작
+# (11/28 3단계 첫 배포에서 Grafana가 새 Loki 원본을 몰라 로그 화면이 오류). 컨테이너 안쪽만이라 사용자 영향 없음
+changed() { [ -z "$OLD" ] || ! git diff --quiet "$OLD" HEAD -- "$@"; }
+for PAIR in "alloy observability/config.alloy" "prometheus observability/prometheus.yml" "loki observability/loki.yaml"; do
+  read -r SVC FILE <<< "$PAIR"
+  if changed "$FILE"; then
+    echo "$FILE이 바뀜 → $SVC를 새로 만듦"
+    $C up -d --force-recreate --no-deps "$SVC"
+  fi
+done
+if changed observability/grafana; then
+  echo "Grafana 설정이 바뀜 → 다시 시작"
+  $C restart grafana
 fi
 docker image prune -f >/dev/null
 
