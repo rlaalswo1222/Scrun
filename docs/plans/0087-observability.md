@@ -1,6 +1,6 @@
 # 계획 0087: 로깅·모니터링 — 서버와 앱이 지금 어떤지 보고, 이상하면 알기
 
-- 상태: **도구 고름(11/27 민재) → ADR-0015 승인 → 1단계 구현(11/27, `feat/observability-1`), 계정·배포 남음**. 설명 그림 [0087-observability.html](0087-observability.html)
+- 상태: **도구 고름(11/27 민재) → ADR-0015 승인 → 1단계 완료(11/28, #160 머지·운영 배포·확인). 다음은 2단계(지표·대시보드)**. 설명 그림 [0087-observability.html](0087-observability.html)
 - 고른 것(ADR-0015): 오류 = **Sentry 무료**, 지표·로그·대시보드 = **오라클에 직접**(Prometheus·Loki·Grafana·Alloy), 바깥 감시 = **UptimeRobot 무료**, 알림 = **이메일**, Grafana = **SSH 터널로만**. 범위는 1–4단계 전부(순서대로, 단계마다 PR)
 - 담당: 민재(서버 공통·배포). 앱 크래시 수집은 맥 빌드가 필요(4단계)
 - 이어서: 계획 0070(관측 최소: 요청 로그 한 줄·k6, "Prometheus·Grafana는 띄우지 않음"), 0071·0073(성능), ADR-0008(서버 오라클, "백로그 후보: 앱 오류 수집"), 4차 멘토링(11/26 "로깅·모니터링이 되고 있나", "비포·애프터 기록", "모니터링으로 추세를 보다가 준비")
@@ -70,4 +70,5 @@
   - 테스트 `tests/test_error_report.py` 13개(가짜 transport로 나가는 내용 확인: 요청 ID·라우트 틀·환경·릴리스, 요청·사용자·지역 변수·토큰·쿠키·기록 ID가 없음, uvicorn 로그로 두 번 안 감, ERROR만·빵부스러기 없음, DSN 없으면 꺼짐, 설정 검사, `/healthz`, compose·Caddy 경로). 전체 500 통과·9 실패(전부 사진 인증 `SERVICE_UNAVAILABLE`, develop에서도 같은 9개 — 작업 폴더에 로컬 `.env`가 없어 가짜 OCR이 안 켜짐, 이 PR과 무관)
 - 11/27 `/code-review` 반영: DB 엔진 `hide_parameters=True`(IntegrityError 등 예외 메시지의 바인드 값이 Sentry로 가던 길), 테스트 설정(`testenv`)이 `SENTRY_DSN`을 비움(로컬 `.env`에 DSN이 있어도 pytest가 진짜로 안 보냄), 요청 ID·라우트 틀 읽기를 `request_log.request_id`·`route_path` 한 곳으로, 설정 칸마다 오류 문구, 위 1단계 글을 구현에 맞춤(`/healthz`가 번호표를 지남, ERROR 로그도 보냄). ERROR 로그 중 `realtime/router.py`의 "leave 뒤 자리 지우기 실패 user=…"는 내부 사용자 ID(ULID)가 메시지에 들어감 — 이름·카카오 번호가 아닌 내부 번호라 그대로 둠. OCR이 계속 죽으면 월 5천 건을 빨리 쓸 수 있음 → Sentry에서 같은 오류 묶음의 알림만 받고, 넘으면 다시 봄
 - 11/28 계정(민재 승인, Claude가 Chrome으로): **Sentry** — 민재 GitHub 계정으로 가입, 조직 `SCRUN`(`scrun.sentry.io`), 저장 지역 미국(US·EU 둘뿐, 한국 없음), 프로젝트 `python-fastapi`(오류 모니터링만, 로그·추적·프로파일링 끔), 저장소 연결 안 함, 기본 오류 알림 규칙 1개(가입 메일로). 처음 14일 체험 뒤 무료(오류 월 5,000건, 화면에서 확인). DSN은 서버 `deploy/.env`에 넣음(백업 `.env.bak-날짜`, 권한 600). **UptimeRobot** — 같은 GitHub 계정, 첫 감시 `/v1/agreements` 5분·이메일 알림(`/healthz` 셋은 배포 뒤 추가)
-- 남은 것(1단계): 커밋·PR·머지 → 배포 → 서버에 journald 설정 → UptimeRobot에 `/healthz/api`·`/healthz/realtime`·`/healthz/ocr` 추가 → 운영에서 확인(컨테이너 하나 멈춰 UptimeRobot 메일, Sentry에 시험 오류 하나)
+- 11/28 #160 머지(develop `09e1573`)·운영 배포. `update.sh`는 실행 전에 파일 전체를 읽어 두어 첫 배포 땐 옛 스크립트가 돌아 릴리스 칸이 빔 → 한 번 더 배포해 세 서비스 모두 `release=09e1573`. 확인: 공개 `/healthz/api`·`/healthz/realtime`·`/healthz/ocr` 모두 200 `{"status":"ok"}`, 세 컨테이너 설정 DSN 있음·`production`·서비스 이름 맞음, journald 설정 넣음(`Storage=persistent`·`SystemMaxUse=4G`·`SystemKeepFree=10G`, 적용 때 1.6 GB, 재시작 뒤에도 컨테이너 로그 계속 쌓임), api 컨테이너 안에서 시험 오류 하나 → Sentry `python-fastapi`에 도착(`RuntimeError 배포 확인용 시험 오류`, 무시해도 됨), UptimeRobot에 `/healthz` 셋 추가(5분·이메일, 감시 4개/50), `/healthz/api` 첫 확인 응답 796 ms(북미에서 잼). 알림 경로는 서버를 멈추지 않고 UptimeRobot "Test Notification"으로 시험 메일 보냄(받았는지 민재 확인)
+- 2단계 전에 정할 것: Grafana 이메일 알림용 SMTP 계정, 부하 측정(0075) 땐 UptimeRobot 감시를 잠시 멈춤

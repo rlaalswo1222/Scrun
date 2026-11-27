@@ -18,6 +18,8 @@
 | | Firebase Crashlytics | 무료, Unity 지원 | 앱만(서버 오류는 따로 봐야 함) |
 | 지표·로그·대시보드 | **오라클에 직접** | 무료, 보관 기간 우리가 정함, 로그가 밖으로 안 나감 | 운영을 직접, 메모리 1–2 GB 추가(가설), 서버와 같이 죽음 |
 | | Grafana Cloud 무료 | 설정 적음 | 지표 1만 시계열·로그 월 50 GB·**14일 보관**, 로그가 밖으로 나감 |
+| 로그 모으기 | **Loki**(위 직접 운영에 포함) | 라벨만 색인해 가벼움, Grafana에서 지표와 같이 봄 | 본문 전체 검색은 느림(라벨로 좁힌 뒤 찾음) |
+| | ELK(Elasticsearch·Logstash·Kibana) | 로그 본문 전체를 색인해 검색·집계가 강함, 현업에서 오래 씀 | Elasticsearch가 JVM이라 메모리를 많이 씀(가설: 서버 하나에 수 GB, 2차 출처 [SSD Nodes](https://www.ssdnodes.com/learn/self-hosted-log-management-vps)), 지표·대시보드는 따로, 11/28 민재 질문으로 추가 |
 | 알림 | **이메일** | 따로 만들 것 없음, Sentry·UptimeRobot이 기본으로 보냄 | 놓치기 쉬움, Grafana는 SMTP 설정 필요 |
 | | Discord / 텔레그램 | 폰 알림이 바로 옴 | 채널·봇을 만들어야 함 |
 | Grafana 접근 | **SSH 터널로만** | 밖에 포트를 안 엶 | 오라클 키가 있는 사람만 봄 |
